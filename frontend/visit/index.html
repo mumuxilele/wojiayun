@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>走访台账 - 移动端</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif; background: #f5f5f5; min-height: 100vh; }
+        
+        /* 头部 */
+        .header { background: linear-gradient(135deg, #1a1a2e, #16213e); color: #fff; padding: 15px; position: sticky; top: 0; z-index: 100; }
+        .header h1 { font-size: 18px; font-weight: 500; }
+        
+        /* 列表 */
+        .list { padding: 10px; }
+        .list-item { background: #fff; border-radius: 8px; padding: 15px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .list-item:active { background: #fafafa; }
+        .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .company-name { font-size: 16px; font-weight: 600; color: #333; }
+        .category-tag { padding: 3px 10px; border-radius: 12px; font-size: 12px; }
+        .category-租赁 { background: #e3f2fd; color: #1976d2; }
+        .category-服务 { background: #e8f5e9; color: #388e3c; }
+        .category-物业 { background: #fff3e0; color: #f57c00; }
+        .category-其他 { background: #fce4ec; color: #c2185b; }
+        .item-info { font-size: 13px; color: #666; line-height: 1.8; }
+        .item-info span { margin-right: 15px; }
+        .item-time { font-size: 12px; color: #999; margin-top: 8px; }
+        
+        /* 空状态 */
+        .empty { text-align: center; padding: 60px 20px; color: #999; }
+        .empty i { font-size: 48px; margin-bottom: 15px; }
+        
+        /* 加载更多 */
+        .load-more { text-align: center; padding: 20px; color: #999; }
+        
+        /* 筛选 */
+        .filter-bar { background: #fff; padding: 10px 15px; border-bottom: 1px solid #eee; display: flex; gap: 10px; overflow-x: auto; }
+        .filter-item { padding: 6px 12px; border-radius: 15px; font-size: 13px; white-space: nowrap; background: #f5f5f5; color: #666; }
+        .filter-item.active { background: #1a1a2e; color: #fff; }
+        
+        /* 底部按钮 */
+        .fab { position: fixed; bottom: 30px; right: 20px; width: 56px; height: 56px; background: linear-gradient(135deg, #00d1a0, #00b890); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 28px; box-shadow: 0 4px 16px rgba(0,209,160,0.4); cursor: pointer; z-index: 100; }
+        
+        /* 弹窗 */
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; }
+        .modal.show { display: block; }
+        .modal-content { background: #fff; border-radius: 16px 16px 0 0; max-height: 90vh; overflow-y: auto; position: absolute; bottom: 0; left: 0; right: 0; }
+        .modal-header { padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h3 { font-size: 17px; }
+        .modal-close { font-size: 24px; color: #999; }
+        .modal-body { padding: 20px; }
+        
+        /* 表单 */
+        .form-group { margin-bottom: 15px; }
+        .form-label { display: block; font-size: 14px; color: #333; margin-bottom: 8px; }
+        .form-label span { color: #f56c6c; }
+        .form-input, .form-select, .form-textarea { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+        .form-textarea { min-height: 80px; resize: none; }
+        .form-btn { width: 100%; padding: 12px; background: linear-gradient(135deg, #00d1a0, #00b890); border: none; border-radius: 8px; color: #fff; font-size: 16px; cursor: pointer; }
+        
+        /* 详情弹窗 */
+        .detail-content { padding: 20px; }
+        .detail-row { display: flex; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+        .detail-label { width: 80px; color: #999; font-size: 14px; }
+        .detail-value { flex: 1; color: #333; font-size: 14px; }
+        
+        /* 操作按钮 */
+        .action-btns { display: flex; gap: 10px; padding: 15px 20px; border-top: 1px solid #eee; }
+        .action-btn { flex: 1; padding: 12px; border-radius: 8px; text-align: center; font-size: 14px; cursor: pointer; }
+        .action-edit { background: #1a1a2e; color: #fff; }
+        .action-delete { background: #fff; border: 1px solid #f56c6c; color: #f56c6c; }
+        
+        /* loading */
+        .loading { text-align: center; padding: 40px; color: #999; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>走访台账</h1>
+    </div>
+    
+    <!-- 筛选 -->
+    <div class="filter-bar" id="filterBar">
+        <div class="filter-item active" data-category="">全部</div>
+        <div class="filter-item" data-category="租赁">租赁</div>
+        <div class="filter-item" data-category="服务">服务</div>
+        <div class="filter-item" data-category="物业">物业</div>
+        <div class="filter-item" data-category="其他">其他</div>
+    </div>
+    
+    <!-- 列表 -->
+    <div class="list" id="list">
+        <div class="loading">加载中...</div>
+    </div>
+    
+    <!-- 空状态 -->
+    <div class="empty" id="empty" style="display:none;">
+        <div>暂无走访记录</div>
+    </div>
+    
+    <!-- 加载更多 -->
+    <div class="load-more" id="loadMore" style="display:none;">加载更多</div>
+    
+    <!-- 新增按钮 -->
+    <div class="fab" onclick="showAddModal()">+</div>
+    
+    <!-- 新增/编辑弹窗 -->
+    <div class="modal" id="formModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">新增走访记录</h3>
+                <span class="modal-close" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="visitForm">
+                    <input type="hidden" id="visitId">
+                    <div class="form-group">
+                        <label class="form-label"><span>*</span>企业名称</label>
+                        <input type="text" class="form-input" id="companyName" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><span>*</span>区域地址</label>
+                        <input type="text" class="form-input" id="region" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><span>*</span>走访人</label>
+                        <input type="text" class="form-input" id="visitor" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><span>*</span>走访人姓名</label>
+                        <input type="text" class="form-input" id="visitorName" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><span>*</span>沟通事项分类</label>
+                        <select class="form-select" id="category" required>
+                            <option value="">请选择</option>
+                            <option value="租赁">租赁</option>
+                            <option value="服务">服务</option>
+                            <option value="物业">物业</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><span>*</span>沟通事项</label>
+                        <textarea class="form-textarea" id="content" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><span>*</span>走访时间</label>
+                        <input type="datetime-local" class="form-input" id="visitTime" required>
+                    </div>
+                    <button type="submit" class="form-btn">保存</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 详情弹窗 -->
+    <div class="modal" id="detailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>走访详情</h3>
+                <span class="modal-close" onclick="closeDetailModal()">&times;</span>
+            </div>
+            <div class="detail-content" id="detailContent"></div>
+            <div class="action-btns">
+                <div class="action-btn action-edit" onclick="editCurrent()">编辑</div>
+                <div class="action-btn action-delete" onclick="deleteCurrent()">删除</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://47.98.238.209:22306';
+        const TOKEN = 'visit_token_2024';
+        
+        let currentPage = 1;
+        let pageSize = 10;
+        let currentCategory = '';
+        let currentDetail = null;
+        
+        // 加载列表
+        async function loadList(reset = false) {
+            if (reset) {
+                currentPage = 1;
+                document.getElementById('list').innerHTML = '<div class="loading">加载中...</div>';
+            }
+            
+            try {
+                const params = new URLSearchParams({
+                    page: currentPage,
+                    pageSize: pageSize,
+                    token: TOKEN
+                });
+                if (currentCategory) params.append('category', currentCategory);
+                
+                const res = await fetch(`${API_BASE}/api/visit/list?${params}`);
+                const data = await res.json();
+                
+                if (data.code === 200) {
+                    renderList(data.data.list, reset);
+                    
+                    if (data.data.total <= currentPage * pageSize) {
+                        document.getElementById('loadMore').style.display = 'none';
+                    } else {
+                        document.getElementById('loadMore').style.display = 'block';
+                    }
+                }
+            } catch(e) {
+                console.error(e);
+                document.getElementById('list').innerHTML = '<div class="empty">加载失败</div>';
+            }
+        }
+        
+        function renderList(list, reset) {
+            if (list.length === 0) {
+                document.getElementById('list').style.display = 'none';
+                document.getElementById('empty').style.display = 'block';
+                return;
+            }
+            
+            document.getElementById('list').style.display = 'block';
+            document.getElementById('empty').style.display = 'none';
+            
+            const html = list.map(item => `
+                <div class="list-item" onclick="showDetail(${item.id})">
+                    <div class="item-header">
+                        <div class="company-name">${item.company_name}</div>
+                        <div class="category-tag category-${item.category}">${item.category}</div>
+                    </div>
+                    <div class="item-info">
+                        <span>📍 ${item.region || '-'}</span>
+                        <span>👤 ${item.visitor_name}</span>
+                    </div>
+                    <div class="item-time">${item.visit_time ? item.visit_time.substring(0, 16) : '-'}</div>
+                </div>
+            `).join('');
+            
+            if (reset) {
+                document.getElementById('list').innerHTML = html;
+            } else {
+                document.getElementById('list').innerHTML += html;
+            }
+        }
+        
+        // 筛选
+        document.getElementById('filterBar').addEventListener('click', function(e) {
+            if (e.target.classList.contains('filter-item')) {
+                document.querySelectorAll('.filter-item').forEach(el => el.classList.remove('active'));
+                e.target.classList.add('active');
+                currentCategory = e.target.dataset.category;
+                loadList(true);
+            }
+        });
+        
+        // 加载更多
+        document.getElementById('loadMore').addEventListener('click', function() {
+            currentPage++;
+            loadList();
+        });
+        
+        // 显示详情
+        async function showDetail(id) {
+            try {
+                const res = await fetch(`${API_BASE}/api/visit/detail?id=${id}&token=${TOKEN}`);
+                const data = await res.json();
+                
+                if (data.code === 200) {
+                    currentDetail = data.data;
+                    document.getElementById('detailContent').innerHTML = `
+                        <div class="detail-row"><div class="detail-label">企业名称</div><div class="detail-value">${currentDetail.company_name}</div></div>
+                        <div class="detail-row"><div class="detail-label">区域地址</div><div class="detail-value">${currentDetail.region}</div></div>
+                        <div class="detail-row"><div class="detail-label">走访人</div><div class="detail-value">${currentDetail.visitor_name}</div></div>
+                        <div class="detail-row"><div class="detail-label">分类</div><div class="detail-value">${currentDetail.category}</div></div>
+                        <div class="detail-row"><div class="detail-label">沟通事项</div><div class="detail-value">${currentDetail.content}</div></div>
+                        <div class="detail-row"><div class="detail-label">走访时间</div><div class="detail-value">${currentDetail.visit_time || '-'}</div></div>
+                    `;
+                    document.getElementById('detailModal').classList.add('show');
+                }
+            } catch(e) {
+                alert('加载详情失败');
+            }
+        }
+        
+        function closeDetailModal() {
+            document.getElementById('detailModal').classList.remove('show');
+        }
+        
+        // 编辑
+        function editCurrent() {
+            if (!currentDetail) return;
+            closeDetailModal();
+            showEditModal(currentDetail);
+        }
+        
+        // 删除
+        async function deleteCurrent() {
+            if (!currentDetail) return;
+            if (!confirm('确定删除这条记录吗？')) return;
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/visit/delete`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({id: currentDetail.id, token: TOKEN})
+                });
+                const data = await res.json();
+                if (data.code === 200) {
+                    alert('删除成功');
+                    closeDetailModal();
+                    loadList(true);
+                } else {
+                    alert(data.msg || '删除失败');
+                }
+            } catch(e) {
+                alert('删除失败');
+            }
+        }
+        
+        // 新增弹窗
+        function showAddModal() {
+            document.getElementById('modalTitle').innerText = '新增走访记录';
+            document.getElementById('visitId').value = '';
+            document.getElementById('visitForm').reset();
+            document.getElementById('formModal').classList.add('show');
+        }
+        
+        // 编辑弹窗
+        function showEditModal(item) {
+            document.getElementById('modalTitle').innerText = '编辑走访记录';
+            document.getElementById('visitId').value = item.id;
+            document.getElementById('companyName').value = item.company_name;
+            document.getElementById('region').value = item.region;
+            document.getElementById('visitor').value = item.visitor;
+            document.getElementById('visitorName').value = item.visitor_name;
+            document.getElementById('category').value = item.category;
+            document.getElementById('content').value = item.content;
+            document.getElementById('visitTime').value = item.visit_time ? item.visit_time.substring(0, 16) : '';
+            document.getElementById('formModal').classList.add('show');
+        }
+        
+        function closeModal() {
+            document.getElementById('formModal').classList.remove('show');
+        }
+        
+        // 提交表单
+        document.getElementById('visitForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('visitId').value;
+            const data = {
+                company_name: document.getElementById('companyName').value,
+                region: document.getElementById('region').value,
+                visitor: document.getElementById('visitor').value,
+                visitor_name: document.getElementById('visitorName').value,
+                category: document.getElementById('category').value,
+                content: document.getElementById('content').value,
+                visit_time: document.getElementById('visitTime').value,
+                token: TOKEN
+            };
+            
+            const url = id ? `${API_BASE}/api/visit/update` : `${API_BASE}/api/visit/add`;
+            if (id) data.id = id;
+            
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                
+                if (result.code === 200) {
+                    alert('保存成功');
+                    closeModal();
+                    loadList(true);
+                } else {
+                    alert(result.msg || '保存失败');
+                }
+            } catch(e) {
+                alert('保存失败');
+            }
+        });
+        
+        // 初始化
+        loadList();
+    </script>
+</body>
+</html>
