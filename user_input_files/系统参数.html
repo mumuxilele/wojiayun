@@ -1,0 +1,5465 @@
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="kingdee">
+    <meta name="description" content="">
+    <meta name="keywords" content="">
+    <link rel="shortcut icon" type="image/x-icon" href="https://wy.kdwjy.com/favicon.ico" media="screen">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>我家云 - 用心服务在我家</title>
+    <link rel="stylesheet" type="text/css" href="/static/css/iconfont/iconfont.css">
+    <!--<link rel="stylesheet" type="text/css" href="//at.alicdn.com/t/font_134910_1n05b7djfchgds4i.css" />-->
+    <link rel="stylesheet" href="/static/css/base-2d1c572f83.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/public-7fdb9c6c57.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/common/normalize-f72488a20b.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/common/assets-2af2a4b546.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/common/kis_style/kis_dialog-c2d754e0cb.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/common/imgPreview/imgPreview-f7a7f56439.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/common/fuzzyQuery/fuzzyQuery-956db12725.css">
+    <link rel="stylesheet" href="/static/css/boxQuery-0697659a82.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/pop_list/pop_list-d18af8639f.css">
+    <link rel="stylesheet" type="text/css" href="/static/js/lib/webuploader/webuploader.css">
+    <link rel="stylesheet" type="text/css" href="/static/js/lib/jscrop/jquery.Jcrop.min.css">
+    <link rel="stylesheet" type="text/css" href="/static/js/lib/AqSelect/AqSelect.css">
+    <link rel="stylesheet" type="text/css" href="/static/js/lib/select2/select2.min.css">
+    <link rel="stylesheet" type="text/css" href="/static/js/lib/AdvanceQuery/AdvanceQuery.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/common/style-0bf728de59.css">
+    <link rel="stylesheet" type="text/css" href="/static/js/lib/powertip/css/jquery.powertip.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/theme-af5fcb7d98.css">
+
+    <style type="text/css" media="print">
+        .noprint {
+            display: none
+        }
+        @page {
+            margin: 1cm;
+        }
+    </style>
+    <script async="" defer="" src="https://assets.growingio.com/2.1/gio.js"></script><script type="text/javascript">
+        var basePath = "";
+        var contextPath = "";
+        var imageBasePath = contextPath + "/static/images";
+        var cssBasePath = contextPath + "/static/css";
+        var jsBasePath = contextPath + "/static/js";
+        var jspBasePath = "/jsp";
+        var imageIcon = imageBasePath + "/common/property.ico";
+
+        var speed = 1000;
+        var menuSpeed = 500;
+        var isMoblie = "false";
+        var needNotice = false; //是否需要弹出到期提示
+        
+    </script>
+    <script type="text/javascript" src="/static/js/third/jquery-3.0.0.min.js"></script>
+    <script type="text/javascript" src="/static/js/common/underscore-487f9831b1.min.js"></script>
+    <script type="text/javascript" src="/static/js/common/echarts-d7058846dd.common.min.js"></script>
+    <script type="text/javascript" src="/static/js/common/common_base-3f48410993.js"></script>
+    <script type="text/javascript" src="/static/js/business/config-dc4dafc6d1.js"></script>
+    <!--
+    引入新版js解决融合版的问题; 以下路径分别对应环境: 开发,alpha,生产
+    云桌面环境：
+    http://wyvue.wojiayun.cn/static/@wojiayun/public.js/2.5.0/index.es5.global.prod.js
+    alpha环境：
+    https://static.wojiayun.cn/@wojiayun/public.js/2.5.0/index.es5.global.prod.js
+    生产环境：
+    https://static.kdwjy.com/@wojiayun/public.js/2.5.0/index.es5.global.prod.js
+    -->
+    <script type="text/javascript" src="https://static.kdwjy.com/@wojiayun/public.js/2.9.0/index.es5.global.prod.js"></script><style type="text/css">.throttle {
+  -webkit-animation: throttle var(--css-throttle-delay, 1.2s) step-end forwards;
+          animation: throttle var(--css-throttle-delay, 1.2s) step-end forwards;
+}
+.throttle:active {
+  -webkit-animation: none;
+          animation: none;
+}
+@-webkit-keyframes throttle {
+  from {
+    pointer-events: none;
+    opacity: var(--css-throttle-opacity, 0.75);
+  }
+  to {
+    pointer-events: all;
+    opacity: 1;
+  }
+}
+@keyframes throttle {
+  from {
+    pointer-events: none;
+    opacity: var(--css-throttle-opacity, 0.75);
+  }
+  to {
+    pointer-events: all;
+    opacity: 1;
+  }
+}
+</style>
+    <script type="text/javascript" src="https://static.kdwjy.com/jsrsasign/9.1.9/jsrsasign-all-min.js"></script>
+    <script type="text/javascript" src="/static/js/common/public-f56b456662.js"></script>
+    <script type="text/javascript" src="/static/js/common/re_base-5d9387ba0f.js"></script>
+    <script type="text/javascript" src="/static/js/third/jquery.json.js"></script>
+    <script type="text/javascript" src="/static/js/common/jquery-119f35f8cf.bootgrid.js"></script>
+    <script type="text/javascript" src="/static/js/common/imgPreview-1a4effd088.js"></script>
+    <script type="text/javascript" src="/static/js/lib/box/box-d882bbd1d0.js"></script>
+    <script type="text/javascript" src="/static/js/lib/page/page-3a8c2f49db.js"></script>
+    <script type="text/javascript" src="/static/js/common/kis_dialog-757b16d0cb.js"></script>
+    <script type="text/javascript" src="/static/js/common/fuzzyQuery-cf9aba9f36.js"></script>
+    <script type="text/javascript" src="/static/js/laydate/laydate.dev.js"></script><link type="text/css" rel="stylesheet" href="/static/js/laydate/need/laydate.css"><link type="text/css" rel="stylesheet" href="/static/js/laydate/skins/default/laydate.css" id="LayDateSkin">
+    <script type="text/javascript" src="/static/js/lib/webuploader/webuploader.min.js"></script>
+    <script type="text/javascript" src="/static/js/lib/jscrop/jquery-486a87d6c9.Jcrop.min.js"></script>
+    <script type="text/javascript" src="/static/js/common/loadJS-93def9e2ce.js"></script>
+    <script type="text/javascript" src="/static/js/common/encryption/jquery-2da9bcc8dc.base64.js"></script>
+    <script type="text/javascript" src="/static/js/lib/intro/intro-6c28388c4a.js"></script>
+    <link rel="stylesheet" type="text/css" href="/static/js/lib/intro/intro.css">
+
+    <script type="text/javascript" src="/static/js/common/boxQuery-71689070e4.js"></script>
+    <script type="text/javascript" src="/static/js/lib/area/area-546e55acec.js"></script>
+
+    <script type="text/javascript" src="/static/js/lib/encrypt/rsa-a733aa8ef1.min.js"></script>
+
+    <script type="text/javascript" src="/static/js/lib/AqSelect/AqSelect-d200ce5c3f.js"></script>
+    <script type="text/javascript" src="/static/js/lib/AdvanceQuery/AdvanceQuery-822e55c208.js"></script>
+    <script type="text/javascript" src="/static/js/common/moment-3a22f0762c.js"></script>
+    <script type="text/javascript" src="/static/js/lib/powertip/jquery-9aceb48a1c.powertip.min.js"></script>
+    <script type="text/javascript" src="/static/js/lib/clipboard/clipboard-3f3688138a.min.js"></script>
+    <script type="text/javascript" src="/static/js/lib/select2/select2-acfa95271f.min.js"></script>
+    <script type="text/javascript">
+//        try {
+//            top.location.hostname;
+//            if(top.location.hostname.indexOf('www.growingio.com') == -1 && top.location.hostname != window.location.hostname) {
+//                top.location.href = window.location.href;
+//            }
+//        } catch(e) {
+//            top.location.href = window.location.href;
+//        }
+    </script>
+    <script>
+        //公钥
+        var pe  = '';
+        var pm  = '';
+        var currentProjectID = '';
+    	var currentProjectName = '';
+    </script>
+    <!-- 数据收集 -->
+    <script type="text/javascript" async="" defer="">(function(e,t,n,g,i){e[i]=e[i]||function(){(e[i].q=e[i].q||[]).push(arguments)};n=t.createElement("script");var tag=t.getElementsByTagName("script")[0];n.async=1;n.defer=1;n.src=("https:"==document.location.protocol?"https://":"http://")+g;tag.parentNode.insertBefore(n,tag)})(window,document,"script","assets.growingio.com/2.1/gio.js","gio");gio("init","a5ac99574fa1fd83",{});gio("send");</script>
+    <!-- 租赁合同自定义模板变量 -->
+    <script>
+        var customfields = {}, moneyDefineTotalAmount = {}, moneyDefineMonthAmount = {};
+    </script>
+<link rel="stylesheet" href="https://apiwy.wojiacloud.com/static/js/laydate2.0/theme/default/laydate.css?v=5.0.9" id="layuicss-laydate"><input type="hidden" id="_w_simile" data-inspect-config="3"><script type="text/javascript" src="chrome-extension://dbjbempljhcmhlfpfacalomonjpalpko/scripts/inspector.js"></script><style class="mpa-style-fix ImageGatherer">.FotorFrame{position:fixed!important}</style></head>
+
+<body class="theme-1 laydate_body" mpa-version="9.1.11" mpa-extension-id="ibefaeehajgcpooopoegkifhgecigeeg">
+<div class="toTop noprint">
+    回到顶部
+</div>
+
+
+<script type="text/javascript" src="/static/js/laydate2.0/laydate.js"></script>
+<link rel="stylesheet" href="/static/css/basedata/enterprise/enterpriseParam-6999eb7d4f.css">
+<script id="jsp-invoicedReceiveRemarkSet" type="text/template" data-des="应收备注设置">projectName,moneyDefineName,billingProjectName,receiveDate,projectAddress,rentAddress</script>
+<script id="jsp-invoicedReceiptRemarkSet" type="text/template" data-des="实数备注设置">projectName,building,room,billingProjectName,description,rentAddress</script>
+<script id="jsp-voucherEntryDescriptionSet" type="text/template" data-des="凭证摘要自定义">projectName,moneydefine</script>
+<script id="jsp-billingECNameSet" type="text/template" data-des="我家发票申请类型">buildUnit,building,room,customer</script>
+<script id="jsp-invoicedSpecificationSet" type="text/template" data-des="发票规格型号设置">startDateAndEndDate</script>
+<script id="jsp-roomInsQRCodeNameSet" type="text/template" data-des="房间仪表二维码打印名称设置">roomInsName,room</script>
+<script id="jsp-financeApp" type="text/template" data-des="财务系统id">690a330368ff47a19a2b38aabe01368b</script>
+<script id="jsp-syncbillApp" type="text/template" data-des="同步单据财务系统id">8103140859f849e3a199a47211862967</script>
+<script id="jsp-selfapp" type="text/template" data-des="定制企业系统id"></script>
+<script id="jsp-invoicedDataNoMerge" type="text/template" data-des="当前发票合并方式">1</script>
+<script id="jsp-invoicedDataMerge_BillID" type="text/template" data-des="参数控制"></script>
+
+<style>
+	.cycleYearToNaturalYear-tips {
+		line-height: 30px;
+	}
+
+	.cycleYearToNaturalYear-tips label {
+		margin-right: 10px !important;
+	}
+</style>
+	<table class="page-table">
+		<tbody><tr class="js-eleInvoiceQRCodeSet">
+		<th>
+			<h4>在线协同办公平台配置 </h4>
+		</th>
+		<td>
+			<span id="platformSet">
+				<input type="checkbox" name="qywechat" value="qywechat" checked="checked">
+				<span>企业微信</span>
+				<input type="checkbox" name="yunzhijia" value="yunzhijia" style="margin-left: 30px" checked="checked">
+				<span>云之家</span>
+			</span>
+		</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>是否启用云之家门户</h4>
+                <div class="tips">
+                    <span class="icon">?</span>
+                    <div class="con">
+                        启用后可从我家云的云之家入口快捷免登录进入云之家
+                    </div>
+                </div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="showYZJ" value="0">
+					<span>否</span>
+				</label>
+				<label>
+					<input type="radio" name="showYZJ" value="1" checked="checked">
+					<span>是</span>
+				</label>
+			</td>
+		</tr>
+		<tr class="js-feedbackSmsNotify">
+		<th>
+			<h4>pc端首页设置</h4>
+		</th>
+		<td>
+			<span id="homePageSet">
+				<input type="checkbox" name="productComm" value="productComm">
+				<span>产品社区</span>
+				<input type="checkbox" name="cusService" value="cusService" style="margin-left: 30px" checked="checked">
+				<span>联系客服</span>
+				<input type="checkbox" name="feedback" value="feedback" style="margin-left: 30px" checked="checked">
+				<span>提单反馈</span>
+				<input type="checkbox" name="helpDoc" value="helpDoc" style="margin-left: 30px" checked="checked">
+				<span>帮助文档</span>
+			</span>
+		</td>
+		</tr>
+		<tr class="js-feedbackSmsNotify">
+            <th>
+                <h4>提单任务完成通知人</h4>
+            </th>
+            <td>
+                <span id="feedbackSmsNotifySet">
+                    <input type="checkbox" name="feedBackUser" value="feedBackUser" checked="checked">
+                    <span>提单人</span>
+                    <input type="checkbox" name="feedBackAuditor" value="feedBackAuditor" style="margin-left: 30px">
+                    <span>提单审核人</span>
+                </span>
+            </td>
+        </tr>
+        
+
+		<tr>
+			<th>
+				<h4>使用账号登陆时开启短信验证校验</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>web端使用账号登陆时需要进行短信验证校验，密码及验证码均正确才能登入系统</p>
+						<p><b>关闭：</b>web端使用账号登陆时不需要进行短信验证校验，密码正确即可登入系统</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="wyAccountLoginType" value="0" checked="checked">
+					<span>否</span>
+				</label>
+				<label>
+					<input type="radio" name="wyAccountLoginType" value="1">
+					<span>是</span>
+				</label>
+			</td>
+		</tr>
+        <tr style="display:none">
+            <th width="240"><h4>版本样式</h4></th>
+            <td>
+         		 <label class="marginRight20">
+                    <input type="radio" name="versionType" value="1" checked="checked">
+                    <span>社区版</span>
+                </label>
+                <label class="marginRight20">
+                    <input type="radio" name="versionType" value="2">
+                    <span>园区版</span>
+                </label>
+            </td>
+        </tr>
+        <!--<tr>
+            <th width="240" ><h4>是否使用新版页面</h4></th>
+            <td>
+         		 <label class="marginRight20">
+                    <input type="radio" name="isUseMultiTip" value="1" />
+                    <span>否</span>
+                </label>
+                <label class="marginRight20">
+                    <input type="radio" name="isUseMultiTip" value="2"  checked="checked" />
+                    <span>是</span>
+                </label>
+            </td>
+        </tr>-->
+		<tr>
+			<th width="240"><h4>人员所属组织</h4></th>
+			<td>
+				<label class="marginRight20">
+					<input type="radio" name="empBelong" value="1" checked="checked">
+					<span>单选</span>
+				</label>
+				<label class="marginRight20">
+					<input type="radio" name="empBelong" value="2">
+					<span>多选</span>
+				</label>
+			</td>
+		</tr>
+		
+		<tr>
+			<th>
+				<h4>业主端搜索本企业项目需输入关键词</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>不输入关键词进行搜索，则不显示当前企业的项目</p>
+						<p><b>关闭：</b>不输入关键词进行搜索，显示当前企业的项目</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="wjSearchShowProject" value="1">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="wjSearchShowProject" value="0" checked="checked">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>微信公众号集成业主端展示项目设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>进入选择项目页面时，默认展示当前城市的所有项目</p>
+						<p><b>关闭：</b>进入选择项目页面时，只有搜索时才展示匹配的项目</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="wjWxShowProject" value="1">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="wjWxShowProject" value="0" checked="checked">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+        <tr>
+			<th>
+				<h4>我家App首页账单设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>应收账单：</b>我家App首页显示应收账单，用户可缴纳应收欠款、预收款、储值款</p>
+						<p><b>预收款账单：</b>我家App首页显示预收款账单，用户可缴纳预收款</p>
+					</div>
+				</div>
+			</th>
+			<td>
+			      <label>
+			 		<input type="radio" name="wjHomeBillSet" value="0" onclick="controlStoremoneySet()" checked="checked">
+					<span>应收账单</span>
+				</label>
+				<label>
+					<input type="radio" name="wjHomeBillSet" value="1" onclick="controlStoremoneySet()">
+					<span>预收款账单</span>
+				</label>
+			</td>
+		</tr>
+        <tr>
+			<th>
+				<h4>我家App储值功能设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>我家App账单，显示缴纳储值款&amp;查询余额信息功能</p>
+						<p><b>关闭：</b>我家App账单，隐藏缴纳储值款&amp;查询余额信息功能</p>
+					</div>
+				</div>
+			</th>
+			<td>
+			      <label>
+					<input type="radio" name="storemoneySet" value="1" onclick="controlStoremoneySet()" checked="checked">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="storemoneySet" value="0" onclick="controlStoremoneySet()">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<tr class="js-storemoneyRecharge ">
+			<th>
+				<h4>业主端储值款充值功能设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>我家app储值款充值页面显示充值按钮;缴费云小程序显示储值款充值按钮</p>
+						<p><b>关闭：</b>我家app储值款充值页面隐藏充值按钮;缴费云小程序隐藏储值款充值按钮</p>
+					</div>
+				</div>
+			</th>
+			<td>
+			      <label>
+					<input type="radio" name="storemoneyRecharge" value="1" checked="checked">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="storemoneyRecharge" value="0">
+					<span>关闭</span>
+				</label>						
+			</td>
+		</tr>
+		<tr class="js-wjMinRechargeAmount">
+			<th>
+				<h4>业主端储值款充值最低额度设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b></b>默认为空不限制，如果填写了额度，则在储值款充值页面输入框增加提示及校验</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<input type="text" class="input" name="wjMinRechargeAmount" value="" onkeydown="api.basedata.enterpriseParam.inputNumberKeyDown.call(this, event, true)" onkeyup="api.basedata.enterpriseParam.inputNumberKeyUp.call(this, event, true)" onblur="api.basedata.enterpriseParam.inputNumberBlur.call(this, event, true)" autocomplete="off">
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>我家App预收款功能设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>我家App账单，显示缴纳预收款&amp;查询余额信息功能</p>
+						<p><b>关闭：</b>我家App账单，隐藏缴纳预收款&amp;查询余额信息功能</p>
+					</div>
+				</div>
+			</th>
+			<td>
+			      <label>
+					<input type="radio" name="premoneySet" value="1" onclick="controlPremoneySet()" checked="checked">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="premoneySet" value="0" onclick="controlPremoneySet()">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<tr class="js-premoneyRecharge ">
+			<th>
+				<h4>业主端预收款充值功能设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>我家app预收款充值页面显示充值按钮，同时可设置我家APP预收款充值计划;缴费云小程序显示预收款充值按钮</p>
+						<p><b>关闭：</b>我家app预收款充值页面隐藏充值按钮;缴费云小程序隐藏预收款充值按钮</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="premoneyRecharge" value="1" onclick="controlPremoneyRecharge('wj')" checked="checked">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="premoneyRecharge" value="0" onclick="controlPremoneyRecharge('wj')">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<tr class="js-premoneyRecharge-set ">
+			<th><input type="hidden" id="premoneyRecharge-set" value="1,1,1,1,1,1,0,0,0,1,1,1">
+			</th>
+			<td>
+				<div>
+					<table class="p-table">
+						<tbody><tr>
+							<th></th>
+							<th>一个月</th>
+							<th>两个月</th>
+							<th>三个月</th>
+							<th>半年</th>
+							<th>一年</th>
+							<th>两年</th>
+							<th>三年</th>
+							<th>四年</th>
+							<th>五年</th>
+							<th>自定义月数</th>
+							<th>自定义金额</th>
+							<th>自定义期间范围</th>
+						</tr>
+						<tr>
+							<td>显示/隐藏</td>
+							<td><a class="premoney-period-state" href="javascript:;" data-state="1" onclick="api.basedata.enterpriseParam.changePremoneyPeriodState.call(this)">显示</a></td>
+							<td><a class="premoney-period-state" href="javascript:;" data-state="1" onclick="api.basedata.enterpriseParam.changePremoneyPeriodState.call(this)">显示</a></td>
+							<td><a class="premoney-period-state" href="javascript:;" data-state="1" onclick="api.basedata.enterpriseParam.changePremoneyPeriodState.call(this)">显示</a></td>
+							<td><a class="premoney-period-state" href="javascript:;" data-state="1" onclick="api.basedata.enterpriseParam.changePremoneyPeriodState.call(this)">显示</a></td>
+							<td><a class="premoney-period-state" href="javascript:;" data-state="1" onclick="api.basedata.enterpriseParam.changePremoneyPeriodState.call(this)">显示</a></td>
+							<td><a class="premoney-period-state" href="javascript:;" data-state="1" onclick="api.basedata.enterpriseParam.changePremoneyPeriodState.call(this)">显示</a></td>
+							<td><a class="premoney-period-state" href="javascript:;" data-state="0" onclick="api.basedata.enterpriseParam.changePremoneyPeriodState.call(this)">隐藏</a></td>
+							<td><a class="premoney-period-state" href="javascript:;" data-state="0" onclick="api.basedata.enterpriseParam.changePremoneyPeriodState.call(this)">隐藏</a></td>
+							<td><a class="premoney-period-state" href="javascript:;" data-state="0" onclick="api.basedata.enterpriseParam.changePremoneyPeriodState.call(this)">隐藏</a></td>
+							<td><a class="premoney-period-state" href="javascript:;" data-state="1" onclick="api.basedata.enterpriseParam.changePremoneyPeriodState.call(this)">显示</a></td>
+							<td><a class="premoney-period-state" href="javascript:;" data-state="1" onclick="api.basedata.enterpriseParam.changePremoneyPeriodState.call(this)">显示</a></td>
+							<td><a class="premoney-period-state" href="javascript:;" data-state="1" onclick="api.basedata.enterpriseParam.changePremoneyPeriodState.call(this)">显示</a></td>
+						</tr>
+					</tbody></table>
+				</div>
+			</td>
+		</tr>
+		
+		<tr class="js-premoneyRechargeGj-set">
+			
+			
+			<th>
+				<h4>管家端预收款充值功能设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p>默认全部显示，设置隐藏后，在管家App收款页面预收款不支持选择该时间维度选项进行收款。</p>
+					</div>
+				</div>
+				<input type="hidden" id="premoneyRechargeGj-set" value=",1,1,1,1,1,1,1,1,1,1,1">
+			</th>
+			<td>
+				<div>
+					<table class="p-table">
+						<tbody><tr>
+							<th></th>
+							<th>一个月</th>
+							<th>两个月</th>
+							<th>三个月</th>
+							<th>半年</th>
+							<th>一年</th>
+							<th>两年</th>
+							<th>三年</th>
+							<th>四年</th>
+							<th>五年</th>
+							<th>自定义月数</th>
+							<th>自定义金额</th>
+							<th>自定义期间范围</th>
+						</tr>
+						<tr>
+							<td>显示/隐藏</td>
+							<td><a class="premoney-period-state" href="javascript:;" data-state="" onclick="api.basedata.enterpriseParam.changePremoneyPeriodState.call(this)">显示</a></td>
+							<td><a class="premoney-period-state" href="javascript:;" data-state="1" onclick="api.basedata.enterpriseParam.changePremoneyPeriodState.call(this)">显示</a></td>
+							<td><a class="premoney-period-state" href="javascript:;" data-state="1" onclick="api.basedata.enterpriseParam.changePremoneyPeriodState.call(this)">显示</a></td>
+							<td><a class="premoney-period-state" href="javascript:;" data-state="1" onclick="api.basedata.enterpriseParam.changePremoneyPeriodState.call(this)">显示</a></td>
+							<td><a class="premoney-period-state" href="javascript:;" data-state="1" onclick="api.basedata.enterpriseParam.changePremoneyPeriodState.call(this)">显示</a></td>
+							<td><a class="premoney-period-state" href="javascript:;" data-state="1" onclick="api.basedata.enterpriseParam.changePremoneyPeriodState.call(this)">显示</a></td>
+							<td><a class="premoney-period-state" href="javascript:;" data-state="1" onclick="api.basedata.enterpriseParam.changePremoneyPeriodState.call(this)">显示</a></td>
+							<td><a class="premoney-period-state" href="javascript:;" data-state="1" onclick="api.basedata.enterpriseParam.changePremoneyPeriodState.call(this)">显示</a></td>
+							<td><a class="premoney-period-state" href="javascript:;" data-state="1" onclick="api.basedata.enterpriseParam.changePremoneyPeriodState.call(this)">显示</a></td>
+							<td><a class="premoney-period-state" href="javascript:;" data-state="1" onclick="api.basedata.enterpriseParam.changePremoneyPeriodState.call(this)">显示</a></td>
+							<td><a class="premoney-period-state" href="javascript:;" data-state="1" onclick="api.basedata.enterpriseParam.changePremoneyPeriodState.call(this)">显示</a></td>
+							<td><a class="premoney-period-state" href="javascript:;" data-state="1" onclick="api.basedata.enterpriseParam.changePremoneyPeriodState.call(this)">显示</a></td>
+						</tr>
+					</tbody></table>
+				</div>
+			</td>
+		</tr>
+	
+        <tr class="js-premoneyArrearsCheck">
+            <th>
+                <h4>我家App是否欠款缴清才允许充值</h4>
+                <div class="tips">
+                    <span class="icon">?</span>
+                    <div class="con">
+                        <p><b>开启：</b>无论是否设置折扣以及其他情况，均需校验是否有欠款（有则不允许充值）</p>
+                        <p><b>关闭（预收优惠仍校验）: </b>用户选择对应带有折扣优惠的充值计划时，会先校验是否有欠款(有则不允许充值)</p>
+                        <p><b>关闭（预收优惠不校验）：</b>无论用户选择的预收充值计划是否有折扣优惠，均不校验是否有欠款</p>
+                    </div>
+                </div>
+            </th>
+            <td>
+                <label>
+                    <input type="radio" name="premoneyArrearsCheck" value="1">
+                    <span>开启</span>
+                </label>
+				<label>
+					<input type="radio" name="premoneyArrearsCheck" value="0" checked="checked">
+					<span>关闭（预收优惠仍校验）</span>
+				</label>
+				<label>
+					<input type="radio" name="premoneyArrearsCheck" value="-1">
+					<span>关闭（预收优惠不校验）</span>
+				</label>
+            </td>
+        </tr>
+		<tr class="js-wjPayLimit">
+			<th>
+				<h4>我家App支付限额/手续费设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>用户支付金额&gt;=单次支付限额，用户需要额外支付本次交易的手续费</p>
+						<p><b>关闭：</b>用户支付金额不受限制，手续费由公司承担</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="wjPayLimit" value="1" onclick="controlPayLimit('wj')">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="wjPayLimit" value="0" onclick="controlPayLimit('wj')" checked="checked">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<tr class="js-wjPayLimit-set  hide">
+			<th></th>
+			<td class="payLimit-set wjPayLimit-set">
+				<div class="pay-limit-type-set">
+					<label>手续费计算公式：</label>
+					<select class="select" name="wjPayLimitType">
+						<option value="0" selected="selected">账单支付金额/（1-费率）-账单支付金额</option>
+						<option value="1">账单支付金额*费率</option>
+					</select>
+				</div>
+				<div class="pay-type-set" id="wjPayTypeSet"></div>
+				<div><a href="javascript: void(0);" onclick="api.basedata.enterpriseParam.addPayChannel('wj')" style="color: #000;"><i class="iconfont icon-add-copy"></i> <span>添加支付渠道</span></a></div>
+			</td>
+		</tr>
+		<tr class="js-EAScharge">
+			<th>
+				<h4>我家App对接EAS收费</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>我家对接EAS收费</p>
+						<p><b>关闭：</b>我家使用我家云收费</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="easCharge" value="1">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="easCharge" value="0" checked="checked">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<tr class="js-wjAppChargeSet">
+			<th>
+				<h4>我家App账单缴费控制</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>按照自然月缴纳该月所有费用/按照自然年缴纳该年所有费用</p>
+						<p><b>关闭：</b>可以自由选择想要缴纳的费用明细进行支付</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="wjAppChargeSet" value="1" onclick="controlWjAppChargeSet()" checked="checked">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="wjAppChargeSet" value="0" onclick="controlWjAppChargeSet()">
+					<span>关闭</span>
+				</label>
+				<label><a id="wjAppChargeProject">项目级设置</a></label>
+			</td>
+		</tr>
+		<tr class="js-wjAppChargeSetParam ">
+			<th>
+				<h4></h4>
+			</th>
+			<td>
+				<div>
+					<span class="bold">汇总展示方式：</span>
+					<select name="" id="periodSlect" class="select">
+						<option value="0">月（允许跨月缴费）</option>
+						<option value="12">季度（允许跨季缴费）</option>
+						<option value="1">年（允许跨年缴费）</option>
+						<option value="2">月（不允许跨月缴费）</option>
+						<option value="13" selected="selected">季度（不允许跨季缴费）</option>
+						<option value="3" selected="selected">年（不允许跨年缴费）</option>
+						<option value="4">月（不允许选择月）</option>
+						<option value="5">收费项目（允许跨月缴费）</option>
+						<option value="6">收费项目（不允许跨月缴费）</option>
+						<option value="7">收费项目（不允许选择月）</option>
+						<option value="8">收费项目（不允许选择收费项目）</option>
+						<option value="11">收费项目-年（允许跨月缴费）</option>
+						<option value="9">收费项目-年（允许跨年缴费）</option>
+						<option value="10">收费项目-年（不允许跨年缴费）</option>
+					</select>
+				</div>
+				<div id="cycleYearToNaturalYear" "="">
+				<div class="clearfix p10 cycleYearToNaturalYear-tips">
+					<label>
+						<input type="checkbox" id="cycleYearToNaturalYearBox" name="cycleYearToNaturalYear" value="cycleYearToNaturalYear" checked="checked">
+						<span>按照循环年缴费</span>
+					</label>
+					<div class="tips">
+						<span class="icon">?</span>
+						<div class="con">
+							<p>目前仅支持计费周期为每月、年（明细）且生成方式为循环周期的收费项目。</p>
+							<p><b>开启：</b>系统将按照房间收费设置收费标准的生效时间推算划分每个循环年合并缴费，年份为循环年内第一期费用的费用期间所在年份。</p>
+							<p><b>关闭：</b>系统将按照应收的费用期间所在年份进行合并缴费。</p>
+						</div>
+					</div>
+				</div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+				<div>
+					<div class="bold p10">
+						<label>
+							<span>应收期间控制：</span>
+						</label>
+						<label>
+							<input type="radio" name="wjAppChargeRecPeriod" value="1" onclick="controlWjAppChargeRecPeriod()" checked="checked">
+							<span>开启</span>
+						</label>
+						<label>
+							<input type="radio" name="wjAppChargeRecPeriod" value="0" onclick="controlWjAppChargeRecPeriod()">
+							<span>关闭</span>
+						</label>
+					</div>
+					<div id="wjAppChargeRecPeriodSet" class="">
+						<div class="clearfix p10">
+							<label>
+								<input type="checkbox" name="currentPeriod" value="currentPeriod" checked="checked">
+								<span>当前期间</span>
+							</label>
+						</div>
+						<div class="clearfix p10">
+							<label>
+								<input type="checkbox" name="beforePeriod" value="beforePeriod" checked="checked">
+								<span>小于当前期间</span>
+
+
+
+
+								<input id="beforePeriodDate" type="text" placeholder="不填表示不限制" class="input input-percent input-100" autocomplete="off" value="">
+								<span class="periodText">
+									年
+									
+								</span>
+							</label>
+						</div>
+						<div class="clearfix p10">
+							<label>
+								<input type="checkbox" name="afterPeriod" value="afterPeriod" checked="checked">
+								<span>大于当前期间</span>
+
+
+
+
+								<input id="afterPeriodDate" type="text" placeholder="不填表示不限制" class="input input-percent input-100" autocomplete="off" value="">
+								<span class="periodText">
+									年
+									
+								</span>
+							</label>
+						</div>
+					</div>
+				</div>
+				<div>
+					<div class="bold p10">
+						<label>
+							<span>所有账单必须合并支付：</span>
+						</label>
+						<label>
+							<input type="radio" name="wjAppChargeRecAllPay" value="1" checked="checked">
+							<span>开启</span>
+						</label>
+						<label>
+							<input type="radio" name="wjAppChargeRecAllPay" value="0">
+							<span>关闭</span>
+						</label>
+					</div>
+				</div>
+				<div>
+					<div class="bold p10">
+						<label>
+							<span>缴纳房间其他收费对象费用：</span>
+						</label>
+						<label>
+							<input type="radio" name="wjPayListRelationVisible" value="1">
+							<span>开启</span>
+						</label>
+						<label>
+							<input type="radio" name="wjPayListRelationVisible" value="0" checked="checked">
+							<span>关闭</span>
+						</label>
+					</div>
+				</div>
+				<div>
+					<div class="bold p10">
+						<label>
+							<span>账单面积/用量用1自动填充：</span>
+						</label>
+						<label>
+							<input type="radio" name="appQtyAutoFillOne" value="1" onclick="controlAppQtyAutoFillOneSet()">
+							<span>开启</span>
+						</label>
+						<label>
+							<input type="radio" onclick="controlAppQtyAutoFillOneSet()" name="appQtyAutoFillOne" value="0" checked="checked">
+							<span>关闭</span>
+						</label>
+					</div>
+				</div>
+				<div id="appQtyAutoFillOneMDType_d" class="hide">
+					<div class="bold p10">
+						<label>
+							<span>设置用1自动填充的收费项目分类：</span>
+						</label>
+						<label>
+							<input type="text" readonly="" id="appQtyAutoFillOneMdType" name="appQtyAutoFillOneMdType" value="" val-id="" style="width: 600px" autocomplete="off">
+						</label>
+					</div>
+				</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>缴费云业主端是否允许跨月缴费</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>是：</b>可以自由选择想要缴纳的费用明细进行支付</p>
+						<p><b>否：</b>必须按照费用期间顺序选择费用明细进行支付</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="jfyChargeContinuitySet" value="1">
+					<span>是</span>
+				</label>
+				<label>
+					<input type="radio" name="jfyChargeContinuitySet" value="0" checked="checked">
+					<span>否</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>业主端合同费用账单展示范围设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>全部展示：</b>合同生成的待缴费用在业主端的待缴账单中全部展示</p>
+						<p><b>展示至当前月的后一个月：</b>合同费用待缴费用在业主端的账单默认展示到当前月的后一个月</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="jfyContractReceiveDisplaySet" value="1" checked="checked">
+					<span>全部展示</span>
+				</label>
+				<label>
+					<input type="radio" name="jfyContractReceiveDisplaySet" value="0">
+					<span>展示至当前月的后一个月</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>应税服务范围设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>默认：企业级参数，配置的服务应用于企业下所有项目</b></p>
+						<p><b>项目级：配置的服务只应用于当前项目下</b></p>
+						<p style="color:red"><b>注意：</b>当前参数为企业级参数，配置为项目级后，企业下每个项目都要设置对应的应税服务</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="taxableServiceScope" value="0" checked="checked">
+					<span>默认</span>
+				</label>
+				<label>
+					<input type="radio" name="taxableServiceScope" value="1">
+					<span>项目级(设置后,每个项目都要分别配置项目级应税服务才能正常使用)</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>税额保留小数位数</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>默认：默认保留两位精度 </b></p>
+						<p><b>发票开票流程不受此功能控制，保留两位小数位</b></p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<select class="select select-100" name="invoicedTaxAmountScale">
+						<option value="0">0</option>
+						<option value="1">1</option>
+						<option value="2">2</option>
+						<option value="3">3</option>
+						<option value="4">4</option>
+						<option value="5">5</option>
+						<option value="6" selected="selected">6</option>
+					</select>
+
+				</label>
+			</td>
+		</tr>
+		<tr class="js-wjAppChargeInvoicedSet">
+			<th>
+				<h4>我家App缴费发票申请设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>缴费支付确认页需要填写抬头，缴费后自动生成开票申请</p>
+						<p><b>关闭：</b>缴费支付确认页不需要填写抬头，后续用户自行申请开票</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="wjAppChargeInvoicedSet" value="1">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="wjAppChargeInvoicedSet" value="0" checked="checked">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>我家App房间显示方式</h4>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="wjBillRoomShowType" value="0" checked="checked">
+					<span>楼栋号+单元号+房间号</span>
+				</label>
+				<label>
+					<input type="radio" name="wjBillRoomShowType" value="1">
+					<span>房间号</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>我家App预收款充值功能设置(家庭成员)</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>业主/租户预收款充值成功，以业主或租户名称保存预收款；家庭成员预收款充值成功，以家庭成员关联的业主或租户名称保存预收款</p>
+						<p><b>关闭：</b>业主/租户/家庭成员预收款充值成功，以实际充值的登录用户名称保存预收款</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="wjPreCusInvoiced" value="1" checked="checked">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="wjPreCusInvoiced" value="0">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>收款单确认收款打印发票</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>收款单确认收款时可以打印收据和进入开发票页面</p>
+						<p><b>关闭：</b>收款单确认收款时只打印收据</p>
+						<p style="color:red"><b>注意：</b>如果企业未与我家云开通电子发票合作业务，为避免造成贵司与业主/租户不必要的纠纷，请勿开启此参数</p>
+
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="receiptMakeOutInvoice" value="1" checked="checked">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="receiptMakeOutInvoice" value="0">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>是否确认收款后才可打印收据</h4>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="onlyConfirmReceiptPrint" value="1">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="onlyConfirmReceiptPrint" value="0" checked="checked">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>业主端电子收据申请设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>我家app已缴记录显示【电子收据】功能，缴费云小程序业主端支持开具电子收据</p>
+						<p><b>关闭：</b>我家app已缴记录不显示【电子收据】功能，缴费云小程序业主端不支持开具电子收据</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="wjAppElecReceiptSet" value="1" onclick="controlElecPrintTemplate()">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="wjAppElecReceiptSet" value="0" onclick="controlElecPrintTemplate()" checked="checked">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<tr id="js-elecReceiptBillPrintTemplate" class="hide">
+			<th>
+				<h4>业主端电子收据打印模板</h4>
+			</th>
+			<td>
+				<label>
+					<input type="text" readonly="true" id="elecReceiptBillPrintTemplate" class="input input-percent" value="收款明细打印模板（默认2）" val-id="75746376285c49bd8b5b4d76c4850662" style="width: 500px;" autocomplete="off">
+					<i class="iconfont icon-del" style="position: relative;left: -25px;top: 3px;font-size: 18px;cursor: pointer" onclick="api.basedata.enterpriseParam.clearElecPrintTemplate.call(this,event)"></i>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>业主端电子发票申请设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>我家App已结算账单显示【电子发票】功能；缴费云业主端显示【电子发票】功能</p>
+						<p><b>关闭：</b>我家App已结算账单隐藏【电子发票】功能；缴费云业主端隐藏【电子发票】功能</p>
+						<p style="color:red"><b>注意：</b>如果企业未与我家云开通电子发票合作业务，为避免造成贵司与业主/租户不必要的纠纷，请勿开启此参数</p>
+
+					</div>
+				</div>
+			</th>
+			<td>
+                <label>
+                    <input type="radio" name="wjInvoiced" value="1" onclick="controlWjInvoiced()" checked="checked">
+                    <span>开启</span>
+                </label>
+                <label>
+                    <input type="radio" name="wjInvoiced" value="0" onclick="controlWjInvoiced()">
+                    <span>关闭</span>
+                </label>
+			</td>
+		</tr>
+		<tr class="js-wjInvoicedType ">
+			<th>
+				<h4>业主端电子发票申请类型设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>移动端电子发票申请，只有客户详情维护了税务信息的客户才可以选择开票类型（企业单位或个人/非企业单位），并且企业信息取自税务信息用户不能编辑</p>
+						<p><b>关闭：</b>移动端电子发票申请，用户可以自己选择开票类型（企业单位或个人/非企业单位）输入开票抬头信息</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="wjInvoicedType" value="1" onclick="controlbillingECNameSet()" checked="checked">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="wjInvoicedType" value="0" onclick="controlbillingECNameSet()">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<tr id="js-billingECName-set">
+			<th>
+				<h4>个人/非企业单位抬头</h4>
+			</th><td class="col">
+				<div style="width: 50%;">
+					<div class="col voucher" style="width:100%;">
+						<div class="set billingECName-set" style="width: 60%;">
+	<ul>
+		
+		<li class="clause-content-item" data-id="">
+			<div class="opt-bar fr">
+				<div class="fr  pointer arrow-container">
+					<i class="iconfont icon-sort-up block" onclick="editInvoicedRemarkSetMove(this, 2, -1)"></i>
+					<i class="iconfont icon-sort-down block" onclick="editInvoicedRemarkSetMove(this, 2, 1)"></i>
+				</div>
+			</div>
+			<div class="overflow-hidden">
+				<span name="buildUnit" class="remark-item">单元</span>
+			</div>
+		</li>
+		
+		<li class="clause-content-item" data-id="">
+			<div class="opt-bar fr">
+				<div class="fr  pointer arrow-container">
+					<i class="iconfont icon-sort-up block" onclick="editInvoicedRemarkSetMove(this, 2, -1)"></i>
+					<i class="iconfont icon-sort-down block" onclick="editInvoicedRemarkSetMove(this, 2, 1)"></i>
+				</div>
+			</div>
+			<div class="overflow-hidden">
+				<span name="building" class="remark-item">楼栋</span>
+			</div>
+		</li>
+		
+		<li class="clause-content-item" data-id="">
+			<div class="opt-bar fr">
+				<div class="fr  pointer arrow-container">
+					<i class="iconfont icon-sort-up block" onclick="editInvoicedRemarkSetMove(this, 2, -1)"></i>
+					<i class="iconfont icon-sort-down block" onclick="editInvoicedRemarkSetMove(this, 2, 1)"></i>
+				</div>
+			</div>
+			<div class="overflow-hidden">
+				<span name="room" class="remark-item">房间</span>
+			</div>
+		</li>
+		
+		<li class="clause-content-item" data-id="">
+			<div class="opt-bar fr">
+				<div class="fr  pointer arrow-container">
+					<i class="iconfont icon-sort-up block" onclick="editInvoicedRemarkSetMove(this, 2, -1)"></i>
+					<i class="iconfont icon-sort-down block" onclick="editInvoicedRemarkSetMove(this, 2, 1)"></i>
+				</div>
+			</div>
+			<div class="overflow-hidden">
+				<span name="customer" class="remark-item">客户名称</span>
+			</div>
+		</li>
+		
+	</ul>
+</div>
+						<span class="pointer" onclick="api.basedata.enterpriseParam.showRemarkSet.call(this,'billingECName')">设置</span>
+					</div>
+                    <ul class="moneyDefine billingECNameSet hide" style="width: 60%;">
+						<li class="item">
+							<label for="building">
+								<input type="checkbox" name="building" value="楼栋" data-name="building">楼栋
+							</label>
+						</li>
+						<li class="item">
+							<label for="room">
+								<input type="checkbox" name="room" value="房间" data-name="room">房间
+							</label>
+						</li>
+						<li class="item">
+							<label for="buildUnit">
+								<input type="checkbox" name="buildUnit" value="单元" data-name="buildUnit">单元
+							</label>
+						</li>
+						<li class="item">
+							<label for="customer">
+								<input type="checkbox" name="customer" value="客户名称" data-name="customer">客户名称
+							</label>
+						</li>
+						<li class="item">
+							<label for="roomCustomer">
+								<input type="checkbox" name="roomCustomer" value="业主名称" data-name="roomCustomer">业主名称
+							</label>
+						</li>
+						<li class="item">
+							<label for="receiveCustomer">
+								<input type="checkbox" name="receiveCustomer" value="合同乙方" data-name="receiveCustomer">合同乙方
+							</label>
+						</li>
+						<button class="btn setBtn" onclick="api.basedata.enterpriseParam.setRemarkOk.call(this,'billingECName')">确定</button>
+					</ul>
+				</div>
+			</td>
+			
+		</tr>
+		<tr class="js-wjInvoicedDataSourse ">
+			<th>
+				<h4>业主端电子发票开票的数据来源设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>按账单开票：</b>按已缴账单获取开具发票数据</p>
+						<p><b>按收据开票：</b>按收据获取开具发票数据</p>
+						<p style="color:red"><b>注意：</b>缴费云小程序仅支持按收据开票</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="wjInvoicedDataSourse" value="0" checked="checked">
+					<span>按账单开票</span>
+				</label>
+				<label>
+					<input type="radio" name="wjInvoicedDataSourse" value="1">
+					<span>按收据开票</span>
+				</label>
+			</td>
+		</tr>
+	
+		<tr class="js-wjInvoicedDataSourse-set">
+			<th>
+				<h4>开票根据税率设置开票数据是否显示</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p>该参数适用于业主端账单/收据开票以及web端实收单据的发票申请和直接开票</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="isShowByTax" value="0" onclick="controlShowByTaxSetting()">
+					<span>全部显示</span>
+				</label>
+				<label>
+					<input type="radio" name="isShowByTax" value="1" onclick="controlShowByTaxSetting()" checked="checked">
+					<span>根据税率进行设置</span>
+				</label>
+			</td>
+		</tr>
+	
+	<tr class="js-isShowByTax-set ">
+			<th></th>
+			<td>
+				<div>
+					<label>
+						<input type="checkbox" name="isShowByTaxDiffe" value="1" checked="checked">
+						<span>收款明细的税率与当前收款项目的应收服务的税率设置不一致，则不显示</span>
+					</label>
+				</div>
+				<div>
+					<label>
+						<input type="checkbox" name="isShowByTaxIsZero" value="1" checked="checked">
+						<span>收款明细税率为0时则不显示</span>
+					</label>
+				</div>
+			</td>
+		</tr>
+
+		<tr>
+			<th>
+				<h4>发票规格型号自动充填</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>发票规格型号自动充填，若设置计费开始/结束日期，则取值为计费开始结束日期合并</p>
+						<p><b>关闭：</b>默认为空</p>
+						<p style="color:red"><b>注意：</b>开票软件限定规格型号字段长度,为保证开票成功,自动填充超过40个字符时会自动截取</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="invoicedSpecifications" value="1" onclick="controlInvoicedSpecifications()" checked="checked">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="invoicedSpecifications" value="0" onclick="controlInvoicedSpecifications()">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<tr id="js-invoicedSpecificationsSet">
+			<th>
+				<h4>发票规格型号自动填充设置规则</h4>
+			</th><td class="col">
+				<div style="width: 50%;">
+					<div class="col receive" style="width:100%;">
+						<div class="set specifications-set" style="width: 60%;">
+	<ul>
+		
+		<li class="clause-content-item" data-id="">
+			<div class="opt-bar fr">
+				<div class="fr  pointer arrow-container">
+					<i class="iconfont icon-sort-up block" onclick="editInvoicedRemarkSetMove(this, 2, -1)"></i>
+					<i class="iconfont icon-sort-down block" onclick="editInvoicedRemarkSetMove(this, 2, 1)"></i>
+				</div>
+			</div>
+			<div class="overflow-hidden">
+				<span name="startDateAndEndDate" class="remark-item">计费开始/结束日期</span>
+			</div>
+		</li>
+		
+	</ul>
+</div>
+						<span class="pointer" onclick="api.basedata.enterpriseParam.showRemarkSet.call(this,'specifications')">设置</span>
+					</div>
+					
+					<ul class="moneyDefine specificationsSet hide" style="width: 60%; margin-left:5px;">
+						<li class="item">
+							<label for="startDateAndEndDate">
+								<input type="checkbox" name="startDateAndEndDate" value="计费开始/结束日期" data-name="startDateAndEndDate">
+								计费开始/结束日期
+							</label>
+						</li>
+						<li class="item">
+							<label for="room"><input type="checkbox" name="room" value="房间" data-name="room">房间</label>
+						</li>
+						<li class="item">
+							<label for="receivePeriod"><input type="checkbox" name="room" value="费用期间" data-name="receivePeriod">费用期间</label>
+						</li>
+						<button class="btn setBtn" onclick="api.basedata.enterpriseParam.setRemarkOk.call(this,'specifications')">确定</button>
+					</ul>
+				</div>
+			</td>
+			
+		</tr>
+		<tr>
+			<th>
+				<h4>发票单位自动充填</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>发票单位自动填充，若设置了自定义开票单位名称，则取自定义开票单位名称；若未设置，则取收费项目的单位名称</p>
+						<p><b>关闭：</b>默认为空</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="invoicedUnit" value="1" checked="checked">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="invoicedUnit" value="0">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<tr class="js-wjInvoicedPeriod ">
+			<th>
+				<h4>业主端电子发票申请时间设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>全部账单：</b>业主/租户可选择全部已缴费账单申请电子发票 </p>
+						<p><b>大于等于日期账单：</b>业主/租户只能选择大于等于某个期间的已缴费账单申请电子发票,仅支持账单开票功能</p>
+						<p><b>大于等于业务日期：</b>业主/租户只能选择大于等于某个日期申请电子发票,仅支持收据开票功能</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="wjInvoicedPeriod" value="0" checked="checked">
+					<span>全部账单</span>
+				</label>
+				<label>
+					<input type="radio" name="wjInvoicedPeriod" value="1">
+					<span>大于等于日期账单</span>
+					<input id="wjInvoicedPeriodDate" type="text" class="input input-percent input-100" autocomplete="off" value="2019-10" lay-key="100004">
+				</label>
+				<label>
+					<input type="radio" name="wjInvoicedPeriod" value="2">
+					<span>大于等于收据业务日期</span>
+					<input id="wjInvoicedReceiptTranDate" type="text" class="input input-percent input-100" autocomplete="off" value="2019-01-01" lay-key="100005">
+				</label>
+			</td>
+		</tr>
+		<tr class="js-wjInvoicedBillType ">
+			<th>
+				<h4>我家App电子发票申请账单类型</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>全部已缴账单：</b>移动端开票申请显示用户所有已缴费的账单 </p>
+						<p><b>在线支付&amp;前台缴费账单：</b>移动端开票申请显示用户在线支付&amp;前台缴费的账单（不含预收冲抵业务）</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="wjInvoicedBillType" value="0" checked="checked">
+					<span>全部已缴账单</span>
+				</label>
+				<label>
+					<input type="radio" name="wjInvoicedBillType" value="1">
+					<span>在线支付&amp;前台缴费账单</span>
+				</label>
+			</td>
+		</tr>
+		<tr class="js-wjInvoicedRemark ">
+			<th>
+				<h4>业主端电子发票申请备注设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>电子发票申请页面“备注”字段用户客户不能进行编辑 </p>
+						<p><b>关闭：</b>电子发票申请页面“备注”字段用户客户编辑</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="wjInvoicedRemark" value="1">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="wjInvoicedRemark" value="0" checked="checked">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<!--
+		<tr class="js-wjInvoicedContent "  >
+			<th>
+				<h4>货物或应税劳务、服务名称</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>注：</b>申请开票时，只可以选择到参数设置中已选择的货物或应税劳务、服务名称类型</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="text" id="wjInvoicedContent" class="input input-percent" value="" val-id="4d8bd5fe940011e89e89005056b202f1"/>
+				</label>
+			</td>
+		</tr>
+		-->
+		<tr class="js-wjInvoicedContent ">
+			<th>
+				<h4>电子发票开票人</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>注：</b>客户进行开票时，所选择的开票人</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="text" id="wjInvoicedEmployee" class="input input-percent" value="闫小婷" val-id="0abd08ca61f44456bc81c0b2b9c9120c" autocomplete="off">
+				</label>
+			</td>
+		</tr>		
+		<tr>
+			<th>
+				<h4>电子发票二维码打印设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>收款收据/POS机小票支持打印电子发票二维码，客户可通过扫描二维码开发票</p>
+						<p><b>关闭：</b>收款收据/POS机小票不支持打印电子发票二维码</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="eleInvoiceQRCode" value="1" onclick="controlEleInvoiceQRCode()" checked="checked">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="eleInvoiceQRCode" value="0" onclick="controlEleInvoiceQRCode()">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<tr class="js-eleInvoiceQRCodeSet ">
+			<th>
+				<h4>电子发票二维码打印方式 </h4>
+                <!-- <div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+					</div>
+				</div>-->
+			</th>
+			<td>
+				<span id="eleInvoiceQRCodeSet">
+					<input type="checkbox" name="receiptQRCode" value="receiptQRCode" checked="checked">
+					<span>收款收据</span>
+				<!-- 
+					<input type="checkbox" name="posQRCode" value="posQRCode" onclick="controlWjInvoiced()" />
+					<span>POS机小票</span>
+				 	<input type="checkbox" name="spdb" value="spdb" />
+					<span>POS-浦发</span>
+					<input type="checkbox" name="cup" value="cup" />
+					<span>POS-银联</span>
+				-->
+					<input type="checkbox" name="newland" value="newland" checked="checked">
+					<span>POS-新大陆</span>
+					<input type="checkbox" name="umf" value="umf" checked="checked">
+					<span>POS-联动优势</span>
+					<input type="checkbox" name="cmb" value="cmb" checked="checked">
+					<span>POS-招商银行</span>
+					<input type="checkbox" name="allin" value="allin" checked="checked">
+					<span>POS-通联</span>
+				</span>
+			</td>
+		</tr>
+		<tr class="js-eleInvoiceQRCodeType ">
+			<th>
+				<h4>电子发票二维码样式设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>微信小程序：</b>此设置只对收款收据生效，微信小程序二维码开票</p>
+						<p><b>微信二维码：</b>微信二维码开票</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="eleInvoiceQRCodeType" value="1" checked="checked">
+					<span>微信小程序</span>
+				</label>
+				<label>
+					<input type="radio" name="eleInvoiceQRCodeType" value="0">
+					<span>微信二维码</span>
+				</label>
+			</td>
+		</tr>
+		<tr class="js-eleInvoiceQRCodeSize ">
+			<th>
+				<h4>电子发票小程序二维码尺寸设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b></b>定义生成二维码的尺寸</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<span>二维码大小</span>
+					<input type="text" class="input input-percent input-100" name="eleInvoiceQRCodeSize" value="100" onkeyup="(this.v=function(){this.value=this.value.replace(/[^0-9-]+/,'');}).call(this)" onblur="this.v();" maxlength="3" autocomplete="off">
+					<span>px</span>
+				</label>
+			</td>
+		</tr>
+		<tr class="js-eleInvoiceQRCodeDay ">
+			<th>
+				<h4>电子发票二维码有效期设置  </h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b></b>定义生成二维码的有效期（天），超过有效期二维码失效，无法通过扫码申请电子发票</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>		
+					<span>二维码有效期</span>					
+					<input type="text" class="input input-percent input-100" name="eleInvoiceQRCodeDay" value="30" onkeyup="(this.v=function(){this.value=this.value.replace(/[^0-9-]+/,'');}).call(this)" onblur="this.v();" maxlength="3" autocomplete="off">
+					<span>天</span>	
+				</label>							
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>Web端发票申请数据合并规则设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>客户+费项发票名称:</b>web端发票申请数据按照客户和费项发票名称合并</p>
+						<p><b>客户+单元+费项发票名称:</b>web端发票申请数据按照客户、单元和费项发票名称合并</p>
+						<p><b>客户+房间+费项发票名称:</b>web端发票申请数据按照客户、房间和费项发票名称合并</p>
+						<p><b>客户:</b>web端发票申请数据按照客户合并</p>
+						<p><b>客户+合同编码+费项发票名称:</b>web端发票申请数据按照客户、合同编码和费项发票名称合并</p>
+						<p><b>注:</b>不动产租金数电票发票申请数据不支持按客户合并，若已设置为按客户合并，则实际按照客户+房间+费项发票名称合并</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="invoicedMergeType" value="invoicedApplication" checked="checked">
+					<span>客户+费项发票名称</span>
+				</label>
+				<label>
+					<input type="radio" name="invoicedMergeType" value="invoicedApplicationAndBuildUnit">
+					<span>客户+单元+费项发票名称</span>
+				</label>
+				<label>
+					<input type="radio" name="invoicedMergeType" value="invoicedApplicationAndRoom">
+					<span>客户+房间+费项发票名称</span>
+				</label>
+				<label>
+					<input type="radio" name="invoicedMergeType" value="invoicedApplicationAndCustomer">
+					<span>客户</span>
+				</label>
+				<label>
+					<input type="radio" name="invoicedMergeType" value="invoicedApplicationAndContract">
+					<span>客户+合同编码+费项发票名称</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>发票开具时明细合并</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p>拆分:开票时，单张发票上的发票数据明细不合并</p>
+						<p>合并(费项发票名称):开票时，单张发票上的发票数据明细按照客户+费项发票名称+税率维度合并</p>
+					
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="invoicedDataNoMerge" value="1" onclick="mergeReceiveMinusSet()" checked="checked">
+					<span>拆分</span>
+				</label>
+				<label>
+					<input type="radio" name="invoicedDataNoMerge" value="0" onclick="mergeReceiveMinusSet()">
+					<span>合并(费项发票名称)</span>
+				</label>
+                
+
+			</td>
+		</tr>
+		<tr class="js-mergeReceiveMinus hide">
+			<th>
+				<h4>负数明细数据是否合并</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p>否：负数为明细多条数据展示</p>
+						<p>是：负数明细同正数合并展示</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="mergeReceiveMinus" value="1">
+					<span>是</span>
+				</label>
+				<label>
+					<input type="radio" name="mergeReceiveMinus" value="0" checked="checked">
+					<span>否</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>Web端发票备注信息自动填充设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>Web端开发票选择开票明细后根据指定规则自动带出备注信息</p>
+						<p><b>关闭：</b>Web端开发票选择开票明细后，用户根据需要手动输入备注信息</p>
+						<p style="color:red"><b>注意：</b>如果企业未与我家云开通电子发票合作业务，为避免造成贵司与业主/租户不必要的纠纷，请勿开启此参数</p>
+
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="invoicedRemark" value="1" onclick="controlInvoicedRemark()" checked="checked">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="invoicedRemark" value="0" onclick="controlInvoicedRemark()">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>Web端发票页面是否显示实收开票</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p>是:显示实收开票选项</p>
+						<p>否:不显示实收开票选项</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="invoicedAccessReceiptBillShow" value="1" checked="checked">
+					<span>是</span>
+				</label>
+				<label>
+					<input type="radio" name="invoicedAccessReceiptBillShow" value="0">
+					<span>否</span>
+				</label>
+			</td>
+		</tr>
+		<tr id="js-invoicedRemarkSet">
+			<th>
+				<h4>Web端发票备注信息自动填充设置规则</h4>
+				</th><td class="col">
+					<div style="width: 50%;">
+						<div class="col receive" style="width:100%;">
+							<span>应收：</span>
+							<div class="set receive-set" style="width: 60%;">
+	<ul>
+		
+		<li class="clause-content-item" data-id="">
+			<div class="opt-bar fr">
+				<div class="fr  pointer arrow-container">
+					<i class="iconfont icon-sort-up block" onclick="editInvoicedRemarkSetMove(this, 2, -1)"></i>
+					<i class="iconfont icon-sort-down block" onclick="editInvoicedRemarkSetMove(this, 2, 1)"></i>
+				</div>
+			</div>
+			<div class="overflow-hidden">
+				<span name="projectName" class="remark-item">项目名称</span>
+			</div>
+		</li>
+		
+		<li class="clause-content-item" data-id="">
+			<div class="opt-bar fr">
+				<div class="fr  pointer arrow-container">
+					<i class="iconfont icon-sort-up block" onclick="editInvoicedRemarkSetMove(this, 2, -1)"></i>
+					<i class="iconfont icon-sort-down block" onclick="editInvoicedRemarkSetMove(this, 2, 1)"></i>
+				</div>
+			</div>
+			<div class="overflow-hidden">
+				<span name="moneyDefineName" class="remark-item">收费项目名称（非自定义发票名称）</span>
+			</div>
+		</li>
+		
+		<li class="clause-content-item" data-id="">
+			<div class="opt-bar fr">
+				<div class="fr  pointer arrow-container">
+					<i class="iconfont icon-sort-up block" onclick="editInvoicedRemarkSetMove(this, 2, -1)"></i>
+					<i class="iconfont icon-sort-down block" onclick="editInvoicedRemarkSetMove(this, 2, 1)"></i>
+				</div>
+			</div>
+			<div class="overflow-hidden">
+				<span name="billingProjectName" class="remark-item">收费项目名称</span>
+			</div>
+		</li>
+		
+		<li class="clause-content-item" data-id="">
+			<div class="opt-bar fr">
+				<div class="fr  pointer arrow-container">
+					<i class="iconfont icon-sort-up block" onclick="editInvoicedRemarkSetMove(this, 2, -1)"></i>
+					<i class="iconfont icon-sort-down block" onclick="editInvoicedRemarkSetMove(this, 2, 1)"></i>
+				</div>
+			</div>
+			<div class="overflow-hidden">
+				<span name="receiveDate" class="remark-item">应收日期范围</span>
+			</div>
+		</li>
+		
+		<li class="clause-content-item" data-id="">
+			<div class="opt-bar fr">
+				<div class="fr  pointer arrow-container">
+					<i class="iconfont icon-sort-up block" onclick="editInvoicedRemarkSetMove(this, 2, -1)"></i>
+					<i class="iconfont icon-sort-down block" onclick="editInvoicedRemarkSetMove(this, 2, 1)"></i>
+				</div>
+			</div>
+			<div class="overflow-hidden">
+				<span name="projectAddress" class="remark-item">项目所在地址</span>
+			</div>
+		</li>
+		
+		<li class="clause-content-item" data-id="">
+			<div class="opt-bar fr">
+				<div class="fr  pointer arrow-container">
+					<i class="iconfont icon-sort-up block" onclick="editInvoicedRemarkSetMove(this, 2, -1)"></i>
+					<i class="iconfont icon-sort-down block" onclick="editInvoicedRemarkSetMove(this, 2, 1)"></i>
+				</div>
+			</div>
+			<div class="overflow-hidden">
+				<span name="rentAddress" class="remark-item">租赁地址</span>
+			</div>
+		</li>
+		
+	</ul>
+</div>
+							<span class="pointer" onclick="api.basedata.enterpriseParam.showRemarkSet.call(this,'receive')">设置</span>
+						</div>
+
+					<ul class="moneyDefine receiveSet hide" style="width: 60%;">
+						<li class="item">
+							<label for="projectName">
+								<input type="checkbox" name="projectName" value="项目名称" data-name="projectName">项目名称
+							</label>
+						</li>
+						<li class="item">
+                            <label for="moneyDefineName">
+                                <input type="checkbox" name="moneyDefineName" value="收费项目名称（非自定义发票名称）" data-name="moneyDefineName">收费项目名称（非自定义发票名称）
+                            </label>
+                        </li>
+						<li class="item">
+							<label for="billingProjectName">
+								<input type="checkbox" name="billingProjectName" value="收费项目名称" data-name="billingProjectName">收费项目名称
+							</label>
+						</li>
+						<li class="item">
+							<label for="receiveDate">
+								<input type="checkbox" name="receiveDate" value="应收日期范围" data-name="receiveDate">应收日期范围
+							</label>
+						</li>
+						<li class="item">
+							<label for="period">
+								<input type="checkbox" name="period" value="费用期间" data-name="period">费用期间
+							</label>
+						</li>
+						<li class="item">
+							<label for="projectAddress"><input type="checkbox" name="projectAddress" value="项目所在地址" data-name="projectAddress">项目所在地址</label>
+						</li>
+						<li class="item">
+							<label for="projectGroup"><input type="checkbox" name="projectGroup" value="组团" data-name="projectGroup">组团</label>
+						</li>
+						<li class="item">
+							<label for="buildings"><input type="checkbox" name="building" value="楼栋" data-name="building">楼栋</label>
+						</li>
+						<li class="item">
+							<label for="room"><input type="checkbox" name="room" value="房间" data-name="room">房间</label>
+						</li>
+						<li class="item">
+                            <label for="buildingRoomName">
+                                <input type="checkbox" name="buildingRoomName" value="楼栋-房间" data-name="buildingRoomName">楼栋-房间
+                            </label>
+                        </li>
+						<li class="item">
+							<label for="startDateAndEndDate">
+								<input type="checkbox" name="startDateAndEndDate" value="计费开始/结束日期" data-name="startDateAndEndDate">
+								计费开始/结束日期
+							</label>
+						</li>
+						<li class="item">
+							<label for="rentContractNumber">
+								<input type="checkbox" name="rentContractNumber" value="合同编码" data-name="rentContractNumber">
+								合同编码
+							</label>
+						</li>
+						<li class="item">
+							<label for="endValue">
+								<input type="checkbox" name="endValue" value="本月抄表读数" data-name="endValue">
+								本月抄表读数
+							</label>
+						</li>
+						<li class="item">
+							<label for="startValue">
+								<input type="checkbox" name="startValue" value="上月抄表读数" data-name="startValue">
+								上月抄表读数
+							</label>
+						</li>
+						<li class="item">
+							<label for="totalValue">
+								<input type="checkbox" name="totalValue" value="用量" data-name="totalValue">
+								用量
+							</label>
+						</li>
+						<li class="item  hide">
+							<label for="rentAddress">
+								<input type="checkbox" name="rentAddress" value="租赁地址" data-name="rentAddress">
+								租赁地址
+							</label>
+						</li>
+						<li class="item">
+							<label for="bdcAddress">
+								<input type="checkbox" name="bdcAddress" value="不动产地址" data-name="bdcAddress">
+								不动产地址
+							</label>
+						</li>
+						<li class="item">
+							<label for="bdcDetailAddress">
+								<input type="checkbox" name="bdcDetailAddress" value="不动产详细地址" data-name="bdcDetailAddress">
+								不动产详细地址
+							</label>
+						</li>
+						<li class="item">
+							<label for="receiveDesc">
+								<input type="checkbox" name="receiveDesc" value="备注" data-name="receiveDesc">
+								备注
+							</label>
+						</li>
+						<button class="btn setBtn" onclick="api.basedata.enterpriseParam.setRemarkOk.call(this,'receive')">确定</button>
+					</ul>
+				</div>
+					<div style="width: 50%">
+						<div class="col receipt" style="width:100%;">
+							<span>实收：</span>
+							<div class="set receipt-set" style="width: 60%;">
+	<ul>
+		
+		<li class="clause-content-item" data-id="">
+			<div class="opt-bar fr">
+				<div class="fr  pointer arrow-container">
+					<i class="iconfont icon-sort-up block" onclick="editInvoicedRemarkSetMove(this, 2, -1)"></i>
+					<i class="iconfont icon-sort-down block" onclick="editInvoicedRemarkSetMove(this, 2, 1)"></i>
+				</div>
+			</div>
+			<div class="overflow-hidden">
+				<span name="projectName" class="remark-item">项目名称</span>
+			</div>
+		</li>
+		
+		<li class="clause-content-item" data-id="">
+			<div class="opt-bar fr">
+				<div class="fr  pointer arrow-container">
+					<i class="iconfont icon-sort-up block" onclick="editInvoicedRemarkSetMove(this, 2, -1)"></i>
+					<i class="iconfont icon-sort-down block" onclick="editInvoicedRemarkSetMove(this, 2, 1)"></i>
+				</div>
+			</div>
+			<div class="overflow-hidden">
+				<span name="building" class="remark-item">楼栋 </span>
+			</div>
+		</li>
+		
+		<li class="clause-content-item" data-id="">
+			<div class="opt-bar fr">
+				<div class="fr  pointer arrow-container">
+					<i class="iconfont icon-sort-up block" onclick="editInvoicedRemarkSetMove(this, 2, -1)"></i>
+					<i class="iconfont icon-sort-down block" onclick="editInvoicedRemarkSetMove(this, 2, 1)"></i>
+				</div>
+			</div>
+			<div class="overflow-hidden">
+				<span name="room" class="remark-item">房间</span>
+			</div>
+		</li>
+		
+		<li class="clause-content-item" data-id="">
+			<div class="opt-bar fr">
+				<div class="fr  pointer arrow-container">
+					<i class="iconfont icon-sort-up block" onclick="editInvoicedRemarkSetMove(this, 2, -1)"></i>
+					<i class="iconfont icon-sort-down block" onclick="editInvoicedRemarkSetMove(this, 2, 1)"></i>
+				</div>
+			</div>
+			<div class="overflow-hidden">
+				<span name="billingProjectName" class="remark-item">收费项目名称</span>
+			</div>
+		</li>
+		
+		<li class="clause-content-item" data-id="">
+			<div class="opt-bar fr">
+				<div class="fr  pointer arrow-container">
+					<i class="iconfont icon-sort-up block" onclick="editInvoicedRemarkSetMove(this, 2, -1)"></i>
+					<i class="iconfont icon-sort-down block" onclick="editInvoicedRemarkSetMove(this, 2, 1)"></i>
+				</div>
+			</div>
+			<div class="overflow-hidden">
+				<span name="description" class="remark-item">收款单分录摘要</span>
+			</div>
+		</li>
+		
+		<li class="clause-content-item" data-id="">
+			<div class="opt-bar fr">
+				<div class="fr  pointer arrow-container">
+					<i class="iconfont icon-sort-up block" onclick="editInvoicedRemarkSetMove(this, 2, -1)"></i>
+					<i class="iconfont icon-sort-down block" onclick="editInvoicedRemarkSetMove(this, 2, 1)"></i>
+				</div>
+			</div>
+			<div class="overflow-hidden">
+				<span name="rentAddress" class="remark-item">租赁地址</span>
+			</div>
+		</li>
+		
+	</ul>
+</div>
+							<span class="pointer" onclick="api.basedata.enterpriseParam.showRemarkSet.call(this,'receipt')">设置</span>
+						</div>
+						
+						<ul class="moneyDefine hide receiptSet" style="width: 60%;">
+							<li class="item">
+								<label for="projectName">
+									<input type="checkbox" name="projectName" value="项目名称" data-name="projectName">项目名称
+								</label>
+							</li>
+							<li class="item">
+                                <label for="moneyDefineName">
+                                    <input type="checkbox" name="moneyDefineName" value="收费项目名称（非自定义发票名称）" data-name="moneyDefineName">收费项目名称（非自定义发票名称）
+                                </label>
+                            </li>
+							<li class="item">
+								<label for="billingProjectName">
+									<input type="checkbox" name="billingProjectName" data-name="billingProjectName" value="收费项目名称">收费项目名称
+								</label>
+							</li>
+							<li class="item">
+								<label for="period">
+									<input type="checkbox" name="period" data-name="period" value="费用期间">费用期间
+								</label>
+							</li>
+							<li class="item">
+								<label for="description"><input type="checkbox" name="description" data-name="description" value="收款单分录摘要">收款单分录摘要</label>
+							</li>
+							<li class="item">
+								<label for="address"><input type="checkbox" name="projectAddress" data-name="projectAddress" value="项目所在地址">项目所在地址</label>
+							</li>
+							<li class="item">
+								<label for="projectGroup"><input type="checkbox" name="projectGroup" value="组团" data-name="projectGroup">组团</label>
+							</li>
+							<li class="item">
+								<label for="buildings"><input type="checkbox" name="building" data-name="building" value="楼栋">楼栋</label>
+							</li>
+							<li class="item">
+								<label for="room"><input type="checkbox" name="room" data-name="room" value="房间">房间</label>
+							</li>
+							<li class="item">
+                                <label for="buildingRoomName">
+                                    <input type="checkbox" name="buildingRoomName" value="楼栋-房间" data-name="buildingRoomName">楼栋-房间
+                                </label>
+                            </li>
+							<li class="item">
+								<label for="startDateAndEndDate">
+									<input type="checkbox" name="startDateAndEndDate" value="计费开始/结束日期" data-name="startDateAndEndDate">
+									计费开始/结束日期
+								</label>
+							</li>
+							<li class="item">
+								<label for="businessDate">
+									<input type="checkbox" name="businessDate" value="业务日期" data-name="businessDate">
+									业务日期
+								</label>
+							</li>
+							<li class="item">
+								<label for="settlementType">
+									<input type="checkbox" name="settlementType" value="结算方式" data-name="settlementType">
+									结算方式
+								</label>
+							</li>
+							<li class="item">
+								<label for="rentContractNumber">
+									<input type="checkbox" name="rentContractNumber" value="合同编码" data-name="rentContractNumber">
+									合同编码
+								</label>
+							</li>
+							<li class="item">
+								<label for="endValue">
+									<input type="checkbox" name="endValue" value="本月抄表读数" data-name="endValue">
+									本月抄表读数
+								</label>
+							</li>
+							<li class="item">
+								<label for="startValue">
+									<input type="checkbox" name="startValue" value="上月抄表读数" data-name="startValue">
+									上月抄表读数
+								</label>
+							</li>
+							<li class="item">
+								<label for="totalValue">
+									<input type="checkbox" name="totalValue" value="用量" data-name="totalValue">
+									用量
+								</label>
+							</li>
+							<li class="item  hide">
+								<label for="rentAddress">
+									<input type="checkbox" name="rentAddress" value="租赁地址" data-name="rentAddress">
+									租赁地址
+								</label>
+							</li>
+							<li class="item">
+								<label for="bdcAddress">
+									<input type="checkbox" name="bdcAddress" value="不动产地址" data-name="bdcAddress">
+									不动产地址
+								</label>
+							</li>
+							<li class="item">
+								<label for="bdcDetailAddress">
+									<input type="checkbox" name="bdcDetailAddress" value="不动产详细地址" data-name="bdcDetailAddress">
+									不动产详细地址
+								</label>
+							</li>
+							<li class="item">
+								<label for="receiptBillDesc">
+									<input type="checkbox" name="receiptBillDesc" value="收款单备注" data-name="receiptBillDesc">
+									收款单备注
+								</label>
+							</li>
+							<button class="btn" onclick="api.basedata.enterpriseParam.setRemarkOk.call(this,'receipt')">确定</button>
+						</ul>
+					</div>
+				</td>
+			
+
+		</tr>
+		<tr id="js-openBdczyTdysInvoiced">
+			<th>
+				<h4>是否开具不动产经营租赁服务数电发票</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>是：</b>开票页面展示“特定业务类型”选项，开票申请页面展示“是否特定业务数电发票”，可开具不动产经营租赁服务数电发票；</p>
+						<p><b>否：</b>开票页面不展示“特定业务类型”选项，开票申请页面不展示“是否特定业务数电发票”，不支持开具不动产经营租赁服务数电发票。</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="openBdczyTdysInvoiced" value="1" checked="checked">
+					<span>是</span>
+				</label>
+				<label>
+					<input type="radio" name="openBdczyTdysInvoiced" value="0">
+					<span>否</span>
+				</label>
+			</td>
+		</tr>
+		<tr id="js-allelectSetReceivedAndReviewName">
+            <th>
+                <h4>数电发票是否显示复核人和收款人</h4>
+                <div class="tips">
+                    <span class="icon">?</span>
+                    <div class="con">
+                        <p><b>是：</b>显示</p>
+                        <p><b>否：</b>不显示</p>
+                        <p style="color:red">发票备注栏里面是否显示收款人和复核人，<b>该参数对数电普票、数电专票、数电普票(纸票)、数电专票(专票)生效。</b></p>
+                    </div>
+                </div>
+            </th>
+            <td>
+                <label>
+                    <input type="radio" name="allelectSetReceivedAndReviewName" value="1">
+                    <span>是</span>
+                </label>
+                <label>
+                    <input type="radio" name="allelectSetReceivedAndReviewName" value="0" checked="checked">
+                    <span>否</span>
+                </label>
+            </td>
+        </tr>
+		<tr id="js-invoicedRemarkChinese">
+			<th>
+				<h4>备注栏是否展示数据源中文名称</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>是：</b>效果示例：本月抄表读数：XXX  上月抄表读数：XXX  用量：XXX</p>
+						<p><b>否：</b>效果示例：XXX XXX XXX</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="invoicedRemarkChinese" value="1" checked="checked">
+					<span>是</span>
+				</label>
+				<label>
+					<input type="radio" name="invoicedRemarkChinese" value="0">
+					<span>否</span>
+				</label>
+			</td>
+		</tr>
+
+		<tr>
+			<th>
+				<h4>业财税一体化</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>开启业财税一体化功能,开启后我家云每间隔5分钟推送业务应收单、税务应收单至EAS</p>
+						<p><b>关闭：</b>关闭业财税一体化功能</p>
+						<p style="color:red"><b>注意：</b>开启财务税务设置</p>
+
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="businessfinancetax" value="1" onclick="controlBusinessfinancetax()">
+					<span>开启</span>
+					<a id="businessfinancetaxSet" class="hide">业财税一体化设置</a>
+				</label>
+				<label>
+					<input type="radio" name="businessfinancetax" value="0" onclick="controlBusinessfinancetax()" checked="checked">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>web端开票日期是否可编辑</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>是：</b>web端开票页面开票日期显示为当天，可以进行修改</p>
+						<p><b>否：</b>web端开票页面开票日期显示为当天，不可以进行修改</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="webBillingDateCanEdit" value="1" checked="checked">
+					<span>是</span>
+				</label>
+				<label>
+					<input type="radio" name="webBillingDateCanEdit" value="0">
+					<span>否</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>业主端收款日期设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>我家app及缴费云小程序业主端生成的收款单业务日期根据业务日期设置定义的规则生成</p>
+						<p><b>关闭：</b>我家app及缴费云小程序业主端生成的收款单业务日期为收款业务当天</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="wjTranDateSet" value="1" onclick="controlWjTranDateSet()">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="wjTranDateSet" value="0" onclick="controlWjTranDateSet()" checked="checked">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<tr class="js-wjTranDateAfter  hide">
+			<th>
+			</th>
+			<td>
+				<label>
+					<span>业务日期设置&nbsp;&nbsp;当日</span>
+					<input id="wjTranDateAfterCalendar" type="text" class="input input-percent input-100" autocomplete="off" value="16:00:00" lay-key="100002">
+					<i class="iconfont icon-calendar"></i>
+					<span>&nbsp;&nbsp;以后收款,生成收款单业务日期为次日(T+1)</span>
+				</label>
+			</td>
+		</tr>
+		<tr class="js-gjPayLimit">
+			<th>
+				<h4>管家App支付限额/手续费设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>用户支付金额&gt;=单次支付限额，用户需要额外支付本次交易的手续费</p>
+						<p><b>关闭：</b>用户支付金额不受限制，手续费由公司承担</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="gjPayLimit" value="1" onclick="controlPayLimit('gj')">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="gjPayLimit" value="0" onclick="controlPayLimit('gj')" checked="checked">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<tr class="js-gjPayLimit-set  hide">
+			<th></th>
+			<td class="payLimit-set gjPayLimit-set">
+				<div class="pay-limit-type-set">
+					<label>手续费计算公式：</label>
+					<select class="select" name="gjPayLimitType">
+						<option value="0" selected="selected">账单支付金额/（1-费率）-账单支付金额</option>
+						<option value="1">账单支付金额*费率</option>
+					</select>
+				</div>
+				<div class="pay-type-set" id="gjPayTypeSet"></div>
+				<div><a href="javascript: void(0);" onclick="api.basedata.enterpriseParam.addPayChannel('gj')" style="color: #000;"><i class="iconfont icon-add-copy"></i> <span>添加支付渠道</span></a></div>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>管家助手现金收款抹零设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>管家助手收款功能选择现金收款时根据设置进行抹零</p>
+						<p><b>关闭：</b>管家助手收款功能选择现金收款时全额收款</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="gjCashNoChange" value="1" onclick="controlGjCashNoChange()">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="gjCashNoChange" value="0" onclick="controlGjCashNoChange()" checked="checked">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<tr class="js-gjCashNoChangeType hide" style="line-height: 30px;">
+			<th></th>
+			<td>
+				<label>
+					<input type="radio" name="gjCashNoChangeType" value="1" checked="checked">
+					<span>抹零至元</span>
+				</label>
+				<label>
+					<input type="radio" name="gjCashNoChangeType" value="2">
+					<span>抹零至角</span>
+				</label>
+				<label>
+					<input type="radio" name="gjCashNoChangeType" value="3">
+					<span>四舍五入至元</span>
+				</label>
+				<label>
+					<input type="radio" name="gjCashNoChangeType" value="4">
+					<span>四舍五入至角</span>
+				</label>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>抹零至元：</b>收款时抹去元之外的尾数</p>
+						<p><b>抹零至角：</b>收款时抹去角之外的尾数</p>
+						<p><b>四舍五入至元：</b>收款时四舍五入元之外的尾数</p>
+						<p><b>四舍五入至角：</b>收款时四舍五入角之外的尾数</p>
+					</div>
+				</div>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>管家助手收款业务日期设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>管家助手收款业务生成的收款单业务日期根据业务日期设置定义的规则生成</p>
+						<p><b>关闭：</b>管家助手收款业务生成的收款单业务日期为收款业务当天</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="gjTranDateSet" value="1" onclick="controlGjTranDateSet()">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="gjTranDateSet" value="0" onclick="controlGjTranDateSet()" checked="checked">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<tr class="js-gjTranDateAfter  hide">
+			<th>
+			</th>
+			<td>
+				<label>
+					<span>业务日期设置&nbsp;&nbsp;当日</span>
+					<input id="gjTranDateAfterCalendar" type="text" class="input input-percent input-100" autocomplete="off" value="00:00:00" lay-key="100001">
+					<i class="iconfont icon-calendar"></i>
+					<span>&nbsp;&nbsp;以后收款,生成收款单业务日期为次日(T+1)</span>
+				</label>
+			</td>
+		</tr>
+        <tr>
+            <th>
+                <h4>管家助手欠费催缴页面是否只显示所属楼栋的欠费房间</h4>
+                <div class="tips">
+                    <span class="icon">?</span>
+                    <div class="con">
+                        <p><b>是：</b>显示登录用户相关的楼栋欠费房间</p>
+                        <p><b>否：</b>显示项目所有楼栋欠费房间</p>
+                    </div>
+                </div>
+            </th>
+            <td>
+                <label>
+                    <input type="radio" name="gjArrearsBuilding" value="1" checked="checked">
+                    <span>是</span>
+                </label>
+                <label>
+                    <input type="radio" name="gjArrearsBuilding" value="0">
+                    <span>否</span>
+                </label>
+            </td>
+        </tr>
+		<tr>
+			<th>
+				<h4>管家端是否可使用现金收款</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>是：</b>管家端（管家助手APP、缴费云小程序、物业管家通小程序）收款时，展示现金收款选项</p>
+						<p><b>否：</b>管家端（管家助手APP、缴费云小程序、物业管家通小程序）收款时，不展示现金收款选项</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="gjHideCash" value="0" checked="checked">
+					<span>是</span>
+				</label>
+				<label>
+					<input type="radio" name="gjHideCash" value="1">
+					<span>否</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>管家App抄表页面是否显示客户信息</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>是：</b>物业管家助手里面的抄水表与抄电表显示客户的名称</p>
+						<p><b>否：</b>物业管家助手里面的抄水表与抄电表不显示客户的名称</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="gjHideCusName" value="0" checked="checked">
+					<span>是</span>
+				</label>
+				<label>
+					<input type="radio" name="gjHideCusName" value="1">
+					<span>否</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>管家助手欠费催缴账单展示范围设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>全部展示：</b>默认:展示当前客户的所有期间的应收欠款</p>
+						<p><b>展示至当前月：</b>只展示当前客户截止至当前月份的应收欠款</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="gjArrearsPeriod" value="0" checked="checked">
+					<span>全部展示</span>
+				</label>
+				<label>
+					<input type="radio" name="gjArrearsPeriod" value="1">
+					<span>展示至当前月</span>
+				</label>
+			</td>
+		</tr>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		<tr>
+			<th>
+				<h4>收/退款单业务日期是否可编辑</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>是：</b>收/退款单业务日期默认显示为当天，可以进行修改。其中退款单业务日期需不小于其对应的收款业务日期</p>
+						<p><b>否：</b>收/退款单业务日期默认显示为当天，不可以进行修改</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="isTranDate" value="1" onclick="controlTranDate()" checked="checked">
+					<span>是</span>
+				</label>
+				<label>
+					<input type="radio" name="isTranDate" value="0" onclick="controlTranDate()">
+					<span>否</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>收/退款单据业务日期编辑控制</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>仅可选择当天及之前：</b>收款单业务日期仅能选择当天及之前的日期；退款单业务日期仅能选择收款日期及之后至当天及之前的日期。</p>
+						<p><b>关闭：</b>收款单业务日期的选择不做限制；退款单业务日期仅能选择收款日期及之后的日期</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="tranDateCanEdit" value="1">
+					<span>仅可选择当天及之前</span>
+				</label>
+				<label>
+					<input type="radio" name="tranDateCanEdit" value="0" checked="checked">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>收/退款单业务日期默认显示设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>默认当天：</b>收/退款单的业务日期默认显示为当天</p>
+						<p><b>默认不显示：</b>收/退款单的业务日期默认不显示，需手动选择业务日期</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="receiptTranDate" value="0" checked="checked">
+					<span>默认当天</span>
+				</label>
+				<label>
+					<input type="radio" name="receiptTranDate" value="1">
+					<span>默认不显示</span>
+				</label>
+			</td>
+		</tr>
+        <tr>
+            <th>
+                <h4>Web端收款业务日期设置</h4>
+                <div class="tips">
+                    <span class="icon">?</span>
+                    <div class="con">
+                        <p><b>开启：</b>Web端收款业务生成的收款单业务日期根据业务日期设置定义的规则生成，影响范围包括收款明细和批量收款功能，不包括补单和修改业务日期的场景</p>
+                        <p><b>关闭：</b>Web端收款业务生成的收款单业务日期为收款业务当天</p>
+                    </div>
+                </div>
+            </th>
+            <td>
+                <label>
+                    <input type="radio" name="wyTranDateSet" value="1" onclick="controlWyTranDateSet()">
+                    <span>开启</span>
+                </label>
+                <label>
+                    <input type="radio" name="wyTranDateSet" value="0" onclick="controlWyTranDateSet()" checked="checked">
+                    <span>关闭</span>
+                </label>
+            </td>
+        </tr>
+        <tr class="js-wyTranDateAfter hide">
+            <th>
+            </th>
+            <td>
+                <label>
+                    <span>业务日期设置&nbsp;&nbsp;当日</span>
+                    <input id="wyTranDateAfterCalendar" type="text" class="input input-percent input-100" autocomplete="off" value="17:30:00" lay-key="100003">
+                    <i class="iconfont icon-calendar"></i>
+                    <span>&nbsp;&nbsp;以后收款,生成收款单业务日期为次日(T+1)</span>
+                </label>
+            </td>
+        </tr>
+		<tr>
+			<th>
+				<h4>收款单根据业务日期动态计算违约金</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>收款单根据修改的业务日期重新计算违约金</p>
+						<p><b>关闭：</b>收款单修改业务日期不触发违约金计算</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="isAutoCalcOverDue" value="1">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="isAutoCalcOverDue" value="0" checked="checked">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<tr class="js-reiptPeriod">
+			<th>
+				<h4>收/退款单收款期间变更设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>新增/修改 收/退款单“收/退款期间”，保存时取“业务日期”所在月作为”收/退款期间”</p>
+						<p><b>关闭：</b>新增/修改 收/退款单“收/退款期间”，保存时以当前系统期间作为”收/退款期间”</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="reiptPeriod" value="1" onclick="controlReiptPeriod()" checked="checked">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="reiptPeriod" value="0" onclick="controlReiptPeriod()">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<tr class="js-reiptPeriodSet ">
+			<th>
+				<h4>收/退款单收款期间变更受控项目</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>当参数为开启状态时，必须设置受控项目，如果未设置受控项目，则此参数与关闭状态效果一致，即必须为当前参数设置受控的项目才生效</b></p>
+					</div>
+				</div>			
+			</th>
+			<td>
+				<label>
+					<span id="reiptPeriodSet" class="add-icon"></span>				
+				</label>
+				<span id="label">
+	        		
+	        			<label class="input-item-wrap fl marginRight10" data-id="319c23c4c60e4def9959c776c32ca7f9">
+	        				<span class="name">庆和苑</span>
+	        				<i class="iconfont icon-del" onclick="deleteReiptPeriodSetLabel(this)"></i>
+	        			</label>
+	        		
+	        			<label class="input-item-wrap fl marginRight10" data-id="81efa147b21f4786b70d44ebf6fa17b0">
+	        				<span class="name">auto_勿动</span>
+	        				<i class="iconfont icon-del" onclick="deleteReiptPeriodSetLabel(this)"></i>
+	        			</label>
+	        		
+        		</span>								
+			</td>
+		</tr>
+		<!--
+		<tr class="js-receiptMulCustomer">
+			<th>
+				<h4>收款方式房间单/多收费对象设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>收款单分录根据选择的房间显示该房间下所有客户的应收数据（不推荐开启）</p>
+						<p><b>关闭：</b>收款操作收款方式选择房间时，收款单分录根据选择的房间+客户维度显示应收数据</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="receiptMulCustomer"  value="1"  />
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="receiptMulCustomer"  value="0"  checked = "checked"/>
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		-->
+		<tr class="js-reiptTranModel">
+			<th>
+				<h4>收款单业务模式设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>自动模式：</b>收款时选择房间/客户/车位/合同，自动加载所有收费项目&amp;全部费用期间的应收欠款</p>
+						<p><b>手动模式：</b>收款时选择房间/客户/车位/合同，需要手动选择本次收款的收费项目以及费期间</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="reiptTranModel" onclick="controlReiptTranModel()" value="0" checked="checked">
+					<span>自动模式</span>
+				</label>
+				<label>
+					<input type="radio" name="reiptTranModel" onclick="controlReiptTranModel()" value="1">
+					<span>手动模式</span>
+				</label>
+			</td>
+		</tr>
+		<tr class="js-reiptAutoSearchType " style="line-height: 30px;">
+			<th></th>
+			<td>
+				<label>
+					<input type="radio" name="reiptAutoSearchType" value="0" checked="checked">
+					<span>默认加载全部应收欠款</span>
+				</label>
+				<label>
+					<input type="radio" name="reiptAutoSearchType" value="1">
+					<span>默认加载小于等于当前期间的应收欠款</span>
+				</label>
+				<label>
+					<input type="radio" name="reiptAutoSearchType" value="2">
+					<span>默认加载小于等于收款期间的应收欠款</span>
+				</label>
+			</td>
+		</tr>
+		<tr class="js-addChargeIsRelationReceiveSet">
+			<th>
+				<h4>新增赠送减免是否要关联应收</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>赠送减免的冲抵方式只能选择指定应收，有关联应收明细才能保存。</p>
+						<p><b>关闭：</b>新增赠送减免允许不关联应收明细</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="addChargeIsRelationReceive" value="1">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="addChargeIsRelationReceive" value="0" checked="checked">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<tr class="js-autoGenerateChargeSet">
+			<th>
+				<h4>赠送减免审核通过后自动执行冲抵</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>仅限冲抵方式为“指定应收”的才会自动执行冲抵。</p>
+						<p><b>关闭：</b>需手动执行冲抵。</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="autoGenerateCharge" value="1" checked="checked">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="autoGenerateCharge" value="0">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+        <tr class="js-reiptChargeQuerySet">
+            <th>
+                <h4>收款单赠送减免设置</h4>
+                <div class="tips">
+                    <span class="icon">?</span>
+                    <div class="con">
+                        <p><b>开启：</b>收款单显示【新增赠送减免】按钮，收款时可进行赠送减免相关设置</p>
+                        <p><b>关闭：</b>收款单隐藏【新增赠送减免】按钮</p>
+                    </div>
+                </div>
+            </th>
+            <td>
+                <label>
+                    <input type="radio" name="reiptChargeQuerySet" value="1" checked="checked">
+                    <span>开启</span>
+                </label>
+                <label>
+                    <input type="radio" name="reiptChargeQuerySet" value="0">
+                    <span>关闭</span>
+                </label>
+            </td>
+        </tr>
+		<tr class="js-reiptPreMoneySpit ">
+			<th>
+				<h4>收款单预收款金额按月份拆分</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>收款单预收款的金额根据选择的时间预收范围，按月进行拆分，每个月保存一条分录</p>
+						<p><b>关闭：</b>收款单预收款的金额不进行拆分，保存时为一条分录</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="reiptPreMoneySpit" onclick="controlPreMoneySpit()" value="1" checked="checked">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="reiptPreMoneySpit" onclick="controlPreMoneySpit()" value="0">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+
+
+		<tr class="js-reipEntryGroupType  hide">
+			<th>
+				<h4>收款单分录是否是明细显示</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>是：</b>收款单会按照结算方式、预收款拆分后的结果进行显示(用于凭证)</p>
+						<p><b>否：</b>收款单分录按照正常显示</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="reipEntryGroupType" value="1" checked="checked">
+					<span>是</span>
+				</label>
+				<label>
+					<input type="radio" name="reipEntryGroupType" value="0">
+					<span>否</span>
+				</label>
+			</td>
+		</tr>
+		<tr class="js-reiptPenaltyEdit">
+			<th>
+				<h4>收款单违约金金额是否可编辑</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>是：</b>收款单分录违约金可编辑，修改违约金同步修改收款金额</p>
+						<p><b>否：</b>收款单违约金金额不可以编辑</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="reiptPenaltyEdit" onclick="controlReiptPenaltyEdit()" value="1" checked="checked">
+					<span>是</span>
+				</label>
+				<label>
+					<input type="radio" name="reiptPenaltyEdit" onclick="controlReiptPenaltyEdit()" value="0">
+					<span>否</span>
+				</label>
+			</td>
+		</tr>
+		<tr class="js-reiptSpitType hide">
+			<th>
+				<h4>收款单保存拆分模式</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>模式1：</b>收款单优先拆分到最早期间的应收数据</p>
+						<p><b>模式2：</b>收款单本金和违约金分别优先拆分到最早期间的应收数据</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="reiptSpitType" value="0">
+					<span>模式1</span>
+				</label>
+				<label>
+					<input type="radio" name="reiptSpitType" value="1" checked="checked">
+					<span>模式2</span>
+				</label>
+			</td>
+		</tr>
+		<tr class="js-receiptAutomaticSplit">
+			<th>
+				<h4>收款单收费项目合计自动分配</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>收款单的收费项目合计金额可编辑，修改收费项目合计金额更新对应的收费项目的收款单分录金额</p>
+						<p><b>关闭：</b>收款单的收费项目合计金额不可编辑</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="receiptAutomaticSplit" value="1" checked="checked">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="receiptAutomaticSplit" value="0">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<tr class="js-receiptAddFile">
+			<th>
+				<h4>收款单附件设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>收款单新增/修改操作时支持上传附件（最多可上传3个附件）</p>
+						<p><b>关闭：</b>收款单新增/修改操作时不支持上传附件</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="receiptAddFile" value="1" checked="checked">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="receiptAddFile" value="0">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+        <tr class="js-refundAddFile">
+            <th>
+                <h4>退款单附件设置</h4>
+                <div class="tips">
+                    <span class="icon">?</span>
+                    <div class="con">
+                        <p><b>开启：</b>退款单新增/修改操作时支持上传附件（最多可上传3个附件）</p>
+                        <p><b>关闭：</b>退款单新增/修改操作时不支持上传附件</p>
+                    </div>
+                </div>
+            </th>
+            <td>
+                <label>
+                    <input type="radio" name="refundAddFile" value="1" checked="checked">
+                    <span>开启</span>
+                </label>
+                <label>
+                    <input type="radio" name="refundAddFile" value="0">
+                    <span>关闭</span>
+                </label>
+            </td>
+        </tr>
+		<tr class="js-wyRefundSet">
+			<th>
+				<h4>收款单退款操作同步撤掉当日交易</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con" style="width: 350px">
+						<p><b>开启：</b>POS机、扫码支付等渠道生成的收款单进行退款提交时，向支付平台提交撤销该交易申请（只能撤销当日发生的交易）</p>
+						<p><b>关闭：</b>POS机、扫码支付等渠道生成的收款单进行退款提交时，不向支付平台提交撤销该交易申请</p>
+						<p><b>注意：</b>如果支付平台不支持撤销当日交易，则参数不生效；我家云提交收款单撤销当日交易申请至支付平台，是否撤销成功以支付平台的规则为准</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="wyRefundPayType" value="1" onclick="controlPayLimit('wyRefund')" checked="checked">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="wyRefundPayType" value="0" onclick="controlPayLimit('wyRefund')">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<tr class="js-wyRefundPay-set ">
+			<th></th>
+			<td class="payLimit-set wyRefundPay-set">
+				<div class="pay-type-set" id="wyRefundPay">
+	<div class="type-group">
+	
+		<ul data-type="2">
+			<li><b>支付渠道</b>
+				<select class="select" name="payChannel" data-type="" onchange="api.basedata.enterpriseParam.changePayChannel.call(this,'wyRefund')">
+					
+						<option value="umf">联动优势</option>
+					
+				</select>
+			</li>
+			<li><a href="javascript:;" onclick="api.basedata.enterpriseParam.deletePayChannel.call(this,'wyRefund')" style="color: #000;"><i class="iconfont icon-delete"></i></a></li>
+		</ul>
+		
+	</div>
+</div>
+				<div><a href="javascript: void(0);" onclick="api.basedata.enterpriseParam.addPayChannel('wyRefund')" style="color: #000;"><i class="iconfont icon-add-copy"></i> <span>添加支付渠道</span></a></div>
+			</td>
+		</tr>
+        <tr class="js-receiptOperatorSetting">
+            <th>
+                <h4>收款单经办人设置</h4>
+                <div class="tips">
+                    <span class="icon">?</span>
+                    <div class="con">
+                        <p><b>应用场景：主要应用于经办人代收相关费用后，转交给实际收款人录入收款单</b></p>
+                        <p><b>开启：</b>收款单显示经办人选项</p>
+                        <p><b>关闭：</b>收款单隐藏经办人选项</p>
+                    </div>
+                </div>
+            </th>
+            <td>
+                <label>
+                    <input type="radio" name="receiptOperatorSetting" value="1" checked="checked">
+                    <span>开启</span>
+                </label>
+                <label>
+                    <input type="radio" name="receiptOperatorSetting" value="0">
+                    <span>关闭</span>
+                </label>
+            </td>
+        </tr>
+        <tr class="js-receiptBillBuildingAreaView">
+            <th>
+                <h4>收款单建筑面积显示设置</h4>
+                <div class="tips">
+                    <span class="icon">?</span>
+                    <div class="con">
+                        <p><b>开启：</b>收款单显示房间的建筑面积信息</p>
+                        <p><b>关闭：</b>收款单隐藏房间的建筑面积信息</p>
+                    </div>
+                </div>
+            </th>
+            <td>
+                <label>
+                    <input type="radio" name="receiptBillBuildingAreaView" value="1" checked="checked">
+                    <span>开启</span>
+                </label>
+                <label>
+                    <input type="radio" name="receiptBillBuildingAreaView" value="0">
+                    <span>关闭</span>
+                </label>
+            </td>
+        </tr>
+        <tr class="js-receiptBillFirstStageView">
+            <th>
+                <h4>收款单首次收款显示设置</h4>
+                <div class="tips">
+                    <span class="icon">?</span>
+                    <div class="con">
+                        <p><b>开启：</b>收款单显示首次收款选项，用于标记该收款单为首次收款</p>
+                        <p><b>关闭：</b>收款单隐藏首次收款选项</p>
+                    </div>
+                </div>
+            </th>
+            <td>
+                <label>
+                    <input type="radio" name="receiptBillFirstStageView" value="1" checked="checked">
+                    <span>开启</span>
+                </label>
+                <label>
+                    <input type="radio" name="receiptBillFirstStageView" value="0">
+                    <span>关闭</span>
+                </label>
+            </td>
+        </tr>
+        <tr class="js-receiptPreMoneyDefineStartPeriod">
+            <th>
+                <h4>收款单预收月数开始时间控制</h4>
+                <div class="tips">
+                    <span class="icon">?</span>
+                    <div class="con">
+                        <p><b>自定义：</b>收款单收取预收款时，点击【预收月数】弹出窗口的预收月数/预收时间范围/预收金额三个选项的开始时间用户可自定义选择</p>
+                        <p><b>大于等于收款期间：</b>收款单收取预收款时，点击【预收月数】弹出窗口的预收月数/预收时间范围/预收金额三个选项的开始时间用户只能选择大于等于当前收款期间的期间或日期</p>
+                        <p><b>大于收款期间：</b>收款单收取预收款时，点击【预收月数】弹出窗口的预收月数/预收时间范围/预收金额三个选项的开始时间用户只能选择大于当前收款期间的期间或日期&#8203;</p>
+                    </div>
+                </div>
+            </th>
+            <td>
+                <label>
+                    <input type="radio" name="receiptPreMoneyDefineStartPeriod" value="0" checked="checked">
+                    <span>自定义</span>
+                </label>
+                <label>
+                    <input type="radio" name="receiptPreMoneyDefineStartPeriod" value="1">
+                    <span>大于等于收款期间</span>
+                </label>
+                <label>
+                    <input type="radio" name="receiptPreMoneyDefineStartPeriod" value="2">
+                    <span>大于收款期间</span>
+                </label>
+            </td>
+        </tr>
+		<tr class="js-receiptTaxRateReset">
+			<th>
+				<h4>零税率应收收款时税额重算设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>全部重算：</b>应收数据收款时，如果税率为0，则全部按照应税服务中设置的税率重算税额</p>
+						<p><b>仅非合同应收重算：</b>应收数据收款时，如果税率为0，则仅非合同应收按照应税服务中设置的税率重算税额；合同应收仍按照税率为0计算</p>
+						<p><b>全部不重算：</b>应收数据收款时，如果税率为0，税额全部仍然按照税率为0计算&#8203;</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="receiptTaxRateReset" value="0" checked="checked">
+					<span>全部重算</span>
+				</label>
+				<label>
+					<input type="radio" name="receiptTaxRateReset" value="1">
+					<span>仅非合同应收重算</span>
+				</label>
+				<label>
+					<input type="radio" name="receiptTaxRateReset" value="2">
+					<span>全部不重算</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>客户迁出业务控制 </h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>迁出操作时如果业主/租户存在欠款未交、预收款余额和押金余额未退，则不能进行迁出操作</p>
+						<p><b>关闭：</b>迁出操作时不校验业主/租户是否存在欠款未交、预收款余额和押金余额未退</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="customerMoveoutControl" value="1" onclick="customerMoveoutControlDateSet()" checked="checked">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="customerMoveoutControl" value="0" onclick="customerMoveoutControlDateSet()">
+					<span>关闭</span>
+				</label>
+
+			</td>
+		</tr>
+		<tr id="customerMoveoutControl">
+			<th>
+				<h4>受控业务类型 </h4>
+				
+					
+					
+					
+				
+			</th>
+			<td>
+				<span>
+					<input type="checkbox" name="arrears" value="arrearsAmount" checked="checked">
+					<span>欠款</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+				 	<input type="checkbox" name="advancePaymentBalance" value="preMoneyAmount" checked="checked">
+					<span>预收款余额</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+					<input type="checkbox" name="depositBalance" value="depositAmount" checked="checked">
+					<span>押金余额</span>
+				</span>
+			</td>
+		</tr>
+		
+			
+			
+				
+					
+					
+				
+				
+					
+					
+				
+			
+		
+		
+			
+			
+				
+					
+					
+				
+				
+					
+					
+				
+			
+		
+		
+			
+			
+				
+					
+					
+				
+				
+					
+					
+				
+			
+		
+		<tr class="js-preMoneyOffSetTransferPeriodSet">
+			<th>
+				<h4>预收款台账预收冲抵转款期间设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>选择“转款期间等于应收期间”，预收款台账【执行预收冲抵】操作时用户不可以选择“转款期间”，生成的转款单的“转款期间”等于应收账单的费用期间</p>
+						<p><b>关闭：</b>预收款台账【执行预收冲抵】操作时用户可以选择“转款期间”，生成的转款单的“转款期间”等于用户选择的期间</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="preMoneyOffSetTransferPeriodSet" value="1" onclick="controlPreOffSet()" checked="checked">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="preMoneyOffSetTransferPeriodSet" value="0" onclick="controlPreOffSet()">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<tr class="js-preMoneyOffSetTransferPeriodSetParam ">
+			<th>
+				<h4></h4>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="preMoneyOffSetTransferPeriodSetParam" value="0">
+					<span>转款期间自定义</span>
+				</label>
+				<label>
+					<input type="radio" name="preMoneyOffSetTransferPeriodSetParam" value="1" checked="checked">
+					<span>转款期间等于应收期间</span>
+				</label>
+				<label>
+					<input type="radio" name="preMoneyOffSetTransferPeriodSetParam" value="2">
+					<span>转款期间默认等于当前期间</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>预收款台账预收冲抵应收期间</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>自定义：</b>时间自定义</p>
+						<p><b>小于等于当前期间：</b>小于等于当前期间</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="manualReceiveArbillmatchStartPeriod" value="0" checked="checked">
+					<span>自定义</span>
+				</label>
+				<label>
+					<input type="radio" name="manualReceiveArbillmatchStartPeriod" value="1">
+					<span>小于等于当前期间</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th width="240"><h4>是否启用多级管控</h4></th>
+			<td>
+				<label class="marginRight20">
+					<input type="radio" name="multilevelControl" value="0">
+					<span>否</span>
+				</label>
+				<label class="marginRight20">
+					<input type="radio" name="multilevelControl" value="1" checked="checked">
+					<span>是</span>
+				</label>
+			</td>
+		</tr>
+		
+			<tr class="js-contractSubSign">
+				<th>
+					<h4>租赁合同分签业务数据隔离</h4>
+					<div class="tips">
+						<span class="icon">?</span>
+						<div class="con">
+							<p><b>租赁合同发生分签业务时运营公司与物业公司之间的业务数据需要相互隔离的业务场景（例如：运营公司在【收费管理】中只能看到租金的数据，物业公司在【收费管理】中只能看到管理费的数据）</b></p>
+							<p><b>开启：</b>租赁合同发生分签业务时运营公司与物业公司共同管理的项目，业务数据根据设置进行隔离</p>
+							<p><b>关闭：</b>租赁合同发生分签业务时运营公司与物业公司共同管理的项目，业务数据不进行隔离</p>
+						</div>
+					</div>
+				</th>
+				<td>
+					<label>
+						<input type="radio" name="contractSubSign" value="1" checked="checked">
+						<span>开启</span>
+					</label>
+					<label>
+						<input type="radio" name="contractSubSign" value="0">
+						<span>关闭</span>
+					</label>
+				</td>
+			</tr>
+		
+		<tr class="js-voucherEntryDescription">
+			<th>
+				<h4>凭证模板分录摘要设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>自定义固定信息：</b>生成凭证的摘要信息，取财务管理-凭证模板的第二步科目设置凭证分录用户自定义的“凭证摘要”，即取固定信息填充摘要</p>
+						<p><b>自定义配置：</b>按提供的源数据自由选择或组合，生成凭证时系统根据分录信息动态生成摘要</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="voucherEntryDescription" value="0" onclick="controlVoucherSet()">
+					<span>自定义固定信息</span>
+				</label>
+				<label>
+					<input type="radio" name="voucherEntryDescription" value="1" onclick="controlVoucherSet()" checked="checked">
+					<span>自定义配置</span>
+				</label>
+			</td>
+		</tr>
+		<tr id="js-vocher-set">
+			<th>
+				<h4>凭证摘要自动获取配置</h4>
+			</th><td class="col">
+				<div style="width: 50%;">
+					<div class="col voucher" style="width:100%;">
+						<div class="set voucher-set" style="width: 60%;">
+	<ul>
+		
+		<li class="clause-content-item" data-id="">
+			<div class="opt-bar fr">
+				<div class="fr  pointer arrow-container">
+					<i class="iconfont icon-sort-up block" onclick="editInvoicedRemarkSetMove(this, 2, -1)"></i>
+					<i class="iconfont icon-sort-down block" onclick="editInvoicedRemarkSetMove(this, 2, 1)"></i>
+				</div>
+			</div>
+			<div class="overflow-hidden">
+				<span name="projectName" class="remark-item">项目名称</span>
+			</div>
+		</li>
+		
+		<li class="clause-content-item" data-id="">
+			<div class="opt-bar fr">
+				<div class="fr  pointer arrow-container">
+					<i class="iconfont icon-sort-up block" onclick="editInvoicedRemarkSetMove(this, 2, -1)"></i>
+					<i class="iconfont icon-sort-down block" onclick="editInvoicedRemarkSetMove(this, 2, 1)"></i>
+				</div>
+			</div>
+			<div class="overflow-hidden">
+				<span name="moneydefine" class="remark-item">收费项目</span>
+			</div>
+		</li>
+		
+	</ul>
+</div>
+							<span class="pointer" onclick="api.basedata.enterpriseParam.showRemarkSet.call(this,'voucher')">设置</span>
+					</div>
+					<ul class="moneyDefine voucherSet hide" style="width: 60%;">
+						<li class="item">
+							<label for="projectName">
+								<input type="checkbox" name="projectName" value="项目名称" data-name="projectName">项目名称
+							</label>
+						</li>
+						<li class="item">
+							<label for="projectOrgName">
+								<input type="checkbox" name="projectOrgName" value="项目归属公司" data-name="projectOrgName">项目归属公司
+							</label>
+						</li>
+						<li class="item">
+							<label for="moneydefine">
+								<input type="checkbox" name="moneydefine" value="收费项目" data-name="moneydefine">收费项目
+							</label>
+						</li>
+						<li class="item">
+							<label for="moneydefine1">
+								<input type="checkbox" name="moneydefine1" value="收费项目(转款单冲抵/转入款项)" data-name="moneydefine1">收费项目(转款单冲抵/转入款项)
+							</label>
+						</li>
+						<li class="item">
+							<label for="customer">
+								<input type="checkbox" name="customer" value="客户" data-name="customer">客户
+							</label>
+						</li>
+						<li class="item">
+							<label for="receiveDate">
+								<input type="checkbox" name="receiveDate" value="缴费周期" data-name="receiveDate">缴费周期
+							</label>
+						</li>
+						<li class="item">
+							<label for="amount">
+								<input type="checkbox" name="amount" value="金额" data-name="amount">金额
+							</label>
+						</li>
+						<li class="item">
+							<label for="room"><input type="checkbox" name="room" value="房号" data-name="room">房号</label>
+						</li>
+						<li class="item">
+							<label for="buildingRoom"><input type="checkbox" name="buildingRoom" value="楼栋-单元-房号" data-name="buildingRoom">楼栋-单元-房号</label>
+						</li>
+						<li class="item">
+							<label for="tranDateSelect"><input type="checkbox" name="tranDateSelect" value="收/转/退自定义日期（凭证模板）" data-name="tranDateSelect">收/转/退自定义日期（凭证模板）</label>
+						</li>
+						<li class="item">
+							<label for="invoicedNumber"><input type="checkbox" name="invoicedNumber" value="发票号" data-name="invoicedNumber">发票号</label>
+						</li>
+						<li class="item">
+							<label for="chequeNumber"><input type="checkbox" name="chequeNumber" value="收据号" data-name="chequeNumber">收据号</label>
+						</li>
+                        <li class="item">
+                            <label for="voucherNumber"><input type="checkbox" name="voucherNumber" value="凭证编号" data-name="voucherNumber">凭证编号</label>
+                        </li>
+						<li class="item">
+							<label for="receiptType"><input type="checkbox" name="receiptType" value="收款类型" data-name="receiptType">收款类型</label>
+						</li>
+						<li class="item">
+                            <label for="vouTempEntryDesc"><input type="checkbox" name="vouTempEntryDesc" value="凭证模版分录摘要" data-name="vouTempEntryDesc">凭证模版分录摘要</label>
+                        </li>
+						<li class="item">
+                            <label for="period"><input type="checkbox" name="period" value="期间(YY年MM月)" data-name="period">期间(YY年MM月)</label>
+                        </li>
+						<li class="item">
+							<label for="projectGroup"><input type="checkbox" name="projectGroup" value="组团" data-name="projectGroup">组团</label>
+						</li>
+						<li class="item">
+							<label for="receiptEntryDesc"><input type="checkbox" name="receiptEntryDesc" value="收款备注" data-name="receiptEntryDesc">收款备注</label>
+						</li>
+						<li class="item">
+							<label for="moneydefineCustomName"><input type="checkbox" name="moneydefineCustomName" value="自定义收费项目名称" data-name="moneydefineCustomName">自定义收费项目名称</label>
+						</li>
+						<li class="item">
+							<label for="moneydefineCustomName1"><input type="checkbox" name="moneydefineCustomName1" value="自定义收费项目名称(转款单转入款项)" data-name="moneydefineCustomName1">自定义收费项目名称(转款单转入款项)</label>
+						</li>
+						<li class="item">
+							<label for="receivePeriod"><input type="checkbox" name="receivePeriod" value="应收期间" data-name="receivePeriod">应收期间</label>
+						</li>
+						<li class="item">
+							<label for="receiveChargeDate"><input type="checkbox" name="receiveChargeDate" value="计费期间（取最早时间和最晚时间）" data-name="receiveChargeDate">计费期间（取最早时间和最晚时间）</label>
+						</li>
+                        <li class="item">
+                              <label for="linkChar"><input type="checkbox" name="linkChar" value="连接符号:-" data-name="linkChar">连接符号-(默认" ")</label>
+                        </li>
+                        <li class="item">
+                              <label for="moneyDefineType"><input type="checkbox" name="moneyDefineType" value="收费项目分类" data-name="moneyDefineType">收费项目分类</label>
+                        </li>
+                         <li class="item">
+                              <label for="moneyDefineType1"><input type="checkbox" name="moneyDefineType1" value="收费项目分类(转款单冲抵/转入款项)" data-name="moneyDefineType1">收费项目分类(转款单冲抵/转入款项)</label>
+                        </li>
+						<button class="btn setBtn" onclick="api.basedata.enterpriseParam.setRemarkOk.call(this,'voucher')">确定</button>
+					</ul>
+				</div>
+			</td>
+			
+		</tr>
+		<tr id="js-vouEntryDes-set" class="js-vouEntryDesViewDetail">
+            <th>
+                <h4>多明细数据时摘要是否单独展示</h4>
+                <div class="tips">
+                    <span class="icon">?</span>
+                    <div class="con">
+                        <p><b>否：</b>摘要拼接汇总展示成一条</p>
+                        <p><b>是：</b>每条明细数据对应展示一条摘要（存储在辅助核算明细表里</p>
+                    </div>
+                </div>
+            </th>
+            <td>
+                <label>
+                    <input type="radio" name="vouEntryDesViewDetail" value="0">
+                    <span>否</span>
+                </label>
+                <label>
+                    <input type="radio" name="vouEntryDesViewDetail" value="1" checked="checked">
+                    <span>是</span>
+                </label>
+            </td>
+        </tr>
+		<tr class="js-transEasDisplayProjectName">
+			<th>
+				<h4>凭证传输EAS系统摘要默认展示项目名</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启</b>&nbsp;传输EAS系统默认带项目名</p>
+						<p><b>关闭</b>&nbsp;传输EAS系统默认不带项目名</p>
+						<p style="color:red"><b>注意：建议关闭该参数</b></p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="transEasDisplayProjectName" value="1">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="transEasDisplayProjectName" value="0" checked="checked">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+        <tr class="js-isUsedVoucherCall">
+            <th>
+                <h4>调用EAS采用安全模式调用</h4>
+                <div class="tips">
+                    <span class="icon">?</span>
+                    <div class="con">
+                        <p><b>是</b>&nbsp;EAS服务器开启安全模式,调用采用安全模式</p>
+                        <p><b>否</b>&nbsp;EAS服务器未开启安全模式,调用采用非安全模式</p>
+                        <p style="color:red"><b>注意：建议关闭该参数</b></p>
+                    </div>
+                </div>
+            </th>
+            <td>
+                <label>
+                    <input type="radio" name="isUsedVoucherCall" value="1">
+                    <span>是</span>
+                </label>
+                <label>
+                    <input type="radio" name="isUsedVoucherCall" value="0" checked="checked">
+                    <span>否</span>
+                </label>
+            </td>
+        </tr>
+        <tr class="js-transK3CloudSave">
+            <th>
+                <h4>凭证传输到K3Cloud系统的凭证状态</h4>
+            </th>
+            <td>
+                <!--0不核销，暂存1核销，暂存2不核销，提交3核销，提交-->
+                <label>
+                    <input type="radio" name="transK3CloudStatus" value="0" checked="checked">
+                    <span>暂存</span>
+                </label>
+                <label>
+                    <input type="radio" name="transK3CloudStatus" value="1">
+                    <span>保存</span>
+                </label>
+        
+        
+        
+        
+        
+            </td>
+        </tr>
+        <tr class="js-voucherEntryOrderByCustomer">
+            <th>
+                <h4>凭证传输到K3Cloud系统的凭证明细按客户排序(带有客户辅助核算生效)</h4>
+            </th>
+            <td>
+                <label>
+                    <input type="radio" name="voucherEntryOrderByCustomer" value="0" checked="checked">
+                    <span>否</span>
+                </label>
+                <label>
+                    <input type="radio" name="voucherEntryOrderByCustomer" value="1">
+                    <span>是</span>
+                </label>
+            </td>
+        </tr>
+        <tr class="js-voucherk3CloudAutoAdjustField">
+            <th>
+                <h4>凭证/单据传输到K3Cloud系统的凭证自动适应排序</h4>
+                 <div class="tips">
+                    <span class="icon">?</span>
+                    <div class="con">
+                        <p style="color:red">
+                        <b>建议开启该参数,
+							1.已配置账簿,导入凭证是提示账簿不存在，开启自动适应排序参数
+							2.单据客户配置正常，组织信息正常，提示获取客户信息，组织信息异常，开启自动适应排序参数
+                        </b>
+                        </p>
+                    </div>
+                </div>
+            </th>
+            <td>
+                <label>
+                    <input type="radio" name="k3CloudAutoAdjustField" value="0" checked="checked">
+                    <span>否</span>
+                </label>
+                <label>
+                    <input type="radio" name="k3CloudAutoAdjustField" value="1">
+                    <span>是</span>
+                </label>
+            </td>
+        </tr>
+		<tr class="js-voucherSplitGroupTypeSet">
+			<th>
+				<h4>凭证分录展示方式</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>凭证模版分录汇总</b>&nbsp;凭证分录按照模版设置汇总</p>
+						<p><b>凭证模版分录合并方式汇总</b>&nbsp;凭证分录按照模版设置分录合并方式</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="voucherSplitGroupTypeSet" value="0">
+					<span>凭证模版分录汇总</span>
+				</label>
+				<label>
+					<input type="radio" name="voucherSplitGroupTypeSet" value="1" checked="checked">
+					<span>凭证模版分录合并方式汇总</span>
+				</label>
+			</td>
+		</tr>
+
+		<tr class="js-canEditDebitAndCreditAmount">
+			<th>
+				<h4>凭证借贷金额修改</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>可修改凭证分录中的借贷金额</p>
+						<p><b>关闭：</b>仅支持查看凭证分录中的借贷金额</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="canEditDebitAndCreditAmount" value="0">
+					<span>关闭</span>
+				</label>
+				<label>
+					<input type="radio" name="canEditDebitAndCreditAmount" value="1" checked="checked">
+					<span>开启</span>
+				</label>
+			</td>
+		</tr>
+        <tr class="js-canEditDebitAndCreditAmount">
+            <th>
+                <h4>凭证是否开启自定义核算项目</h4>
+                
+            </th>
+            <td>
+                <label>
+                    <input type="radio" name="selfAssistTypeSet" value="1" checked="checked">
+                    <span>开启</span>
+                </label>
+                <label>
+                    <input type="radio" name="selfAssistTypeSet" value="0">
+                    <span>关闭</span>
+                </label>
+            </td>
+        </tr>
+		<tr class="js-vouSearchOrgTheSameHandler">
+			<th>
+				<h4>凭证,账单,开票申请显示甲方公司可以展示相同名称的和禁用的</h4>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="vouSearchOrgTheSameHandler" value="1">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="vouSearchOrgTheSameHandler" value="0" checked="checked">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		
+		<tr class="js-isCancelCheckedFromEas">
+			<th>
+				<h4>收款退款作废是否验证</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>我家云作废单据需要调用财务系统接口,先判断财务系统对应单据是否允许作废,如允许删除可继续作废我家云单据，否则不允许删除我家云单据。</p>
+						<p><b>关闭：</b>我家云作废单据不需要需要调用财务系统接口,不进行判断对应单据是否允许作废</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="isCancelCheckedFromEas" value="0" checked="checked">
+					<span>关闭</span>
+				</label>
+				<label>
+					<input type="radio" name="isCancelCheckedFromEas" value="1">
+					<span>开启</span>
+				</label>
+			</td>
+		</tr>
+		
+		
+			<tr class="js-isBillSyncEAS">
+				<th>
+					<h4>单据自动同步至财务系统</h4>
+				</th>
+				<td>
+					<label>
+						<input type="radio" name="isBillSyncEAS" value="0" onclick="controlSyncEAS()" checked="checked">
+						<span>关闭</span>
+					</label>
+					<label>
+						<input type="radio" name="isBillSyncEAS" value="1" onclick="controlSyncEAS()">
+						<span>开启</span>
+					</label>
+				</td>
+			</tr>
+			<tr class="js-financeApp hide">
+				<th>
+					<h4>默认同步的财务系统</h4>
+				</th>
+				<td>
+					<div id="appList_syncBill">
+	<select id="app_syncbillselect" name="app_syncbillselect" class="select">
+		<option value="">请选择</option>
+		
+		<option value="79557d7b373f4956b2a5ca43e3babf81">xk.kdwjy.com星空对接(API方式)</option>
+		
+		<option value="a15b78a998164a868fb33bddf63f0fd9">xk.kdwjy.com</option>
+		
+		<option value="9a617052cafe49d1be0138de46212f16">天虹亿海</option>
+		
+		<option value="530f5f0098584059be6e5ee9646ee78b">天河城5.0打印</option>
+		
+		<option value="1010fbec404f4d228d95397e5a3f3562">螺蛳湾打印</option>
+		
+		<option value="690a330368ff47a19a2b38aabe01368b">恒创星空账套</option>
+		
+		<option value="cc5b230c462d4d689d65864578332b0d">苍穹打印平台02</option>
+		
+		<option value="db6a531e32394f40a37fb65cfb878498">K3兴达会员</option>
+		
+		<option value="8103140859f849e3a199a47211862967">传化</option>
+		
+		<option value="e0911ad92ec0496eb2000f21add09a55">恒禾置地Webservice6.0</option>
+		
+		<option value="bdde2391dd55429c917509d1aa795d21">金蝶</option>
+		
+		<option value="605190eb2c114a4b970c3e34ce471508">JDY</option>
+		
+		<option value="6538a8215eac435abd852de6c6af184d">其士测试</option>
+		
+		<option value="94c74f2468e04f6b9bc13772cad636d7">筋斗云</option>
+		
+	</select>
+</div>
+				</td>
+			</tr>
+		
+        
+		<tr class="js-isAutoImportVoucher">
+			<th>
+				<h4>凭证自动传输至财务系统</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p>该参数对手动生成的凭证无效</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="isAutoImportVoucher" value="0" onclick="controltImportVoucher()" checked="checked">
+					<span>关闭</span>
+				</label>
+				<label>
+					<input type="radio" name="isAutoImportVoucher" value="1" onclick="controltImportVoucher()">
+					<span>开启</span>
+				</label>
+			</td>
+		</tr>
+		<tr class="js-financeApp hide">
+			<th>
+				<h4>默认财务系统</h4>
+			</th>
+			<td>
+				<div id="appList_update">
+	<select id="app_select" name="app_select" class="select">
+		<option value="">请选择</option>
+		
+		<option value="79557d7b373f4956b2a5ca43e3babf81">xk.kdwjy.com星空对接(API方式)</option>
+		
+		<option value="a15b78a998164a868fb33bddf63f0fd9">xk.kdwjy.com</option>
+		
+		<option value="9a617052cafe49d1be0138de46212f16">天虹亿海</option>
+		
+		<option value="530f5f0098584059be6e5ee9646ee78b">天河城5.0打印</option>
+		
+		<option value="1010fbec404f4d228d95397e5a3f3562">螺蛳湾打印</option>
+		
+		<option value="690a330368ff47a19a2b38aabe01368b">恒创星空账套</option>
+		
+		<option value="cc5b230c462d4d689d65864578332b0d">苍穹打印平台02</option>
+		
+		<option value="db6a531e32394f40a37fb65cfb878498">K3兴达会员</option>
+		
+		<option value="8103140859f849e3a199a47211862967">传化</option>
+		
+		<option value="e0911ad92ec0496eb2000f21add09a55">恒禾置地Webservice6.0</option>
+		
+		<option value="bdde2391dd55429c917509d1aa795d21">金蝶</option>
+		
+		<option value="605190eb2c114a4b970c3e34ce471508">JDY</option>
+		
+		<option value="6538a8215eac435abd852de6c6af184d">其士测试</option>
+		
+		<option value="94c74f2468e04f6b9bc13772cad636d7">筋斗云</option>
+		
+	</select>
+</div>
+			</td>
+		</tr>
+        
+
+			<tr class="js-voucherExportFlag">
+				<th>
+					<h4>凭证导出至模板是否记录为已导出凭证</h4>
+					<div class="tips">
+						<span class="icon">?</span>
+						<div class="con">
+							<p><b>是：</b>导出至模板的凭证记录为已导出凭证；</p>
+							<p><b>否：</b>导出至模板的凭证不记录为已导出凭证。</p>
+						</div>
+					</div>
+				</th>
+				<td>
+					<label>
+						<input type="radio" name="voucherExportFlag" value="1" checked="checked">
+						<span>是</span>
+					</label>
+					<label>
+						<input type="radio" name="voucherExportFlag" value="0">
+						<span>否</span>
+					</label>
+				</td>
+			</tr>
+		
+		
+
+		
+
+            <tr class="js-isBillSyncDel">
+                <th>
+                    <h4>单据同步删除</h4>
+                    <div class="tips">
+                        <span class="icon">?</span>
+                        <div class="con">
+                            <p><b>不同步删除：</b>我家云删除单据时不进行同步删除对应财务系统中的单据</p>
+                            <p><b>同步删除：</b>我家云删除单据时先同步删除对应财务系统中的单据,删除成功才可以删除我家云中的单据</p>
+                            <p><b>反审核删除：</b>我家云删除单据时,先反审核单据、在进行同步删除对应财务系统中的单据,删除成功才可以删除我家云中的单据</p>
+                        </div>
+                    </div>
+                </th>
+                <td>
+                    <label>
+                        <input type="radio" name="billSyncDel" value="0" checked="checked">
+                        <span>不同步删除</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="billSyncDel" value="1">
+                        <span>同步删除</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="billSyncDel" value="2">
+                        <span>反审核删除</span>
+                    </label>
+                </td>
+            </tr>
+        
+
+         <tr class="js-transferBillPK3Style">
+            <th>
+                <h4>转款单推送星空方式</h4>
+                <div class="tips">
+                    <span class="icon">?</span>
+                    <div class="con">
+                        <p><b>转款单摸版：</b>按照配置的转款单摸版进行推送转款单数据</p>
+                        <p><b>转款单(拆分退款、收款单推送)：</b>转入款项的收款单+转出款项的退款单</p>
+                    </div>
+                </div>
+            </th>
+            <td>
+                <label>
+                    <input type="radio" name="transferBillPK3Style" value="0" checked="checked">
+                    <span>转款单摸版</span>
+                </label>
+                <label>
+                    <input type="radio" name="transferBillPK3Style" value="1">
+                    <span>转款单(拆分退款、收款单推送)</span>
+                </label>
+            </td>
+        </tr>
+
+        <tr class="js-K3CloudOutStockStyle">
+            <th>
+                <h4>销售出库类型出库单推送星空方式</h4>
+                <div class="tips">
+                    <span class="icon">?</span>
+                    <div class="con">
+                        <p>生成销售出库单或者生成销售订单</p>
+                    </div>
+                </div>
+            </th>
+            <td>
+                <label>
+                    <input type="radio" name="k3CloudOutStockStyle" value="0" checked="checked">
+                    <span>销售出库单</span>
+                </label>
+                <label>
+                    <input type="radio" name="k3CloudOutStockStyle" value="1">
+                    <span>销售订单</span>
+                </label>
+            </td>
+        </tr>
+
+
+		<tr class="js-workFlowFileUpdate">
+            <th>
+                <h4>工作流详情中允许修改附件</h4>
+                <div class="tips">
+                    <span class="icon">?</span>
+                    <div class="con">
+                        <p><b>开启：</b>能够在工作流详情中修改附件</p>
+                        <p><b>关闭：</b>工作流详情中只能查看附件</p>
+                    </div>
+                </div>
+            </th>
+            <td>
+                <label>
+                    <input type="radio" name="workFlowFileUpdate" value="1">
+                    <span>开启</span>
+                </label>
+                <label>
+                    <input type="radio" name="workFlowFileUpdate" value="0" checked="checked">
+                    <span>关闭</span>
+                </label>
+            </td>
+        </tr>
+
+        <tr class="js-CEACancelWorkflow">
+            <th>
+                <h4>工作流退回开始节点允许自动作废单据</h4>
+                <div class="tips">
+                    <span class="icon">?</span>
+                    <div class="con">
+                        <p><b>开启：</b>工作流退回开始节点触发自动作废单据(部分工作流特殊逻辑,开启该参数无效。需要配置,开始节点触发退回,开发节点废弃触发通知)</p>
+                        <p><b>关闭：</b>工作流退回开始节点不触发自动废弃</p>
+                    </div>
+                </div>
+            </th>
+            <td>
+                <label>
+                    <input type="radio" name="CEACancelWorkflow" value="1">
+                    <span>开启</span>
+                </label>
+                <label>
+                    <input type="radio" name="CEACancelWorkflow" value="0" checked="checked">
+                    <span>关闭</span>
+                </label>
+            </td>
+        </tr>
+
+		<tr>
+			<th width="240"><h4>库存管理-物料列表里物料名称是否允许重复</h4></th>
+			<td>
+				<label class="marginRight20">
+					<input type="radio" name="materielNameRepeatControl" value="0">
+					<span>否</span>
+				</label>
+				<label class="marginRight20">
+					<input type="radio" name="materielNameRepeatControl" value="1" checked="checked">
+					<span>是</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th width="240"><h4>库存管理-物料审核是否给仓库管理员发送短信提醒</h4></th>
+			<td>
+				<label class="marginRight20">
+					<input type="radio" name="sendMessageToStoreManagerControl" value="0" checked="checked">
+					<span>否</span>
+				</label>
+				<label class="marginRight20">
+					<input type="radio" name="sendMessageToStoreManagerControl" value="1">
+					<span>是</span>
+				</label>
+			</td>
+		</tr>
+        
+		<tr class="js-createReceiveAuditStatus">
+			<th>
+				<h4>确认应收范围设置</h4>
+				
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p>确认应收范围设置内的应收数据需要进行确认应收后才可以进行后续业务（例如：收款、银行托收、预收冲抵、打印缴费通知单、App收款等</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="checkbox" name="createReceiveAuditStatus" value="1">
+					<span>智能计费&amp;费用生成</span>
+				</label>
+				<label>
+					<input type="checkbox" name="handleCreateReceiveAuditStatus" value="1">
+					<span>费用录入</span>
+				</label>
+				
+				<label>
+					<input type="checkbox" name="handleShareReceiveAuditStatus" value="1">
+					<span>费用分摊</span>
+				</label>
+				<label>
+					<input type="checkbox" name="handleZLCreateReceiveAuditStatus" value="1">
+					<span>租赁模块生成的费用</span>
+				</label>
+				<label>
+					<input type="checkbox" name="handleTempCreateReceiveAuditStatus" value="1">
+					<span>临时费用台账录入费用</span>
+				</label>
+			</td>
+		</tr>
+        <tr class="js-roomInsWastageScale">
+            <th>
+                <h4>仪表损耗量保留小数位数</h4>
+                <div class="tips">
+                    <span class="icon">?</span>
+                    <div class="con">
+                        <p><b>系统将根据设置的小数位数进行后续计费, 默认四舍五入</b></p>
+                        <p><b>请在[仪表设置]--[仪表规格] 设置损耗计算方式</b></p>
+                    </div>
+                </div>
+            </th>
+            <td>
+                <label>
+                    <select class="select select-100" name="roomInsWastageScale">
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4" selected="selected">4</option>
+                    </select>
+
+                </label>
+            </td>
+        </tr>
+		<tr>
+			<th>
+				<h4>客户迁入业务控制</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>房间关联租赁合同时，可以进行业主的迁入操作</p>
+						<p><b>关闭：</b>房间关联租赁合同时，不能进行迁入操作</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="rentContractCanCheckIn" value="0">
+					<span>关闭</span>
+				</label>
+				<label>
+					<input type="radio" name="rentContractCanCheckIn" value="1" checked="checked">
+					<span>开启</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>入住审核客户数据加密</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>住户管理-入住审核页面客户手机号及证件进行加密显示</p>
+						<p><b>关闭：</b>住户管理-入住审核页面客户手机号及证件不进行加密显示</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="customerAuditMark" value="0">
+					<span>关闭</span>
+				</label>
+				<label>
+					<input type="radio" name="customerAuditMark" value="1" checked="checked">
+					<span>开启</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>客户信息名称房号数据加密</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>住户管理-客户信息页面客户名称房号进行加密显示</p>
+						<p><b>关闭：</b>住户管理-客户信息页面客户名称房号不进行加密显示</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="customerInfoMark" value="0">
+					<span>关闭</span>
+				</label>
+				<label>
+					<input type="radio" name="customerInfoMark" value="1" checked="checked">
+					<span>开启</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>银联托收业务审核设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>开启：</b>银联托收进行出盘操作，需要进行审批通过后将出盘信息传递给银联服务器处理</p>
+						<p><b>关闭：</b>银联托收进行出盘操作，即将出盘信息传递给银联服务器处理</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="remitNeedAudit" value="0" checked="checked">
+					<span>关闭</span>
+				</label>
+				<label>
+					<input type="radio" name="remitNeedAudit" value="1">
+					<span>开启</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>余额可冲抵日期计算规则设置</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>应收金额：</b>根据房间的预收款余额及已生成的应收金额计算“余额可冲抵日期”</p>
+						<p><b>收费标准：</b>根据房间的预收款余额及房间收费设置绑定的收费标准计算“余额可冲抵日期”</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="balanceArrDateCalRule" value="0">
+					<span>应收金额</span>
+				</label>
+				<label>
+					<input type="radio" name="balanceArrDateCalRule" value="1" checked="checked">
+					<span>收费标准</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>批量收款生成规则</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>按房间拆分：</b>根据房间维度拆分生成收款单</p>
+						<p><b>按客户合并：</b>根据客户维度合并生成收款单</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="receiptBillSplitRule" value="0" checked="checked">
+					<span>按房间拆分</span>
+				</label>
+				<label>
+					<input type="radio" name="receiptBillSplitRule" value="1">
+					<span>按客户合并</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>管家设置支持楼栋/房间多管家授权</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>关闭：</b>一个房间只能被一个管家管理</p>
+						<p><b>开启：</b>一个房间可以被多个管家管理</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="multiManager" value="0">
+					<span>关闭</span>
+				</label>
+				<label>
+					<input type="radio" name="multiManager" value="1" checked="checked">
+					<span>开启</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>显示收费项目自定义名称</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>控制范围：</b>业主端账单,管家端欠费催缴,部分api接口</p>
+						<p><b>关闭(默认)：</b>显示收费项目原名称</p>
+						<p><b>开启：</b>显示收费项目自定义名称,收费项目未设置自定义名称则仍显示原名称</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="showMoneydefineAutoName" value="0">
+					<span>关闭</span>
+				</label>
+				<label>
+					<input type="radio" name="showMoneydefineAutoName" value="1" checked="checked">
+					<span>开启</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>收款时是否按照费用期间顺序收款</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>关闭：</b>按照费用期间由远及近的顺序收款</p>
+						<p><b>开启：</b>按照费用期间由近及远的顺序收款</p>
+						<p style="color:red"><b>注意：</b>
+							收款要求费用期间连续.如果早期的费用不打算收: 1.冻结应收; 2.收款时先按指定费用期间筛选
+						</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="orderPeriodReceipt" value="1" onclick="controlOrderPeriodReceipt()" checked="checked">
+					<span>开启</span>
+				</label>
+				<label>
+					<input type="radio" name="orderPeriodReceipt" value="0" onclick="controlOrderPeriodReceipt()">
+					<span>关闭</span>
+				</label>
+			</td>
+		</tr>
+		<tr class="js-orderPeriodReceiptType " style="line-height: 30px;">
+			<th></th>
+			<td>
+				<label>
+					<input type="radio" name="orderPeriodReceiptType" value="0" checked="checked">
+					<span>按费用期间由远及近的顺序收款</span>
+				</label>
+				<label>
+					<input type="radio" name="orderPeriodReceiptType" value="1">
+					<span>按费用期间由近及远的顺序收款</span>
+				</label>
+			</td>
+		</tr>
+        <tr>
+            <th>
+                <h4>企业级合同编码规则</h4>
+                <div class="tips">
+                    <span class="icon">?</span>
+                    <div class="con">
+                        <p></p>
+                        <p><b>是：</b>开启企业级编码规则</p>
+                        <p><b>否：</b>不开启企业级编码规则</p>
+                        <p style="color:red"><b>注意：</b>开启该企业级编码规则并且关闭项目级编码规则时，此设置生效。
+                            同一个企业下所有项目新建租赁合同的合同编码是唯一的，且流水号连续。
+                            推荐设置的编码规则不要包含项目编码。
+                        </p>
+                    </div>
+                </div>
+            </th>
+            <td>
+                <label>
+                    <input type="radio" name="enterpriseLevelRentNumber" value="1" onclick="controlRentNumberRule()" checked="checked">
+                    <span>是</span>
+                </label>
+                <label>
+                    <input type="radio" name="enterpriseLevelRentNumber" value="0" onclick="controlRentNumberRule()">
+                    <span>否</span>
+                </label>
+                <label id="toNumberRuleSetLabel" class="">
+                    <a href="#" onclick="toUrl('编码规则', '/basedataIndex/toMain/codingRule')" style="color:#19D2A0;">进入编码规则进行设置</a>
+                </label>
+            </td>
+        </tr>
+		<tr>
+			<th>
+				<h4>住户登录手机与联系电话一致</h4>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="enterpriseLoginByLinkPhone" value="1">
+					<span>是</span>
+				</label>
+				<label>
+					<input type="radio" name="enterpriseLoginByLinkPhone" value="0" checked="checked">
+					<span>否</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>多角色住户默认登录类型</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p>默认使用业主及租户身份登录，如租赁客户下添加了同手机号的联系人，可切换成默认联系人登录</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="mutilJobLoingType" value="0" checked="checked">
+					<span>业主和租户</span>
+				</label>
+				<label>
+					<input type="radio" name="mutilJobLoingType" value="1">
+					<span>联系人</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>我家端(住户)登录信息保留时长</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p>我家默认1个月,不设置或者设置少于等于0为默认设置</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<span>保留时长</span>
+					<input type="text" class="input input-percent input-100" name="wjTokenExpireTime" value="30" onkeyup="(this.v=function(){this.value=this.value.replace(/[^0-9-]+/,'');}).call(this)" onblur="this.v();" maxlength="3" autocomplete="off">
+					<span>天</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>管家端登录信息保留时长</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p>管家默认1个月,不设置或者设置少于等于0为默认设置</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<span>保留时长</span>
+					<input type="text" class="input input-percent input-100" name="gjTokenExpireTime" value="30" onkeyup="(this.v=function(){this.value=this.value.replace(/[^0-9-]+/,'');}).call(this)" onblur="this.v();" maxlength="3" autocomplete="off">
+					<span>天</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>商家端登录信息保留时长</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p>商家默认1个月,不设置或者设置少于等于0为默认设置</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<span>保留时长</span>
+					<input type="text" class="input input-percent input-100" name="sjTokenExpireTime" value="30" onkeyup="(this.v=function(){this.value=this.value.replace(/[^0-9-]+/,'');}).call(this)" onblur="this.v();" maxlength="3" autocomplete="off">
+					<span>天</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>权责数据保留位是否和收费项目设置保持一致</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>是：</b>收费项目对应的权责数据和收费项目设置保持一致</p>
+						<p><b>否：</b>系统默认保持两位小数</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="rightReservedUseMoneydefine" value="1">
+					<span>是</span>
+				</label>
+				<label>
+					<input type="radio" name="rightReservedUseMoneydefine" value="0" checked="checked">
+					<span>否</span>
+				</label>
+			</td>
+		</tr>
+		<tr>
+			<th>
+				<h4>应收统计表查询是否展示禁用收费项目数据</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>是：</b>展示禁用收费项目数据</p>
+						<p><b>否：</b>不展示禁用收费项目数据</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label>
+					<input type="radio" name="showDisableMoneydefine" value="1" checked="checked">
+					<span>是</span>
+				</label>
+				<label>
+					<input type="radio" name="showDisableMoneydefine" value="0">
+					<span>否</span>
+				</label>
+			</td>
+		</tr>
+        <tr>
+            <th>
+                <h4>自助缴费机收据打印模版</h4>
+            </th>
+            <td>
+                <label>
+                    <input type="text" readonly="true" id="selfRobotReceiptBillPrintTemplate" class="input input-percent" value="鲁商收据（3行循环）" val-id="055cfd9a42c14823bf4bc37a6a25a10e" style="width: 500px;" autocomplete="off">
+                    <i class="iconfont icon-del" style="position: relative;left: -25px;top: 3px;font-size: 18px;cursor: pointer" onclick="api.basedata.enterpriseParam.clearPrintTemplate.call(this,event)"></i>
+                </label>
+            </td>
+        </tr>
+        <!-- 自助缴费机发票打印位置设置 -->
+        <tr>
+            <th>
+                <h4>自助缴费机发票打印位置设置</h4>
+                <div class="tips">
+                    <span class="icon">?</span>
+                    <div class="con">
+                        <p><b>开启：</b>用户可自定义发票打印起始位置xy值</p>
+                        <p><b>关闭：</b>原单按A4纸格式打印</p>
+                    </div>
+                </div>
+            </th>
+            <td>
+                <label>
+                    <input type="radio" name="selfRobotInvoicedPrintSetting" value="1" onclick="controlInvoicedPrintSetting()">
+                    <span>开启</span>
+                </label>
+                <label>
+                    <input type="radio" name="selfRobotInvoicedPrintSetting" value="0" onclick="controlInvoicedPrintSetting()" checked="checked">
+                    <span>关闭</span>
+                </label>
+            </td>
+        </tr>
+        <tr class="js-selfInvoicedPrint-set hide">
+            <th></th>
+            <td>
+                <label>
+                    <span>X值</span>
+                    <input type="text" class="input input-percent input-100" name="invoicedPrintXValue" value="0" onkeyup="(this.v=function(){this.value=this.value.replace(/[^0-9-]+/,'');}).call(this)" onblur="this.v();" maxlength="5" autocomplete="off">
+                </label>
+                <label>
+                    <span>Y值</span>
+                    <input type="text" class="input input-percent input-100" name="invoicedPrintYValue" value="0" onkeyup="(this.v=function(){this.value=this.value.replace(/[^0-9-]+/,'');}).call(this)" onblur="this.v();" maxlength="5" autocomplete="off">
+                </label>
+            </td>
+        </tr>
+        <!-- 自助缴费机发票打印位置设置 -->
+		<tr>
+			<th width="240">
+				<h4>
+					企业是否开启欠费催缴提示短信模板（简）
+				</h4>
+				<div class="tips">
+					<span class="icon">?</span>
+					<div class="con">
+						<p><b>是：</b>需要启用短信模板[欠费催缴提醒短信模板(简)], 且催缴短信不支持缴费云小程序链接</p>
+					</div>
+				</div>
+			</th>
+			<td>
+				<label class="marginRight20">
+					<input type="radio" name="chargeOweRemindControl" value="0" checked="checked">
+					<span>否</span>
+				</label>
+				<label class="marginRight20">
+					<input type="radio" name="chargeOweRemindControl" value="1">
+					<span>是</span>
+				</label>
+			</td>
+		</tr>
+<!-- 客户信息高级导出时支持项目归属组织管理员手机验证码验证 -->
+<tr>
+	<th width="240">
+		<h4>
+			客户信息高级导出验证手机号设置
+		</h4>
+		<div class="tips">
+			<span class="icon">?</span>
+			<div class="con">
+				<p>项目归属组织管理员: 如项目归属组织设置了多个管理员系统将会随机获取其中一个管理手机号进行验证<br>指定角色: 根据导出数据项目匹配授权了此角色的员工，获取员工的手机号进行验证，如有多个员工则匹配其中一个员工</p>
+			</div>
+		</div>
+	</th>
+	<td>
+		<label class="marginRight20 marginTop6">
+			<input type="radio" name="cusHignExportVaildate" value="0">
+			<span>关键用户手机号</span>
+		</label>
+		<label class="marginRight20 marginTop6">
+			<input type="radio" name="cusHignExportVaildate" value="1">
+			<span>项目归属组织管理员</span>
+		</label>
+		<label class="marginRight20 marginTop6">
+			<input type="radio" name="cusHignExportVaildate" value="2" checked="checked">
+			<span>指定角色</span>
+			<input type="text" class="input input-percent" autocomplete="off" style="width: inherit;" id="jobRoleSelect" placeholder="选择角色" onclick="api.basedata.enterpriseParam.jobRoleBox.call(this)">
+		</label>
+		<input type="hidden" value="2" id="cusHignExportVaildate">
+		<input type="hidden" value="最高管理权限" id="cusHignExportVaildateJobRoleName">
+	</td>
+</tr>
+<tr>
+	<th width="240">
+		<h4>
+			是否开启快速新增客户
+		</h4>
+		<div class="tips">
+			<span class="icon">?</span>
+			<div class="con">
+				<p>是，新增客户只需要填写客户名称、客户类型、所属项目等关键信息完成快速创建 <br>否，新增客户需要填写信息相对比较全面</p>
+			</div>
+		</div>
+	</th>
+	<td>
+		<label class="marginRight20">
+			<input type="radio" name="quickAddCustomer" value="1" checked="checked">
+			<span>是</span>
+		</label>
+		<label class="marginRight20">
+			<input type="radio" name="quickAddCustomer" value="0">
+			<span>否</span>
+		</label>
+	</td>
+</tr>
+<tr>
+	<th width="240">
+		<h4>
+			客户税务信息开票名称是否默认为客户名称
+		</h4>
+		
+	</th>
+	<td>
+		<label class="marginRight20">
+			<input type="radio" name="buyerInvoicedNameIsCustomerName" value="1">
+			<span>是</span>
+		</label>
+		<label class="marginRight20">
+			<input type="radio" name="buyerInvoicedNameIsCustomerName" value="0" checked="checked">
+			<span>否</span>
+		</label>
+	</td>
+</tr>
+<tr class="js-createReceiveAuditStatus">
+	<th>
+		<h4>租赁客户新增必填证件类型设置</h4>
+		<div class="tips">
+			<span class="icon">?</span>
+			<div class="con">
+				<p>勾选的客户类型在新增和修改时会提示证件类型必填，没勾选则非必填。</p>
+			</div>
+		</div>
+	</th>
+	<td>
+		<label>
+			<input type="checkbox" name="newCustomerMustFillCTypeP" value="1" checked="checked">
+			<span>个人客户</span>
+		</label>
+		<label>
+			<input type="checkbox" name="newCustomerMustFillCTypeE" value="1">
+			<span>企业客户</span>
+		</label>
+		<label>
+			<input type="checkbox" name="newCustomerMustFillCTypeS" value="1" checked="checked">
+			<span>个体户</span>
+		</label>
+		<label>
+			<input type="checkbox" name="newCustomerMustFillCTypeSOE" value="1">
+			<span>国有企业</span>
+		</label>
+		<label>
+			<input type="checkbox" name="newCustomerMustFillCTypeG" value="1">
+			<span>政府机构</span>
+		</label>
+		<label>
+			<input type="checkbox" name="newCustomerMustFillCTypeO" value="1">
+			<span>其他</span>
+		</label>
+	</td>
+</tr>
+<tr class="js-createReceiveAuditStatus">
+	<th>
+		<h4>租赁客户新增必填证件号码设置</h4>
+		<div class="tips">
+			<span class="icon">?</span>
+			<div class="con">
+				<p>勾选的客户类型在新增和修改时会提示证件号码必填，没勾选则非必填。</p>
+			</div>
+		</div>
+	</th>
+	<td>
+		<label>
+			<input type="checkbox" name="newCustomerMustFillCNumberP" value="1" checked="checked">
+			<span>个人客户</span>
+		</label>
+		<label>
+			<input type="checkbox" name="newCustomerMustFillCNumberE" value="1">
+			<span>企业客户</span>
+		</label>
+		<label>
+			<input type="checkbox" name="newCustomerMustFillCNumberS" value="1" checked="checked">
+			<span>个体户</span>
+		</label>
+		<label>
+			<input type="checkbox" name="newCustomerMustFillCNumberSOE" value="1">
+			<span>国有企业</span>
+		</label>
+		<label>
+			<input type="checkbox" name="newCustomerMustFillCNumberG" value="1">
+			<span>政府机构</span>
+		</label>
+		<label>
+			<input type="checkbox" name="newCustomerMustFillCNumberO" value="1">
+			<span>其他</span>
+		</label>
+	</td>
+</tr>
+<tr class="js-createReceiveAuditStatus">
+	<th>
+		<h4>租赁客户新增必填手机号码设置</h4>
+		<div class="tips">
+			<span class="icon">?</span>
+			<div class="con">
+				<p>勾选的客户类型在新增和修改时会提示手机号码必填，没勾选则非必填，个人客户默认必须填写且不允许修改。</p>
+			</div>
+		</div>
+	</th>
+	<td>
+		<label>
+			<input type="checkbox" name="newCustomerMustFillPhoneP" value="1" disabled="true" checked="checked">
+			<span>个人客户</span>
+		</label>
+		<label>
+			<input type="checkbox" name="newCustomerMustFillPhoneE" value="1">
+			<span>企业客户</span>
+		</label>
+		<label>
+			<input type="checkbox" name="newCustomerMustFillPhoneS" value="1" disabled="true" checked="checked">
+			<span>个体户</span>
+		</label>
+		<label>
+			<input type="checkbox" name="newCustomerMustFillPhoneSOE" value="1">
+			<span>国有企业</span>
+		</label>
+		<label>
+			<input type="checkbox" name="newCustomerMustFillPhoneG" value="1">
+			<span>政府机构</span>
+		</label>
+		<label>
+			<input type="checkbox" name="newCustomerMustFillPhoneO" value="1">
+			<span>其他</span>
+		</label>
+	</td>
+</tr>
+<tr>
+	<th width="240">
+		<h4>
+			欠款原因录入规则设置
+		</h4>
+	</th>
+	<td>
+		<label class="marginRight20">
+			<input type="radio" name="arrearsReasonNumberRule" value="1">
+			<span>（房间+客户）支持多个欠款原因</span>
+		</label>
+		<label class="marginRight20">
+			<input type="radio" name="arrearsReasonNumberRule" value="0" checked="checked">
+			<span>（房间+客户）仅支持单个欠款原因</span>
+		</label>
+	</td>
+</tr>
+<tr>
+	<th>
+		<h4>合同审批通过是否推送应收拆分表数据</h4>
+		<div class="tips">
+			<span class="icon">?</span>
+			<div class="con">
+				<p><b>是：</b>合同审批通过推送应收拆分表数据</p>
+				<p><b>否：</b>合同审批通过不推送应收拆分表数据，手动进行导入</p>
+			</div>
+		</div>
+	</th>
+	<td>
+		<label>
+			<input type="radio" name="contractAuditSendRightCount" value="1" checked="checked">
+			<span>是</span>
+		</label>
+		<label>
+			<input type="radio" name="contractAuditSendRightCount" value="0">
+			<span>否</span>
+		</label>
+	</td>
+</tr>
+<!-- 西保 调价单-低保收入线调整 -->
+<tr class="hide">
+	<th>
+		<h4>调价单-低保收入线调整</h4>
+	</th>
+	<td>
+		<input type="text" class="input input-100" id="miniIncomeAmount" name="miniIncomeAmount" value="0" autocomplete="off">
+		<span>元</span>
+	</td>
+</tr>
+<tr>
+	<th>
+		<h4>开票页面是否校验房间甲方公司与税盘公司的一致性</h4>
+	</th>
+	<td>
+		<label>
+			<input type="radio" name="checkRoomAndTaxPartA" value="1">
+			<span>是</span>
+		</label>
+		<label>
+			<input type="radio" name="checkRoomAndTaxPartA" value="0" checked="checked">
+			<span>否</span>
+		</label>
+	</td>
+</tr>
+<tr>
+	<th>
+		<h4>抄表生成费用是否生成失败明细</h4>
+	</th>
+	<td>
+		<label>
+			<input type="radio" name="showGeneratingReceiveResult" value="1" checked="checked">
+			<span>是</span>
+		</label>
+		<label>
+			<input type="radio" name="showGeneratingReceiveResult" value="0">
+			<span>否</span>
+		</label>
+	</td>
+</tr>
+
+<tr>
+	<th>
+		<h4>房间仪表二维码打印名称设置</h4>
+		<div class="tips">
+			<span class="icon">?</span>
+			<div class="con">
+				<p><b>开启：</b>房间仪表二维码打印名称支持自定义配置</p>
+				<p><b>关闭：</b>房间仪表二维码打印名称默认为仪表名称</p>
+				<p><b>注：</b>房间和客户取值生成二维码时该房间仪表绑定的最新的房间和客户名称</p>
+			</div>
+		</div>
+	</th>
+	<td>
+		<label>
+			<input type="radio" name="roomInsQRCodeName" value="1" onclick="controlRoomInsQRCodeName()">
+			<span>开启</span>
+		</label>
+		<label>
+			<input type="radio" name="roomInsQRCodeName" value="0" onclick="controlRoomInsQRCodeName()" checked="checked">
+			<span>关闭</span>
+		</label>
+	</td>
+</tr>
+<tr id="js-roomInsQRCodeNameSet" class="hide">
+	<th>
+		<h4>房间仪表二维码打印名称设置规则</h4>
+	</th><td class="col">
+		<div style="width: 50%;">
+			<div class="col receive" style="width:100%;">
+				<div class="set roomInsQRCodeName-set" style="width: 60%;">
+	<ul>
+		
+		<li class="clause-content-item" data-id="">
+			<div class="opt-bar fr">
+				<div class="fr  pointer arrow-container">
+					<i class="iconfont icon-sort-up block" onclick="editInvoicedRemarkSetMove(this, 2, -1)"></i>
+					<i class="iconfont icon-sort-down block" onclick="editInvoicedRemarkSetMove(this, 2, 1)"></i>
+				</div>
+			</div>
+			<div class="overflow-hidden">
+				<span name="roomInsName" class="remark-item">仪表名称</span>
+			</div>
+		</li>
+		
+		<li class="clause-content-item" data-id="">
+			<div class="opt-bar fr">
+				<div class="fr  pointer arrow-container">
+					<i class="iconfont icon-sort-up block" onclick="editInvoicedRemarkSetMove(this, 2, -1)"></i>
+					<i class="iconfont icon-sort-down block" onclick="editInvoicedRemarkSetMove(this, 2, 1)"></i>
+				</div>
+			</div>
+			<div class="overflow-hidden">
+				<span name="room" class="remark-item">房间</span>
+			</div>
+		</li>
+		
+	</ul>
+</div>
+				<span class="pointer" onclick="api.basedata.enterpriseParam.showRemarkSet.call(this, 'roomInsQRCodeName')">设置</span>
+			</div>
+			<!-- moneyDefine是样式,roomInsQRCodeNameSet用于选择器 -->
+			<ul class="moneyDefine roomInsQRCodeNameSet hide" style="width: 60%; margin-left:5px;">
+				<li class="item">
+					<label for="roomInsName">
+						<input type="checkbox" name="roomInsName" value="仪表名称" data-name="roomInsName">
+						仪表名称
+					</label>
+				</li>
+				<li class="item">
+					<label for="room">
+						<input type="checkbox" name="room" value="房间" data-name="room">房间
+					</label>
+				</li>
+				<li class="item">
+					<label for="customer">
+						<input type="checkbox" name="customer" value="客户" data-name="customer">客户
+					</label>
+				</li>
+				<button class="btn setBtn" onclick="api.basedata.enterpriseParam.setRemarkOk.call(this, 'roomInsQRCodeName')">确定</button>
+			</ul>
+		</div>
+	</td>
+	
+</tr>
+<tr>
+	<th>
+		<h4>发票申请开票后自动发送邮件</h4>
+	</th>
+	<td>
+		<label>
+			<input type="radio" name="invoicedApplySendEmail" value="1" checked="checked">
+			<span>是</span>
+		</label>
+		<label>
+			<input type="radio" name="invoicedApplySendEmail" value="0">
+			<span>否</span>
+		</label>
+	</td>
+</tr>
+<tr>
+	<th>
+		<h4>收款凭证业务日期是否默认为收款业务日期</h4>
+		<div class="tips">
+			<span class="icon">?</span>
+			<div class="con">
+				<p><b>是：</b>收款凭证业务日期默认为收款业务日期</p>
+				<p><b>否：</b>收款凭证业务日期不默认为收款业务日期</p>
+				<p><b>注：</b>该参数仅针对按单据或单据编码汇总方式生成的收款凭证模板生效</p>
+			</div>
+		</div>
+	</th>
+	<td>
+		<label>
+			<input type="radio" name="voucherFillDateSet" value="2">
+			<span>是(包含业务日期汇总)</span>
+		</label>
+		<label>
+			<input type="radio" name="voucherFillDateSet" value="1" checked="checked">
+			<span>是</span>
+		</label>
+		<label>
+			<input type="radio" name="voucherFillDateSet" value="0">
+			<span>否</span>
+		</label>
+	</td>
+</tr>
+<tr>
+	<th>
+		<h4>费用录入应收日期设置</h4>
+		<div class="tips">
+			<span class="icon">?</span>
+			<div class="con">
+				<p><b>仅可录入当天及之前：</b>在应收查询页面录入或批量导入应收时，日期仅能填写当天及之前的日期</p>
+				<p><b>关闭：</b>在应收查询页面录入或批量导入应收时，可填写任意日期</p>
+				<p><b>注：</b>若设置了费用录入应收日期是否根据期间自动填充参数，则以该参数设置的填充规则为准</p>
+			</div>
+		</div>
+	</th>
+	<td>
+		<label>
+			<input type="radio" name="arDateSet" value="1">
+			<span>仅可录入当天及之前</span>
+		</label>
+		<label>
+			<input type="radio" name="arDateSet" value="0" checked="checked">
+			<span>关闭</span>
+		</label>
+	</td>
+</tr>
+<tr class="js-createReceiveAuditStatus">
+	<th>
+		<h4>费用录入对象类型设置</h4>
+		<div class="tips">
+			<span class="icon">?</span>
+			<div class="con">
+				<p>默认全部勾选、下拉默认选择房间且不允许修改，可根据业务需要开启或关闭其他类型费用录入</p>
+			</div>
+		</div>
+	</th>
+	<td>
+		<label>
+			<input type="checkbox" name="enterReceiveByRoom" value="1" disabled="true" checked="checked">
+			<span>房间</span>
+		</label>
+		<label>
+			<input type="checkbox" name="enterReceiveByCourse" value="1">
+			<span>场地</span>
+		</label>
+		<label>
+			<input type="checkbox" name="enterReceiveByAds" value="1">
+			<span>广告位</span>
+		</label>
+		<label>
+			<input type="checkbox" name="enterReceiveByCarPark" value="1">
+			<span>车位</span>
+		</label>
+		<label>
+			<input type="checkbox" name="enterReceiveByCustomer" value="1" checked="checked">
+			<span>客户</span>
+		</label>
+		<label>
+			<input type="checkbox" name="enterReceiveByEmptyRoom" value="1">
+			<span>空置费房间</span>
+		</label>
+	</td>
+</tr>
+<tr>
+	<th>
+        <h4>费用生成时是否关联合同信息<a href="https://help.kdwjy.com/open/doc/api/detail/658d4f452646ae002ff9f1dc/658d5060c7e90400354aa2bf" target="_blank"> <i class="iconfont icon-help"></i></a></h4>
+        
+    </th>
+    <td>
+        <label>
+            <input type="radio" onclick="controlRelationContractInfoSet()" name="createReceiveRelationContract" value="1" checked="checked">
+            <span>是</span>
+        </label>
+        <label>
+            <input type="radio" onclick="controlRelationContractInfoSet()" name="createReceiveRelationContract" value="0">
+            <span>否</span>
+        </label>
+    </td>
+</tr>
+<tr id="js-relationContractReceiveUpdateCusSet">
+	<th>
+		<h4>费用关联合同信息是否更新客户</h4>
+		<div class="tips">
+			<span class="icon">?</span>
+			<div class="con">
+				<p><b>1、是：</b>通过智能计费、仪表费用生成、公区仪表自定义分摊、费用录入的费用关联房间所属的合同编码，若该合同编码更换客户，则对应应收收费对象显示新客户名称；</p>
+				<p><b>2、否：</b>通过智能计费、仪表费用生成、公区仪表自定义分摊、费用录入的费用关联房间所属的合同编码，若该合同编码更换客户，则对应应收收费对象仍显示旧客户名称。</p>
+			</div>
+		</div>
+	</th>
+	<td>
+		<label>
+			<input type="radio" name="relationContractReceiveUpdateCusSet" value="1">
+			<span>是</span>
+		</label>
+		<label>
+			<input type="radio" name="relationContractReceiveUpdateCusSet" value="0" checked="checked">
+			<span>否</span>
+		</label>
+	</td>
+</tr>
+<tr id="js-relationContractReceivePenaltySet">
+	<th>
+		<h4>关联合同费用违约金计算规则</h4>
+		
+	</th>
+	<td>
+		<label>
+			<input type="radio" name="relationContractReceivePenaltySet" value="0" checked="checked">
+			<span>按收费项目的违约金设置</span>
+		</label>
+		<label>
+			<input type="radio" name="relationContractReceivePenaltySet" value="1">
+			<span>按合同的违约金设置</span>
+		</label>
+	</td>
+</tr>
+<tr id="js-relationContractReceiveDateSet">
+	<th>
+		<h4>费用生成时应收日期取值规则</h4>
+		<div class="tips">
+			<span class="icon">?</span>
+			<div class="con">
+				<p>仪表计费、智能计费、费用分摊时生成的应收的应收日期将按照规则生成，录入或导入的应收以配置的应收日期为准。</p>
+			</div>
+		</div>
+	</th>
+	<td>
+		<label>
+			<input type="radio" name="relationContractReceiveDateSet" value="0" checked="checked">
+			<span>按收费项目的应收日期设置</span>
+		</label>
+		<label>
+			<input type="radio" name="relationContractReceiveDateSet" value="1">
+			<span>按合同的应收日期设置</span>
+		</label>
+	</td>
+</tr>
+<tr id="js-moneyDefineChargeRateControlSet">
+	<th>
+		<h4>房间收费设置收费项目计费比例上限控制</h4>
+		<div class="tips">
+			<span class="icon">?</span>
+			<div class="con">
+				<p><b>不控制：</b>相同收费项目计费比例合计值允许大于100%</p>
+				<p><b>不能大于100%：</b>房间收费设置、智能计费时校验相同收费项目计费比例合计值不允许大于100%。</p>
+				<p><b>必须等于100%：</b>房间收费设置、智能计费时校验相同收费项目计费比例合计值必须等于100%。</p>
+			</div>
+		</div>
+	</th>
+	<td>
+		<label>
+			<input type="radio" name="moneyDefineChargeRateControlSet" value="0">
+			<span>不控制</span>
+		</label>
+		<label>
+			<input type="radio" name="moneyDefineChargeRateControlSet" value="1">
+			<span>不能大于100%</span>
+		</label>
+		<label>
+			<input type="radio" name="moneyDefineChargeRateControlSet" value="2" checked="checked">
+			<span>必须等于100%</span>
+		</label>
+	</td>
+</tr>
+<tr>
+    <th>
+        <h4>费用录入应收日期是否根据期间自动填充</h4>
+        <div class="tips">
+            <span class="icon">?</span>
+            <div class="con">
+                <p><b>是：</b>在应收查询页面录入应收时，应收日期根据费用期间及设置的规则自动填充，且不可修改</p>
+                <p><b>否：</b>在应收查询页面录入应收时，应收日期不根据费用期间自动填充</p>
+            </div>
+        </div>
+    </th>
+    <td>
+        <label>
+            <input type="radio" name="arDateAutoSet" value="1">
+            <span>是</span>
+            <select class="select select-100 hide" name="arDateAutoSelect" id="arDateAutoSelect">
+                <option value="0" selected="selected">月初向前*天</option>
+                <option value="1">月初向后*天</option>
+                <option value="2">月末向前*天</option>
+                <option value="3">月末向后*天</option>
+                <option value="4">固定日</option>
+            </select>
+            <input type="text" class="input input-percent input-100 hide" name="arDateAutoDay" id="arDateAutoDay" onkeyup="(this.v=function(){this.value=this.value.replace(/[^0-9-]+/,'');}).call(this)" onblur="this.v();" maxlength="2" autocomplete="off">
+        </label>
+        <label>
+            <input type="radio" name="arDateAutoSet" value="0" checked="checked">
+            <span>否</span>
+        </label>
+        <input type="hidden" value="0" id="arDateAutoSet">
+    </td>
+</tr>
+<tr>
+	<th>
+		<h4>是否允许录入押金类费用应收</h4>
+		<div class="tips">
+			<span class="icon">?</span>
+			<div class="con">
+				<p><b>是：</b>应收查询页面可录入押金类费用应收数据</p>
+				<p><b>否：</b>应收查询页面不可以录入押金类费用应收数据</p>
+			</div>
+		</div>
+	</th>
+	<td>
+		<label>
+			<input type="radio" name="setDepositReceive" value="1">
+			<span>是</span>
+		</label>
+		<label>
+			<input type="radio" name="setDepositReceive" value="0" checked="checked">
+			<span>否</span>
+		</label>
+	</td>
+</tr>
+
+<tr>
+	<th>
+		<h4>临时性费用收款时生成应收</h4>
+		<div class="tips">
+			<span class="icon">?</span>
+			<div class="con">
+				<p>是：对应临时性费用在收款时生成应收。 <br>
+					否：对应临时性费用在收款时不生成应收。</p>
+			</div>
+		</div>
+	</th>
+	<td>
+		<label>
+			<input type="radio" name="ecIDIsTempCreateReceive" value="1">
+			<span>是</span>
+		</label>
+		<label>
+			<input type="radio" name="ecIDIsTempCreateReceive" value="0">
+			<span>否</span>
+		</label>
+		<label>
+			<input type="radio" name="ecIDIsTempCreateReceive" value="-1" checked="checked">
+			<span>项目级设置</span>
+		</label>
+	</td>
+</tr>
+
+<tr>
+	<th>
+		<h4>楼栋面积是否自动计算</h4>
+		<div class="tips">
+			<span class="icon">?</span>
+			<div class="con">
+				<p><b>是：</b>显示下面的取值逻辑，默认选中建筑面积，也可以选择套内面积、计费面积</p>
+				<p><b>否：</b>手动编辑</p>
+			</div>
+		</div>
+	</th>
+	<td>
+		<label>
+			<input type="radio" name="autoCalcBuildArea" value="1" checked="checked">
+			<span>是</span>
+			<span>楼栋面积取值逻辑</span>
+            <select class="select select-100" name="autoCalcBuildAreaSelect" id="autoCalcBuildAreaSelect">
+                <option value="buildingArea_" selected="selected">建筑面积</option>
+                <option value="roomArea_">套内面积</option>
+                <option value="chargeArea_">计费面积</option>
+            </select>
+		</label>
+		<label>
+			<input type="radio" name="autoCalcBuildArea" value="0">
+			<span>否</span>
+		</label>
+	</td>
+</tr>
+
+<tr>
+	<th>
+		<h4>微信公众号启用新旧域名</h4>
+		<div class="tips">
+			<span class="icon">?</span>
+			<div class="con">
+				<p><b>注意：</b>请根据微信公众号后台 公众号设置--功能设置--业务域名中添加的我家云系统的域名配置选择对应的域名，默认为旧域名。</p>
+			</div>
+		</div>
+	</th>
+	<td>
+		<label>
+			<input type="radio" name="weChatEnableDomainNameRule" value="1" checked="checked">
+			<span>新域名</span>
+		</label>
+		<label>
+			<input type="radio" name="weChatEnableDomainNameRule" value="0">
+			<span>旧域名</span>
+		</label>
+	</td>
+</tr>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!--增加一个空行-->
+<tr style="height: 50px">
+	<th></th>
+	<td>
+	</td>
+</tr>
+
+<tr style="position:fixed; bottom:0; display: block; text-align: center; background-color: #f5f7fa;
+    width: 100%;">
+	<th></th>
+	<td>
+		<button type="button" style="margin-left:350px" class="btn btn-green" onclick="api.basedata.enterpriseParam.save()">保存</button>
+	</td>
+</tr>
+</tbody></table>
+
+<!--收费项目选择-->
+<script type="text/template" id="js-tmp-charge-list">
+	<div class="js-box-charge-list" id="js-box-charge-list">
+		<dl>
+			<dt>
+				<h4 onclick="checkAllObj(this)">
+					<i class="icon icon-checkbox fl"></i>
+					<span>选择全部</span>
+				</h4>
+			</dt>
+			<dd>
+				<ul class="clearfix ">
+					<{ _.each(data, function(item, index){ }>
+						<{ chargeObj[type][item.id]=item; }>
+							<{ if(chargeArr[type].indexOf(item.id)>=0){ }>
+								<li class="item li checked" data-id="<{=item.id}>" onclick="checkObj('<{=item.id}>', this)">
+							<{ }else{ }>
+								<li class="item li" data-id="<{=item.id}>" onclick="checkObj('<{=item.id}>', this)">
+							<{ } }>
+									<i class="icon icon-checkbox fl"></i>
+									<span><{=item.name}></span>
+								</li>
+					<{ }) }>
+				</ul>
+			</dd>
+		</dl>
+	</div>
+</script>
+<!--支付方式限额设置-->
+<script type="text/template" id="js-payLimit-set">
+	<div class="type-group">
+	<{ if (payLimitInfo.hasPayStyle == 0) { }>
+		<ul data-type="<{=payLimitInfo.hasPayStyle}>">
+			<li><b>支付渠道</b>
+				<select class="select" name="payChannel" data-type="" onchange="api.basedata.enterpriseParam.changePayChannel.call(this,'<{=type}>')">
+					<{ _.each(payTypeList, function(item, index) { }>
+						<option value="<{=item.payType}>"><{=item.name}></option>
+					<{ }); }>
+				</select>
+			</li>
+			<li>
+				<b>单次支付限额</b>
+				<input type="text" class="input" name="limitAmount" value="<{=api.basedata.enterpriseParam.formatFloat(payLimitInfo.limitAmount, true)}>"
+					onkeydown="api.basedata.enterpriseParam.inputNumberKeyDown.call(this, event, true)"
+					onkeyup="api.basedata.enterpriseParam.inputNumberKeyUp.call(this, event, true)"
+					onblur="api.basedata.enterpriseParam.inputNumberBlur.call(this, event, true)"></li>
+			<li>
+				<b>费率</b>
+				<input type="text" class="input" name="payRate" value="<{=api.basedata.enterpriseParam.formatFloat(payLimitInfo.rate, true)}>"
+					onkeydown="api.basedata.enterpriseParam.inputNumberKeyDown.call(this, event, true, false)"
+					onkeyup="api.basedata.enterpriseParam.inputNumberKeyUp.call(this, event, true, 2, 100)"
+					onblur="api.basedata.enterpriseParam.inputNumberBlur.call(this, event, true)"> %</li>
+			<li><a href="javascript:;" onclick="api.basedata.enterpriseParam.deletePayChannel.call(this,'<{=type}>')" style="color: #000;"><i class="iconfont icon-delete"></i></a></li>
+		</ul>
+		<{ } else if (payLimitInfo.hasPayStyle == 1) { }>
+		<ul data-type="<{=payLimitInfo.hasPayStyle}>">
+			<li class="precent-100">
+				<b>支付渠道</b>
+				<select class="select" name="pChannel" data-type="" onchange="api.basedata.enterpriseParam.changePayChannel.call(this,'<{=type}>')">
+					<{ _.each(payTypeList, function(item, index) { }>
+						<option value="<{=item.payType}>"><{=item.name}></option>
+					<{ }); }>
+				</select>
+				<a href="javascript:;" onclick="api.basedata.enterpriseParam.deletePayChannel.call(this,'<{=type}>')" style="color: #000;margin-left: 533px;">
+					<i class="iconfont icon-delete"></i></a>
+			</li>
+			<li class="precent-100 poundage-set">
+				<{ _.each(payLimitInfo.payStyleDetails, function (item) { }>
+				<ul>
+					<li>
+						<{ if (item.isEnabled == 1) { }>
+						<input type="checkbox" name="isSetPayAmount" checked class="checkbox" value="1" />
+						<{ } else{ }>
+						<input type="checkbox" name="isSetPayAmount" class="checkbox" value="1" />
+						<{ } }>
+						<b>支付方式</b>
+						<input type="text" name="limitPayWay" data-name="<{=item.type}>" class="input" value="<{=item.name }>" readOnly />
+					</li>
+					<li>
+						<b>单次支付限额</b>
+						<input type="text" class="input" name="pLimitAmount" value="<{=api.basedata.enterpriseParam.formatFloat(item.limitAmount, true)}>"
+						onkeydown="api.basedata.enterpriseParam.inputNumberKeyDown.call(this, event, true)"
+						onkeyup="api.basedata.enterpriseParam.inputNumberKeyUp.call(this, event, true)"
+						onblur="api.basedata.enterpriseParam.inputNumberBlur.call(this, event, true)">
+					</li>
+					<li>
+						<b>费率</b>
+						<input type="text" class="input" name="pRate" value="<{=api.basedata.enterpriseParam.formatFloat(item.rate, true)}>"
+						onkeydown="api.basedata.enterpriseParam.inputNumberKeyDown.call(this, event, true, false)"
+						onkeyup="api.basedata.enterpriseParam.inputNumberKeyUp.call(this, event, true, 2, 100)"
+						onblur="api.basedata.enterpriseParam.inputNumberBlur.call(this, event, true)"> %
+					</li>
+					<li>
+						<{ if (item.hasFeeCeiling == 1) { }>
+						<input type="checkbox" name="isSetMaxPayAmount" checked class="checkbox" value="1" />
+						<{ } else{ }>
+						<input type="checkbox" name="isSetMaxPayAmount" class="checkbox" value="1" />
+						<{ } }>
+						<b>设置手续费上限</b>
+						<span class="tips-b">
+							<div class="tips">
+							<span class="icon">?</span>
+							<div class="con">
+								<p>管家助手收款时，手续费金额大于等于设置的上限金额则按设置的上限金额收取手续费；手续费金额小于设置的上限金额则按计算出的金额收取手续费</p>
+							</div>
+							</div>
+						</span>
+						<input type="text" class="input" name="maxPayAmount" value="<{=api.basedata.enterpriseParam.formatFloat(item.feeCeiling, true)}>"
+							onkeydown="api.basedata.enterpriseParam.inputNumberKeyDown.call(this, event, true)"
+							onkeyup="api.basedata.enterpriseParam.inputNumberKeyUp.call(this, event, true)"
+							onblur="api.basedata.enterpriseParam.inputNumberBlur.call(this, event, true)">
+					</li>
+				</ul>
+				<{ }); }>
+			</li>
+		</ul>
+		<{ } else if (payLimitInfo.hasPayStyle == 2) { }>
+		<ul data-type="<{=payLimitInfo.hasPayStyle}>">
+			<li><b>支付渠道</b>
+				<select class="select" name="payChannel" data-type="" onchange="api.basedata.enterpriseParam.changePayChannel.call(this,'<{=type}>')">
+					<{ _.each(payTypeList, function(item, index) { }>
+						<option value="<{=item.payType}>"><{=item.name}></option>
+					<{ }); }>
+				</select>
+			</li>
+			<li><a href="javascript:;" onclick="api.basedata.enterpriseParam.deletePayChannel.call(this,'<{=type}>')" style="color: #000;"><i class="iconfont icon-delete"></i></a></li>
+		</ul>
+		<{ } }>
+	</div>
+</script>
+
+<script type="text/template" id="js-invoiceRemark-set">
+	<ul>
+		<{ _.each(data,function(item,index) { }>
+		<li class="clause-content-item" data-id="<{=item.id}>">
+			<div class="opt-bar fr">
+				<div class="fr  pointer arrow-container">
+					<i class="iconfont icon-sort-up block" onclick="editInvoicedRemarkSetMove(this, 2, -1)"></i>
+					<i class="iconfont icon-sort-down block" onclick="editInvoicedRemarkSetMove(this, 2, 1)"></i>
+				</div>
+			</div>
+			<div class="overflow-hidden">
+				<span name="<{=item.name}>" class="remark-item"><{=item.value}></span>
+			</div>
+		</li>
+		<{ }); }>
+	</ul>
+</script>
+<!--财务系统列表 -->
+<script id="tpl_selfapps_list" type="text/template">
+	<select id="selfapps_select" name="selfapps_select" class="select">
+		<option value="">请选择</option>
+		<{ _.each(data, function(item,i) { }>
+		<option value="<{=item.id}>" ><{=item.name}></option>
+		<{ }); }>
+	</select>
+</script>
+<!--财务系统列表 -->
+<script id="tpl_apps_list" type="text/template">
+	<select id="app_select" name="app_select" class="select">
+		<option value="">请选择</option>
+		<{ _.each(data, function(item,i) { }>
+		<option value="<{=item.id}>" ><{=item.name}></option>
+		<{ }); }>
+	</select>
+</script>
+
+<!--财务系统列表 -->
+<script id="tpl_apps_syncbilllist" type="text/template">
+	<select id="app_syncbillselect" name="app_syncbillselect" class="select">
+		<option value="">请选择</option>
+		<{ _.each(data, function(item,i) { }>
+		<option value="<{=item.id}>" ><{=item.name}></option>
+		<{ }); }>
+	</select>
+</script>
+
+<script>
+    $('#menu-system').addClass('active');
+    $('#menu-system-param').addClass('active');
+	$('.page-table .tips').mouseover(function(){
+		$(this).find('.con').show();
+	}).mouseout(function(){
+		$(this).find('.con').hide();
+	});
+	laydate.path = '/static/js/laydate2.0/';
+	laydate.render({ elem: '#gjTranDateAfterCalendar',type: 'time'});
+    laydate.render({ elem: '#wjTranDateAfterCalendar',type: 'time'});
+    laydate.render({ elem: '#wyTranDateAfterCalendar',type: 'time'});
+    laydate.render({ elem: '#wjInvoicedPeriodDate',type: 'month'});
+	laydate.render({ elem: '#wjInvoicedReceiptTranDate',type: 'date'});
+</script>
+
+<!-- 打印模板 -->
+<script type="text/template" id="js-tmp-printTemplate">
+    <div class="grid-container">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>请选择</th>
+                <th>序号</th>
+                <th>名称</th>
+            </tr>
+            </thead>
+            <tbody>
+            <{ _.each(rows, function(item, index) { }>
+            <tr class="radio" onclick="api.basedata.enterpriseParam.radio.call(this);" data-id="<{=item.id}>" data-name="<{=item.name}>">
+                <td>
+                    <i class="iconfont icon-radio"></i>
+                </td>
+                <td><{=index + 1}></td>
+                <td><{=item.name}></td>
+            </tr>
+            <{ }); }>
+            </tbody>
+        </table>
+    </div>
+</script>
+
+<script type="text/javascript" src="/static/js/basedata/enterprise/enterpriseParam-15b813d770.js"></script>
+<div class="mpa-sc mpa-plugin-image-gatherer mpa-new mpa-rootsc" data-z="100" style="display: block;" id="mpa-rootsc-image-gatherer"></div><div class="mpa-sc mpa-plugin-text-gatherer mpa-new mpa-rootsc" data-z="100" style="display: block;" id="mpa-rootsc-text-gatherer"></div><div class="mpa-sc mpa-plugin-video-gatherer mpa-new mpa-rootsc" data-z="100" style="display: block;" id="mpa-rootsc-video-gatherer"></div></body></html>

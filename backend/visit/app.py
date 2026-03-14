@@ -1,21 +1,60 @@
 #!/usr/bin/env python3
 """
 走访台账系统 - 后端API
+支持多模块部署到不同路由
 """
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import pymysql
 import datetime
 import json
+import os
 
-app = Flask(__name__)
+# ============ 配置 ============
+# 模块路由前缀
+MODULE_PREFIX = '/visit'
+
+# 静态文件目录
+STATIC_DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../frontend/visit'
+
+app = Flask(__name__, static_folder=STATIC_DIR)
 CORS(app)
 
-# 数据库配置
+# ============ 静态页面托管 ============
+@app.route('/')
+def home_page():
+    return send_from_directory(STATIC_DIR, 'index.html')
+
+@app.route('/index.html')
+def index_html():
+    return send_from_directory(STATIC_DIR, 'index.html')
+
+@app.route(f'{MODULE_PREFIX}/')
+def visit_index():
+    return send_from_directory(STATIC_DIR, 'index.html')
+
+@app.route(f'{MODULE_PREFIX}/index.html')
+def visit_index_html():
+    return send_from_directory(STATIC_DIR, 'index.html')
+
+@app.route(f'{MODULE_PREFIX}/<path:filename>')
+def serve_visit(filename):
+    return send_from_directory(STATIC_DIR, filename)
+
+@app.route('/admin.html')
+def admin_page():
+    return send_from_directory(STATIC_DIR, 'admin.html')
+
+# API根路径
+@app.route('/api')
+def api_root():
+    return jsonify({'msg': '走访台账系统API', 'version': '1.0'})
+
+# ============ 数据库配置 ============
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': 'Root@202400',
+    'password': '',
     'database': 'visit_system',
     'charset': 'utf8mb4'
 }
@@ -28,7 +67,6 @@ def init_table():
     db = get_db()
     cursor = db.cursor()
     
-    # 创建走访记录表
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS visit_records (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -53,27 +91,21 @@ def init_table():
     cursor.close()
     db.close()
 
-# ==================== API接口 ====================
-
-@app.route('/')
-def index():
-    return jsonify({'msg': '走访台账系统API', 'version': '1.0'})
-
-# 获取Token（简单验证）
+# ============ Token验证 ============
 def verify_token():
     token = request.headers.get('Token') or request.args.get('token')
     if not token:
         return None
     return token
 
-# 获取列表
-@app.route('/api/visit/list', methods=['GET'])
+# ============ API接口 ============
+
+@app.route(f'{MODULE_PREFIX}/api/visit/list', methods=['GET'])
 def get_visit_list():
     token = verify_token()
     if not token:
         return jsonify({'code': 401, 'msg': 'Token不能为空', 'success': False}), 401
     
-    # 查询参数
     page = int(request.args.get('page', 1))
     page_size = int(request.args.get('pageSize', 10))
     region = request.args.get('region', '')
@@ -81,12 +113,9 @@ def get_visit_list():
     visitor_name = request.args.get('visitorName', '')
     category = request.args.get('category', '')
     company_name = request.args.get('companyName', '')
-    
-    # 日期筛选
     start_date = request.args.get('startDate', '')
     end_date = request.args.get('endDate', '')
     
-    # 构建查询
     where = 'WHERE deleted = 0'
     params = []
     
@@ -115,11 +144,9 @@ def get_visit_list():
     db = get_db()
     cursor = db.cursor(pymysql.cursors.DictCursor)
     
-    # 获取总数
     cursor.execute(f'SELECT COUNT(*) as total FROM visit_records {where}', params)
     total = cursor.fetchone()['total']
     
-    # 获取分页数据
     offset = (page - 1) * page_size
     cursor.execute(f'''
         SELECT * FROM visit_records 
@@ -130,7 +157,6 @@ def get_visit_list():
     
     rows = cursor.fetchall()
     
-    # 转换时间格式
     for row in rows:
         if row.get('visit_time'):
             row['visit_time'] = row['visit_time'].strftime('%Y-%m-%d %H:%M:%S')
@@ -154,8 +180,7 @@ def get_visit_list():
         }
     })
 
-# 新增记录
-@app.route('/api/visit/add', methods=['POST'])
+@app.route(f'{MODULE_PREFIX}/api/visit/add', methods=['POST'])
 def add_visit():
     token = verify_token()
     if not token:
@@ -163,13 +188,11 @@ def add_visit():
     
     data = request.get_json()
     
-    # 必填校验
     required_fields = ['region', 'company_name', 'visitor', 'visitor_name', 'category', 'content', 'visit_time']
     for field in required_fields:
         if not data.get(field):
             return jsonify({'code': 400, 'msg': f'{field}不能为空', 'success': False}), 400
     
-    # 分类校验
     valid_categories = ['租赁', '服务', '物业', '其他']
     if data['category'] not in valid_categories:
         return jsonify({'code': 400, 'msg': f'分类必须是{valid_categories}之一', 'success': False}), 400
@@ -203,8 +226,7 @@ def add_visit():
         'data': {'id': new_id}
     })
 
-# 修改记录
-@app.route('/api/visit/update', methods=['POST'])
+@app.route(f'{MODULE_PREFIX}/api/visit/update', methods=['POST'])
 def update_visit():
     token = verify_token()
     if not token:
@@ -215,7 +237,6 @@ def update_visit():
     if not data.get('id'):
         return jsonify({'code': 400, 'msg': 'ID不能为空', 'success': False}), 400
     
-    # 检查记录是否存在
     db = get_db()
     cursor = db.cursor()
     cursor.execute('SELECT id FROM visit_records WHERE id = %s AND deleted = 0', (data['id'],))
@@ -224,7 +245,6 @@ def update_visit():
         db.close()
         return jsonify({'code': 404, 'msg': '记录不存在', 'success': False}), 404
     
-    # 更新
     update_fields = []
     params = []
     
@@ -251,8 +271,7 @@ def update_visit():
         'success': True
     })
 
-# 删除记录
-@app.route('/api/visit/delete', methods=['POST'])
+@app.route(f'{MODULE_PREFIX}/api/visit/delete', methods=['POST'])
 def delete_visit():
     token = verify_token()
     if not token:
@@ -266,11 +285,8 @@ def delete_visit():
     
     db = get_db()
     cursor = db.cursor()
-    
-    # 软删除
     cursor.execute('UPDATE visit_records SET deleted = 1 WHERE id = %s', (visit_id,))
     db.commit()
-    
     cursor.close()
     db.close()
     
@@ -280,17 +296,15 @@ def delete_visit():
         'success': True
     })
 
-# 统计汇总
-@app.route('/api/visit/stats', methods=['GET'])
+@app.route(f'{MODULE_PREFIX}/api/visit/stats', methods=['GET'])
 def get_stats():
     token = verify_token()
     if not token:
         return jsonify({'code': 401, 'msg': 'Token不能为空', 'success': False}), 401
     
-    # 筛选参数
     start_date = request.args.get('startDate', '')
     end_date = request.args.get('endDate', '')
-    group_by = request.args.get('groupBy', 'month')  # month/quarter/year/region/visitor
+    group_by = request.args.get('groupBy', 'month')
     
     where = 'WHERE deleted = 0'
     params = []
@@ -305,7 +319,6 @@ def get_stats():
     db = get_db()
     cursor = db.cursor(pymysql.cursors.DictCursor)
     
-    # 按不同维度统计
     if group_by == 'month':
         cursor.execute(f'''
             SELECT DATE_FORMAT(visit_time, '%%Y-%%m') as period, COUNT(*) as count
@@ -351,7 +364,6 @@ def get_stats():
     
     stats = cursor.fetchall()
     
-    # 总数
     cursor.execute(f'SELECT COUNT(*) as total FROM visit_records {where}', params)
     total = cursor.fetchone()['total']
     
@@ -368,8 +380,7 @@ def get_stats():
         }
     })
 
-# 获取详情
-@app.route('/api/visit/detail', methods=['GET'])
+@app.route(f'{MODULE_PREFIX}/api/visit/detail', methods=['GET'])
 def get_detail():
     token = verify_token()
     if not token:
@@ -392,7 +403,6 @@ def get_detail():
     if not row:
         return jsonify({'code': 404, 'msg': '记录不存在', 'success': False}), 404
     
-    # 转换时间格式
     if row.get('visit_time'):
         row['visit_time'] = row['visit_time'].strftime('%Y-%m-%d %H:%M:%S')
     if row.get('create_time'):
@@ -407,8 +417,8 @@ def get_detail():
         'data': row
     })
 
-# ==================== 启动 ====================
+# ============ 启动 ============
 if __name__ == '__main__':
     init_table()
-    print("启动服务: http://0.0.0.0:22306")
+    print(f"启动服务: http://0.0.0.0:22306{MODULE_PREFIX}")
     app.run(host='0.0.0.0', port=22306, debug=True)
