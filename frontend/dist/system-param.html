@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>系统参数设置 - 我家云</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+  <script src="https://unpkg.com/element-plus/dist/index.full.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/@element-plus/icons-vue">
+  <script src="https://unpkg.com/@element-plus/icons-vue"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; }
+    .top-header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; position: sticky; top: 0; z-index: 100; }
+    .logo { display: flex; align-items: center; color: #fff; font-size: 20px; }
+    .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, #00d1a0, #00b890); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 12px; font-size: 20px; }
+    .header-right { display: flex; align-items: center; gap: 20px; }
+    .user-info { display: flex; align-items: center; gap: 10px; color: #fff; }
+    .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #00d1a0, #00b890); display: flex; align-items: center; justify-content: center; }
+    .header-icon { color: rgba(255,255,255,0.8); font-size: 20px; cursor: pointer; }
+    .main-container { display: flex; }
+    .side-menu { width: 200px; background: #fff; border-right: 1px solid #e4e7ed; padding: 16px 0; flex-shrink: 0; max-height: calc(100vh - 60px); overflow-y: auto; }
+    .menu-title { padding: 12px 24px; font-size: 12px; color: #909399; text-transform: uppercase; }
+    .menu-item { padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; color: #606266; transition: all 0.3s; border-left: 3px solid transparent; }
+    .menu-item:hover { background: #f5f7fa; color: #00d1a0; }
+    .menu-item.active { background: linear-gradient(90deg, rgba(0,209,160,0.1), rgba(0,209,160,0.05)); color: #00d1a0; border-left-color: #00d1a0; font-weight: 500; }
+    .menu-count { background: #f0f0f0; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+    .content-area { flex: 1; padding: 24px; overflow-y: auto; max-height: calc(100vh - 60px); }
+    .page-header { background: #fff; padding: 20px 24px; border-radius: 8px; margin-bottom: 20px; }
+    .page-title { font-size: 20px; font-weight: 600; color: #303133; }
+    .page-desc { font-size: 14px; color: #909399; margin-top: 8px; }
+    .search-bar { margin-bottom: 20px; }
+    .param-card { background: #fff; border-radius: 8px; margin-bottom: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .param-card-header { padding: 14px 20px; background: #fafafa; border-bottom: 1px solid #e4e7ed; display: flex; align-items: center; justify-content: space-between; }
+    .param-card-title { font-size: 15px; font-weight: 600; color: #303133; }
+    .param-card-count { font-size: 12px; color: #909399; }
+    .param-item { padding: 14px 20px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 20px; }
+    .param-item:last-child { border-bottom: none; }
+    .param-item:hover { background: #fafbfc; }
+    .param-info { flex: 1; min-width: 0; }
+    .param-name { font-size: 14px; font-weight: 500; color: #303133; margin-bottom: 4px; }
+    .param-tips { font-size: 12px; color: #909399; line-height: 1.5; }
+    .param-control { flex-shrink: 0; display: flex; gap: 16px; flex-wrap: wrap; max-width: 450px; }
+    .radio-group, .checkbox-group { display: flex; gap: 16px; flex-wrap: wrap; }
+    .radio-item, .checkbox-item { display: flex; align-items: center; gap: 6px; white-space: nowrap; cursor: pointer; }
+    .radio-item input, .checkbox-item input { accent-color: #00d1a0; }
+    .action-bar { background: #fff; padding: 20px 24px; border-radius: 8px; margin-top: 20px; display: flex; justify-content: flex-end; gap: 12px; }
+    .btn-save { background: linear-gradient(135deg, #00d1a0, #00b890); border: none; color: #fff; padding: 10px 32px; border-radius: 6px; cursor: pointer; }
+    .btn-save:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,209,160,0.3); }
+    .btn-reset { background: #fff; border: 1px solid #dcdfe6; color: #606266; padding: 10px 32px; border-radius: 6px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="top-header">
+      <div class="logo"><div class="logo-icon">🏢</div><span>我家云</span></div>
+      <div class="header-right">
+        <i class="el-icon-bell header-icon"></i>
+        <i class="el-icon-setting header-icon"></i>
+        <div class="user-info"><div class="user-avatar">李</div><span>李乐乐</span></div>
+      </div>
+    </div>
+    <div class="main-container">
+      <div class="side-menu">
+        <div class="menu-title">参数分类</div>
+        <div class="menu-item" :class="{ active: currentCategory === 'all' }" @click="currentCategory = 'all'">
+          <span>全部参数</span>
+          <span class="menu-count">{{ params.length }}</span>
+        </div>
+        <div v-for="cat in categories" :key="cat.id" class="menu-item" :class="{ active: currentCategory === cat.id }" @click="currentCategory = cat.id">
+          <span>{{ cat.name }}</span>
+          <span class="menu-count">{{ getCategoryCount(cat.id) }}</span>
+        </div>
+      </div>
+      <div class="content-area">
+        <div class="page-header">
+          <div class="page-title">系统参数设置</div>
+          <div class="page-desc">共 {{ filteredParams.length }} 个参数配置</div>
+        </div>
+        <div class="search-bar">
+          <el-input v-model="searchText" placeholder="搜索参数名称..." prefix-icon="el-icon-search" clearable></el-input>
+        </div>
+        <template v-for="cat in categories" :key="cat.id">
+          <div class="param-card" v-if="currentCategory === 'all' || currentCategory === cat.id" v-show="getCategoryParams(cat.id).length > 0">
+            <div class="param-card-header" v-if="currentCategory === 'all'">
+              <div class="param-card-title">{{ cat.name }}</div>
+              <div class="param-card-count">{{ getCategoryParams(cat.id).length }} 项</div>
+            </div>
+            <div class="param-item" v-for="param in getCategoryParams(cat.id)" :key="param.field">
+              <div class="param-info">
+                <div class="param-name">{{ param.name }}</div>
+                <div class="param-tips" v-if="param.tips">{{ param.tips }}</div>
+              </div>
+              <div class="param-control">
+                <div v-if="param.type === 'radio'" class="radio-group">
+                  <label v-for="opt in param.options" :key="opt.value" class="radio-item">
+                    <input type="radio" :name="param.field" :value="opt.value" v-model="formData[param.field]">
+                    <span>{{ opt.label }}</span>
+                  </label>
+                </div>
+                <div v-else-if="param.type === 'checkbox'" class="checkbox-group">
+                  <label v-for="opt in param.options" :key="opt.value" class="checkbox-item">
+                    <input type="checkbox" :value="opt.value" v-model="checkboxData[param.field]">
+                    <span>{{ opt.label }}</span>
+                  </label>
+                </div>
+                <div v-else-if="param.type === 'input'">
+                  <el-input v-model="formData[param.field]" placeholder="请输入" style="width:180px"></el-input>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+        <div class="action-bar">
+          <button class="btn-reset" @click="handleReset">重置</button>
+          <button class="btn-save" @click="handleSave">保存设置</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp, ref, reactive, computed } = Vue;
+    const app = createApp({
+      setup() {
+        const currentCategory = ref('all');
+        const searchText = ref('');
+        const categories = [
+          { id: 'platform', name: '平台设置' },
+          { id: 'app', name: 'App设置' },
+          { id: 'invoice', name: '发票设置' },
+          { id: 'receipt', name: '收退款设置' },
+          { id: 'finance', name: '财务凭证' },
+          { id: 'contract', name: '合同设置' },
+          { id: 'other', name: '其他设置' },
+        ];
+        const params = [{"name": "在线协同办公平台配置", "field": "qywechat", "type": "checkbox", "category": "platform", "options": [{"value": "qywechat", "label": "企业微信"}, {"value": "yunzhijia", "label": "云之家"}], "tips": ""}, {"name": "是否启用云之家门户", "field": "showYZJ", "type": "radio", "category": "platform", "options": [{"value": "0", "label": "否"}, {"value": "1", "label": "是"}], "tips": "启用后可从我家云的云之家入口快捷免登录进入云之家"}, {"name": "pc端首页设置", "field": "productComm", "type": "checkbox", "category": "platform", "options": [{"value": "productComm", "label": "产品社区"}, {"value": "cusService", "label": "联系客服"}, {"value": "feedback", "label": "提单反馈"}, {"value": "helpDoc", "label": "帮助文档"}], "tips": ""}, {"name": "提单任务完成通知人", "field": "feedBackUser", "type": "checkbox", "category": "platform", "options": [{"value": "feedBackUser", "label": "提单人"}, {"value": "feedBackAuditor", "label": "提单审核人"}], "tips": ""}, {"name": "使用账号登陆时开启短信验证校验", "field": "wyAccountLoginType", "type": "radio", "category": "other", "options": [{"value": "0", "label": "否"}, {"value": "1", "label": "是"}], "tips": "开启： web端使用账号登陆时需要进行短信验证校验，密码及验证码均正确才能登入系统 \n\t\t\t\t\t\t  关闭： web端使用账号登陆时不需要进行短信验证校验，密码正确即可登入系统"}, {"name": "是否使用新版页面", "field": "isUseMultiTip", "type": "radio", "category": "other", "options": [{"value": "1", "label": "否"}, {"value": "2", "label": "是"}], "tips": ""}, {"name": "人员所属组织", "field": "empBelong", "type": "radio", "category": "other", "options": [{"value": "1", "label": "单选"}, {"value": "2", "label": "多选"}], "tips": ""}, {"name": "业主端搜索本企业项目需输入关键词", "field": "wjSearchShowProject", "type": "radio", "category": "app", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 不输入关键词进行搜索，则不显示当前企业的项目 \n\t\t\t\t\t\t  关闭： 不输入关键词进行搜索，显示当前企业的项目"}, {"name": "微信公众号集成业主端展示项目设置", "field": "wjWxShowProject", "type": "radio", "category": "app", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 进入选择项目页面时，默认展示当前城市的所有项目 \n\t\t\t\t\t\t  关闭： 进入选择项目页面时，只有搜索时才展示匹配的项目"}, {"name": "我家App首页账单设置", "field": "wjHomeBillSet", "type": "radio", "category": "app", "options": [{"value": "0", "label": "应收账单"}, {"value": "1", "label": "预收款账单"}], "tips": "应收账单： 我家App首页显示应收账单，用户可缴纳应收欠款、预收款、储值款 \n\t\t\t\t\t\t  预收款账单： 我家App首页显示预收款账单，用户可缴纳预收款"}, {"name": "我家App储值功能设置", "field": "storemoneySet", "type": "radio", "category": "app", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 我家App账单，显示缴纳储值款&amp;查询余额信息功能 \n\t\t\t\t\t\t  关闭： 我家App账单，隐藏缴纳储值款&amp;查询余额信息功能"}, {"name": "业主端储值款充值功能设置", "field": "storemoneyRecharge", "type": "radio", "category": "app", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 我家app储值款充值页面显示充值按钮;缴费云小程序显示储值款充值按钮 \n\t\t\t\t\t\t  关闭： 我家app储值款充值页面隐藏充值按钮;缴费云小程序隐藏储值款充值按钮"}, {"name": "业主端储值款充值最低额度设置", "field": "wjMinRechargeAmount", "type": "input", "category": "app", "options": [], "tips": "默认为空不限制，如果填写了额度，则在储值款充值页面输入框增加提示及校验"}, {"name": "我家App预收款功能设置", "field": "premoneySet", "type": "radio", "category": "app", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 我家App账单，显示缴纳预收款&amp;查询余额信息功能 \n\t\t\t\t\t\t  关闭： 我家App账单，隐藏缴纳预收款&amp;查询余额信息功能"}, {"name": "业主端预收款充值功能设置", "field": "premoneyRecharge", "type": "radio", "category": "app", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 我家app预收款充值页面显示充值按钮，同时可设置我家APP预收款充值计划;缴费云小程序显示预收款充值按钮 \n\t\t\t\t\t\t  关闭： 我家app预收款充值页面隐藏充值按钮;缴费云小程序隐藏预收款充值按钮"}, {"name": "管家端预收款充值功能设置", "field": "", "type": "unknown", "category": "app", "options": [], "tips": "默认全部显示，设置隐藏后，在管家App收款页面预收款不支持选择该时间维度选项进行收款。"}, {"name": "我家App是否欠款缴清才允许充值", "field": "premoneyArrearsCheck", "type": "radio", "category": "app", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭（预收优惠仍校验）"}, {"value": "-1", "label": "关闭（预收优惠不校验）"}], "tips": "开启： 无论是否设置折扣以及其他情况，均需校验是否有欠款（有则不允许充值） \n                          关闭（预收优惠仍校验）:  用户选择对应带有折扣优惠的充值计划时，会先校验是否有欠款(有则不允许充值) \n                          关闭（预收优"}, {"name": "我家App支付限额/手续费设置", "field": "wjPayLimit", "type": "radio", "category": "app", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 用户支付金额&gt;=单次支付限额，用户需要额外支付本次交易的手续费 \n\t\t\t\t\t\t  关闭： 用户支付金额不受限制，手续费由公司承担"}, {"name": "我家App对接EAS收费", "field": "easCharge", "type": "radio", "category": "app", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 我家对接EAS收费 \n\t\t\t\t\t\t  关闭： 我家使用我家云收费"}, {"name": "我家App账单缴费控制", "field": "wjAppChargeSet", "type": "radio", "category": "app", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 按照自然月缴纳该月所有费用/按照自然年缴纳该年所有费用 \n\t\t\t\t\t\t  关闭： 可以自由选择想要缴纳的费用明细进行支付"}, {"name": "缴费云业主端是否允许跨月缴费", "field": "jfyChargeContinuitySet", "type": "radio", "category": "app", "options": [{"value": "1", "label": "是"}, {"value": "0", "label": "否"}], "tips": "是： 可以自由选择想要缴纳的费用明细进行支付 \n\t\t\t\t\t\t  否： 必须按照费用期间顺序选择费用明细进行支付"}, {"name": "业主端合同费用账单展示范围设置", "field": "jfyContractReceiveDisplaySet", "type": "radio", "category": "app", "options": [{"value": "1", "label": "全部展示"}, {"value": "0", "label": "展示至当前月的后一个月"}], "tips": "全部展示： 合同生成的待缴费用在业主端的待缴账单中全部展示 \n\t\t\t\t\t\t  展示至当前月的后一个月： 合同费用待缴费用在业主端的账单默认展示到当前月的后一个月"}, {"name": "应税服务范围设置", "field": "taxableServiceScope", "type": "radio", "category": "other", "options": [{"value": "0", "label": "默认"}, {"value": "1", "label": "项目级(设置后,每个项目都要分别配置项目级应税服务才能正常使用)"}], "tips": "默认：企业级参数，配置的服务应用于企业下所有项目  \n\t\t\t\t\t\t  项目级：配置的服务只应用于当前项目下  \n\t\t\t\t\t\t  注意： 当前参数为企业级参数，配置为项目级后，企业下每个项目都要设置对应的应税服务"}, {"name": "税额保留小数位数", "field": "", "type": "unknown", "category": "other", "options": [], "tips": "默认：默认保留两位精度   \n\t\t\t\t\t\t  发票开票流程不受此功能控制，保留两位小数位"}, {"name": "我家App缴费发票申请设置", "field": "wjAppChargeInvoicedSet", "type": "radio", "category": "app", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 缴费支付确认页需要填写抬头，缴费后自动生成开票申请 \n\t\t\t\t\t\t  关闭： 缴费支付确认页不需要填写抬头，后续用户自行申请开票"}, {"name": "我家App房间显示方式", "field": "wjBillRoomShowType", "type": "radio", "category": "app", "options": [{"value": "0", "label": "楼栋号+单元号+房间号"}, {"value": "1", "label": "房间号"}], "tips": ""}, {"name": "我家App预收款充值功能设置(家庭成员)", "field": "wjPreCusInvoiced", "type": "radio", "category": "app", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 业主/租户预收款充值成功，以业主或租户名称保存预收款；家庭成员预收款充值成功，以家庭成员关联的业主或租户名称保存预收款 \n\t\t\t\t\t\t  关闭： 业主/租户/家庭成员预收款充值成功，以实际充值的登录用户名称保存预收款"}, {"name": "收款单确认收款打印发票", "field": "receiptMakeOutInvoice", "type": "radio", "category": "invoice", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 收款单确认收款时可以打印收据和进入开发票页面 \n\t\t\t\t\t\t  关闭： 收款单确认收款时只打印收据 \n\t\t\t\t\t\t  注意： 如果企业未与我家云开通电子发票合作业务，为避免造成贵司与业主/租户不必要的纠纷，请勿开启此参数"}, {"name": "是否确认收款后才可打印收据", "field": "onlyConfirmReceiptPrint", "type": "radio", "category": "invoice", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": ""}, {"name": "业主端电子收据申请设置", "field": "wjAppElecReceiptSet", "type": "radio", "category": "app", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 我家app已缴记录显示【电子收据】功能，缴费云小程序业主端支持开具电子收据 \n\t\t\t\t\t\t  关闭： 我家app已缴记录不显示【电子收据】功能，缴费云小程序业主端不支持开具电子收据"}, {"name": "业主端电子收据打印模板", "field": "", "type": "unknown", "category": "app", "options": [], "tips": ""}, {"name": "业主端电子发票申请设置", "field": "wjInvoiced", "type": "radio", "category": "app", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 我家App已结算账单显示【电子发票】功能；缴费云业主端显示【电子发票】功能 \n\t\t\t\t\t\t  关闭： 我家App已结算账单隐藏【电子发票】功能；缴费云业主端隐藏【电子发票】功能 \n\t\t\t\t\t\t  注意： 如果企业未与我家云开通电子发票合作业务，为避免造成贵司与业主/租户不必要的纠纷，请勿开启"}, {"name": "业主端电子发票申请类型设置", "field": "wjInvoicedType", "type": "radio", "category": "app", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 移动端电子发票申请，只有客户详情维护了税务信息的客户才可以选择开票类型（企业单位或个人/非企业单位），并且企业信息取自税务信息用户不能编辑 \n\t\t\t\t\t\t  关闭： 移动端电子发票申请，用户可以自己选择开票类型（企业单位或个人/非企业单位）输入开票抬头信息"}, {"name": "个人/非企业单位抬头", "field": "building", "type": "checkbox", "category": "other", "options": [{"value": "building", "label": "building"}, {"value": "room", "label": "room"}, {"value": "buildUnit", "label": "buildUnit"}, {"value": "customer", "label": "customer"}, {"value": "roomCustomer", "label": "roomCustomer"}, {"value": "receiveCustomer", "label": "receiveCustomer"}], "tips": ""}, {"name": "业主端电子发票开票的数据来源设置", "field": "wjInvoicedDataSourse", "type": "radio", "category": "app", "options": [{"value": "0", "label": "按账单开票"}, {"value": "1", "label": "按收据开票"}], "tips": "按账单开票： 按已缴账单获取开具发票数据 \n\t\t\t\t\t\t  按收据开票： 按收据获取开具发票数据 \n\t\t\t\t\t\t  注意： 缴费云小程序仅支持按收据开票"}, {"name": "开票根据税率设置开票数据是否显示", "field": "isShowByTax", "type": "radio", "category": "invoice", "options": [{"value": "0", "label": "全部显示"}, {"value": "1", "label": "根据税率进行设置"}], "tips": "该参数适用于业主端账单/收据开票以及web端实收单据的发票申请和直接开票"}, {"name": "发票规格型号自动充填", "field": "invoicedSpecifications", "type": "radio", "category": "invoice", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 发票规格型号自动充填，若设置计费开始/结束日期，则取值为计费开始结束日期合并 \n\t\t\t\t\t\t  关闭： 默认为空 \n\t\t\t\t\t\t  注意： 开票软件限定规格型号字段长度,为保证开票成功,自动填充超过40个字符时会自动截取"}, {"name": "发票规格型号自动填充设置规则", "field": "startDateAndEndDate", "type": "checkbox", "category": "invoice", "options": [{"value": "startDateAndEndDate", "label": "startDateAndEndDate"}, {"value": "room", "label": "room"}, {"value": "receivePeriod", "label": "receivePeriod"}], "tips": ""}, {"name": "发票单位自动充填", "field": "invoicedUnit", "type": "radio", "category": "invoice", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 发票单位自动填充，若设置了自定义开票单位名称，则取自定义开票单位名称；若未设置，则取收费项目的单位名称 \n\t\t\t\t\t\t  关闭： 默认为空"}, {"name": "业主端电子发票申请时间设置", "field": "wjInvoicedPeriod", "type": "radio", "category": "app", "options": [{"value": "0", "label": "全部账单"}, {"value": "1", "label": "大于等于日期账单"}, {"value": "2", "label": "大于等于收据业务日期"}], "tips": "全部账单： 业主/租户可选择全部已缴费账单申请电子发票  \n\t\t\t\t\t\t  大于等于日期账单： 业主/租户只能选择大于等于某个期间的已缴费账单申请电子发票,仅支持账单开票功能 \n\t\t\t\t\t\t  大于等于业务日期： 业主/租户只能选择大于等于某个日期申请电子发票,仅支持收据开票功能"}, {"name": "我家App电子发票申请账单类型", "field": "wjInvoicedBillType", "type": "radio", "category": "app", "options": [{"value": "0", "label": "全部已缴账单"}, {"value": "1", "label": "在线支付&amp;前台缴费账单"}], "tips": "全部已缴账单： 移动端开票申请显示用户所有已缴费的账单  \n\t\t\t\t\t\t  在线支付&amp;前台缴费账单： 移动端开票申请显示用户在线支付&amp;前台缴费的账单（不含预收冲抵业务）"}, {"name": "业主端电子发票申请备注设置", "field": "wjInvoicedRemark", "type": "radio", "category": "app", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 电子发票申请页面“备注”字段用户客户不能进行编辑  \n\t\t\t\t\t\t  关闭： 电子发票申请页面“备注”字段用户客户编辑"}, {"name": "货物或应税劳务、服务名称", "field": "", "type": "unknown", "category": "other", "options": [], "tips": "注： 申请开票时，只可以选择到参数设置中已选择的货物或应税劳务、服务名称类型"}, {"name": "电子发票开票人", "field": "", "type": "unknown", "category": "invoice", "options": [], "tips": "注： 客户进行开票时，所选择的开票人"}, {"name": "电子发票二维码打印设置", "field": "eleInvoiceQRCode", "type": "radio", "category": "invoice", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 收款收据/POS机小票支持打印电子发票二维码，客户可通过扫描二维码开发票 \n\t\t\t\t\t\t  关闭： 收款收据/POS机小票不支持打印电子发票二维码"}, {"name": "电子发票二维码打印方式", "field": "receiptQRCode", "type": "checkbox", "category": "invoice", "options": [{"value": "receiptQRCode", "label": "收款收据"}, {"value": "posQRCode", "label": "POS机小票"}, {"value": "spdb", "label": "POS-浦发"}, {"value": "cup", "label": "POS-银联"}, {"value": "newland", "label": "POS-新大陆"}, {"value": "umf", "label": "POS-联动优势"}, {"value": "cmb", "label": "POS-招商银行"}, {"value": "allin", "label": "POS-通联"}], "tips": ""}, {"name": "电子发票二维码样式设置", "field": "eleInvoiceQRCodeType", "type": "radio", "category": "invoice", "options": [{"value": "1", "label": "微信小程序"}, {"value": "0", "label": "微信二维码"}], "tips": "微信小程序： 此设置只对收款收据生效，微信小程序二维码开票 \n\t\t\t\t\t\t  微信二维码： 微信二维码开票"}, {"name": "电子发票小程序二维码尺寸设置", "field": "eleInvoiceQRCodeSize", "type": "input", "category": "invoice", "options": [], "tips": "定义生成二维码的尺寸"}, {"name": "电子发票二维码有效期设置", "field": "eleInvoiceQRCodeDay", "type": "input", "category": "invoice", "options": [], "tips": "定义生成二维码的有效期（天），超过有效期二维码失效，无法通过扫码申请电子发票"}, {"name": "Web端发票申请数据合并规则设置", "field": "invoicedMergeType", "type": "radio", "category": "invoice", "options": [{"value": "invoicedApplication", "label": "客户+费项发票名称"}, {"value": "invoicedApplicationAndBuildUnit", "label": "客户+单元+费项发票名称"}, {"value": "invoicedApplicationAndRoom", "label": "客户+房间+费项发票名称"}, {"value": "invoicedApplicationAndCustomer", "label": "客户"}, {"value": "invoicedApplicationAndContract", "label": "客户+合同编码+费项发票名称"}], "tips": "客户+费项发票名称: web端发票申请数据按照客户和费项发票名称合并 \n\t\t\t\t\t\t  客户+单元+费项发票名称: web端发票申请数据按照客户、单元和费项发票名称合并 \n\t\t\t\t\t\t  客户+房间+费项发票名称: web端发票申请数据按照客户、房间和费项发票名称合并 \n\t\t\t\t\t\t  客户: we"}, {"name": "发票开具时明细合并", "field": "invoicedDataNoMerge", "type": "radio", "category": "invoice", "options": [{"value": "1", "label": "拆分"}, {"value": "0", "label": "合并(费项发票名称)"}], "tips": "拆分:开票时，单张发票上的发票数据明细不合并 \n\t\t\t\t\t\t 合并(费项发票名称):开票时，单张发票上的发票数据明细按照客户+费项发票名称+税率维度合并"}, {"name": "负数明细数据是否合并", "field": "mergeReceiveMinus", "type": "radio", "category": "other", "options": [{"value": "1", "label": "是"}, {"value": "0", "label": "否"}], "tips": "否：负数为明细多条数据展示 \n\t\t\t\t\t\t 是：负数明细同正数合并展示"}, {"name": "Web端发票备注信息自动填充设置", "field": "invoicedRemark", "type": "radio", "category": "invoice", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： Web端开发票选择开票明细后根据指定规则自动带出备注信息 \n\t\t\t\t\t\t  关闭： Web端开发票选择开票明细后，用户根据需要手动输入备注信息 \n\t\t\t\t\t\t  注意： 如果企业未与我家云开通电子发票合作业务，为避免造成贵司与业主/租户不必要的纠纷，请勿开启此参数"}, {"name": "Web端发票页面是否显示实收开票", "field": "invoicedAccessReceiptBillShow", "type": "radio", "category": "invoice", "options": [{"value": "1", "label": "是"}, {"value": "0", "label": "否"}], "tips": "是:显示实收开票选项 \n\t\t\t\t\t\t 否:不显示实收开票选项"}, {"name": "Web端发票备注信息自动填充设置规则", "field": "projectName", "type": "checkbox", "category": "invoice", "options": [{"value": "projectName", "label": "projectName"}, {"value": "moneyDefineName", "label": "moneyDefineName"}, {"value": "billingProjectName", "label": "billingProjectName"}, {"value": "receiveDate", "label": "receiveDate"}, {"value": "period", "label": "period"}, {"value": "projectAddress", "label": "projectAddress"}, {"value": "projectGroup", "label": "projectGroup"}, {"value": "building", "label": "building"}, {"value": "room", "label": "room"}, {"value": "buildingRoomName", "label": "buildingRoomName"}, {"value": "startDateAndEndDate", "label": "startDateAndEndDate"}, {"value": "rentContractNumber", "label": "rentContractNumber"}, {"value": "endValue", "label": "endValue"}, {"value": "startValue", "label": "startValue"}, {"value": "totalValue", "label": "totalValue"}, {"value": "rentAddress", "label": "rentAddress"}, {"value": "bdcAddress", "label": "bdcAddress"}, {"value": "bdcDetailAddress", "label": "bdcDetailAddress"}, {"value": "receiveDesc", "label": "receiveDesc"}, {"value": "projectName", "label": "projectName"}, {"value": "moneyDefineName", "label": "moneyDefineName"}, {"value": "billingProjectName", "label": "billingProjectName"}, {"value": "period", "label": "period"}, {"value": "description", "label": "description"}, {"value": "projectAddress", "label": "projectAddress"}, {"value": "projectGroup", "label": "projectGroup"}, {"value": "building", "label": "building"}, {"value": "room", "label": "room"}, {"value": "buildingRoomName", "label": "buildingRoomName"}, {"value": "startDateAndEndDate", "label": "startDateAndEndDate"}, {"value": "businessDate", "label": "businessDate"}, {"value": "settlementType", "label": "settlementType"}, {"value": "rentContractNumber", "label": "rentContractNumber"}, {"value": "endValue", "label": "endValue"}, {"value": "startValue", "label": "startValue"}, {"value": "totalValue", "label": "totalValue"}, {"value": "rentAddress", "label": "rentAddress"}, {"value": "bdcAddress", "label": "bdcAddress"}, {"value": "bdcDetailAddress", "label": "bdcDetailAddress"}, {"value": "receiptBillDesc", "label": "receiptBillDesc"}], "tips": ""}, {"name": "是否开具不动产经营租赁服务数电发票", "field": "openBdczyTdysInvoiced", "type": "radio", "category": "invoice", "options": [{"value": "1", "label": "是"}, {"value": "0", "label": "否"}], "tips": "是： 开票页面展示“特定业务类型”选项，开票申请页面展示“是否特定业务数电发票”，可开具不动产经营租赁服务数电发票； \n\t\t\t\t\t\t  否： 开票页面不展示“特定业务类型”选项，开票申请页面不展示“是否特定业务数电发票”，不支持开具不动产经营租赁服务数电发票。"}, {"name": "数电发票是否显示复核人和收款人", "field": "allelectSetReceivedAndReviewName", "type": "radio", "category": "invoice", "options": [{"value": "1", "label": "是"}, {"value": "0", "label": "否"}], "tips": "是： 显示 \n                          否： 不显示 \n                         发票备注栏里面是否显示收款人和复核人， 该参数对数电普票、数电专票、数电普票(纸票)、数电专票(专票)生效。"}, {"name": "备注栏是否展示数据源中文名称", "field": "invoicedRemarkChinese", "type": "radio", "category": "other", "options": [{"value": "1", "label": "是"}, {"value": "0", "label": "否"}], "tips": "是： 效果示例：本月抄表读数：XXX  上月抄表读数：XXX  用量：XXX \n\t\t\t\t\t\t  否： 效果示例：XXX XXX XXX"}, {"name": "业财税一体化", "field": "businessfinancetax", "type": "radio", "category": "other", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 开启业财税一体化功能,开启后我家云每间隔5分钟推送业务应收单、税务应收单至EAS \n\t\t\t\t\t\t  关闭： 关闭业财税一体化功能 \n\t\t\t\t\t\t  注意： 开启财务税务设置"}, {"name": "web端开票日期是否可编辑", "field": "webBillingDateCanEdit", "type": "radio", "category": "invoice", "options": [{"value": "1", "label": "是"}, {"value": "0", "label": "否"}], "tips": "是： web端开票页面开票日期显示为当天，可以进行修改 \n\t\t\t\t\t\t  否： web端开票页面开票日期显示为当天，不可以进行修改"}, {"name": "业主端收款日期设置", "field": "wjTranDateSet", "type": "radio", "category": "app", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 我家app及缴费云小程序业主端生成的收款单业务日期根据业务日期设置定义的规则生成 \n\t\t\t\t\t\t  关闭： 我家app及缴费云小程序业主端生成的收款单业务日期为收款业务当天"}, {"name": "管家App支付限额/手续费设置", "field": "gjPayLimit", "type": "radio", "category": "app", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 用户支付金额&gt;=单次支付限额，用户需要额外支付本次交易的手续费 \n\t\t\t\t\t\t  关闭： 用户支付金额不受限制，手续费由公司承担"}, {"name": "管家助手现金收款抹零设置", "field": "gjCashNoChange", "type": "radio", "category": "app", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 管家助手收款功能选择现金收款时根据设置进行抹零 \n\t\t\t\t\t\t  关闭： 管家助手收款功能选择现金收款时全额收款"}, {"name": "管家助手收款业务日期设置", "field": "gjTranDateSet", "type": "radio", "category": "app", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 管家助手收款业务生成的收款单业务日期根据业务日期设置定义的规则生成 \n\t\t\t\t\t\t  关闭： 管家助手收款业务生成的收款单业务日期为收款业务当天"}, {"name": "管家助手欠费催缴页面是否只显示所属楼栋的欠费房间", "field": "gjArrearsBuilding", "type": "radio", "category": "app", "options": [{"value": "1", "label": "是"}, {"value": "0", "label": "否"}], "tips": "是： 显示登录用户相关的楼栋欠费房间 \n                          否： 显示项目所有楼栋欠费房间"}, {"name": "管家端是否可使用现金收款", "field": "gjHideCash", "type": "radio", "category": "app", "options": [{"value": "0", "label": "是"}, {"value": "1", "label": "否"}], "tips": "是： 管家端（管家助手APP、缴费云小程序、物业管家通小程序）收款时，展示现金收款选项 \n\t\t\t\t\t\t  否： 管家端（管家助手APP、缴费云小程序、物业管家通小程序）收款时，不展示现金收款选项"}, {"name": "管家App抄表页面是否显示客户信息", "field": "gjHideCusName", "type": "radio", "category": "app", "options": [{"value": "0", "label": "是"}, {"value": "1", "label": "否"}], "tips": "是： 物业管家助手里面的抄水表与抄电表显示客户的名称 \n\t\t\t\t\t\t  否： 物业管家助手里面的抄水表与抄电表不显示客户的名称"}, {"name": "管家助手欠费催缴账单展示范围设置", "field": "gjArrearsPeriod", "type": "radio", "category": "app", "options": [{"value": "0", "label": "全部展示"}, {"value": "1", "label": "展示至当前月"}], "tips": "全部展示： 默认:展示当前客户的所有期间的应收欠款 \n\t\t\t\t\t\t  展示至当前月： 只展示当前客户截止至当前月份的应收欠款"}, {"name": "收/退款单业务日期是否可编辑", "field": "isTranDate", "type": "radio", "category": "receipt", "options": [{"value": "1", "label": "是"}, {"value": "0", "label": "否"}], "tips": "是： 收/退款单业务日期默认显示为当天，可以进行修改。其中退款单业务日期需不小于其对应的收款业务日期 \n\t\t\t\t\t\t  否： 收/退款单业务日期默认显示为当天，不可以进行修改"}, {"name": "收/退款单据业务日期编辑控制", "field": "tranDateCanEdit", "type": "radio", "category": "receipt", "options": [{"value": "1", "label": "仅可选择当天及之前"}, {"value": "0", "label": "关闭"}], "tips": "仅可选择当天及之前： 收款单业务日期仅能选择当天及之前的日期；退款单业务日期仅能选择收款日期及之后至当天及之前的日期。 \n\t\t\t\t\t\t  关闭： 收款单业务日期的选择不做限制；退款单业务日期仅能选择收款日期及之后的日期"}, {"name": "收/退款单业务日期默认显示设置", "field": "receiptTranDate", "type": "radio", "category": "receipt", "options": [{"value": "0", "label": "默认当天"}, {"value": "1", "label": "默认不显示"}], "tips": "默认当天： 收/退款单的业务日期默认显示为当天 \n\t\t\t\t\t\t  默认不显示： 收/退款单的业务日期默认不显示，需手动选择业务日期"}, {"name": "Web端收款业务日期设置", "field": "wyTranDateSet", "type": "radio", "category": "receipt", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： Web端收款业务生成的收款单业务日期根据业务日期设置定义的规则生成，影响范围包括收款明细和批量收款功能，不包括补单和修改业务日期的场景 \n                          关闭： Web端收款业务生成的收款单业务日期为收款业务当天"}, {"name": "收款单根据业务日期动态计算违约金", "field": "isAutoCalcOverDue", "type": "radio", "category": "receipt", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 收款单根据修改的业务日期重新计算违约金 \n\t\t\t\t\t\t  关闭： 收款单修改业务日期不触发违约金计算"}, {"name": "收/退款单收款期间变更设置", "field": "reiptPeriod", "type": "radio", "category": "receipt", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 新增/修改 收/退款单“收/退款期间”，保存时取“业务日期”所在月作为”收/退款期间” \n\t\t\t\t\t\t  关闭： 新增/修改 收/退款单“收/退款期间”，保存时以当前系统期间作为”收/退款期间”"}, {"name": "收/退款单收款期间变更受控项目", "field": "", "type": "unknown", "category": "receipt", "options": [], "tips": "当参数为开启状态时，必须设置受控项目，如果未设置受控项目，则此参数与关闭状态效果一致，即必须为当前参数设置受控的项目才生效"}, {"name": "收款方式房间单/多收费对象设置", "field": "receiptMulCustomer", "type": "radio", "category": "receipt", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 收款单分录根据选择的房间显示该房间下所有客户的应收数据（不推荐开启） \n\t\t\t\t\t\t  关闭： 收款操作收款方式选择房间时，收款单分录根据选择的房间+客户维度显示应收数据"}, {"name": "收款单业务模式设置", "field": "reiptTranModel", "type": "radio", "category": "receipt", "options": [{"value": "0", "label": "自动模式"}, {"value": "1", "label": "手动模式"}], "tips": "自动模式： 收款时选择房间/客户/车位/合同，自动加载所有收费项目&amp;全部费用期间的应收欠款 \n\t\t\t\t\t\t  手动模式： 收款时选择房间/客户/车位/合同，需要手动选择本次收款的收费项目以及费期间"}, {"name": "新增赠送减免是否要关联应收", "field": "addChargeIsRelationReceive", "type": "radio", "category": "other", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 赠送减免的冲抵方式只能选择指定应收，有关联应收明细才能保存。 \n\t\t\t\t\t\t  关闭： 新增赠送减免允许不关联应收明细"}, {"name": "赠送减免审核通过后自动执行冲抵", "field": "autoGenerateCharge", "type": "radio", "category": "other", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 仅限冲抵方式为“指定应收”的才会自动执行冲抵。 \n\t\t\t\t\t\t  关闭： 需手动执行冲抵。"}, {"name": "收款单赠送减免设置", "field": "reiptChargeQuerySet", "type": "radio", "category": "receipt", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 收款单显示【新增赠送减免】按钮，收款时可进行赠送减免相关设置 \n                          关闭： 收款单隐藏【新增赠送减免】按钮"}, {"name": "收款单预收款金额按月份拆分", "field": "reiptPreMoneySpit", "type": "radio", "category": "receipt", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 收款单预收款的金额根据选择的时间预收范围，按月进行拆分，每个月保存一条分录 \n\t\t\t\t\t\t  关闭： 收款单预收款的金额不进行拆分，保存时为一条分录"}, {"name": "收款单分录是否是明细显示", "field": "reipEntryGroupType", "type": "radio", "category": "receipt", "options": [{"value": "1", "label": "是"}, {"value": "0", "label": "否"}], "tips": "是： 收款单会按照结算方式、预收款拆分后的结果进行显示(用于凭证) \n\t\t\t\t\t\t  否： 收款单分录按照正常显示"}, {"name": "收款单违约金金额是否可编辑", "field": "reiptPenaltyEdit", "type": "radio", "category": "receipt", "options": [{"value": "1", "label": "是"}, {"value": "0", "label": "否"}], "tips": "是： 收款单分录违约金可编辑，修改违约金同步修改收款金额 \n\t\t\t\t\t\t  否： 收款单违约金金额不可以编辑"}, {"name": "收款单保存拆分模式", "field": "reiptSpitType", "type": "radio", "category": "receipt", "options": [{"value": "0", "label": "模式1"}, {"value": "1", "label": "模式2"}], "tips": "模式1： 收款单优先拆分到最早期间的应收数据 \n\t\t\t\t\t\t  模式2： 收款单本金和违约金分别优先拆分到最早期间的应收数据"}, {"name": "收款单收费项目合计自动分配", "field": "receiptAutomaticSplit", "type": "radio", "category": "receipt", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 收款单的收费项目合计金额可编辑，修改收费项目合计金额更新对应的收费项目的收款单分录金额 \n\t\t\t\t\t\t  关闭： 收款单的收费项目合计金额不可编辑"}, {"name": "收款单附件设置", "field": "receiptAddFile", "type": "radio", "category": "receipt", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 收款单新增/修改操作时支持上传附件（最多可上传3个附件） \n\t\t\t\t\t\t  关闭： 收款单新增/修改操作时不支持上传附件"}, {"name": "退款单附件设置", "field": "refundAddFile", "type": "radio", "category": "receipt", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 退款单新增/修改操作时支持上传附件（最多可上传3个附件） \n                          关闭： 退款单新增/修改操作时不支持上传附件"}, {"name": "收款单退款操作同步撤掉当日交易", "field": "wyRefundPayType", "type": "radio", "category": "receipt", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": ""}, {"name": "收款单经办人设置", "field": "receiptOperatorSetting", "type": "radio", "category": "receipt", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "应用场景：主要应用于经办人代收相关费用后，转交给实际收款人录入收款单  \n                          开启： 收款单显示经办人选项 \n                          关闭： 收款单隐藏经办人选项"}, {"name": "收款单建筑面积显示设置", "field": "receiptBillBuildingAreaView", "type": "radio", "category": "receipt", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 收款单显示房间的建筑面积信息 \n                          关闭： 收款单隐藏房间的建筑面积信息"}, {"name": "收款单首次收款显示设置", "field": "receiptBillFirstStageView", "type": "radio", "category": "receipt", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 收款单显示首次收款选项，用于标记该收款单为首次收款 \n                          关闭： 收款单隐藏首次收款选项"}, {"name": "收款单预收月数开始时间控制", "field": "receiptPreMoneyDefineStartPeriod", "type": "radio", "category": "receipt", "options": [{"value": "0", "label": "自定义"}, {"value": "1", "label": "大于等于收款期间"}, {"value": "2", "label": "大于收款期间"}], "tips": "自定义： 收款单收取预收款时，点击【预收月数】弹出窗口的预收月数/预收时间范围/预收金额三个选项的开始时间用户可自定义选择 \n                          大于等于收款期间： 收款单收取预收款时，点击【预收月数】弹出窗口的预收月数/预收时间范围/预收金额三个选项的开始时间用户只"}, {"name": "零税率应收收款时税额重算设置", "field": "receiptTaxRateReset", "type": "radio", "category": "receipt", "options": [{"value": "0", "label": "全部重算"}, {"value": "1", "label": "仅非合同应收重算"}, {"value": "2", "label": "全部不重算"}], "tips": "全部重算： 应收数据收款时，如果税率为0，则全部按照应税服务中设置的税率重算税额 \n\t\t\t\t\t\t  仅非合同应收重算： 应收数据收款时，如果税率为0，则仅非合同应收按照应税服务中设置的税率重算税额；合同应收仍按照税率为0计算 \n\t\t\t\t\t\t  全部不重算： 应收数据收款时，如果税率为0，税额全部仍然"}, {"name": "客户迁出业务控制", "field": "customerMoveoutControl", "type": "radio", "category": "other", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 迁出操作时如果业主/租户存在欠款未交、预收款余额和押金余额未退，则不能进行迁出操作 \n\t\t\t\t\t\t  关闭： 迁出操作时不校验业主/租户是否存在欠款未交、预收款余额和押金余额未退"}, {"name": "受控业务类型", "field": "arrears", "type": "checkbox", "category": "other", "options": [{"value": "arrears", "label": "欠款"}, {"value": "advancePaymentBalance", "label": "预收款余额"}, {"value": "depositBalance", "label": "押金余额"}], "tips": ""}, {"name": "预收款台账预收冲抵转款期间设置", "field": "preMoneyOffSetTransferPeriodSet", "type": "radio", "category": "receipt", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 选择“转款期间等于应收期间”，预收款台账【执行预收冲抵】操作时用户不可以选择“转款期间”，生成的转款单的“转款期间”等于应收账单的费用期间 \n\t\t\t\t\t\t  关闭： 预收款台账【执行预收冲抵】操作时用户可以选择“转款期间”，生成的转款单的“转款期间”等于用户选择的期间"}, {"name": "预收款台账预收冲抵应收期间", "field": "manualReceiveArbillmatchStartPeriod", "type": "radio", "category": "receipt", "options": [{"value": "0", "label": "自定义"}, {"value": "1", "label": "小于等于当前期间"}], "tips": "自定义： 时间自定义 \n\t\t\t\t\t\t  小于等于当前期间： 小于等于当前期间"}, {"name": "是否启用多级管控", "field": "multilevelControl", "type": "radio", "category": "other", "options": [{"value": "0", "label": "否"}, {"value": "1", "label": "是"}], "tips": ""}, {"name": "租赁合同分签业务数据隔离", "field": "contractSubSign", "type": "radio", "category": "contract", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "租赁合同发生分签业务时运营公司与物业公司之间的业务数据需要相互隔离的业务场景（例如：运营公司在【收费管理】中只能看到租金的数据，物业公司在【收费管理】中只能看到管理费的数据）  \n\t\t\t\t\t\t\t  开启： 租赁合同发生分签业务时运营公司与物业公司共同管理的项目，业务数据根据设置进行隔离 \n\t\t\t\t\t"}, {"name": "凭证模板分录摘要设置", "field": "voucherEntryDescription", "type": "radio", "category": "finance", "options": [{"value": "0", "label": "自定义固定信息"}, {"value": "1", "label": "自定义配置"}], "tips": "自定义固定信息： 生成凭证的摘要信息，取财务管理-凭证模板的第二步科目设置凭证分录用户自定义的“凭证摘要”，即取固定信息填充摘要 \n\t\t\t\t\t\t  自定义配置： 按提供的源数据自由选择或组合，生成凭证时系统根据分录信息动态生成摘要"}, {"name": "凭证摘要自动获取配置", "field": "projectName", "type": "checkbox", "category": "finance", "options": [{"value": "projectName", "label": "projectName"}, {"value": "projectOrgName", "label": "projectOrgName"}, {"value": "moneydefine", "label": "moneydefine"}, {"value": "moneydefine1", "label": "moneydefine1"}, {"value": "customer", "label": "customer"}, {"value": "receiveDate", "label": "receiveDate"}, {"value": "amount", "label": "amount"}, {"value": "room", "label": "room"}, {"value": "buildingRoom", "label": "buildingRoom"}, {"value": "tranDateSelect", "label": "tranDateSelect"}, {"value": "invoicedNumber", "label": "invoicedNumber"}, {"value": "chequeNumber", "label": "chequeNumber"}, {"value": "voucherNumber", "label": "voucherNumber"}, {"value": "receiptType", "label": "receiptType"}, {"value": "vouTempEntryDesc", "label": "vouTempEntryDesc"}, {"value": "period", "label": "period"}, {"value": "projectGroup", "label": "projectGroup"}, {"value": "receiptEntryDesc", "label": "receiptEntryDesc"}, {"value": "moneydefineCustomName", "label": "moneydefineCustomName"}, {"value": "moneydefineCustomName1", "label": "moneydefineCustomName1"}, {"value": "receivePeriod", "label": "receivePeriod"}, {"value": "receiveChargeDate", "label": "receiveChargeDate"}, {"value": "linkChar", "label": "linkChar"}, {"value": "moneyDefineType", "label": "moneyDefineType"}, {"value": "moneyDefineType1", "label": "moneyDefineType1"}], "tips": ""}, {"name": "多明细数据时摘要是否单独展示", "field": "vouEntryDesViewDetail", "type": "radio", "category": "other", "options": [{"value": "0", "label": "否"}, {"value": "1", "label": "是"}], "tips": "否： 摘要拼接汇总展示成一条 \n                          是： 每条明细数据对应展示一条摘要（存储在辅助核算明细表里"}, {"name": "凭证传输EAS系统摘要默认展示项目名", "field": "transEasDisplayProjectName", "type": "radio", "category": "finance", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启 &nbsp;传输EAS系统默认带项目名 \n\t\t\t\t\t\t  关闭 &nbsp;传输EAS系统默认不带项目名 \n\t\t\t\t\t\t  注意：建议关闭该参数"}, {"name": "调用EAS采用安全模式调用", "field": "isUsedVoucherCall", "type": "radio", "category": "finance", "options": [{"value": "1", "label": "是"}, {"value": "0", "label": "否"}], "tips": "是 &nbsp;EAS服务器开启安全模式,调用采用安全模式 \n                          否 &nbsp;EAS服务器未开启安全模式,调用采用非安全模式 \n                          注意：建议关闭该参数"}, {"name": "凭证传输到K3Cloud系统的凭证状态", "field": "transK3CloudStatus", "type": "radio", "category": "finance", "options": [{"value": "0", "label": "暂存"}, {"value": "1", "label": "保存"}], "tips": ""}, {"name": "凭证传输到K3Cloud系统的凭证明细按客户排序(带有客户辅助核算生效)", "field": "voucherEntryOrderByCustomer", "type": "radio", "category": "finance", "options": [{"value": "0", "label": "否"}, {"value": "1", "label": "是"}], "tips": ""}, {"name": "凭证/单据传输到K3Cloud系统的凭证自动适应排序", "field": "k3CloudAutoAdjustField", "type": "radio", "category": "finance", "options": [{"value": "0", "label": "否"}, {"value": "1", "label": "是"}], "tips": "建议开启该参数,\n\t\t\t\t\t\t\t1.已配置账簿,导入凭证是提示账簿不存在，开启自动适应排序参数\n\t\t\t\t\t\t\t2.单据客户配置正常，组织信息正常，提示获取客户信息，组织信息异常，开启自动适应排序参数"}, {"name": "凭证分录展示方式", "field": "voucherSplitGroupTypeSet", "type": "radio", "category": "finance", "options": [{"value": "0", "label": "凭证模版分录汇总"}, {"value": "1", "label": "凭证模版分录合并方式汇总"}], "tips": "凭证模版分录汇总 &nbsp;凭证分录按照模版设置汇总 \n\t\t\t\t\t\t  凭证模版分录合并方式汇总 &nbsp;凭证分录按照模版设置分录合并方式"}, {"name": "凭证借贷金额修改", "field": "canEditDebitAndCreditAmount", "type": "radio", "category": "finance", "options": [{"value": "0", "label": "关闭"}, {"value": "1", "label": "开启"}], "tips": "开启： 可修改凭证分录中的借贷金额 \n\t\t\t\t\t\t  关闭： 仅支持查看凭证分录中的借贷金额"}, {"name": "凭证是否开启自定义核算项目", "field": "selfAssistTypeSet", "type": "radio", "category": "finance", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": ""}, {"name": "凭证,账单,开票申请显示甲方公司可以展示相同名称的和禁用的", "field": "vouSearchOrgTheSameHandler", "type": "radio", "category": "invoice", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": ""}, {"name": "收款退款作废是否验证", "field": "isCancelCheckedFromEas", "type": "radio", "category": "receipt", "options": [{"value": "0", "label": "关闭"}, {"value": "1", "label": "开启"}], "tips": "开启： 我家云作废单据需要调用财务系统接口,先判断财务系统对应单据是否允许作废,如允许删除可继续作废我家云单据，否则不允许删除我家云单据。 \n\t\t\t\t\t\t  关闭： 我家云作废单据不需要需要调用财务系统接口,不进行判断对应单据是否允许作废"}, {"name": "单据自动同步至财务系统", "field": "isBillSyncEAS", "type": "radio", "category": "finance", "options": [{"value": "0", "label": "关闭"}, {"value": "1", "label": "开启"}], "tips": ""}, {"name": "默认同步的财务系统", "field": "", "type": "unknown", "category": "finance", "options": [], "tips": ""}, {"name": "凭证自动传输至财务系统", "field": "isAutoImportVoucher", "type": "radio", "category": "finance", "options": [{"value": "0", "label": "关闭"}, {"value": "1", "label": "开启"}], "tips": "该参数对手动生成的凭证无效"}, {"name": "默认财务系统", "field": "", "type": "unknown", "category": "finance", "options": [], "tips": ""}, {"name": "凭证导出至模板是否记录为已导出凭证", "field": "voucherExportFlag", "type": "radio", "category": "finance", "options": [{"value": "1", "label": "是"}, {"value": "0", "label": "否"}], "tips": "是： 导出至模板的凭证记录为已导出凭证； \n\t\t\t\t\t\t\t  否： 导出至模板的凭证不记录为已导出凭证。"}, {"name": "单据同步删除", "field": "billSyncDel", "type": "radio", "category": "other", "options": [{"value": "0", "label": "不同步删除"}, {"value": "1", "label": "同步删除"}, {"value": "2", "label": "反审核删除"}], "tips": "不同步删除： 我家云删除单据时不进行同步删除对应财务系统中的单据 \n                              同步删除： 我家云删除单据时先同步删除对应财务系统中的单据,删除成功才可以删除我家云中的单据 \n                              反审核删除： 我"}, {"name": "转款单推送星空方式", "field": "transferBillPK3Style", "type": "radio", "category": "other", "options": [{"value": "0", "label": "转款单摸版"}, {"value": "1", "label": "转款单(拆分退款、收款单推送)"}], "tips": "转款单摸版： 按照配置的转款单摸版进行推送转款单数据 \n                          转款单(拆分退款、收款单推送)： 转入款项的收款单+转出款项的退款单"}, {"name": "销售出库类型出库单推送星空方式", "field": "k3CloudOutStockStyle", "type": "radio", "category": "other", "options": [{"value": "0", "label": "销售出库单"}, {"value": "1", "label": "销售订单"}], "tips": "生成销售出库单或者生成销售订单"}, {"name": "工作流详情中允许修改附件", "field": "workFlowFileUpdate", "type": "radio", "category": "other", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 能够在工作流详情中修改附件 \n                          关闭： 工作流详情中只能查看附件"}, {"name": "工作流退回开始节点允许自动作废单据", "field": "CEACancelWorkflow", "type": "radio", "category": "other", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 工作流退回开始节点触发自动作废单据(部分工作流特殊逻辑,开启该参数无效。需要配置,开始节点触发退回,开发节点废弃触发通知) \n                          关闭： 工作流退回开始节点不触发自动废弃"}, {"name": "库存管理-物料列表里物料名称是否允许重复", "field": "materielNameRepeatControl", "type": "radio", "category": "other", "options": [{"value": "0", "label": "否"}, {"value": "1", "label": "是"}], "tips": ""}, {"name": "库存管理-物料审核是否给仓库管理员发送短信提醒", "field": "sendMessageToStoreManagerControl", "type": "radio", "category": "other", "options": [{"value": "0", "label": "否"}, {"value": "1", "label": "是"}], "tips": ""}, {"name": "确认应收范围设置", "field": "createReceiveAuditStatus", "type": "checkbox", "category": "other", "options": [{"value": "createReceiveAuditStatus", "label": "智能计费&amp;费用生成"}, {"value": "handleCreateReceiveAuditStatus", "label": "费用录入"}, {"value": "handleShareReceiveAuditStatus", "label": "费用分摊"}, {"value": "handleZLCreateReceiveAuditStatus", "label": "租赁模块生成的费用"}, {"value": "handleTempCreateReceiveAuditStatus", "label": "临时费用台账录入费用"}], "tips": "确认应收范围设置内的应收数据需要进行确认应收后才可以进行后续业务（例如：收款、银行托收、预收冲抵、打印缴费通知单、App收款等"}, {"name": "仪表损耗量保留小数位数", "field": "", "type": "unknown", "category": "other", "options": [], "tips": "系统将根据设置的小数位数进行后续计费, 默认四舍五入  \n                          请在[仪表设置]--[仪表规格] 设置损耗计算方式"}, {"name": "客户迁入业务控制", "field": "rentContractCanCheckIn", "type": "radio", "category": "other", "options": [{"value": "0", "label": "关闭"}, {"value": "1", "label": "开启"}], "tips": "开启： 房间关联租赁合同时，可以进行业主的迁入操作 \n\t\t\t\t\t\t  关闭： 房间关联租赁合同时，不能进行迁入操作"}, {"name": "入住审核客户数据加密", "field": "customerAuditMark", "type": "radio", "category": "other", "options": [{"value": "0", "label": "关闭"}, {"value": "1", "label": "开启"}], "tips": "开启： 住户管理-入住审核页面客户手机号及证件进行加密显示 \n\t\t\t\t\t\t  关闭： 住户管理-入住审核页面客户手机号及证件不进行加密显示"}, {"name": "客户信息名称房号数据加密", "field": "customerInfoMark", "type": "radio", "category": "other", "options": [{"value": "0", "label": "关闭"}, {"value": "1", "label": "开启"}], "tips": "开启： 住户管理-客户信息页面客户名称房号进行加密显示 \n\t\t\t\t\t\t  关闭： 住户管理-客户信息页面客户名称房号不进行加密显示"}, {"name": "银联托收业务审核设置", "field": "remitNeedAudit", "type": "radio", "category": "other", "options": [{"value": "0", "label": "关闭"}, {"value": "1", "label": "开启"}], "tips": "开启： 银联托收进行出盘操作，需要进行审批通过后将出盘信息传递给银联服务器处理 \n\t\t\t\t\t\t  关闭： 银联托收进行出盘操作，即将出盘信息传递给银联服务器处理"}, {"name": "余额可冲抵日期计算规则设置", "field": "balanceArrDateCalRule", "type": "radio", "category": "other", "options": [{"value": "0", "label": "应收金额"}, {"value": "1", "label": "收费标准"}], "tips": "应收金额： 根据房间的预收款余额及已生成的应收金额计算“余额可冲抵日期” \n\t\t\t\t\t\t  收费标准： 根据房间的预收款余额及房间收费设置绑定的收费标准计算“余额可冲抵日期”"}, {"name": "批量收款生成规则", "field": "receiptBillSplitRule", "type": "radio", "category": "receipt", "options": [{"value": "0", "label": "按房间拆分"}, {"value": "1", "label": "按客户合并"}], "tips": "按房间拆分： 根据房间维度拆分生成收款单 \n\t\t\t\t\t\t  按客户合并： 根据客户维度合并生成收款单"}, {"name": "管家设置支持楼栋/房间多管家授权", "field": "multiManager", "type": "radio", "category": "app", "options": [{"value": "0", "label": "关闭"}, {"value": "1", "label": "开启"}], "tips": "关闭： 一个房间只能被一个管家管理 \n\t\t\t\t\t\t  开启： 一个房间可以被多个管家管理"}, {"name": "显示收费项目自定义名称", "field": "showMoneydefineAutoName", "type": "radio", "category": "other", "options": [{"value": "0", "label": "关闭"}, {"value": "1", "label": "开启"}], "tips": "控制范围： 业主端账单,管家端欠费催缴,部分api接口 \n\t\t\t\t\t\t  关闭(默认)： 显示收费项目原名称 \n\t\t\t\t\t\t  开启： 显示收费项目自定义名称,收费项目未设置自定义名称则仍显示原名称"}, {"name": "收款时是否按照费用期间顺序收款", "field": "orderPeriodReceipt", "type": "radio", "category": "receipt", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "关闭： 按照费用期间由远及近的顺序收款 \n\t\t\t\t\t\t  开启： 按照费用期间由近及远的顺序收款 \n\t\t\t\t\t\t  注意： \n\t\t\t\t\t\t\t收款要求费用期间连续.如果早期的费用不打算收: 1.冻结应收; 2.收款时先按指定费用期间筛选"}, {"name": "企业级合同编码规则", "field": "enterpriseLevelRentNumber", "type": "radio", "category": "contract", "options": [{"value": "1", "label": "是"}, {"value": "0", "label": "否"}], "tips": "是： 开启企业级编码规则 \n                          否： 不开启企业级编码规则 \n                          注意： 开启该企业级编码规则并且关闭项目级编码规则时，此设置生效。\n                            同一个企业下所"}, {"name": "住户登录手机与联系电话一致", "field": "enterpriseLoginByLinkPhone", "type": "radio", "category": "platform", "options": [{"value": "1", "label": "是"}, {"value": "0", "label": "否"}], "tips": ""}, {"name": "多角色住户默认登录类型", "field": "mutilJobLoingType", "type": "radio", "category": "platform", "options": [{"value": "0", "label": "业主和租户"}, {"value": "1", "label": "联系人"}], "tips": "默认使用业主及租户身份登录，如租赁客户下添加了同手机号的联系人，可切换成默认联系人登录"}, {"name": "我家端(住户)登录信息保留时长", "field": "wjTokenExpireTime", "type": "input", "category": "platform", "options": [], "tips": "我家默认1个月,不设置或者设置少于等于0为默认设置"}, {"name": "管家端登录信息保留时长", "field": "gjTokenExpireTime", "type": "input", "category": "app", "options": [], "tips": "管家默认1个月,不设置或者设置少于等于0为默认设置"}, {"name": "商家端登录信息保留时长", "field": "sjTokenExpireTime", "type": "input", "category": "platform", "options": [], "tips": "商家默认1个月,不设置或者设置少于等于0为默认设置"}, {"name": "权责数据保留位是否和收费项目设置保持一致", "field": "rightReservedUseMoneydefine", "type": "radio", "category": "other", "options": [{"value": "1", "label": "是"}, {"value": "0", "label": "否"}], "tips": "是： 收费项目对应的权责数据和收费项目设置保持一致 \n\t\t\t\t\t\t  否： 系统默认保持两位小数"}, {"name": "应收统计表查询是否展示禁用收费项目数据", "field": "showDisableMoneydefine", "type": "radio", "category": "other", "options": [{"value": "1", "label": "是"}, {"value": "0", "label": "否"}], "tips": "是： 展示禁用收费项目数据 \n\t\t\t\t\t\t  否： 不展示禁用收费项目数据"}, {"name": "自助缴费机收据打印模版", "field": "", "type": "unknown", "category": "app", "options": [], "tips": ""}, {"name": "自助缴费机发票打印位置设置", "field": "selfRobotInvoicedPrintSetting", "type": "radio", "category": "app", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 用户可自定义发票打印起始位置xy值 \n                          关闭： 原单按A4纸格式打印"}, {"name": "企业是否开启欠费催缴提示短信模板（简）", "field": "chargeOweRemindControl", "type": "radio", "category": "other", "options": [{"value": "0", "label": "否"}, {"value": "1", "label": "是"}], "tips": "是： 需要启用短信模板[欠费催缴提醒短信模板(简)], 且催缴短信不支持缴费云小程序链接"}, {"name": "客户信息高级导出验证手机号设置", "field": "cusHignExportVaildate", "type": "radio", "category": "other", "options": [{"value": "0", "label": "关键用户手机号"}, {"value": "1", "label": "项目归属组织管理员"}, {"value": "2", "label": "指定角色"}], "tips": "项目归属组织管理员: 如项目归属组织设置了多个管理员系统将会随机获取其中一个管理手机号进行验证 指定角色: 根据导出数据项目匹配授权了此角色的员工，获取员工的手机号进行验证，如有多个员工则匹配其中一个员工"}, {"name": "是否开启快速新增客户", "field": "quickAddCustomer", "type": "radio", "category": "other", "options": [{"value": "1", "label": "是"}, {"value": "0", "label": "否"}], "tips": "是，新增客户只需要填写客户名称、客户类型、所属项目等关键信息完成快速创建  否，新增客户需要填写信息相对比较全面"}, {"name": "客户税务信息开票名称是否默认为客户名称", "field": "buyerInvoicedNameIsCustomerName", "type": "radio", "category": "invoice", "options": [{"value": "1", "label": "是"}, {"value": "0", "label": "否"}], "tips": ""}, {"name": "租赁客户新增必填证件类型设置", "field": "newCustomerMustFillCTypeP", "type": "checkbox", "category": "contract", "options": [{"value": "newCustomerMustFillCTypeP", "label": "个人客户"}, {"value": "newCustomerMustFillCTypeE", "label": "企业客户"}, {"value": "newCustomerMustFillCTypeS", "label": "个体户"}, {"value": "newCustomerMustFillCTypeSOE", "label": "国有企业"}, {"value": "newCustomerMustFillCTypeG", "label": "政府机构"}, {"value": "newCustomerMustFillCTypeO", "label": "其他"}], "tips": "勾选的客户类型在新增和修改时会提示证件类型必填，没勾选则非必填。"}, {"name": "租赁客户新增必填证件号码设置", "field": "newCustomerMustFillCNumberP", "type": "checkbox", "category": "contract", "options": [{"value": "newCustomerMustFillCNumberP", "label": "个人客户"}, {"value": "newCustomerMustFillCNumberE", "label": "企业客户"}, {"value": "newCustomerMustFillCNumberS", "label": "个体户"}, {"value": "newCustomerMustFillCNumberSOE", "label": "国有企业"}, {"value": "newCustomerMustFillCNumberG", "label": "政府机构"}, {"value": "newCustomerMustFillCNumberO", "label": "其他"}], "tips": "勾选的客户类型在新增和修改时会提示证件号码必填，没勾选则非必填。"}, {"name": "租赁客户新增必填手机号码设置", "field": "newCustomerMustFillPhoneP", "type": "checkbox", "category": "contract", "options": [{"value": "newCustomerMustFillPhoneP", "label": "个人客户"}, {"value": "newCustomerMustFillPhoneE", "label": "企业客户"}, {"value": "newCustomerMustFillPhoneS", "label": "个体户"}, {"value": "newCustomerMustFillPhoneSOE", "label": "国有企业"}, {"value": "newCustomerMustFillPhoneG", "label": "政府机构"}, {"value": "newCustomerMustFillPhoneO", "label": "其他"}], "tips": "勾选的客户类型在新增和修改时会提示手机号码必填，没勾选则非必填，个人客户默认必须填写且不允许修改。"}, {"name": "欠款原因录入规则设置", "field": "arrearsReasonNumberRule", "type": "radio", "category": "other", "options": [{"value": "1", "label": "（房间+客户）支持多个欠款原因"}, {"value": "0", "label": "（房间+客户）仅支持单个欠款原因"}], "tips": ""}, {"name": "合同审批通过是否推送应收拆分表数据", "field": "contractAuditSendRightCount", "type": "radio", "category": "contract", "options": [{"value": "1", "label": "是"}, {"value": "0", "label": "否"}], "tips": "是： 合同审批通过推送应收拆分表数据 \n\t\t\t\t  否： 合同审批通过不推送应收拆分表数据，手动进行导入"}, {"name": "调价单-低保收入线调整", "field": "miniIncomeAmount", "type": "input", "category": "other", "options": [], "tips": ""}, {"name": "开票页面是否校验房间甲方公司与税盘公司的一致性", "field": "checkRoomAndTaxPartA", "type": "radio", "category": "invoice", "options": [{"value": "1", "label": "是"}, {"value": "0", "label": "否"}], "tips": ""}, {"name": "抄表生成费用是否生成失败明细", "field": "showGeneratingReceiveResult", "type": "radio", "category": "other", "options": [{"value": "1", "label": "是"}, {"value": "0", "label": "否"}], "tips": ""}, {"name": "房间仪表二维码打印名称设置", "field": "roomInsQRCodeName", "type": "radio", "category": "other", "options": [{"value": "1", "label": "开启"}, {"value": "0", "label": "关闭"}], "tips": "开启： 房间仪表二维码打印名称支持自定义配置 \n\t\t\t\t  关闭： 房间仪表二维码打印名称默认为仪表名称 \n\t\t\t\t  注： 房间和客户取值生成二维码时该房间仪表绑定的最新的房间和客户名称"}, {"name": "房间仪表二维码打印名称设置规则", "field": "roomInsName", "type": "checkbox", "category": "other", "options": [{"value": "roomInsName", "label": "roomInsName"}, {"value": "room", "label": "room"}, {"value": "customer", "label": "customer"}], "tips": ""}, {"name": "发票申请开票后自动发送邮件", "field": "invoicedApplySendEmail", "type": "radio", "category": "invoice", "options": [{"value": "1", "label": "是"}, {"value": "0", "label": "否"}], "tips": ""}, {"name": "收款凭证业务日期是否默认为收款业务日期", "field": "voucherFillDateSet", "type": "radio", "category": "receipt", "options": [{"value": "2", "label": "是(包含业务日期汇总)"}, {"value": "1", "label": "是"}, {"value": "0", "label": "否"}], "tips": "是： 收款凭证业务日期默认为收款业务日期 \n\t\t\t\t  否： 收款凭证业务日期不默认为收款业务日期 \n\t\t\t\t  注： 该参数仅针对按单据或单据编码汇总方式生成的收款凭证模板生效"}, {"name": "费用录入应收日期设置", "field": "arDateSet", "type": "radio", "category": "other", "options": [{"value": "1", "label": "仅可录入当天及之前"}, {"value": "0", "label": "关闭"}], "tips": "仅可录入当天及之前： 在应收查询页面录入或批量导入应收时，日期仅能填写当天及之前的日期 \n\t\t\t\t  关闭： 在应收查询页面录入或批量导入应收时，可填写任意日期 \n\t\t\t\t  注： 若设置了费用录入应收日期是否根据期间自动填充参数，则以该参数设置的填充规则为准"}, {"name": "费用录入对象类型设置", "field": "enterReceiveByRoom", "type": "checkbox", "category": "other", "options": [{"value": "enterReceiveByRoom", "label": "房间"}, {"value": "enterReceiveByCourse", "label": "场地"}, {"value": "enterReceiveByAds", "label": "广告位"}, {"value": "enterReceiveByCarPark", "label": "车位"}, {"value": "enterReceiveByCustomer", "label": "客户"}, {"value": "enterReceiveByEmptyRoom", "label": "空置费房间"}], "tips": "默认全部勾选、下拉默认选择房间且不允许修改，可根据业务需要开启或关闭其他类型费用录入"}, {"name": "费用关联合同信息是否更新客户", "field": "relationContractReceiveUpdateCusSet", "type": "radio", "category": "contract", "options": [{"value": "1", "label": "是"}, {"value": "0", "label": "否"}], "tips": "1、是： 通过智能计费、仪表费用生成、公区仪表自定义分摊、费用录入的费用关联房间所属的合同编码，若该合同编码更换客户，则对应应收收费对象显示新客户名称； \n\t\t\t\t  2、否： 通过智能计费、仪表费用生成、公区仪表自定义分摊、费用录入的费用关联房间所属的合同编码，若该合同编码更换客户，则对应应收收费"}, {"name": "关联合同费用违约金计算规则", "field": "relationContractReceivePenaltySet", "type": "radio", "category": "contract", "options": [{"value": "0", "label": "按收费项目的违约金设置"}, {"value": "1", "label": "按合同的违约金设置"}], "tips": ""}, {"name": "费用生成时应收日期取值规则", "field": "relationContractReceiveDateSet", "type": "radio", "category": "other", "options": [{"value": "0", "label": "按收费项目的应收日期设置"}, {"value": "1", "label": "按合同的应收日期设置"}], "tips": "仪表计费、智能计费、费用分摊时生成的应收的应收日期将按照规则生成，录入或导入的应收以配置的应收日期为准。"}, {"name": "房间收费设置收费项目计费比例上限控制", "field": "moneyDefineChargeRateControlSet", "type": "radio", "category": "other", "options": [{"value": "0", "label": "不控制"}, {"value": "1", "label": "不能大于100%"}, {"value": "2", "label": "必须等于100%"}], "tips": "不控制： 相同收费项目计费比例合计值允许大于100% \n\t\t\t\t  不能大于100%： 房间收费设置、智能计费时校验相同收费项目计费比例合计值不允许大于100%。 \n\t\t\t\t  必须等于100%： 房间收费设置、智能计费时校验相同收费项目计费比例合计值必须等于100%。"}, {"name": "费用录入应收日期是否根据期间自动填充", "field": "arDateAutoDay", "type": "input", "category": "other", "options": [{"value": "1", "label": "是"}, {"value": "0", "label": "否"}], "tips": "是： 在应收查询页面录入应收时，应收日期根据费用期间及设置的规则自动填充，且不可修改 \n                  否： 在应收查询页面录入应收时，应收日期不根据费用期间自动填充"}, {"name": "是否允许录入押金类费用应收", "field": "setDepositReceive", "type": "radio", "category": "other", "options": [{"value": "1", "label": "是"}, {"value": "0", "label": "否"}], "tips": "是： 应收查询页面可录入押金类费用应收数据 \n\t\t\t\t  否： 应收查询页面不可以录入押金类费用应收数据"}, {"name": "临时性费用收款时生成应收", "field": "ecIDIsTempCreateReceive", "type": "radio", "category": "receipt", "options": [{"value": "1", "label": "是"}, {"value": "0", "label": "否"}, {"value": "-1", "label": "项目级设置"}], "tips": "是：对应临时性费用在收款时生成应收。  \n\t\t\t\t\t否：对应临时性费用在收款时不生成应收。"}, {"name": "楼栋面积是否自动计算", "field": "autoCalcBuildArea", "type": "radio", "category": "other", "options": [{"value": "1", "label": "是"}, {"value": "0", "label": "否"}], "tips": "是： 显示下面的取值逻辑，默认选中建筑面积，也可以选择套内面积、计费面积 \n\t\t\t\t  否： 手动编辑"}, {"name": "微信公众号启用新旧域名", "field": "weChatEnableDomainNameRule", "type": "radio", "category": "app", "options": [{"value": "1", "label": "新域名"}, {"value": "0", "label": "旧域名"}], "tips": "注意： 请根据微信公众号后台 公众号设置--功能设置--业务域名中添加的我家云系统的域名配置选择对应的域名，默认为旧域名。"}];
+        
+        const formData = reactive({});
+        const checkboxData = reactive({});
+        
+        // 初始化表单数据
+        params.forEach(p => {
+          if (p.type === 'radio' && p.options.length > 0) {
+            formData[p.field] = p.options[0].value;
+          } else if (p.type === 'input') {
+            formData[p.field] = '';
+          } else if (p.type === 'checkbox') {
+            checkboxData[p.field] = [];
+          }
+        });
+        
+        const filteredParams = computed(() => {
+          let result = params;
+          if (currentCategory.value !== 'all') {
+            result = result.filter(p => p.category === currentCategory.value);
+          }
+          if (searchText.value) {
+            const kw = searchText.value.toLowerCase();
+            result = result.filter(p => p.name.toLowerCase().includes(kw));
+          }
+          return result;
+        });
+        
+        const getCategoryCount = (catId) => {
+          if (catId === 'all') return params.length;
+          return params.filter(p => p.category === catId).length;
+        };
+        
+        const getCategoryParams = (catId) => {
+          let result = params;
+          if (catId !== 'all') result = result.filter(p => p.category === catId);
+          if (searchText.value) {
+            const kw = searchText.value.toLowerCase();
+            result = result.filter(p => p.name.toLowerCase().includes(kw));
+          }
+          return result;
+        };
+        
+        const handleSave = () => {
+          console.log('保存', formData, checkboxData);
+          ElMessage.success('保存成功！');
+        };
+        const handleReset = () => { ElMessage.info('已重置'); };
+        
+        return { currentCategory, searchText, categories, params, formData, checkboxData, filteredParams, getCategoryCount, getCategoryParams, handleSave, handleReset };
+      }
+    });
+    app.use(ElementPlus);
+    app.mount('#app');
+  </script>
+
+<style>
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.inland-security-footer {
+  position: fixed;
+  z-index: 10;
+  bottom: 0;
+  right: 0;
+  width: fit-content;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tooltip-container {
+  position: relative;
+}
+
+.trigger-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background-color: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.minimax-link {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 300;
+  color: #adadad;
+  text-decoration: none;
+}
+
+.minimax-link:visited {
+  color: #adadad;
+}
+
+.minimax-link:hover {
+  color: #666666;
+}
+
+.tooltip-content {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  padding-bottom: 16px; /* 8px 内容间距 + 8px 用于鼠标移动的透明区域 */
+  font-size: 12px;
+  line-height: 17px;
+  background-color: #fafafa;
+  border-radius: 12px;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  color: #171717;
+}
+
+/* 创建透明的连接区域，让鼠标可以平滑移动到 tooltip */
+.tooltip-content::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  right: 0;
+  height: 16px;
+}
+
+.tooltip-container:hover .tooltip-content {
+  display: flex;
+}
+
+.info-section {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.beian-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: #171717;
+}
+
+.beian-icon {
+  width: 14px;
+  height: 14px;
+  margin-right: 2px;
+}
+
+.underline-text {
+  color: #171717;
+  text-decoration: underline;
+}
+
+.underline-text:hover {
+  color: #000000;
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+  .trigger-content {
+    background-color: transparent;
+  }
+
+  .minimax-link,
+  .minimax-link:visited {
+    color: #666666;
+  }
+
+  .minimax-link:hover {
+    color: #adadad;
+  }
+
+  .tooltip-content {
+    background-color: #262626;
+    color: #ededed;
+  }
+
+  .beian-link,
+  .underline-text {
+    color: #ededed;
+  }
+
+  .underline-text:hover {
+    color: #ffffff;
+  }
+}
+
+</style>
+<div class="inland-security-footer">
+  <div class="tooltip-container">
+    <div class="trigger-content">
+      <a href="https://www.minimaxi.com/" target="_blank" rel="noreferrer" class="minimax-link">
+        <span>© 2026 MiniMax</span>
+      </a>
+    </div>
+    <div class="tooltip-content">
+      <section class="info-section">
+        <span>上海稀宇科技有限公司</span>
+      </section>
+
+      <section class="info-section">
+        <a class="beian-link" href="https://www.beian.gov.cn/portal/registerSystemInfo?recordcode=31010402010179" target="_blank" rel="noreferrer">
+          <img alt="hailuo-beian-icon" src="https://cdn.hailuoai.com/hailuo-video-web/public_assets/223037d3-79fd-4db0-a456-749f38a6a14b.png" class="beian-icon">
+          <span class="underline-text">沪公网安备31010402010179号</span>
+        </a>
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noreferrer" class="underline-text">
+          沪ICP备2023003282号-38
+        </a>
+      </section>
+
+      <section class="info-section">
+        <span>模型名称：MiniMax</span>
+        <span>备案号：Shanghai-MiniMax-202505230046</span>
+      </section>
+
+      <section class="info-section">
+        <a href="https://agent.minimaxi.com/doc/zh/terms-of-service.html" target="_blank" rel="noreferrer" class="underline-text">
+          用户协议
+        </a>
+        <a href="https://agent.minimaxi.com/doc/zh/privacy-policy.html" target="_blank" rel="noreferrer" class="underline-text">
+          隐私政策
+        </a>
+      </section>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

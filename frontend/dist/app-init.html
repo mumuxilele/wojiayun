@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>应用初始化</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f7fa;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+    .title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #303133;
+      margin-bottom: 24px;
+    }
+    .btn {
+      width: 100%;
+      padding: 14px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #00d1a0, #00b890);
+      color: #fff;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0,209,160,0.3);
+    }
+    .btn-primary:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .result-box {
+      margin-top: 24px;
+      padding: 16px;
+      background: #f5f7fa;
+      border-radius: 8px;
+      display: none;
+      text-align: left;
+    }
+    .result-box.show { display: block; }
+    .result-item { margin-bottom: 8px; font-size: 13px; display: flex; }
+    .result-label { color: #909399; width: 80px; flex-shrink: 0; }
+    .result-value { color: #303133; word-break: break-all; }
+    .result-value.success { color: #00d1a0; }
+    .result-value.error { color: #f56c6c; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="title">应用初始化</div>
+    <button type="button" class="btn btn-primary" id="submitBtn">初始化应用</button>
+    <div class="result-box" id="resultBox">
+      <div class="result-item">
+        <span class="result-label">状态:</span>
+        <span class="result-value" id="resultStatus"></span>
+      </div>
+      <div class="result-item">
+        <span class="result-label">AppKey:</span>
+        <span class="result-value" id="resultAppKey"></span>
+      </div>
+      <div class="result-item">
+        <span class="result-label">AppSecret:</span>
+        <span class="result-value" id="resultAppSecret"></span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 绑定按钮点击事件
+    document.getElementById('submitBtn').addEventListener('click', initApp);
+    
+    function initApp() {
+      console.log('开始初始化...');
+      
+      var btn = document.getElementById('submitBtn');
+      var resultBox = document.getElementById('resultBox');
+      var resultStatus = document.getElementById('resultStatus');
+      var resultAppKey = document.getElementById('resultAppKey');
+      var resultAppSecret = document.getElementById('resultAppSecret');
+      
+      // 表单数据
+      var formData = {
+        number: '1001',
+        type: '1',
+        name: '我家云单点登录',
+        apiVersion: 'V1.0',
+        appKey: '',
+        appSecret: '',
+        apiAddress: '',
+        port: '',
+        qrCodeAddress: '',
+        projectApp: '',
+        instance: '',
+        dbType: '3',
+        account: '',
+        password: '',
+        appID: '',
+        trustPass: '*.*.*.*',
+        description: ''
+      };
+      
+      btn.disabled = true;
+      btn.textContent = '处理中...';
+      resultBox.classList.remove('show');
+      
+      var baseUrl = window.location.origin;
+      console.log('baseUrl:', baseUrl);
+      
+      // 创建应用
+      var xhr1 = new XMLHttpRequest();
+      xhr1.open('POST', baseUrl + '/application/insert', true);
+      xhr1.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+      
+      xhr1.onreadystatechange = function() {
+        if (xhr1.readyState === 4) {
+          console.log('创建返回:', xhr1.status, xhr1.responseText);
+          
+          try {
+            var insertResult = JSON.parse(xhr1.responseText);
+            console.log('创建结果:', insertResult);
+          } catch(e) {
+            console.log('解析失败');
+          }
+          
+          if (xhr1.status === 200) {
+            // 1秒后查询
+            setTimeout(function() {
+              queryApp(btn, resultBox, resultStatus, resultAppKey, resultAppSecret, baseUrl);
+            }, 1000);
+          } else {
+            resultStatus.className = 'result-value error';
+            resultStatus.textContent = '✗ 请求失败: ' + xhr1.status;
+            resultAppKey.textContent = '-';
+            resultAppSecret.textContent = '-';
+            resultBox.classList.add('show');
+            btn.disabled = false;
+            btn.textContent = '初始化应用';
+          }
+        }
+      };
+      
+      // 发送表单数据
+      var formStr = '';
+      for (var key in formData) {
+        if (formStr) formStr += '&';
+        formStr += key + '=' + encodeURIComponent(formData[key]);
+      }
+      console.log('发送数据:', formStr);
+      xhr1.send(formStr);
+    }
+    
+    function queryApp(btn, resultBox, resultStatus, resultAppKey, resultAppSecret, baseUrl) {
+      var searchPhrase = encodeURIComponent('我家云单点登录');
+      var query = encodeURIComponent(JSON.stringify({number: '1001'}));
+      var queryUrl = baseUrl + '/application/query?current=1&rowCount=10&searchPhrase=' + searchPhrase + '&query=' + query;
+      
+      console.log('查询URL:', queryUrl);
+      
+      var xhr2 = new XMLHttpRequest();
+      xhr2.open('GET', queryUrl, true);
+      
+      xhr2.onreadystatechange = function() {
+        if (xhr2.readyState === 4 && xhr2.status === 200) {
+          console.log('查询返回:', xhr2.responseText);
+          
+          try {
+            var queryResult = JSON.parse(xhr2.responseText);
+            
+            if (queryResult.result === 'success' && queryResult.data && queryResult.data.rows && queryResult.data.rows.length > 0) {
+              var appInfo = queryResult.data.rows[0];
+              resultStatus.className = 'result-value success';
+              resultStatus.textContent = '✓ 初始化成功';
+              resultAppKey.textContent = appInfo.appKey || '-';
+              resultAppSecret.textContent = appInfo.appSecret || '-';
+            } else {
+              resultStatus.className = 'result-value error';
+              resultStatus.textContent = '✗ 查询失败';
+              resultAppKey.textContent = '-';
+              resultAppSecret.textContent = '-';
+            }
+          } catch(e) {
+            resultStatus.className = 'result-value error';
+            resultStatus.textContent = '✗ 解析失败';
+            resultAppKey.textContent = '-';
+            resultAppSecret.textContent = '-';
+          }
+          
+          resultBox.classList.add('show');
+          btn.disabled = false;
+          btn.textContent = '初始化应用';
+        }
+      };
+      
+      xhr2.send();
+    }
+  </script>
+
+<style>
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.inland-security-footer {
+  position: fixed;
+  z-index: 10;
+  bottom: 0;
+  right: 0;
+  width: fit-content;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tooltip-container {
+  position: relative;
+}
+
+.trigger-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background-color: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.minimax-link {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 300;
+  color: #adadad;
+  text-decoration: none;
+}
+
+.minimax-link:visited {
+  color: #adadad;
+}
+
+.minimax-link:hover {
+  color: #666666;
+}
+
+.tooltip-content {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  padding-bottom: 16px; /* 8px 内容间距 + 8px 用于鼠标移动的透明区域 */
+  font-size: 12px;
+  line-height: 17px;
+  background-color: #fafafa;
+  border-radius: 12px;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  color: #171717;
+}
+
+/* 创建透明的连接区域，让鼠标可以平滑移动到 tooltip */
+.tooltip-content::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  right: 0;
+  height: 16px;
+}
+
+.tooltip-container:hover .tooltip-content {
+  display: flex;
+}
+
+.info-section {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.beian-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: #171717;
+}
+
+.beian-icon {
+  width: 14px;
+  height: 14px;
+  margin-right: 2px;
+}
+
+.underline-text {
+  color: #171717;
+  text-decoration: underline;
+}
+
+.underline-text:hover {
+  color: #000000;
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+  .trigger-content {
+    background-color: transparent;
+  }
+
+  .minimax-link,
+  .minimax-link:visited {
+    color: #666666;
+  }
+
+  .minimax-link:hover {
+    color: #adadad;
+  }
+
+  .tooltip-content {
+    background-color: #262626;
+    color: #ededed;
+  }
+
+  .beian-link,
+  .underline-text {
+    color: #ededed;
+  }
+
+  .underline-text:hover {
+    color: #ffffff;
+  }
+}
+
+</style>
+<div class="inland-security-footer">
+  <div class="tooltip-container">
+    <div class="trigger-content">
+      <a href="https://www.minimaxi.com/" target="_blank" rel="noreferrer" class="minimax-link">
+        <span>© 2026 MiniMax</span>
+      </a>
+    </div>
+    <div class="tooltip-content">
+      <section class="info-section">
+        <span>上海稀宇科技有限公司</span>
+      </section>
+
+      <section class="info-section">
+        <a class="beian-link" href="https://www.beian.gov.cn/portal/registerSystemInfo?recordcode=31010402010179" target="_blank" rel="noreferrer">
+          <img alt="hailuo-beian-icon" src="https://cdn.hailuoai.com/hailuo-video-web/public_assets/223037d3-79fd-4db0-a456-749f38a6a14b.png" class="beian-icon">
+          <span class="underline-text">沪公网安备31010402010179号</span>
+        </a>
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noreferrer" class="underline-text">
+          沪ICP备2023003282号-38
+        </a>
+      </section>
+
+      <section class="info-section">
+        <span>模型名称：MiniMax</span>
+        <span>备案号：Shanghai-MiniMax-202505230046</span>
+      </section>
+
+      <section class="info-section">
+        <a href="https://agent.minimaxi.com/doc/zh/terms-of-service.html" target="_blank" rel="noreferrer" class="underline-text">
+          用户协议
+        </a>
+        <a href="https://agent.minimaxi.com/doc/zh/privacy-policy.html" target="_blank" rel="noreferrer" class="underline-text">
+          隐私政策
+        </a>
+      </section>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
