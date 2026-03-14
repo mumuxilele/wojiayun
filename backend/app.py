@@ -413,5 +413,5 @@ if __name__ == '__main__':
     # 初始化数据库（首次运行）
     # init_database()
     
-    print("启动服务: http://0.0.0.0:5000")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    print("启动服务: http://0.0.0.0:22306")
+    app.run(host='0.0.0.0', port=22306, debug=True)
