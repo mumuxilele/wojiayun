@@ -1,0 +1,13 @@
+{
+  "name": "user-info-service",
+  "version": "1.0.0",
+  "description": "用户信息服务",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "node app.js"
+  },
+  "keywords": ["user", "info", "service"],
+  "author": "",
+  "license": "ISC"
+}
