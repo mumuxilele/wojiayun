@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>设备巡检维保数据中心 - Vue版</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://unpkg.com/vant@3/lib/vant.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/vant@3/lib/vant.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); min-height: 100vh; color: #fff; }
+        
+        .header { background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); padding: 20px 15px 30px; border-radius: 0 0 20px 20px; }
+        .header-top { display: flex; align-items: center; justify-content: space-between; }
+        .project-switch { display: flex; align-items: center; gap: 5px; padding: 5px 12px; background: rgba(255,255,255,0.2); border-radius: 15px; font-size: 14px; cursor: pointer; }
+        .header h1 { font-size: 18px; font-weight: 600; }
+        .header .time { font-size: 28px; font-weight: bold; text-align: center; margin-top: 10px; }
+        .header .date { font-size: 13px; text-align: center; opacity: 0.9; }
+        
+        .date-tabs { display: flex; justify-content: center; gap: 10px; margin-top: 15px; }
+        .date-tab { padding: 6px 20px; border-radius: 20px; font-size: 14px; background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); border: none; cursor: pointer; }
+        .date-tab.active { background: #fff; color: #4facfe; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 15px; margin-top: -20px; }
+        .stat-card { background: rgba(255,255,255,0.12); border-radius: 12px; padding: 15px; }
+        .stat-card .label { font-size: 12px; color: rgba(255,255,255,0.7); }
+        .stat-card .value { font-size: 24px; font-weight: bold; margin-top: 5px; }
+        .stat-card.blue .value { color: #00f2fe; }
+        .stat-card.green .value { color: #00e676; }
+        .stat-card.orange .value { color: #ffb74d; }
+        .stat-card.red .value { color: #ff5252; }
+        .stat-card .trend { font-size: 12px; color: #00e676; margin-top: 3px; }
+        
+        .section { margin: 15px; background: rgba(255,255,255,0.08); border-radius: 12px; padding: 15px; }
+        .section-title { font-size: 15px; font-weight: 600; margin-bottom: 15px; }
+        
+        .trend-chart { display: flex; align-items: flex-end; height: 100px; gap: 3px; }
+        .trend-bar { flex: 1; background: linear-gradient(180deg, rgba(0,242,254,0.7), transparent); border-radius: 3px 3px 0 0; min-height: 10px; }
+        
+        .progress-item { margin-bottom: 12px; }
+        .progress-item .info { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px; }
+        .progress-bar { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+        .progress-bar .fill { height: 100%; background: linear-gradient(90deg, #00f2fe, #4facfe); }
+        
+        .emp-list { display: flex; flex-direction: column; gap: 10px; }
+        .emp-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 10px; }
+        .emp-rank { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; }
+        .emp-rank.gold { background: linear-gradient(135deg, #ffd700, #ffb700); color: #000; }
+        .emp-rank.silver { background: linear-gradient(135deg, #c0c0c0, #a0a0a0); color: #000; }
+        .emp-rank.bronze { background: linear-gradient(135deg, #cd7f32, #b87333); color: #fff; }
+        .emp-rank.normal { background: rgba(255,255,255,0.15); }
+        .emp-avatar { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(0,242,254,0.5); }
+        .emp-info { flex: 1; }
+        .emp-name { font-weight: 600; font-size: 14px; }
+        .emp-task { font-size: 12px; color: rgba(255,255,255,0.5); }
+        .emp-count { font-size: 16px; font-weight: bold; color: #00f2fe; }
+        
+        .tips { background: rgba(255,183,77,0.15); color: #ffb74d; padding: 20px; border-radius: 10px; text-align: center; margin: 20px; }
+        
+        .van-popup { background: #1a1a2e !important; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="header">
+            <div class="header-top">
+                <div class="project-switch" @click="showProjectPicker = true">
+                    <span>🏢</span>
+                    <span>{{ projectName }}</span>
+                    <span>▼</span>
+                </div>
+                <h1>🔧 设备巡检维保</h1>
+                <div style="width: 60px;"></div>
+            </div>
+            <div class="time">{{ currentTime }}</div>
+            <div class="date">{{ currentDate }}</div>
+            <div class="date-tabs">
+                <button class="date-tab" :class="{ active: dateType === 1 }" @click="dateType = 1">日</button>
+                <button class="date-tab" :class="{ active: dateType === 2 }" @click="dateType = 2">周</button>
+                <button class="date-tab" :class="{ active: dateType === 3 }" @click="dateType = 3">月</button>
+            </div>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card blue">
+                <div class="label">设备总数</div>
+                <div class="value">{{ stats.equCount }}</div>
+            </div>
+            <div class="stat-card green">
+                <div class="label">巡检完成率</div>
+                <div class="value">{{ insRate }}%</div>
+                <div class="trend">↑ 较昨日 +5.2%</div>
+            </div>
+            <div class="stat-card orange">
+                <div class="label">维保完成率</div>
+                <div class="value">{{ maintainRate }}%</div>
+                <div class="trend">↑ 较昨日 +3.1%</div>
+            </div>
+            <div class="stat-card red">
+                <div class="label">本月遗漏</div>
+                <div class="value">{{ stats.forgetCount }}</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">📈 巡检趋势</div>
+            <div class="trend-chart">
+                <div class="trend-bar" v-for="(v, i) in trendData" :key="i" :style="{ height: v + '%' }"></div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">📋 设备巡检进度</div>
+            <div class="progress-item" v-for="item in progressList" :key="item.name">
+                <div class="info">
+                    <span>{{ item.name }}</span>
+                    <span>{{ item.percent }}%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="fill" :style="{ width: item.percent + '%', background: item.color }"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">👥 巡检达人榜</div>
+            <div class="emp-list">
+                <div class="emp-item" v-for="(emp, i) in empList" :key="emp.id">
+                    <div class="emp-rank" :class="getRankClass(i)">{{ i + 1 }}</div>
+                    <img class="emp-avatar" :src="emp.avatar" @error="emp.avatar = ''">
+                    <div class="emp-info">
+                        <div class="emp-name">{{ emp.name }}</div>
+                        <div class="emp-task">已完成巡检</div>
+                    </div>
+                    <div class="emp-count">{{ emp.count }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tips" v-if="!hasToken">
+            ⚠️ 请在URL中添加 access_token 参数<br>
+            格式: ?access_token=你的token
+        </div>
+        
+        <van-popup v-model:show="showProjectPicker" position="bottom">
+            <van-picker title="选择项目" :columns="projectList" @confirm="onProjectConfirm" @cancel="showProjectPicker = false" />
+        </van-popup>
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted } = Vue;
+        
+        const app = createApp({
+            setup() {
+                const getQueryParam = (name) => {
+                    const params = new URLSearchParams(window.location.search);
+                    return params.get(name);
+                };
+                
+                const accessToken = ref(getQueryParam('access_token') || getQueryParam('token'));
+                const hasToken = computed(() => !!accessToken.value);
+                
+                const projectName = ref('加载中...');
+                const projectId = ref('319c23c4c60e4def9959c776c32ca7f9');
+                const dateType = ref(1);
+                const showProjectPicker = ref(false);
+                const currentTime = ref('');
+                const currentDate = ref('');
+                
+                const stats = ref({
+                    equCount: 586,
+                    insCount: 480,
+                    forgetCount: 88
+                });
+                
+                const trendData = ref([65, 72, 68, 75, 82, 78, 85, 80, 88, 92, 89, 95]);
+                
+                const progressList = ref([
+                    { name: '消防设备', percent: 92, color: 'linear-gradient(90deg, #00f2fe, #4facfe)' },
+                    { name: '电梯设备', percent: 88, color: 'linear-gradient(90deg, #00e676, #69f0ae)' },
+                    { name: '强弱电设备', percent: 76, color: 'linear-gradient(90deg, #ffb74d, #ff9800)' },
+                    { name: '给排水设备', percent: 65, color: 'linear-gradient(90deg, #00f2fe, #4facfe)' }
+                ]);
+                
+                const empList = ref([
+                    { id: 1, name: '李乐', count: 4838, avatar: 'https://wojiaccloud-1252177460.file.myqcloud.com/0907fa2b39b545b1beb313285ccf5ccb/2023-03-07/jpg/643dddde1872406cae84602123c7ca05.jpg' },
+                    { id: 2, name: '张伟', count: 3562, avatar: '' },
+                    { id: 3, name: '王芳', count: 2891, avatar: '' }
+                ]);
+                
+                const projectList = ref([
+                    { text: '庆和苑', value: '319c23c4c60e4def9959c776c32ca7f9' },
+                    { text: '苹果园', value: '4f4af0a08d104ddcb483ef6045660a94' },
+                    { text: '自在苑', value: '10b77b1845b04158a5e476c6f66e19fa' }
+                ]);
+                
+                const insRate = computed(() => {
+                    return stats.value.equCount > 0 
+                        ? ((stats.value.insCount / stats.value.equCount) * 100).toFixed(1) 
+                        : '0.0';
+                });
+                
+                const maintainRate = computed(() => {
+                    return (100 - stats.value.forgetCount / 10).toFixed(1);
+                });
+                
+                const getRankClass = (index) => {
+                    if (index === 0) return 'gold';
+                    if (index === 1) return 'silver';
+                    if (index === 2) return 'bronze';
+                    return 'normal';
+                };
+                
+                const onProjectConfirm = ({ selectedOptions }) => {
+                    projectName.value = selectedOptions[0].text;
+                    projectId.value = selectedOptions[0].value;
+                    showProjectPicker.value = false;
+                };
+                
+                const updateTime = () => {
+                    const now = new Date();
+                    currentTime.value = now.toLocaleTimeString('zh-CN', { hour12: false });
+                    currentDate.value = now.toLocaleDateString('zh-CN', { 
+                        month: 'numeric', 
+                        day: 'numeric', 
+                        weekday: 'short' 
+                    });
+                };
+                
+                onMounted(() => {
+                    updateTime();
+                    setInterval(updateTime, 1000);
+                    projectName.value = '庆和苑';
+                });
+                
+                return {
+                    hasToken,
+                    projectName,
+                    projectId,
+                    dateType,
+                    showProjectPicker,
+                    currentTime,
+                    currentDate,
+                    stats,
+                    trendData,
+                    progressList,
+                    empList,
+                    projectList,
+                    insRate,
+                    maintainRate,
+                    getRankClass,
+                    onProjectConfirm
+                };
+            }
+        });
+        
+        app.use(vant);
+        app.mount('#app');
+    </script>
+
+<style>
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.inland-security-footer {
+  position: fixed;
+  z-index: 10;
+  bottom: 0;
+  right: 0;
+  width: fit-content;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tooltip-container {
+  position: relative;
+}
+
+.trigger-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background-color: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.minimax-link {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 300;
+  color: #adadad;
+  text-decoration: none;
+}
+
+.minimax-link:visited {
+  color: #adadad;
+}
+
+.minimax-link:hover {
+  color: #666666;
+}
+
+.tooltip-content {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  padding-bottom: 16px; /* 8px 内容间距 + 8px 用于鼠标移动的透明区域 */
+  font-size: 12px;
+  line-height: 17px;
+  background-color: #fafafa;
+  border-radius: 12px;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  color: #171717;
+}
+
+/* 创建透明的连接区域，让鼠标可以平滑移动到 tooltip */
+.tooltip-content::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  right: 0;
+  height: 16px;
+}
+
+.tooltip-container:hover .tooltip-content {
+  display: flex;
+}
+
+.info-section {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.beian-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: #171717;
+}
+
+.beian-icon {
+  width: 14px;
+  height: 14px;
+  margin-right: 2px;
+}
+
+.underline-text {
+  color: #171717;
+  text-decoration: underline;
+}
+
+.underline-text:hover {
+  color: #000000;
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+  .trigger-content {
+    background-color: transparent;
+  }
+
+  .minimax-link,
+  .minimax-link:visited {
+    color: #666666;
+  }
+
+  .minimax-link:hover {
+    color: #adadad;
+  }
+
+  .tooltip-content {
+    background-color: #262626;
+    color: #ededed;
+  }
+
+  .beian-link,
+  .underline-text {
+    color: #ededed;
+  }
+
+  .underline-text:hover {
+    color: #ffffff;
+  }
+}
+
+</style>
+<div class="inland-security-footer">
+  <div class="tooltip-container">
+    <div class="trigger-content">
+      <a href="https://www.minimaxi.com/" target="_blank" rel="noreferrer" class="minimax-link">
+        <span>© 2026 MiniMax</span>
+      </a>
+    </div>
+    <div class="tooltip-content">
+      <section class="info-section">
+        <span>上海稀宇科技有限公司</span>
+      </section>
+
+      <section class="info-section">
+        <a class="beian-link" href="https://www.beian.gov.cn/portal/registerSystemInfo?recordcode=31010402010179" target="_blank" rel="noreferrer">
+          <img alt="hailuo-beian-icon" src="https://cdn.hailuoai.com/hailuo-video-web/public_assets/223037d3-79fd-4db0-a456-749f38a6a14b.png" class="beian-icon">
+          <span class="underline-text">沪公网安备31010402010179号</span>
+        </a>
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noreferrer" class="underline-text">
+          沪ICP备2023003282号-38
+        </a>
+      </section>
+
+      <section class="info-section">
+        <span>模型名称：MiniMax</span>
+        <span>备案号：Shanghai-MiniMax-202505230046</span>
+      </section>
+
+      <section class="info-section">
+        <a href="https://agent.minimaxi.com/doc/zh/terms-of-service.html" target="_blank" rel="noreferrer" class="underline-text">
+          用户协议
+        </a>
+        <a href="https://agent.minimaxi.com/doc/zh/privacy-policy.html" target="_blank" rel="noreferrer" class="underline-text">
+          隐私政策
+        </a>
+      </section>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

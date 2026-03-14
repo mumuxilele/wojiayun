@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>企业走访台账系统</title>
+    <style>
+        :root {
+            --primary: #00f2fe;
+            --secondary: #4facfe;
+            --success: #00e676;
+            --warning: #ffb74d;
+            --danger: #ff5252;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        
+        html, body { height: 100%; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding-bottom: 80px;
+        }
+        
+        .safe-area { padding-top: env(safe-area-inset-top, 20px); }
+        
+        .header {
+            background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+            padding: 20px 15px;
+            border-radius: 0 0 20px 20px;
+        }
+        
+        .header h1 { font-size: 1.2rem; font-weight: 600; text-align: center; }
+        .header .subtitle { text-align: center; font-size: 0.8rem; opacity: 0.9; margin-top: 5px; }
+        
+        .tabs { display: flex; padding: 15px; gap: 10px; }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            background: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.7);
+            transition: all 0.3s;
+        }
+        
+        .tab-btn.active {
+            background: linear-gradient(135deg, #00f2fe, #4facfe);
+            color: #fff;
+        }
+        
+        .card {
+            margin: 0 15px 15px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 15px;
+            padding: 15px;
+        }
+        
+        .form-group { margin-bottom: 15px; }
+        
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 6px;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            font-size: 0.9rem;
+        }
+        
+        .form-group input::placeholder, .form-group textarea::placeholder { color: rgba(255,255,255,0.4); }
+        
+        .form-group textarea { min-height: 80px; resize: none; }
+        
+        .tag-list { display: flex; flex-wrap: wrap; gap: 8px; }
+        
+        .tag {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            background: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.7);
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid transparent;
+        }
+        
+        .tag.selected {
+            background: rgba(0,242,254,0.2);
+            border-color: #00f2fe;
+            color: #00f2fe;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #00f2fe, #4facfe);
+            color: #fff;
+        }
+        
+        .btn-primary:active { opacity: 0.8; transform: scale(0.98); }
+        
+        .btn-secondary { background: rgba(255,255,255,0.15); color: #fff; }
+        
+        .record-item {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-left: 3px solid #00f2fe;
+        }
+        
+        .record-item .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            background: none;
+            padding: 0;
+        }
+        
+        .record-item .company { font-weight: 600; font-size: 0.95rem; }
+        
+        .record-item .tag {
+            padding: 3px 10px;
+            font-size: 0.7rem;
+        }
+        
+        .record-item .info {
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 4px;
+        }
+        
+        .record-item .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .record-item .actions button {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+        
+        .btn-edit { background: rgba(79,172,254,0.3); color: #4facfe; }
+        .btn-delete { background: rgba(255,82,82,0.3); color: #ff5252; }
+        
+        .filter-bar { padding: 0 15px; margin-bottom: 15px; }
+        
+        .filter-bar select {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            font-size: 0.9rem;
+        }
+        
+        .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
+        
+        .stat-box {
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+        }
+        
+        .stat-box .value { font-size: 1.5rem; font-weight: bold; color: #00f2fe; }
+        .stat-box .label { font-size: 0.7rem; color: rgba(255,255,255,0.6); margin-top: 3px; }
+        
+        .empty { text-align: center; padding: 40px; color: rgba(255,255,255,0.5); }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+        
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: #00f2fe;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-overlay.show { display: flex; }
+        
+        .modal {
+            background: #1a1a2e;
+            border-radius: 20px;
+            padding: 20px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal h2 { font-size: 1.1rem; margin-bottom: 15px; text-align: center; }
+        
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            background: rgba(26,26,46,0.95);
+            padding: 10px 20px;
+            padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .nav-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: none;
+            color: rgba(255,255,255,0.5);
+            font-size: 0.75rem;
+            text-align: center;
+            cursor: pointer;
+        }
+        
+        .nav-btn.active { color: #00f2fe; }
+        .nav-btn .icon { font-size: 1.5rem; display: block; margin-bottom: 3px; }
+        
+        .content { display: none; }
+        .content.active { display: block; }
+        
+        /* 员工搜索 */
+        .staff-search { position: relative; }
+        
+        .staff-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #16213e;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 10;
+            display: none;
+        }
+        
+        .staff-results.show { display: block; }
+        
+        .staff-item {
+            padding: 10px 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+        }
+        
+        .staff-item:active { background: rgba(255,255,255,0.1); }
+        .staff-item .name { font-weight: 500; }
+        .staff-item .dept { font-size: 0.75rem; color: rgba(255,255,255,0.5); }
+        
+        .selected-staff {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(0,242,254,0.2);
+            border-radius: 20px;
+            margin-top: 8px;
+        }
+        
+        .selected-staff .name { color: #00f2fe; }
+        .selected-staff .remove {
+            margin-left: auto;
+            color: rgba(255,255,255,0.5);
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="safe-area">
+    <div class="header">
+        <h1>🏢 企业走访台账</h1>
+        <div class="subtitle">企业服务记录系统</div>
+    </div>
+    
+    <!-- 录入页面 -->
+    <div class="content active" id="page-add">
+        <div class="card">
+            <div class="form-group">
+                <label>企业名称 *</label>
+                <input type="text" id="companyName" placeholder="请输入企业名称">
+            </div>
+            
+            <div class="form-group">
+                <label>区域地址 *</label>
+                <input type="text" id="region" placeholder="如：南山区科技园">
+            </div>
+            
+            <div class="form-group">
+                <label>企服人员 *</label>
+                <div class="staff-search">
+                    <input type="text" id="staffInput" placeholder="搜索企服人员..." autocomplete="off">
+                    <div class="staff-results" id="staffResults"></div>
+                </div>
+                <div class="selected-staff" id="selectedStaff" style="display:none;">
+                    <span class="name" id="selectedStaffName"></span>
+                    <span class="remove" onclick="clearStaff()">✕</span>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>走访时间 *</label>
+                <input type="date" id="visitDate">
+            </div>
+            
+            <div class="form-group">
+                <label>沟通事项分类 *</label>
+                <div class="tag-list">
+                    <span class="tag selected" data-value="租赁类" onclick="selectTag(this)">租赁类</span>
+                    <span class="tag" data-value="服务类" onclick="selectTag(this)">服务类</span>
+                    <span class="tag" data-value="物业类" onclick="selectTag(this)">物业类</span>
+                    <span class="tag" data-value="其他" onclick="selectTag(this)">其他</span>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>沟通详情</label>
+                <textarea id="content" placeholder="请输入沟通事项详情..."></textarea>
+            </div>
+            
+            <button class="btn btn-primary" onclick="saveRecord()">保存记录</button>
+        </div>
+    </div>
+    
+    <!-- 记录页面 -->
+    <div class="content" id="page-list">
+        <div class="filter-bar">
+            <select id="filterMonth" onchange="loadRecords()">
+                <option value="">全部月份</option>
+            </select>
+        </div>
+        
+        <div class="card" id="recordList">
+            <div class="loading"><div class="spinner"></div></div>
+        </div>
+    </div>
+    
+    <!-- 统计页面 -->
+    <div class="content" id="page-stats">
+        <div class="card">
+            <div class="form-group">
+                <label>统计维度</label>
+                <select id="statsType" onchange="loadStats()">
+                    <option value="month">按月统计</option>
+                    <option value="quarter">按季度统计</option>
+                    <option value="year">按年统计</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="stats-row">
+                <div class="stat-box">
+                    <div class="value" id="totalCount">0</div>
+                    <div class="label">总记录数</div>
+                </div>
+                <div class="stat-box">
+                    <div class="value" id="totalCompanies">0</div>
+                    <div class="label">企业数量</div>
+                </div>
+                <div class="stat-box">
+                    <div class="value" id="totalStaff">0</div>
+                    <div class="label">企服人员</div>
+                </div>
+            </div>
+            
+            <div id="statsDetail"></div>
+        </div>
+    </div>
+    
+    <!-- 编辑弹窗 -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal">
+            <h2>修改记录</h2>
+            <input type="hidden" id="editId">
+            
+            <div class="form-group">
+                <label>企业名称</label>
+                <input type="text" id="editCompanyName">
+            </div>
+            
+            <div class="form-group">
+                <label>区域地址</label>
+                <input type="text" id="editRegion">
+            </div>
+            
+            <div class="form-group">
+                <label>企服人员</label>
+                <input type="text" id="editStaffName" readonly>
+            </div>
+            
+            <div class="form-group">
+                <label>走访时间</label>
+                <input type="date" id="editVisitDate">
+            </div>
+            
+            <div class="form-group">
+                <label>沟通事项分类</label>
+                <select id="editCategory">
+                    <option value="租赁类">租赁类</option>
+                    <option value="服务类">服务类</option>
+                    <option value="物业类">物业类</option>
+                    <option value="其他">其他</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>沟通详情</label>
+                <textarea id="editContent"></textarea>
+            </div>
+            
+            <div style="display:flex;gap:10px;">
+                <button class="btn btn-secondary" onclick="closeEditModal()">取消</button>
+                <button class="btn btn-primary" onclick="confirmEdit()">保存修改</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 底部导航 -->
+    <div class="bottom-nav">
+        <button class="nav-btn active" onclick="switchPage('add', this)">
+            <span class="icon">📝</span>
+            录入
+        </button>
+        <button class="nav-btn" onclick="switchPage('list', this)">
+            <span class="icon">📋</span>
+            记录
+        </button>
+        <button class="nav-btn" onclick="switchPage('stats', this)">
+            <span class="icon">📊</span>
+            统计
+        </button>
+    </div>
+
+    <script>
+        // ============ 配置 ============
+        const API_BASE = ''; // 后端API地址，生产环境需要配置
+        
+        // 从URL获取token
+        function getToken() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('access_token') || params.get('token');
+        }
+        
+        const TOKEN = getToken();
+        
+        if (!TOKEN) {
+            alert('请在URL中添加 access_token 参数');
+        }
+        
+        // ============ API调用 ============
+        async function apiCall(url, options = {}) {
+            const fullUrl = url.includes('?') ? `${url}&access_token=${TOKEN}` : `${url}?access_token=${TOKEN}`;
+            
+            try {
+                const resp = await fetch(API_BASE + fullUrl, {
+                    ...options,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    }
+                });
+                return await resp.json();
+            } catch (e) {
+                console.error('API调用失败:', e);
+                alert('网络错误，请稍后重试');
+                return { success: false, msg: e.message };
+            }
+        }
+        
+        // ============ 全局变量 ============
+        let selectedStaff = null;
+        let staffSearchTimer = null;
+        
+        // ============ 页面切换 ============
+        function switchPage(page, btn) {
+            document.querySelectorAll('.content').forEach(p => p.classList.remove('active'));
+            document.getElementById('page-' + page).classList.add('active');
+            
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            if (page === 'list') loadRecords();
+            if (page === 'stats') loadStats();
+        }
+        
+        // ============ 标签选择 ============
+        function selectTag(el) {
+            document.querySelectorAll('.tag').forEach(t => t.classList.remove('selected'));
+            el.classList.add('selected');
+        }
+        
+        function getSelectedTag() {
+            const selected = document.querySelector('.tag.selected');
+            return selected ? selected.dataset.value : '其他';
+        }
+        
+        // ============ 员工搜索 ============
+        let staffList = [];
+        
+        document.getElementById('staffInput').addEventListener('input', function(e) {
+            const name = e.target.value.trim();
+            
+            clearTimeout(staffSearchTimer);
+            
+            if (name === '') {
+                document.getElementById('staffResults').classList.remove('show');
+                return;
+            }
+            
+            staffSearchTimer = setTimeout(() => searchStaff(name), 300);
+        });
+        
+        async function searchStaff(name) {
+            const url = `https://gj.wojiacloud.com/h5/api/employees/getEmployeeListByName?time=${Date.now()}&name=${encodeURIComponent(name)}&rowCount=20&current=1`;
+            
+            try {
+                const resp = await fetch(url + `&access_token=${TOKEN}`);
+                const data = await resp.json();
+                
+                if (data.success && data.data) {
+                    staffList = data.data.rows || [];
+                    renderStaffResults(staffList);
+                }
+            } catch (e) {
+                console.error('搜索员工失败:', e);
+            }
+        }
+        
+        function renderStaffResults(list) {
+            const container = document.getElementById('staffResults');
+            
+            if (list.length === 0) {
+                container.innerHTML = '<div class="staff-item"><div class="name">未找到相关人员</div></div>';
+            } else {
+                container.innerHTML = list.map(staff => `
+                    <div class="staff-item" onclick="selectStaff('${staff.id}', '${staff.name}')">
+                        <div class="name">${staff.name}</div>
+                        <div class="dept">${staff.department || ''}</div>
+                    </div>
+                `).join('');
+            }
+            
+            container.classList.add('show');
+        }
+        
+        function selectStaff(id, name) {
+            selectedStaff = { id, name };
+            document.getElementById('staffInput').value = name;
+            document.getElementById('staffInput').disabled = true;
+            document.getElementById('selectedStaff').style.display = 'flex';
+            document.getElementById('selectedStaffName').textContent = name;
+            document.getElementById('staffResults').classList.remove('show');
+        }
+        
+        function clearStaff() {
+            selectedStaff = null;
+            document.getElementById('staffInput').value = '';
+            document.getElementById('staffInput').disabled = false;
+            document.getElementById('selectedStaff').style.display = 'none';
+        }
+        
+        // 点击外部关闭搜索结果
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.staff-search')) {
+                document.getElementById('staffResults').classList.remove('show');
+            }
+        });
+        
+        // ============ 保存记录 ============
+        async function saveRecord() {
+            const companyName = document.getElementById('companyName').value.trim();
+            const region = document.getElementById('region').value.trim();
+            const staffName = document.getElementById('staffInput').value.trim();
+            const visitDate = document.getElementById('visitDate').value;
+            const category = getSelectedTag();
+            const content = document.getElementById('content').value.trim();
+            
+            if (!companyName || !region || !staffName || !visitDate) {
+                alert('请填写必填字段');
+                return;
+            }
+            
+            if (!selectedStaff) {
+                alert('请选择企服人员');
+                return;
+            }
+            
+            const data = {
+                companyName,
+                region,
+                staffId: selectedStaff.id,
+                staffName: selectedStaff.name,
+                visitDate,
+                category,
+                content
+            };
+            
+            const result = await apiCall('/api/visits', {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+            
+            if (result.success) {
+                alert('保存成功！');
+                // 清空表单
+                document.getElementById('companyName').value = '';
+                document.getElementById('region').value = '';
+                clearStaff();
+                document.getElementById('visitDate').value = new Date().toISOString().split('T')[0];
+                document.getElementById('content').value = '';
+                selectTag(document.querySelector('.tag'));
+            } else {
+                alert(result.msg || '保存失败');
+            }
+        }
+        
+        // ============ 记录列表 ============
+        async function loadRecords() {
+            const container = document.getElementById('recordList');
+            container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+            
+            const month = document.getElementById('filterMonth').value;
+            let url = `/api/visits?current=1&rowCount=50`;
+            if (month) url += `&month=${month}`;
+            
+            const result = await apiCall(url);
+            
+            if (!result.success) {
+                container.innerHTML = '<div class="empty">加载失败</div>';
+                return;
+            }
+            
+            const records = result.data.rows || [];
+            
+            if (records.length === 0) {
+                container.innerHTML = '<div class="empty">暂无走访记录</div>';
+                return;
+            }
+            
+            container.innerHTML = records.map(r => `
+                <div class="record-item">
+                    <div class="header">
+                        <span class="company">${r.company_name}</span>
+                        <span class="tag">${r.category}</span>
+                    </div>
+                    <div class="info">📍 ${r.region}</div>
+                    <div class="info">👤 ${r.staff_name} | 📅 ${r.visit_date}</div>
+                    ${r.content ? `<div class="info">💬 ${r.content}</div>` : ''}
+                    <div class="actions">
+                        <button class="btn-edit" onclick="openEditModal(${r.id})">修改</button>
+                        <button class="btn-delete" onclick="deleteRecord(${r.id})">删除</button>
+                    </div>
+                </div>
+            `).join('');
+            
+            // 更新月份筛选
+            updateMonthFilter(records);
+        }
+        
+        function updateMonthFilter(records) {
+            const months = [...new Set(records.map(r => r.visit_date.substring(0, 7)))].sort().reverse();
+            const select = document.getElementById('filterMonth');
+            select.innerHTML = '<option value="">全部月份</option>' + 
+                months.map(m => `<option value="${m}">${m}</option>`).join('');
+        }
+        
+        // ============ 删除记录 ============
+        async function deleteRecord(id) {
+            if (!confirm('确定要删除这条记录吗？')) return;
+            
+            const result = await apiCall(`/api/visits/${id}`, {
+                method: 'DELETE'
+            });
+            
+            if (result.success) {
+                alert('删除成功');
+                loadRecords();
+            } else {
+                alert(result.msg || '删除失败');
+            }
+        }
+        
+        // ============ 编辑记录 ============
+        async function openEditModal(id) {
+            const result = await apiCall(`/api/visits?current=1&rowCount=100`);
+            
+            if (!result.success) return;
+            
+            const record = result.data.rows.find(r => r.id === id);
+            if (!record) return;
+            
+            document.getElementById('editId').value = id;
+            document.getElementById('editCompanyName').value = record.company_name;
+            document.getElementById('editRegion').value = record.region;
+            document.getElementById('editStaffName').value = record.staff_name;
+            document.getElementById('editVisitDate').value = record.visit_date;
+            document.getElementById('editCategory').value = record.category;
+            document.getElementById('editContent').value = record.content || '';
+            
+            document.getElementById('editModal').classList.add('show');
+        }
+        
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('show');
+        }
+        
+        async function confirmEdit() {
+            const id = document.getElementById('editId').value;
+            
+            const data = {
+                companyName: document.getElementById('editCompanyName').value,
+                region: document.getElementById('editRegion').value,
+                staffName: document.getElementById('editStaffName').value,
+                visitDate: document.getElementById('editVisitDate').value,
+                category: document.getElementById('editCategory').value,
+                content: document.getElementById('editContent').value
+            };
+            
+            const result = await apiCall(`/api/visits/${id}`, {
+                method: 'PUT',
+                body: JSON.stringify(data)
+            });
+            
+            if (result.success) {
+                alert('修改成功');
+                closeEditModal();
+                loadRecords();
+            } else {
+                alert(result.msg || '修改失败');
+            }
+        }
+        
+        // ============ 统计 ============
+        async function loadStats() {
+            const type = document.getElementById('statsType').value;
+            const url = `/api/visits/stats?type=${type}`;
+            
+            const result = await apiCall(url);
+            
+            if (!result.success) {
+                document.getElementById('statsDetail').innerHTML = '<div class="empty">加载失败</div>';
+                return;
+            }
+            
+            const summary = result.data.summary;
+            document.getElementById('totalCount').textContent = summary.total;
+            document.getElementById('totalCompanies').textContent = summary.companies;
+            document.getElementById('totalStaff').textContent = summary.staff;
+            
+            const stats = result.data.stats || [];
+            
+            if (stats.length === 0) {
+                document.getElementById('statsDetail').innerHTML = '<div class="empty">暂无数据</div>';
+                return;
+            }
+            
+            document.getElementById('statsDetail').innerHTML = stats.map(s => `
+                <div class="record-item">
+                    <div class="header">
+                        <span class="company">${s.period}</span>
+                    </div>
+                    <div class="info">走访次数: ${s.count} 次</div>
+                    <div class="info">涉及企业: ${s.company_count} 家</div>
+                </div>
+            `).join('');
+        }
+        
+        // 初始化
+        document.getElementById('visitDate').value = new Date().toISOString().split('T')[0];
+    </script>
+
+<style>
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.inland-security-footer {
+  position: fixed;
+  z-index: 10;
+  bottom: 0;
+  right: 0;
+  width: fit-content;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tooltip-container {
+  position: relative;
+}
+
+.trigger-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background-color: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.minimax-link {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 300;
+  color: #adadad;
+  text-decoration: none;
+}
+
+.minimax-link:visited {
+  color: #adadad;
+}
+
+.minimax-link:hover {
+  color: #666666;
+}
+
+.tooltip-content {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  padding-bottom: 16px; /* 8px 内容间距 + 8px 用于鼠标移动的透明区域 */
+  font-size: 12px;
+  line-height: 17px;
+  background-color: #fafafa;
+  border-radius: 12px;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  color: #171717;
+}
+
+/* 创建透明的连接区域，让鼠标可以平滑移动到 tooltip */
+.tooltip-content::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  right: 0;
+  height: 16px;
+}
+
+.tooltip-container:hover .tooltip-content {
+  display: flex;
+}
+
+.info-section {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.beian-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: #171717;
+}
+
+.beian-icon {
+  width: 14px;
+  height: 14px;
+  margin-right: 2px;
+}
+
+.underline-text {
+  color: #171717;
+  text-decoration: underline;
+}
+
+.underline-text:hover {
+  color: #000000;
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+  .trigger-content {
+    background-color: transparent;
+  }
+
+  .minimax-link,
+  .minimax-link:visited {
+    color: #666666;
+  }
+
+  .minimax-link:hover {
+    color: #adadad;
+  }
+
+  .tooltip-content {
+    background-color: #262626;
+    color: #ededed;
+  }
+
+  .beian-link,
+  .underline-text {
+    color: #ededed;
+  }
+
+  .underline-text:hover {
+    color: #ffffff;
+  }
+}
+
+</style>
+<div class="inland-security-footer">
+  <div class="tooltip-container">
+    <div class="trigger-content">
+      <a href="https://www.minimaxi.com/" target="_blank" rel="noreferrer" class="minimax-link">
+        <span>© 2026 MiniMax</span>
+      </a>
+    </div>
+    <div class="tooltip-content">
+      <section class="info-section">
+        <span>上海稀宇科技有限公司</span>
+      </section>
+
+      <section class="info-section">
+        <a class="beian-link" href="https://www.beian.gov.cn/portal/registerSystemInfo?recordcode=31010402010179" target="_blank" rel="noreferrer">
+          <img alt="hailuo-beian-icon" src="https://cdn.hailuoai.com/hailuo-video-web/public_assets/223037d3-79fd-4db0-a456-749f38a6a14b.png" class="beian-icon">
+          <span class="underline-text">沪公网安备31010402010179号</span>
+        </a>
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noreferrer" class="underline-text">
+          沪ICP备2023003282号-38
+        </a>
+      </section>
+
+      <section class="info-section">
+        <span>模型名称：MiniMax</span>
+        <span>备案号：Shanghai-MiniMax-202505230046</span>
+      </section>
+
+      <section class="info-section">
+        <a href="https://agent.minimaxi.com/doc/zh/terms-of-service.html" target="_blank" rel="noreferrer" class="underline-text">
+          用户协议
+        </a>
+        <a href="https://agent.minimaxi.com/doc/zh/privacy-policy.html" target="_blank" rel="noreferrer" class="underline-text">
+          隐私政策
+        </a>
+      </section>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

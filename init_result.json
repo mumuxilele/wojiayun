@@ -1,0 +1,22 @@
+{
+  "project": {
+    "msg": "access_token非法，请先调用授权登录",
+    "result": "error",
+    "traceID": "a705b1907c3b4413a76c6960d3051c58",
+    "code": 9002,
+    "data": "",
+    "success": false
+  },
+  "buildings": {
+    "msg": "access_token非法，请先调用授权登录",
+    "result": "error",
+    "traceID": "f04f644530a5481b89944b8005e67b26",
+    "code": 9002,
+    "data": "",
+    "success": false
+  },
+  "units": null,
+  "rooms": null,
+  "customers": null,
+  "bindings": []
+}
