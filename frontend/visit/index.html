@@ -175,20 +175,26 @@
         const USER_API = 'http://47.98.238.209:22307';
         const TOKEN = 'visit_token_2024';
         let currentUser = null;
+        let accessToken = '';
+        let isDev = '0';
         
         let currentPage = 1;
         let pageSize = 10;
         let currentCategory = '';
         let currentDetail = null;
         
+        // 获取URL参数
+        function getUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            accessToken = params.get('access_token') || TOKEN;
+            isDev = params.get('isdev') || '0';
+        }
+        
         // 获取用户信息
         async function checkUserInfo() {
+            getUrlParams();
+            
             try {
-                // 从URL获取参数
-                const urlParams = new URLSearchParams(window.location.search);
-                const accessToken = urlParams.get('access_token') || TOKEN;
-                const isDev = urlParams.get('isdev') || '0';
-                
                 const res = await fetch(`${USER_API}/getUserInfo?access_token=${accessToken}&isdev=${isDev}`);
                 const data = await res.json();
                 
@@ -198,7 +204,6 @@
                     currentUser = data.data;
                     console.log('用户:', currentUser.userName || currentUser.empName);
                 } else {
-                    // 接口返回false，显示错误信息
                     alert(data.msg || '获取用户信息失败');
                 }
             } catch(e) {
@@ -218,7 +223,8 @@
                 const params = new URLSearchParams({
                     page: currentPage,
                     pageSize: pageSize,
-                    token: TOKEN
+                    access_token: accessToken,
+                    isdev: isDev
                 });
                 if (currentCategory) params.append('category', currentCategory);
                 
@@ -290,7 +296,7 @@
         // 显示详情
         async function showDetail(id) {
             try {
-                const res = await fetch(`${API_BASE}/api/visit/detail?id=${id}&token=${TOKEN}`);
+                const res = await fetch(`${API_BASE}/api/visit/detail?id=${id}&access_token=${accessToken}&isdev=${isDev}`);
                 const data = await res.json();
                 
                 if (data.code === 200) {
@@ -330,7 +336,7 @@
                 const res = await fetch(`${API_BASE}/api/visit/delete`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({id: currentDetail.id, token: TOKEN})
+                    body: JSON.stringify({id: currentDetail.id, access_token: accessToken, isdev: isDev})
                 });
                 const data = await res.json();
                 if (data.code === 200) {
@@ -384,7 +390,8 @@
                 category: document.getElementById('category').value,
                 content: document.getElementById('content').value,
                 visit_time: document.getElementById('visitTime').value,
-                token: TOKEN
+                access_token: accessToken,
+                isdev: isDev
             };
             
             const url = id ? `${API_BASE}/api/visit/update` : `${API_BASE}/api/visit/add`;

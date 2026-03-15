@@ -230,6 +230,8 @@
                 const USER_API = 'http://47.98.238.209:22307';
                 const TOKEN = 'visit_token_2024';
                 let currentUser = null;
+                let accessToken = '';
+                let isDev = '0';
                 
                 const activeMenu = ref('list');
                 const tableData = ref([]);
@@ -238,6 +240,13 @@
                 const dialogTitle = ref('新增记录');
                 const isEdit = ref(false);
                 const detailData = ref(null);
+                
+                // 获取URL参数
+                const getUrlParams = () => {
+                    const params = new URLSearchParams(window.location.search);
+                    accessToken = params.get('access_token') || TOKEN;
+                    isDev = params.get('isdev') || '0';
+                };
                 
                 const search = reactive({
                     companyName: '',
@@ -281,7 +290,8 @@
                     const params = new URLSearchParams({
                         page: pagination.page,
                         pageSize: pagination.pageSize,
-                        token: TOKEN
+                        access_token: accessToken,
+                        isdev: isDev
                     });
                     if (search.companyName) params.append('companyName', search.companyName);
                     if (search.visitorName) params.append('visitorName', search.visitorName);
@@ -301,7 +311,7 @@
                 };
                 
                 const loadStats = async () => {
-                    const params = new URLSearchParams({ token: TOKEN });
+                    const params = new URLSearchParams({ access_token: accessToken, isdev: isDev });
                     if (search.dateRange && search.dateRange[0]) {
                         params.append('startDate', search.dateRange[0]);
                         params.append('endDate', search.dateRange[1]);
@@ -348,7 +358,7 @@
                 };
                 
                 const showDetail = async (row) => {
-                    const res = await fetch(`${API_BASE}/api/visit/detail?id=${row.id}&token=${TOKEN}`);
+                    const res = await fetch(`${API_BASE}/api/visit/detail?id=${row.id}&access_token=${accessToken}&isdev=${isDev}`);
                     const data = await res.json();
                     if (data.code === 200) {
                         detailData.value = data.data;
@@ -358,7 +368,7 @@
                 
                 const submitForm = async () => {
                     const url = isEdit.value ? `${API_BASE}/api/visit/update` : `${API_BASE}/api/visit/add`;
-                    const data = { ...form, token: TOKEN };
+                    const data = { ...form, access_token: accessToken, isdev: isDev };
                     
                     const res = await fetch(url, {
                         method: 'POST',
@@ -382,7 +392,7 @@
                     const res = await fetch(`${API_BASE}/api/visit/delete`, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({id: row.id, token: TOKEN})
+                        body: JSON.stringify({id: row.id, access_token: accessToken, isdev: isDev})
                     });
                     const data = await res.json();
                     
@@ -395,6 +405,8 @@
                 };
                 
                 onMounted(() => {
+                    // 获取URL参数
+                    getUrlParams();
                     // 获取用户信息
                     checkUserInfo();
                     loadList();
@@ -403,10 +415,6 @@
                 // 获取用户信息
                 const checkUserInfo = async () => {
                     try {
-                        const urlParams = new URLSearchParams(window.location.search);
-                        const accessToken = urlParams.get('access_token') || TOKEN;
-                        const isDev = urlParams.get('isdev') || '0';
-                        
                         const res = await fetch(`${USER_API}/getUserInfo?access_token=${accessToken}&isdev=${isDev}`);
                         const data = await res.json();
                         
