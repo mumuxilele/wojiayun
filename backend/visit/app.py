@@ -9,6 +9,8 @@ import pymysql
 import datetime
 import json
 import os
+import urllib.request
+import urllib.parse
 
 # ============ 配置 ============
 # 模块路由前缀
@@ -17,8 +19,38 @@ MODULE_PREFIX = '/visit'
 # 静态文件目录
 STATIC_DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../frontend/visit'
 
+# 用户服务配置
+USER_SERVICE_URL = 'http://127.0.0.1:22307/getUserInfo'
+
 app = Flask(__name__, static_folder=STATIC_DIR)
 CORS(app)
+
+# ============ 辅助函数 ============
+
+def verify_user_from_user_service(token, isdev='0'):
+    """调用用户服务验证token，返回用户信息或None"""
+    try:
+        url = f'{USER_SERVICE_URL}?access_token={token}&isdev={isdev}'
+        with urllib.request.urlopen(url, timeout=10) as response:
+            data = json.loads(response.read().decode('utf-8'))
+            if data.get('success') == True:
+                return data.get('data', {})
+            return None
+    except Exception as e:
+        print(f"验证用户失败: {e}")
+        return None
+
+def get_current_user():
+    """从请求中获取当前用户信息"""
+    # 优先从URL参数获取
+    token = request.args.get('access_token') or request.args.get('token') or request.headers.get('Token')
+    isdev = request.args.get('isdev', '0')
+    
+    if not token:
+        return None
+    
+    user_info = verify_user_from_user_service(token, isdev)
+    return user_info
 
 # ============ 静态页面托管 ============
 @app.route('/')
@@ -48,7 +80,7 @@ def admin_page():
 # API根路径
 @app.route('/api')
 def api_root():
-    return jsonify({'msg': '走访台账系统API', 'version': '1.0'})
+    return jsonify({'msg': '走访台账系统API', 'version': '2.0'})
 
 # ============ 数据库配置 ============
 DB_CONFIG = {
@@ -67,6 +99,7 @@ def init_table():
     db = get_db()
     cursor = db.cursor()
     
+    # 创建走访记录表，包含creator字段
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS visit_records (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -77,13 +110,15 @@ def init_table():
             category VARCHAR(20) COMMENT '沟通事项分类:租赁/服务/物业/其他',
             content TEXT COMMENT '沟通事项',
             visit_time DATETIME COMMENT '走访时间',
+            creator VARCHAR(50) COMMENT '创建人ID',
             create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
             update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             deleted TINYINT DEFAULT 0,
             INDEX idx_region (region),
             INDEX idx_visitor (visitor),
             INDEX idx_visit_time (visit_time),
-            INDEX idx_company_name (company_name)
+            INDEX idx_company_name (company_name),
+            INDEX idx_creator (creator)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     ''')
     
@@ -93,7 +128,7 @@ def init_table():
 
 # ============ Token验证 ============
 def verify_token():
-    token = request.headers.get('Token') or request.args.get('token')
+    token = request.headers.get('Token') or request.args.get('token') or request.args.get('access_token')
     if not token:
         return None
     return token
@@ -102,6 +137,11 @@ def verify_token():
 
 @app.route(f'{MODULE_PREFIX}/api/visit/list', methods=['GET'])
 def get_visit_list():
+    # 先验证用户服务
+    user_info = get_current_user()
+    if not user_info:
+        return jsonify({'code': 401, 'msg': '用户验证失败，请检查access_token', 'success': False}), 401
+    
     token = verify_token()
     if not token:
         return jsonify({'code': 401, 'msg': 'Token不能为空', 'success': False}), 401
@@ -182,6 +222,11 @@ def get_visit_list():
 
 @app.route(f'{MODULE_PREFIX}/api/visit/add', methods=['POST'])
 def add_visit():
+    # 先验证用户服务
+    user_info = get_current_user()
+    if not user_info:
+        return jsonify({'code': 401, 'msg': '用户验证失败，请检查access_token', 'success': False}), 401
+    
     token = verify_token()
     if not token:
         return jsonify({'code': 401, 'msg': 'Token不能为空', 'success': False}), 401
@@ -197,13 +242,16 @@ def add_visit():
     if data['category'] not in valid_categories:
         return jsonify({'code': 400, 'msg': f'分类必须是{valid_categories}之一', 'success': False}), 400
     
+    # 获取创建人ID
+    creator_id = user_info.get('id', '')
+    
     db = get_db()
     cursor = db.cursor()
     
     cursor.execute('''
         INSERT INTO visit_records 
-        (region, company_name, visitor, visitor_name, category, content, visit_time)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        (region, company_name, visitor, visitor_name, category, content, visit_time, creator)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     ''', (
         data['region'],
         data['company_name'],
@@ -211,7 +259,8 @@ def add_visit():
         data['visitor_name'],
         data['category'],
         data['content'],
-        data['visit_time']
+        data['visit_time'],
+        creator_id
     ))
     
     db.commit()
@@ -228,6 +277,11 @@ def add_visit():
 
 @app.route(f'{MODULE_PREFIX}/api/visit/update', methods=['POST'])
 def update_visit():
+    # 先验证用户服务
+    user_info = get_current_user()
+    if not user_info:
+        return jsonify({'code': 401, 'msg': '用户验证失败，请检查access_token', 'success': False}), 401
+    
     token = verify_token()
     if not token:
         return jsonify({'code': 401, 'msg': 'Token不能为空', 'success': False}), 401
@@ -273,6 +327,11 @@ def update_visit():
 
 @app.route(f'{MODULE_PREFIX}/api/visit/delete', methods=['POST'])
 def delete_visit():
+    # 先验证用户服务
+    user_info = get_current_user()
+    if not user_info:
+        return jsonify({'code': 401, 'msg': '用户验证失败，请检查access_token', 'success': False}), 401
+    
     token = verify_token()
     if not token:
         return jsonify({'code': 401, 'msg': 'Token不能为空', 'success': False}), 401
@@ -298,6 +357,11 @@ def delete_visit():
 
 @app.route(f'{MODULE_PREFIX}/api/visit/stats', methods=['GET'])
 def get_stats():
+    # 先验证用户服务
+    user_info = get_current_user()
+    if not user_info:
+        return jsonify({'code': 401, 'msg': '用户验证失败，请检查access_token', 'success': False}), 401
+    
     token = verify_token()
     if not token:
         return jsonify({'code': 401, 'msg': 'Token不能为空', 'success': False}), 401
@@ -382,6 +446,11 @@ def get_stats():
 
 @app.route(f'{MODULE_PREFIX}/api/visit/detail', methods=['GET'])
 def get_detail():
+    # 先验证用户服务
+    user_info = get_current_user()
+    if not user_info:
+        return jsonify({'code': 401, 'msg': '用户验证失败，请检查access_token', 'success': False}), 401
+    
     token = verify_token()
     if not token:
         return jsonify({'code': 401, 'msg': 'Token不能为空', 'success': False}), 401
