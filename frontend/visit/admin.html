@@ -227,7 +227,9 @@
         const app = createApp({
             setup() {
                 const API_BASE = 'http://47.98.238.209:22306/visit';
+                const USER_API = 'http://47.98.238.209:22307';
                 const TOKEN = 'visit_token_2024';
+                let currentUser = null;
                 
                 const activeMenu = ref('list');
                 const tableData = ref([]);
@@ -393,8 +395,31 @@
                 };
                 
                 onMounted(() => {
+                    // 获取用户信息
+                    checkUserInfo();
                     loadList();
                 });
+                
+                // 获取用户信息
+                const checkUserInfo = async () => {
+                    try {
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const accessToken = urlParams.get('access_token') || TOKEN;
+                        const isDev = urlParams.get('isdev') || '0';
+                        
+                        const res = await fetch(`${USER_API}/getUserInfo?access_token=${accessToken}&isdev=${isDev}`);
+                        const data = await res.json();
+                        
+                        if (data.success === true) {
+                            currentUser = data.data;
+                            console.log('用户:', data.data);
+                        } else {
+                            ElMessage.warning(data.msg || '获取用户信息失败');
+                        }
+                    } catch(e) {
+                        console.error('获取用户信息失败:', e);
+                    }
+                };
                 
                 return {
                     activeMenu, tableData, search, pagination, form, dialogVisible, dialogTitle, isEdit, detailVisible, detailData, stats,

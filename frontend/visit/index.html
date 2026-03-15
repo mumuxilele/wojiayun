@@ -172,12 +172,40 @@
 
     <script>
         const API_BASE = 'http://47.98.238.209:22306/visit';
+        const USER_API = 'http://47.98.238.209:22307';
         const TOKEN = 'visit_token_2024';
+        let currentUser = null;
         
         let currentPage = 1;
         let pageSize = 10;
         let currentCategory = '';
         let currentDetail = null;
+        
+        // 获取用户信息
+        async function checkUserInfo() {
+            try {
+                // 从URL获取参数
+                const urlParams = new URLSearchParams(window.location.search);
+                const accessToken = urlParams.get('access_token') || TOKEN;
+                const isDev = urlParams.get('isdev') || '0';
+                
+                const res = await fetch(`${USER_API}/getUserInfo?access_token=${accessToken}&isdev=${isDev}`);
+                const data = await res.json();
+                
+                console.log('用户信息:', data);
+                
+                if (data.success === true) {
+                    currentUser = data.data;
+                    console.log('用户:', currentUser.userName || currentUser.empName);
+                } else {
+                    // 接口返回false，显示错误信息
+                    alert(data.msg || '获取用户信息失败');
+                }
+            } catch(e) {
+                console.error('获取用户信息失败:', e);
+                // 非必填，不阻塞
+            }
+        }
         
         // 加载列表
         async function loadList(reset = false) {
@@ -207,8 +235,8 @@
                     }
                 }
             } catch(e) {
-                console.error(e);
-                document.getElementById('list').innerHTML = '<div class="empty">加载失败</div>';
+                console.error('加载失败:', e);
+                document.getElementById('list').innerHTML = '<div class="empty">加载失败，请刷新页面重试</div>';
             }
         }
         
@@ -378,11 +406,13 @@
                     alert(result.msg || '保存失败');
                 }
             } catch(e) {
-                alert('保存失败');
+                console.error('保存失败:', e);
+                alert('保存失败: ' + e.message);
             }
         });
         
         // 初始化
+        checkUserInfo();
         loadList();
     </script>
 </body>

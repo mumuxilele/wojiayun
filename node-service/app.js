@@ -1,49 +1,84 @@
 const http = require('http');
+const https = require('https');
 const url = require('url');
 
 // 配置
 const PORT = 22307;
-const DEV_TOKEN = 'dev_token_123456'; // 开发环境token
-const PROD_TOKEN = 'visit_token_2024'; // 生产环境token
 
-// 用户信息映射 (生产环境从数据库读取)
-const users = {
-    'admin': { id: 1, name: '管理员', role: 'admin' },
-    'user1': { id: 2, name: '张三', role: 'user' },
-    'user2': { id: 3, name: '李四', role: 'user' }
-};
+// 生产环境配置
+const PROD_URL = 'https://gj.wojiacloud.com/h5/users/getUserInfo';
+const DEV_URL = 'https://gj.wojiacloud.cn/h5/users/getUserInfo';
 
-// 模拟数据库查询
-function getUserInfo(accessToken, isDev) {
-    // 开发环境
-    if (isDev === '1' || isDev === 'true') {
-        if (accessToken === DEV_TOKEN) {
-            return { 
-                success: true, 
-                data: { 
-                    id: 999, 
-                    name: '开发用户', 
-                    role: 'dev',
-                    isDev: true 
-                } 
-            };
-        }
-        return { success: false, msg: '开发环境Token无效' };
-    }
+// 发起HTTP/HTTPS请求
+function httpRequest(targetUrl, params, callback) {
+    const parsedUrl = new URL(targetUrl);
+    const isHttps = parsedUrl.protocol === 'https:';
+    const client = isHttps ? https : http;
     
-    // 生产环境
-    if (accessToken === PROD_TOKEN) {
-        // 返回默认管理员信息
-        return { 
-            success: true, 
-            data: users['admin'] 
-        };
-    }
+    const queryString = new URLSearchParams(params).toString();
+    const fullUrl = `${targetUrl}?${queryString}`;
     
-    return { success: false, msg: 'Token无效' };
+    console.log(`转发请求到: ${fullUrl}`);
+    
+    const req = client.get(fullUrl, (res) => {
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+            try {
+                const json = JSON.parse(data);
+                callback(null, json);
+            } catch(e) {
+                callback(e, null);
+            }
+        });
+    });
+    
+    req.on('error', callback);
+    req.setTimeout(10000, () => {
+        req.destroy();
+        callback(new Error('请求超时'), null);
+    });
 }
 
-const server = http.createServer((req, res) => {
+// 封装Promise版本的请求
+function httpRequestPromise(targetUrl, params) {
+    return new Promise((resolve, reject) => {
+        httpRequest(targetUrl, params, (err, data) => {
+            if (err) reject(err);
+            else resolve(data);
+        });
+    });
+}
+
+// 获取用户信息 - 转发到第三方服务器
+async function getUserInfo(accessToken, isDev) {
+    if (!accessToken) {
+        return { success: false, msg: 'access_token不能为空' };
+    }
+    
+    // 判断环境
+    const targetUrl = (isDev === '1' || isDev === 'true') ? DEV_URL : PROD_URL;
+    const isDevText = (isDev === '1' || isDev === 'true') ? '开发' : '生产';
+    console.log(`[${isDevText}环境] 转发到: ${targetUrl}`);
+    
+    try {
+        const result = await httpRequestPromise(targetUrl, { access_token: accessToken });
+        
+        // 直接返回第三方服务器的原始响应
+        // success: true = 正常, success: false = 不正常
+        return result;
+        
+    } catch (error) {
+        console.error('转发请求失败:', error.message);
+        return {
+            success: false,
+            msg: '第三方服务调用失败: ' + error.message,
+            error: error.message
+        };
+    }
+}
+
+const server = http.createServer(async (req, res) => {
     // CORS头
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -63,23 +98,19 @@ const server = http.createServer((req, res) => {
     
     // 根路径
     if (pathname === '/' || pathname === '/index.html') {
-        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(JSON.stringify({ msg: 'User Info Service', version: '1.0' }));
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ msg: 'User Info Service', version: '2.0', description: '转发到第三方服务' }));
         return;
     }
     
     // getUserInfo 接口
     if (pathname === '/api/getUserInfo' || pathname === '/getUserInfo') {
         const accessToken = query.access_token || query.token || '';
-        const isDev = query.isdev || query.isDev || '';
+        const isDev = query.isdev || query.isDev || '0';  // 默认生产环境
         
-        if (!accessToken) {
-            res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-            res.end(JSON.stringify({ success: false, msg: 'access_token不能为空' }));
-            return;
-        }
+        // 转发请求到第三方服务器
+        const result = await getUserInfo(accessToken, isDev);
         
-        const result = getUserInfo(accessToken, isDev);
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify(result));
         return;
@@ -99,5 +130,7 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`用户信息服务已启动: http://0.0.0.0:${PORT}`);
-    console.log(`接口: /getUserInfo?isdev=1&access_token=xxx`);
+    console.log(`接口: /getUserInfo?isdev=0&access_token=xxx (生产) 或 /getUserInfo?isdev=1&access_token=xxx (开发)`);
+    console.log(`生产环境: ${PROD_URL}`);
+    console.log(`开发环境: ${DEV_URL}`);
 });

@@ -1,0 +1,11 @@
+{
+  "url": "https://www.wojiacloud.cn",
+  "cookies": [
+    {
+      "name": "example_cookie_name",
+      "value": "example_cookie_value",
+      "domain": ".wojiacloud.cn",
+      "path": "/"
+    }
+  ]
+}
