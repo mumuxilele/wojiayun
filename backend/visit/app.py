@@ -16,8 +16,9 @@ import urllib.parse
 # 模块路由前缀
 MODULE_PREFIX = '/visit'
 
-# 静态文件目录
-STATIC_DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../frontend/visit'
+# 静态文件目录 - 修正路径
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATIC_DIR = os.path.join(BASE_DIR, 'frontend', 'visit')
 
 # 用户服务配置
 USER_SERVICE_URL = 'http://127.0.0.1:22307/getUserInfo'
@@ -45,6 +46,15 @@ def get_current_user():
     # 优先从URL参数获取
     token = request.args.get('access_token') or request.args.get('token') or request.headers.get('Token')
     isdev = request.args.get('isdev', '0')
+    
+    # 如果URL没有，则从POST请求体中获取
+    if not token and request.method == 'POST':
+        try:
+            body_data = request.get_json(silent=True) or {}
+            token = body_data.get('access_token') or body_data.get('token')
+            isdev = body_data.get('isdev', isdev)
+        except:
+            pass
     
     if not token:
         return None
@@ -250,8 +260,8 @@ def add_visit():
     
     cursor.execute('''
         INSERT INTO visit_records 
-        (region, company_name, visitor, visitor_name, category, content, visit_time, creator)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        (region, company_name, visitor, visitor_name, category, content, visit_time, creator, customerID)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
     ''', (
         data['region'],
         data['company_name'],
@@ -260,7 +270,8 @@ def add_visit():
         data['category'],
         data['content'],
         data['visit_time'],
-        creator_id
+        creator_id,
+        data.get('customerID', '')
     ))
     
     db.commit()
@@ -302,8 +313,8 @@ def update_visit():
     update_fields = []
     params = []
     
-    for field in ['region', 'company_name', 'visitor', 'visitor_name', 'category', 'content', 'visit_time']:
-        if field in data:
+    for field in ['region', 'company_name', 'visitor', 'visitor_name', 'category', 'content', 'visit_time', 'customerID']:
+        if field in data and data[field]:
             update_fields.append(f'{field} = %s')
             params.append(data[field])
     

@@ -115,9 +115,12 @@
             <div class="modal-body">
                 <form id="visitForm">
                     <input type="hidden" id="visitId">
+                    <input type="hidden" id="customerID">
                     <div class="form-group">
-                        <label class="form-label"><span>*</span>企业名称</label>
-                        <input type="text" class="form-input" id="companyName" required>
+                        <label class="form-label"><span>*</span>走访企业</label>
+                        <input type="text" class="form-input" id="companySearch" placeholder="输入客户名称搜索" autocomplete="off">
+                        <div id="customerList" style="display:none;position:absolute;z-index:1000;max-height:200px;overflow-y:auto;background:#fff;border:1px solid #ddd;border-radius:4px;width:calc(100% - 30px);margin-top:2px;box-shadow:0 2px 8px rgba(0,0,0,0.15);">
+                        </div>
                     </div>
                     <div class="form-group">
                         <label class="form-label"><span>*</span>区域地址</label>
@@ -182,6 +185,60 @@
         let pageSize = 10;
         let currentCategory = '';
         let currentDetail = null;
+        let customerSearchTimer = null;
+        
+        // 搜索客户
+        async function searchCustomers(keyword) {
+            const customerList = document.getElementById('customerList');
+            if (!keyword || keyword.length < 1) {
+                customerList.style.display = 'none';
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${USER_API}/rentCus/list?access_token=${encodeURIComponent(accessToken)}&isdev=${encodeURIComponent(isDev)}&current=1&rowCount=10&searchPhrase=${encodeURIComponent(keyword)}`);
+                const data = await res.json();
+                
+                if (data.success && data.data && data.data.rows) {
+                    const rows = data.data.rows;
+                    if (rows.length === 0) {
+                        customerList.innerHTML = '<div style="padding:10px;color:#999;">未找到客户</div>';
+                        customerList.style.display = 'block';
+                        return;
+                    }
+                    
+                    customerList.innerHTML = rows.map(c => `
+                        <div class="customer-item" onclick="selectCustomer('${c.id}', '${c.name}', '${c.phone || ''}', '${c.type}', '${c.performEvaluation || ''}')" 
+                             style="padding:10px;border-bottom:1px solid #eee;cursor:pointer;">
+                            <div style="font-weight:bold;">${c.name}</div>
+                            <div style="font-size:12px;color:#666;">
+                                手机：${c.phone || '-'} 
+                                <span style="color:${c.performEvaluationStatus === 3 ? 'red' : c.performEvaluationStatus === 2 ? 'orange' : 'green'};">
+                                    ${c.performEvaluation || '信用正常'}
+                                </span>
+                            </div>
+                            <div style="font-size:12px;color:#999;">
+                                ${c.type === 'P' ? '个人' : c.type === 'E' ? '企业' : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                    customerList.style.display = 'block';
+                } else {
+                    customerList.innerHTML = '<div style="padding:10px;color:#999;">搜索失败</div>';
+                    customerList.style.display = 'block';
+                }
+            } catch(e) {
+                console.error('搜索客户失败:', e);
+                customerList.style.display = 'none';
+            }
+        }
+        
+        // 选择客户
+        function selectCustomer(id, name, phone, type, eval) {
+            document.getElementById('customerID').value = id;
+            document.getElementById('companySearch').value = name;
+            document.getElementById('customerList').style.display = 'none';
+        }
         
         // 获取URL参数
         function getUrlParams() {
@@ -195,7 +252,7 @@
             getUrlParams();
             
             try {
-                const res = await fetch(`${USER_API}/getUserInfo?access_token=${accessToken}&isdev=${isDev}`);
+                const res = await fetch(`${USER_API}/getUserInfo?access_token=${encodeURIComponent(accessToken)}&isdev=${encodeURIComponent(isDev)}`);
                 const data = await res.json();
                 
                 console.log('用户信息:', data);
@@ -296,7 +353,7 @@
         // 显示详情
         async function showDetail(id) {
             try {
-                const res = await fetch(`${API_BASE}/api/visit/detail?id=${id}&access_token=${accessToken}&isdev=${isDev}`);
+                const res = await fetch(`${API_BASE}/api/visit/detail?id=${id}&access_token=${encodeURIComponent(accessToken)}&isdev=${encodeURIComponent(isDev)}`);
                 const data = await res.json();
                 
                 if (data.code === 200) {
@@ -355,6 +412,8 @@
         function showAddModal() {
             document.getElementById('modalTitle').innerText = '新增走访记录';
             document.getElementById('visitId').value = '';
+            document.getElementById('customerID').value = '';
+            document.getElementById('companySearch').value = '';
             document.getElementById('visitForm').reset();
             document.getElementById('formModal').classList.add('show');
         }
@@ -363,7 +422,8 @@
         function showEditModal(item) {
             document.getElementById('modalTitle').innerText = '编辑走访记录';
             document.getElementById('visitId').value = item.id;
-            document.getElementById('companyName').value = item.company_name;
+            document.getElementById('customerID').value = item.customerID || '';
+            document.getElementById('companySearch').value = item.company_name;
             document.getElementById('region').value = item.region;
             document.getElementById('visitor').value = item.visitor;
             document.getElementById('visitorName').value = item.visitor_name;
@@ -382,8 +442,17 @@
             e.preventDefault();
             
             const id = document.getElementById('visitId').value;
+            const companyName = document.getElementById('companySearch').value;
+            const customerID = document.getElementById('customerID').value;
+            
+            if (!companyName) {
+                alert('请选择走访企业');
+                return;
+            }
+            
             const data = {
-                company_name: document.getElementById('companyName').value,
+                company_name: companyName,
+                customerID: customerID,
                 region: document.getElementById('region').value,
                 visitor: document.getElementById('visitor').value,
                 visitor_name: document.getElementById('visitorName').value,
@@ -394,33 +463,85 @@
                 isdev: isDev
             };
             
-            const url = id ? `${API_BASE}/api/visit/update` : `${API_BASE}/api/visit/add`;
+            // 显示Loading
+            function showLoading(msg) {
+                const loading = document.createElement('div');
+                loading.id = 'globalLoading';
+                loading.innerHTML = `
+                    <div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;">
+                        <div style="background:#fff;padding:20px 40px;border-radius:8px;text-align:center;">
+                            <div style="font-size:16px;color:#333;">${msg}</div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(loading);
+            }
+            
+            // 隐藏Loading
+            function hideLoading() {
+                const loading = document.getElementById('globalLoading');
+                if (loading) loading.remove();
+            }
+            
+            const url = id ? `${API_BASE}/api/visit/update?access_token=${encodeURIComponent(accessToken)}&isdev=${encodeURIComponent(isDev)}` : `${API_BASE}/api/visit/add?access_token=${encodeURIComponent(accessToken)}&isdev=${encodeURIComponent(isDev)}`;
             if (id) data.id = id;
             
+            // 显示Loading
+            showLoading('保存中...');
+            
             try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
+                
                 const res = await fetch(url, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(data)
+                    body: JSON.stringify(data),
+                    signal: controller.signal
                 });
+                clearTimeout(timeoutId);
+                
                 const result = await res.json();
+                hideLoading();
                 
                 if (result.code === 200) {
                     alert('保存成功');
                     closeModal();
-                    loadList(true);
+                    loadList(true); // 刷新列表
                 } else {
                     alert(result.msg || '保存失败');
                 }
             } catch(e) {
+                hideLoading();
                 console.error('保存失败:', e);
-                alert('保存失败: ' + e.message);
+                if (e.name === 'AbortError') {
+                    alert('操作超时，请重试');
+                } else {
+                    alert('保存失败: ' + e.message);
+                }
             }
         });
         
         // 初始化
         checkUserInfo();
         loadList();
+        
+        // 客户搜索事件
+        document.getElementById('companySearch').addEventListener('input', function(e) {
+            clearTimeout(customerSearchTimer);
+            customerSearchTimer = setTimeout(() => {
+                searchCustomers(e.target.value);
+            }, 300);
+        });
+        
+        // 点击外部关闭客户列表
+        document.addEventListener('click', function(e) {
+            const customerList = document.getElementById('customerList');
+            const companySearch = document.getElementById('companySearch');
+            if (!customerList.contains(e.target) && e.target !== companySearch) {
+                customerList.style.display = 'none';
+            }
+        });
     </script>
 </body>
 </html>

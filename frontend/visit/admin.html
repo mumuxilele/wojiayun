@@ -358,7 +358,7 @@
                 };
                 
                 const showDetail = async (row) => {
-                    const res = await fetch(`${API_BASE}/api/visit/detail?id=${row.id}&access_token=${accessToken}&isdev=${isDev}`);
+                    const res = await fetch(`${API_BASE}/api/visit/detail?id=${row.id}&access_token=${encodeURIComponent(accessToken)}&isdev=${encodeURIComponent(isDev)}`);
                     const data = await res.json();
                     if (data.code === 200) {
                         detailData.value = data.data;
@@ -367,22 +367,41 @@
                 };
                 
                 const submitForm = async () => {
-                    const url = isEdit.value ? `${API_BASE}/api/visit/update` : `${API_BASE}/api/visit/add`;
+                    const url = isEdit.value ? `${API_BASE}/api/visit/update?access_token=${encodeURIComponent(accessToken)}&isdev=${encodeURIComponent(isDev)}` : `${API_BASE}/api/visit/add?access_token=${encodeURIComponent(accessToken)}&isdev=${encodeURIComponent(isDev)}`;
                     const data = { ...form, access_token: accessToken, isdev: isDev };
                     
-                    const res = await fetch(url, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(data)
-                    });
-                    const result = await res.json();
+                    // 显示loading
+                    const loading = ElMessage.loading({ message: '保存中...', duration: 0 });
                     
-                    if (result.code === 200) {
-                        ElMessage.success('保存成功');
-                        dialogVisible.value = false;
-                        loadList();
-                    } else {
-                        ElMessage.error(result.msg || '保存失败');
+                    try {
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
+                        
+                        const res = await fetch(url, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify(data),
+                            signal: controller.signal
+                        });
+                        clearTimeout(timeoutId);
+                        
+                        const result = await res.json();
+                        loading.close();
+                        
+                        if (result.code === 200) {
+                            ElMessage.success('保存成功');
+                            dialogVisible.value = false;
+                            loadList();
+                        } else {
+                            ElMessage.error(result.msg || '保存失败');
+                        }
+                    } catch(e) {
+                        loading.close();
+                        if (e.name === 'AbortError') {
+                            ElMessage.error('操作超时，请重试');
+                        } else {
+                            ElMessage.error('保存失败: ' + e.message);
+                        }
                     }
                 };
                 
@@ -415,7 +434,7 @@
                 // 获取用户信息
                 const checkUserInfo = async () => {
                     try {
-                        const res = await fetch(`${USER_API}/getUserInfo?access_token=${accessToken}&isdev=${isDev}`);
+                        const res = await fetch(`${USER_API}/getUserInfo?access_token=${encodeURIComponent(accessToken)}&isdev=${encodeURIComponent(isDev)}`);
                         const data = await res.json();
                         
                         if (data.success === true) {

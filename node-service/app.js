@@ -6,8 +6,8 @@ const url = require('url');
 const PORT = 22307;
 
 // 生产环境配置
-const PROD_URL = 'https://gj.wojiacloud.com/h5/users/getUserInfo';
-const DEV_URL = 'https://gj.wojiacloud.cn/h5/users/getUserInfo';
+const PROD_URL = 'https://gj.wojiacloud.com';
+const DEV_URL = 'https://gj.wojiacloud.cn';
 
 // 发起HTTP/HTTPS请求
 function httpRequest(targetUrl, params, callback) {
@@ -58,18 +58,50 @@ async function getUserInfo(accessToken, isDev) {
     
     // 判断环境
     const targetUrl = (isDev === '1' || isDev === 'true') ? DEV_URL : PROD_URL;
+    const fullUrl = `${targetUrl}/h5/users/getUserInfo`;
     const isDevText = (isDev === '1' || isDev === 'true') ? '开发' : '生产';
-    console.log(`[${isDevText}环境] 转发到: ${targetUrl}`);
+    console.log(`[${isDevText}环境] 转发到: ${fullUrl}`);
     
     try {
-        const result = await httpRequestPromise(targetUrl, { access_token: accessToken });
-        
-        // 直接返回第三方服务器的原始响应
-        // success: true = 正常, success: false = 不正常
+        const result = await httpRequestPromise(fullUrl, { access_token: accessToken });
         return result;
-        
     } catch (error) {
         console.error('转发请求失败:', error.message);
+        return {
+            success: false,
+            msg: '第三方服务调用失败: ' + error.message,
+            error: error.message
+        };
+    }
+}
+
+// 获取客户列表 - 转发到第三方服务器
+async function getCustomerList(accessToken, isDev, current, rowCount, searchPhrase) {
+    if (!accessToken) {
+        return { success: false, msg: 'access_token不能为空' };
+    }
+    
+    // 判断环境
+    const targetUrl = (isDev === '1' || isDev === 'true') ? DEV_URL : PROD_URL;
+    const fullUrl = `${targetUrl}/api/rentCus/list`;
+    const isDevText = (isDev === '1' || isDev === 'true') ? '开发' : '生产';
+    console.log(`[${isDevText}环境] 转发客户列表到: ${fullUrl}`);
+    
+    const params = {
+        access_token: accessToken,
+        current: current || 1,
+        rowCount: rowCount || 10,
+        time: Date.now()
+    };
+    if (searchPhrase) {
+        params.searchPhrase = searchPhrase;
+    }
+    
+    try {
+        const result = await httpRequestPromise(fullUrl, params);
+        return result;
+    } catch (error) {
+        console.error('转发客户列表请求失败:', error.message);
         return {
             success: false,
             msg: '第三方服务调用失败: ' + error.message,
@@ -99,17 +131,31 @@ const server = http.createServer(async (req, res) => {
     // 根路径
     if (pathname === '/' || pathname === '/index.html') {
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({ msg: 'User Info Service', version: '2.0', description: '转发到第三方服务' }));
+        res.end(JSON.stringify({ msg: 'User Info Service', version: '3.0', description: '转发到第三方服务' }));
         return;
     }
     
     // getUserInfo 接口
     if (pathname === '/api/getUserInfo' || pathname === '/getUserInfo') {
         const accessToken = query.access_token || query.token || '';
-        const isDev = query.isdev || query.isDev || '0';  // 默认生产环境
+        const isDev = query.isdev || query.isDev || '0';
         
-        // 转发请求到第三方服务器
         const result = await getUserInfo(accessToken, isDev);
+        
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify(result));
+        return;
+    }
+    
+    // 客户列表接口
+    if (pathname === '/api/rentCus/list' || pathname === '/rentCus/list') {
+        const accessToken = query.access_token || '';
+        const isDev = query.isdev || query.isDev || '0';
+        const current = query.current || 1;
+        const rowCount = query.rowCount || 10;
+        const searchPhrase = query.searchPhrase || '';
+        
+        const result = await getCustomerList(accessToken, isDev, current, rowCount, searchPhrase);
         
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify(result));
@@ -130,7 +176,9 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`用户信息服务已启动: http://0.0.0.0:${PORT}`);
-    console.log(`接口: /getUserInfo?isdev=0&access_token=xxx (生产) 或 /getUserInfo?isdev=1&access_token=xxx (开发)`);
+    console.log(`接口:`);
+    console.log(`  - /getUserInfo?isdev=0&access_token=xxx (获取用户信息)`);
+    console.log(`  - /rentCus/list?isdev=0&access_token=xxx&current=1&rowCount=10&searchPhrase=关键词 (客户列表)`);
     console.log(`生产环境: ${PROD_URL}`);
     console.log(`开发环境: ${DEV_URL}`);
 });
