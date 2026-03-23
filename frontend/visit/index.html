@@ -274,6 +274,9 @@
             if (reset) {
                 currentPage = 1;
                 document.getElementById('list').innerHTML = '<div class="loading">加载中...</div>';
+                document.getElementById('list').style.display = 'block';
+                document.getElementById('empty').style.display = 'none';
+                document.getElementById('loadMore').style.display = 'none';
             }
             
             try {
@@ -304,17 +307,19 @@
         }
         
         function renderList(list, reset) {
+            // 隐藏loading显示列表
+            document.getElementById('list').style.display = 'block';
+            document.getElementById('empty').style.display = 'none';
+
             if (list.length === 0) {
                 document.getElementById('list').style.display = 'none';
                 document.getElementById('empty').style.display = 'block';
+                document.getElementById('loadMore').style.display = 'none';
                 return;
             }
             
-            document.getElementById('list').style.display = 'block';
-            document.getElementById('empty').style.display = 'none';
-            
             const html = list.map(item => `
-                <div class="list-item" onclick="showDetail(${item.id})">
+                <div class="list-item" data-id="${item.id}">
                     <div class="item-header">
                         <div class="company-name">${item.company_name}</div>
                         <div class="category-tag category-${item.category}">${item.category}</div>
@@ -348,6 +353,17 @@
         document.getElementById('loadMore').addEventListener('click', function() {
             currentPage++;
             loadList();
+        });
+
+        // 列表点击事件（事件委托）
+        document.getElementById('list').addEventListener('click', function(e) {
+            const listItem = e.target.closest('.list-item');
+            if (listItem) {
+                const id = listItem.getAttribute('data-id');
+                if (id) {
+                    showDetail(id);
+                }
+            }
         });
         
         // 显示详情

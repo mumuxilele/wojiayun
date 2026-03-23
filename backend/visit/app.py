@@ -16,9 +16,15 @@ import urllib.parse
 # 模块路由前缀
 MODULE_PREFIX = '/visit'
 
-# 静态文件目录 - 修正路径
+# 静态文件目录 - 指向前端目录
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-STATIC_DIR = os.path.join(BASE_DIR, 'frontend', 'visit')
+# 尝试多个可能的路径
+STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(BASE_DIR)), 'frontend', 'visit')
+if not os.path.exists(STATIC_DIR):
+    STATIC_DIR = os.path.join(BASE_DIR, '..', '..', 'frontend', 'visit')
+if not os.path.exists(STATIC_DIR):
+    STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(BASE_DIR))), 'frontend', 'visit')
+print(f"静态文件目录: {STATIC_DIR}")
 
 # 用户服务配置
 USER_SERVICE_URL = 'http://127.0.0.1:22307/getUserInfo'
@@ -94,9 +100,10 @@ def api_root():
 
 # ============ 数据库配置 ============
 DB_CONFIG = {
-    'host': 'localhost',
+    'host': '47.98.238.209',
+    'port': 3306,
     'user': 'root',
-    'password': '',
+    'password': 'Wojiacloud$2023',
     'database': 'visit_system',
     'charset': 'utf8mb4'
 }
