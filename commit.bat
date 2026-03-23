@@ -1,3 +1,3 @@
 @echo off
 git add -A
-git commit -m "Feature: 增加走访台账搜索功能"
+git commit -m "Fix: 修复PC端管理页面操作不生效问题，添加调试日志"

@@ -301,12 +301,18 @@
                         params.append('endDate', search.dateRange[1]);
                     }
                     
+                    console.log('搜索参数:', params.toString());
+                    
                     const res = await fetch(`${API_BASE}/api/visit/list?${params}`);
                     const data = await res.json();
+                    
+                    console.log('列表数据:', data);
                     
                     if (data.code === 200) {
                         tableData.value = data.data.list;
                         pagination.total = data.data.total;
+                    } else {
+                        ElMessage.error(data.msg || '加载失败');
                     }
                 };
                 
@@ -371,7 +377,11 @@
                     const data = { ...form, access_token: accessToken, isdev: isDev };
                     
                     // 显示loading
-                    const loading = ElMessage.loading({ message: '保存中...', duration: 0 });
+                    const loading = ElMessage({
+                        message: '保存中...',
+                        type: 'info',
+                        duration: 0
+                    });
                     
                     try {
                         const controller = new AbortController();
@@ -388,12 +398,14 @@
                         const result = await res.json();
                         loading.close();
                         
+                        console.log('保存结果:', result);
+                        
                         if (result.code === 200) {
                             ElMessage.success('保存成功');
                             dialogVisible.value = false;
                             loadList();
                         } else {
-                            ElMessage.error(result.msg || '保存失败');
+                            ElMessage.error(result.msg || '保存失败: ' + (result.msg || ''));
                         }
                     } catch(e) {
                         loading.close();
@@ -415,11 +427,13 @@
                     });
                     const data = await res.json();
                     
+                    console.log('删除结果:', data);
+                    
                     if (data.code === 200) {
                         ElMessage.success('删除成功');
                         loadList();
                     } else {
-                        ElMessage.error(data.msg || '删除失败');
+                        ElMessage.error(data.msg || '删除失败: ' + (data.msg || ''));
                     }
                 };
                 
