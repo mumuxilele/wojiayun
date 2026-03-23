@@ -80,6 +80,12 @@
         <h1>走访台账</h1>
     </div>
     
+    <!-- 搜索 -->
+    <div style="padding: 10px; background: #fff;">
+        <input type="text" id="searchInput" placeholder="搜索走访人/事项/区域" 
+               style="width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+    </div>
+    
     <!-- 筛选 -->
     <div class="filter-bar" id="filterBar">
         <div class="filter-item active" data-category="">全部</div>
@@ -279,6 +285,8 @@
                 document.getElementById('loadMore').style.display = 'none';
             }
             
+            const searchKeyword = document.getElementById('searchInput').value.trim();
+            
             try {
                 const params = new URLSearchParams({
                     page: currentPage,
@@ -287,6 +295,7 @@
                     isdev: isDev
                 });
                 if (currentCategory) params.append('category', currentCategory);
+                if (searchKeyword) params.append('search', searchKeyword);
                 
                 const res = await fetch(`${API_BASE}/api/visit/list?${params}`);
                 const data = await res.json();
@@ -541,6 +550,15 @@
         // 初始化
         checkUserInfo();
         loadList();
+        
+        // 搜索框输入事件（防抖）
+        let searchTimer = null;
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => {
+                loadList(true); // 重置并重新加载
+            }, 500);
+        });
         
         // 客户搜索事件
         document.getElementById('companySearch').addEventListener('input', function(e) {

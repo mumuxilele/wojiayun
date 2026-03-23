@@ -119,7 +119,7 @@ def init_table():
     # 创建走访记录表，包含creator字段
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS visit_records (
-            id INT AUTO_INCREMENT PRIMARY KEY,
+            id INT AUTO_INCREMENT PRIMARY KEY,e
             region VARCHAR(100) COMMENT '区域地址',
             company_name VARCHAR(200) COMMENT '企业名称',
             visitor VARCHAR(50) COMMENT '走访人',
@@ -172,6 +172,8 @@ def get_visit_list():
     company_name = request.args.get('companyName', '')
     start_date = request.args.get('startDate', '')
     end_date = request.args.get('endDate', '')
+    # 通用搜索关键字，同时匹配走访人、事项(沟通内容)、区域
+    search_keyword = request.args.get('search', '')
     
     where = 'WHERE deleted = 0'
     params = []
@@ -191,6 +193,11 @@ def get_visit_list():
     if company_name:
         where += ' AND company_name LIKE %s'
         params.append(f'%{company_name}%')
+    # 通用搜索：同时匹配走访人、事项(内容)、区域
+    if search_keyword:
+        where += ' AND (visitor_name LIKE %s OR content LIKE %s OR region LIKE %s)'
+        keyword = f'%{search_keyword}%'
+        params.extend([keyword, keyword, keyword])
     if start_date:
         where += ' AND visit_time >= %s'
         params.append(start_date)
