@@ -1,3 +1,3 @@
 @echo off
 git add -A
-git commit -m "Feature: PC端新增页面增加客户搜索功能"
+git commit -m "Feature: 设备巡检页面优化及服务整合"

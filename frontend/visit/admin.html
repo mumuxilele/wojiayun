@@ -478,10 +478,15 @@
                 const handleDelete = async (row) => {
                     if (!confirm('确定删除这条记录吗？')) return;
                     
-                    const res = await fetch(`${API_BASE}/api/visit/delete`, {
+                    const params = new URLSearchParams({
+                        id: row.id,
+                        access_token: accessToken,
+                        isdev: isDev
+                    });
+                    
+                    const res = await fetch(`${API_BASE}/api/visit/delete?${params}`, {
                         method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({id: row.id, access_token: accessToken, isdev: isDev})
+                        headers: {'Content-Type': 'application/json'}
                     });
                     const data = await res.json();
                     

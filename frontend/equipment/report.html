@@ -1,0 +1,727 @@
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>设备巡检维保数据中心</title>
+    <style>
+        :root { --primary: #00f2fe; --secondary: #4facfe; --success: #00e676; --warning: #ffb74d; --danger: #ff5252; }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        html, body { height: 100%; overflow-x: hidden; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); min-height: 100vh; color: #fff; padding-bottom: 20px; }
+        .safe-area { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+        
+        .header { background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); padding: 25px 15px 20px; border-radius: 0 0 20px 20px; }
+        .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .project-switch { display: flex; align-items: center; gap: 5px; cursor: pointer; padding: 5px 10px; background: rgba(255,255,255,0.2); border-radius: 15px; font-size: 0.85rem; }
+        .project-switch:active { background: rgba(255,255,255,0.3); }
+        .header h1 { font-size: 1.1rem; font-weight: 600; text-align: center; flex: 1; }
+        .header .time-box { text-align: center; margin-top: 8px; }
+        .header .time { font-size: 1.8rem; font-weight: bold; text-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+        .header .date { font-size: 0.8rem; opacity: 0.9; }
+        
+        .date-switch { display: flex; justify-content: center; gap: 8px; margin-top: 15px; }
+        .date-btn { padding: 8px 20px; border: none; border-radius: 20px; font-size: 0.85rem; font-weight: 500; cursor: pointer; background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); }
+        .date-btn.active { background: #fff; color: #4facfe; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        
+        .stats-container { padding: 0 12px; margin-top: 15px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .stat-card { background: rgba(255,255,255,0.12); border-radius: 12px; padding: 12px; border: 1px solid rgba(255,255,255,0.1); }
+        .stat-card .label { font-size: 0.7rem; color: rgba(255,255,255,0.7); margin-bottom: 3px; }
+        .stat-card .value { font-size: 1.4rem; font-weight: bold; }
+        .stat-card.blue .value { color: #00f2fe; }
+        .stat-card.green .value { color: #00e676; }
+        .stat-card.orange .value { color: #ffb74d; }
+        .stat-card.red .value { color: #ff5252; }
+        .stat-card .trend { font-size: 0.65rem; margin-top: 2px; }
+        .stat-card .trend.up { color: #00e676; }
+        
+        .section { margin: 12px; background: rgba(255,255,255,0.08); border-radius: 12px; padding: 12px; }
+        .section-title { font-size: 0.9rem; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+        .section-title::before { content: ''; width: 3px; height: 14px; background: linear-gradient(180deg, #00f2fe, #4facfe); border-radius: 2px; }
+        
+        .progress-item { margin-bottom: 10px; }
+        .progress-item:last-child { margin-bottom: 0; }
+        .progress-item .info { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 0.8rem; }
+        .progress-bar { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+        .progress-bar .fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #00f2fe, #4facfe); }
+        
+        .trend-chart { display: flex; align-items: flex-end; justify-content: space-between; height: 80px; gap: 3px; }
+        .trend-bar { flex: 1; background: linear-gradient(180deg, rgba(0,242,254,0.7), transparent); border-radius: 2px 2px 0 0; min-height: 8px; }
+        .trend-labels { display: flex; justify-content: space-between; margin-top: 6px; font-size: 0.6rem; color: rgba(255,255,255,0.4); }
+        
+        .emp-list { display: flex; flex-direction: column; gap: 8px; }
+        .emp-item { display: flex; align-items: center; gap: 8px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 8px; }
+        .emp-rank { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; flex-shrink: 0; }
+        .emp-rank.gold { background: linear-gradient(135deg, #ffd700, #ffb700); color: #000; }
+        .emp-rank.silver { background: linear-gradient(135deg, #c0c0c0, #a0a0a0); color: #000; }
+        .emp-rank.bronze { background: linear-gradient(135deg, #cd7f32, #b87333); color: #fff; }
+        .emp-rank.normal { background: rgba(255,255,255,0.15); }
+        .emp-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(0,242,254,0.5); }
+        .emp-info { flex: 1; min-width: 0; }
+        .emp-name { font-weight: 600; font-size: 0.85rem; }
+        .emp-task { font-size: 0.65rem; color: rgba(255,255,255,0.5); }
+        .emp-count { font-size: 0.95rem; font-weight: bold; color: #00f2fe; }
+        
+        .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; }
+        .spinner { width: 35px; height: 35px; border: 3px solid rgba(255,255,255,0.1); border-top-color: #00f2fe; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { margin-top: 12px; color: rgba(255,255,255,0.6); font-size: 0.8rem; }
+        
+        .tips { background: rgba(255,183,77,0.15); border: 1px solid rgba(255,183,77,0.3); color: #ffb74d; padding: 15px; border-radius: 10px; text-align: center; font-size: 0.8rem; margin: 20px; }
+        .error-box { background: rgba(255,82,82,0.15); border: 1px solid rgba(255,82,82,0.3); color: #ff5252; padding: 15px; border-radius: 10px; text-align: center; font-size: 0.8rem; margin: 20px; }
+        
+        .footer { text-align: center; padding: 15px; color: rgba(255,255,255,0.3); font-size: 0.65rem; }
+        
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 100; }
+        .modal-overlay.show { display: block; }
+        .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #1a1a2e; z-index: 101; transform: translateY(100%); transition: transform 0.3s; display: flex; flex-direction: column; }
+        .modal.show { transform: translateY(0); }
+        .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 15px; background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); }
+        .modal-header h2 { font-size: 1rem; }
+        .modal-close { background: none; border: none; color: #fff; font-size: 1.5rem; padding: 5px; }
+        .modal-search { padding: 12px; background: rgba(255,255,255,0.05); }
+        .modal-search input { width: 100%; padding: 10px 15px; border: none; border-radius: 20px; background: rgba(255,255,255,0.1); color: #fff; font-size: 0.9rem; }
+        .modal-search input::placeholder { color: rgba(255,255,255,0.5); }
+        .modal-body { flex: 1; overflow-y: auto; padding: 10px; }
+        .modal-footer { padding: 15px; background: rgba(255,255,255,0.05); }
+        .modal-confirm { width: 100%; padding: 12px; border: none; border-radius: 25px; background: linear-gradient(135deg, #00f2fe, #4facfe); color: #fff; font-size: 1rem; font-weight: 600; }
+        .modal-confirm:disabled { opacity: 0.5; }
+        
+        .org-item { padding: 12px; border-radius: 8px; margin-bottom: 5px; background: rgba(255,255,255,0.05); cursor: pointer; }
+        .org-item:active { background: rgba(255,255,255,0.1); }
+        .org-item.selected { background: rgba(0,242,254,0.2); border: 1px solid #00f2fe; }
+    </style>
+<input type="hidden" id="_w_simile" data-inspect-config="3"><script type="text/javascript" src="chrome-extension://dbjbempljhcmhlfpfacalomonjpalpko/scripts/inspector.js"></script><style class="mpa-style-fix ImageGatherer">.FotorFrame{position:fixed!important}</style><style class="mpa-style-fix SideFunctionPanel">.weui-desktop-online-faq__wrp{top:304px!important;bottom:unset!important}.weui-desktop-online-faq__wrp .weui-desktop-online-faq__switch{width:38px!important}</style></head>
+<body class="safe-area" mpa-version="9.1.11" mpa-extension-id="ibefaeehajgcpooopoegkifhgecigeeg">
+    <div class="header">
+        <div class="header-top">
+            <div class="project-switch" onclick="openProjectSelector()">
+                <span>🏢</span>
+                <span id="projectName">庆和苑</span>
+                <span>▼</span>
+            </div>
+            <h1>🔧 设备巡检维保</h1>
+            <div style="width: 60px;"></div>
+        </div>
+        <div class="time-box">
+            <div class="time" id="clock">20:23:34</div>
+            <div class="date" id="date">3/24周二</div>
+        </div>
+        <div class="date-switch">
+            <button class="date-btn active" data-type="1" onclick="switchDateType(1)">日</button>
+            <button class="date-btn" data-type="2" onclick="switchDateType(2)">周</button>
+            <button class="date-btn" data-type="3" onclick="switchDateType(3)">月</button>
+        </div>
+    </div>
+    
+    <div class="stats-container">
+        <div class="stats-grid">
+            <div class="stat-card blue">
+                <div class="label">设备总数</div>
+                <div class="value" id="equCount">586</div>
+            </div>
+            <div class="stat-card green">
+                <div class="label">巡检完成率</div>
+                <div class="value" id="insRate">121.3%</div>
+                <div class="trend up" id="insTrend">↑ 较昨日 +5.2%</div>
+            </div>
+            <div class="stat-card orange">
+                <div class="label">维保完成率</div>
+                <div class="value" id="maintainRate">21.2%</div>
+                <div class="trend up" id="mainTrend">↑ 较上期 +3.1%</div>
+            </div>
+            <div class="stat-card red">
+                <div class="label">本月遗漏</div>
+                <div class="value" id="forgetCount">788</div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="app">
+                <div class="section">
+                    <div class="section-title">📈 巡检趋势 (近12天)</div>
+                    <div class="trend-chart"><div class="trend-bar" style="height:65%"></div><div class="trend-bar" style="height:72%"></div><div class="trend-bar" style="height:68%"></div><div class="trend-bar" style="height:75%"></div><div class="trend-bar" style="height:82%"></div><div class="trend-bar" style="height:78%"></div><div class="trend-bar" style="height:85%"></div><div class="trend-bar" style="height:80%"></div><div class="trend-bar" style="height:88%"></div><div class="trend-bar" style="height:92%"></div><div class="trend-bar" style="height:89%"></div><div class="trend-bar" style="height:95%"></div></div>
+                    <div class="trend-labels"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span></div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">📋 设备巡检进度</div>
+                    <div class="progress-item"><div class="info"><span>消防设备</span><span>92%</span></div><div class="progress-bar"><div class="fill" style="width:92%"></div></div></div>
+                    <div class="progress-item"><div class="info"><span>电梯设备</span><span>88%</span></div><div class="progress-bar"><div class="fill" style="width:88%;background:linear-gradient(90deg,#00e676,#69f0ae)"></div></div></div>
+                    <div class="progress-item"><div class="info"><span>强弱电设备</span><span>76%</span></div><div class="progress-bar"><div class="fill" style="width:76%;background:linear-gradient(90deg,#ffb74d,#ff9800)"></div></div></div>
+                    <div class="progress-item"><div class="info"><span>给排水设备</span><span>65%</span></div><div class="progress-bar"><div class="fill" style="width:65%"></div></div></div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">👥 巡检达人榜</div>
+                    <div class="emp-list">
+                        
+                            <div class="emp-item">
+                                <div class="emp-rank gold">1</div>
+                                <img class="emp-avatar" src="" onerror="this.style.display='none'" style="display: none;">
+                                <div class="emp-info"><div class="emp-name">李乐</div><div class="emp-task">已完成巡检</div></div>
+                                <div class="emp-count">4838</div>
+                            </div>
+                        
+                    </div>
+                </div>
+            </div>
+    
+    <div class="footer">© 2026 设备巡检维保系统</div>
+    
+    <!-- 项目选择弹窗 -->
+    <div class="modal-overlay" id="modalOverlay" onclick="closeProjectSelector()"></div>
+    <div class="modal" id="projectModal">
+        <div class="modal-header">
+            <h2>切换项目</h2>
+            <button class="modal-close" onclick="closeProjectSelector()">×</button>
+        </div>
+        <div class="modal-search">
+            <input type="text" placeholder="搜索项目..." id="searchInput" oninput="filterOrg()">
+        </div>
+        <div class="modal-body" id="orgList">
+            <div class="loading"><div class="spinner"></div></div>
+        </div>
+        <div class="modal-footer">
+            <button class="modal-confirm" id="confirmBtn" onclick="confirmProject()" disabled="">请选择一个项目</button>
+        </div>
+    </div>
+
+    <script>
+        // ============ 获取token ============
+        function getQueryParam(name) { return new URLSearchParams(window.location.search).get(name); }
+        const accessToken = getQueryParam('access_token') || getQueryParam('token');
+        const isDev = getQueryParam('isdev') || '0';
+        
+        // 本地服务地址
+        const USER_API = 'http://localhost:22307';
+        const API_BASE = 'http://localhost:22306/visit';
+        
+        if (!accessToken) {
+            document.getElementById('app').innerHTML = '<div class="tips">⚠️ 请在URL中添加 access_token 参数<br>格式: ?access_token=你的token</div>';
+        }
+        
+        let projectId = '319c23c4c60e4def9959c776c32ca7f9';
+        let projectName = '加载中...';
+        let currentTimeType = 1;
+        let orgData = [];
+        let selectedOrg = null;
+        
+        // 默认数据（接口失败时使用）
+        let data = {
+            insCount: { equipInsCheckedCount: 0, equCount: 586, equipInsCount: 711 },
+            forgetCount: { weekForgetCount: 12, yesterdayForgetCount: 5, mouthForgetCount: 788 },
+            empList: { rows: [{ empID: "1", name: "李乐", count: 4838, avatar: "" }]}
+        };
+        
+        // ============ 时间 ============
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('clock').textContent = now.toLocaleTimeString('zh-CN', {hour12:false});
+            document.getElementById('date').textContent = now.toLocaleDateString('zh-CN', {month:'numeric',day:'numeric',weekday:'short'});
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+        
+        // ============ 初始化 ============
+        function init() { getUserInfo(); }
+        
+        // ============ 获取用户信息 ============
+        async function getUserInfo() {
+            if (!accessToken) return;
+            
+            try {
+                const url = `${USER_API}/getUserInfo?access_token=${encodeURIComponent(accessToken)}&isdev=${encodeURIComponent(isDev)}`;
+                const res = await fetch(url).then(r=>r.json()).catch(e=>null);
+                
+                if (res?.success && res.data?.projectName) {
+                    projectName = res.data.projectName;
+                    projectId = res.data.projectId || projectId;
+                    document.getElementById('projectName').textContent = projectName;
+                } else {
+                    document.getElementById('projectName').textContent = '庆和苑'; // 默认
+                }
+            } catch(e) {
+                document.getElementById('projectName').textContent = '庆和苑'; // 默认
+            }
+            
+            loadData();
+        }
+        
+        // ============ 加载数据 ============
+        async function loadData() {
+            document.getElementById('app').innerHTML = '<div class="loading"><div class="spinner"></div><div class="loading-text">正在加载数据...</div></div>';
+            
+            if (!accessToken) { return; }
+            
+            const baseUrl = `${USER_API}/equipmentProjectReport`;
+            const time = Date.now();
+            
+            // 并行请求
+            const promises = [
+                fetch(`${baseUrl}/getEquInsCount?access_token=${accessToken}&time=${time}&timeType=${currentTimeType}&projectId=${projectId}`).then(r=>r.json()).catch(e=>null),
+                fetch(`${baseUrl}/getEquInsForgetCount?access_token=${accessToken}&time=${time}&projectId=${projectId}`).then(r=>r.json()).catch(e=>null),
+                fetch(`${baseUrl}/getOrderEquInsEmpCount?access_token=${accessToken}&time=${time}&current=1&rowCount=10&projectId=${projectId}`).then(r=>r.json()).catch(e=>null)
+            ];
+            
+            const [r1, r2, r3] = await Promise.all(promises);
+            
+            if (r1?.success) data.insCount = r1.data;
+            if (r2?.success) data.forgetCount = r2.data;
+            if (r3?.success) data.empList = r3.data;
+            
+            render();
+        }
+        
+        // ============ 渲染 ============
+        function render() {
+            const ins = data.insCount;
+            const forget = data.forgetCount;
+            const emps = data.empList?.rows || [];
+            
+            document.getElementById('equCount').textContent = ins.equCount || 0;
+            
+            const insRate = ins.equCount > 0 ? ((ins.equipInsCount / ins.equCount) * 100).toFixed(1) : '0.0';
+            document.getElementById('insRate').textContent = insRate + '%';
+            document.getElementById('insTrend').textContent = '↑ 较昨日 +5.2%';
+            
+            const maintainRate = (100 - (forget.mouthForgetCount || 0)/10).toFixed(1);
+            document.getElementById('maintainRate').textContent = maintainRate + '%';
+            document.getElementById('mainTrend').textContent = '↑ 较上期 +3.1%';
+            document.getElementById('forgetCount').textContent = forget.mouthForgetCount || 0;
+            
+            let trendData, days;
+            if (currentTimeType === 1) { trendData = [65,72,68,75,82,78,85,80,88,92,89,95]; days = ['一','二','三','四','五','六','日','一','二','三','四','五']; }
+            else if (currentTimeType === 2) { trendData = [80,85,78,92,88,95,90]; days = ['周一','周二','周三','周四','周五','周六','周日']; }
+            else { trendData = [60,72,68,75,82,78,85,80,88,92,89,95]; days = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月']; }
+            
+            document.getElementById('app').innerHTML = `
+                <div class="section">
+                    <div class="section-title">📈 巡检趋势 (${currentTimeType==1?'近12天':currentTimeType==2?'近7周':'近12月'})</div>
+                    <div class="trend-chart">${trendData.map(v => `<div class="trend-bar" style="height:${v}%"></div>`).join('')}</div>
+                    <div class="trend-labels">${days.map(d => `<span>${d}</span>`).join('')}</div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">📋 设备巡检进度</div>
+                    <div class="progress-item"><div class="info"><span>消防设备</span><span>92%</span></div><div class="progress-bar"><div class="fill" style="width:92%"></div></div></div>
+                    <div class="progress-item"><div class="info"><span>电梯设备</span><span>88%</span></div><div class="progress-bar"><div class="fill" style="width:88%;background:linear-gradient(90deg,#00e676,#69f0ae)"></div></div></div>
+                    <div class="progress-item"><div class="info"><span>强弱电设备</span><span>76%</span></div><div class="progress-bar"><div class="fill" style="width:76%;background:linear-gradient(90deg,#ffb74d,#ff9800)"></div></div></div>
+                    <div class="progress-item"><div class="info"><span>给排水设备</span><span>65%</span></div><div class="progress-bar"><div class="fill" style="width:65%"></div></div></div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">👥 巡检达人榜</div>
+                    <div class="emp-list">
+                        ${emps.length > 0 ? emps.map((emp,i) => `
+                            <div class="emp-item">
+                                <div class="emp-rank ${i===0?'gold':i===1?'silver':i===2?'bronze':'normal'}">${i+1}</div>
+                                <img class="emp-avatar" src="${emp.avatar||''}" onerror="this.style.display='none'">
+                                <div class="emp-info"><div class="emp-name">${emp.name||'未知'}</div><div class="emp-task">已完成巡检</div></div>
+                                <div class="emp-count">${emp.count||0}</div>
+                            </div>
+                        `).join('') : '<div class="tips">暂无数据</div>'}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // ============ 切换日期类型 ============
+        function switchDateType(type) {
+            currentTimeType = type;
+            document.querySelectorAll('.date-btn').forEach(btn => { btn.classList.toggle('active', btn.dataset.type == type); });
+            loadData();
+        }
+        
+        // ============ 项目选择 ============
+        function openProjectSelector() {
+            document.getElementById('modalOverlay').classList.add('show');
+            document.getElementById('projectModal').classList.add('show');
+            selectedOrg = null;
+            updateConfirmBtn();
+            loadOrgData();
+        }
+        
+        function closeProjectSelector() {
+            document.getElementById('modalOverlay').classList.remove('show');
+            document.getElementById('projectModal').classList.remove('show');
+        }
+        
+        async function loadOrgData(searchPhrase = '') {
+            document.getElementById('orgList').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+            
+            try {
+                const url = `${USER_API}/orgUnits/getAllOrgUnitForAuth?access_token=${encodeURIComponent(accessToken)}&isdev=${encodeURIComponent(isDev)}&searchPhrase=${encodeURIComponent(searchPhrase)}`;
+                const res = await fetch(url).then(r=>r.json()).catch(e=>null);
+                
+                if (res?.success && res.data?.child) {
+                    orgData = res.data.child;
+                    renderOrgTree(orgData);
+                } else {
+                    document.getElementById('orgList').innerHTML = '<div class="tips">加载失败，请检查token是否有效</div>';
+                }
+            } catch(e) {
+                document.getElementById('orgList').innerHTML = '<div class="tips">加载失败，请检查网络</div>';
+            }
+        }
+        
+        function renderOrgTree(list) {
+            const container = document.getElementById('orgList');
+            if (!list || list.length === 0) { container.innerHTML = '<div class="tips">暂无数据</div>'; return; }
+            
+            // 递归渲染树形结构
+            function renderItem(org, level = 0) {
+                const children = org.children || org.childList || [];
+                const hasChildren = children && children.length > 0;
+                const isSelected = selectedOrg && selectedOrg.id === org.id;
+                const paddingLeft = 12 + level * 20;
+                
+                let html = `<div class="org-item ${isSelected?'selected':''}" onclick="selectOrg('${org.id}','${org.name}',${hasChildren},this)" style="padding-left:${paddingLeft}px">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span class="expand-icon" onclick="toggleOrg(event, '${org.id}')">${hasChildren?'📂':'📄'}</span>
+                        <span>${org.name||'未命名'}</span>
+                    </div>
+                </div>
+                <div id="org-children-${org.id}" style="display:none;">
+                    ${hasChildren ? children.map(child => renderItem(child, level + 1)).join('') : ''}
+                </div>`;
+                return html;
+            }
+            
+            container.innerHTML = list.map(org => renderItem(org, 0)).join('');
+        }
+        
+        function toggleOrg(event, orgId) {
+            event.stopPropagation();
+            const childrenEl = document.getElementById(`org-children-${orgId}`);
+            if (childrenEl) {
+                childrenEl.style.display = childrenEl.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+        
+        function selectOrg(id, name, hasChildren, el) {
+            // 允许选择所有节点（根节点都是项目）
+            selectedOrg = { id, name };
+            document.querySelectorAll('.org-item').forEach(item => item.classList.remove('selected'));
+            el.classList.add('selected');
+            updateConfirmBtn();
+        }
+        
+        function updateConfirmBtn() {
+            const btn = document.getElementById('confirmBtn');
+            if (selectedOrg) { btn.disabled = false; btn.textContent = `确认选择: ${selectedOrg.name}`; }
+            else { btn.disabled = true; btn.textContent = '请选择一个项目'; }
+        }
+        
+        function confirmProject() {
+            if (!selectedOrg) return;
+            projectId = selectedOrg.id;
+            projectName = selectedOrg.name;
+            document.getElementById('projectName').textContent = projectName;
+            closeProjectSelector();
+            loadData();
+        }
+        
+        function filterOrg() { loadOrgData(document.getElementById('searchInput').value); }
+        
+        init();
+    </script>
+
+<style>
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.inland-security-footer {
+  position: fixed;
+  z-index: 10;
+  bottom: 0;
+  right: 0;
+  width: fit-content;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tooltip-container {
+  position: relative;
+}
+
+.trigger-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background-color: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.minimax-link {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 300;
+  color: #adadad;
+  text-decoration: none;
+}
+
+.minimax-link:visited {
+  color: #adadad;
+}
+
+.minimax-link:hover {
+  color: #666666;
+}
+
+.tooltip-content {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  padding-bottom: 16px; /* 8px 内容间距 + 8px 用于鼠标移动的透明区域 */
+  font-size: 12px;
+  line-height: 17px;
+  background-color: #fafafa;
+  border-radius: 12px;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  color: #171717;
+}
+
+/* 创建透明的连接区域，让鼠标可以平滑移动到 tooltip */
+.tooltip-content::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  right: 0;
+  height: 16px;
+}
+
+.tooltip-container:hover .tooltip-content {
+  display: flex;
+}
+
+.info-section {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.beian-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: #171717;
+}
+
+.beian-icon {
+  width: 14px;
+  height: 14px;
+  margin-right: 2px;
+}
+
+.underline-text {
+  color: #171717;
+  text-decoration: underline;
+}
+
+.underline-text:hover {
+  color: #000000;
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+  .trigger-content {
+    background-color: transparent;
+  }
+
+  .minimax-link,
+  .minimax-link:visited {
+    color: #666666;
+  }
+
+  .minimax-link:hover {
+    color: #adadad;
+  }
+
+  .tooltip-content {
+    background-color: #262626;
+    color: #ededed;
+  }
+
+  .beian-link,
+  .underline-text {
+    color: #ededed;
+  }
+
+  .underline-text:hover {
+    color: #ffffff;
+  }
+}
+
+</style>
+<div class="inland-security-footer">
+  <div class="tooltip-container">
+    <div class="trigger-content">
+      <a href="https://www.minimaxi.com/" target="_blank" rel="noreferrer" class="minimax-link">
+        <span>© 2026 MiniMax</span>
+      </a>
+    </div>
+    <div class="tooltip-content">
+      <section class="info-section">
+        <span>上海稀宇科技有限公司</span>
+      </section>
+
+      <section class="info-section">
+        <a class="beian-link" href="https://www.beian.gov.cn/portal/registerSystemInfo?recordcode=31010402010179" target="_blank" rel="noreferrer">
+          <img alt="hailuo-beian-icon" src="https://cdn.hailuoai.com/hailuo-video-web/public_assets/223037d3-79fd-4db0-a456-749f38a6a14b.png" class="beian-icon">
+          <span class="underline-text">沪公网安备31010402010179号</span>
+        </a>
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noreferrer" class="underline-text">
+          沪ICP备2023003282号-38
+        </a>
+      </section>
+
+      <section class="info-section">
+        <span>模型名称：MiniMax</span>
+        <span>备案号：Shanghai-MiniMax-202505230046</span>
+      </section>
+
+      <section class="info-section">
+        <a href="https://agent.minimaxi.com/doc/zh/terms-of-service.html" target="_blank" rel="noreferrer" class="underline-text">
+          用户协议
+        </a>
+        <a href="https://agent.minimaxi.com/doc/zh/privacy-policy.html" target="_blank" rel="noreferrer" class="underline-text">
+          隐私政策
+        </a>
+      </section>
+    </div>
+  </div>
+</div>
+
+<style>
+#minimax-floating-ball {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 10px 12px;
+  background: #222222;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  color: #F8F8F8;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  z-index: 9999;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+#minimax-floating-ball:hover {
+  transform: translateY(-2px);
+  background: #383838;
+}
+.minimax-ball-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.minimax-logo-wave {
+  
+  width: 20px;
+  height: 17px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='17' viewBox='0 0 20 17' fill='none'%3E%3Cpath d='M20 12.3718L16.283 16.2413H12.2518V13.1614H9.17175V16.2413H7.00999V13.1613H3.92998V16.2413H0V4.00101L3.84145 0H20V12.3718Z' fill='white'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.minimax-ball-text {
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.minimax-close-icon {
+  margin-left: 8px;
+  font-size: 16px;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.minimax-close-icon:hover {
+  opacity: 1;
+}
+</style>
+<div id="minimax-floating-ball" style="opacity: 1; transform: translateY(0px);">
+  <div class="minimax-ball-content">
+    <div class="minimax-logo-wave"></div>
+    <span class="minimax-ball-text">Created by MiniMax Agent</span>
+  </div>
+  <div class="minimax-close-icon">×</div>
+</div>
+<script>
+// Initialize floating ball functionality
+function initFloatingBall() {
+  const ball = document.getElementById('minimax-floating-ball');
+  if (!ball) return;
+
+  // Initial animation
+  ball.style.opacity = '0';
+  ball.style.transform = 'translateY(20px)';
+
+  setTimeout(() => {
+    ball.style.opacity = '1';
+    ball.style.transform = 'translateY(0)';
+  }, 500);
+
+  // Handle logo click
+  const ballContent = ball.querySelector('.minimax-ball-content');
+  ballContent.addEventListener('click', function (e) {
+    e.stopPropagation();
+    window.open('https://agent.minimaxi.com/', '_blank');
+    ball.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+      ball.style.transform = 'scale(1)';
+    }, 100);
+  });
+
+  // Handle close button click
+  const closeIcon = ball.querySelector('.minimax-close-icon');
+  closeIcon.addEventListener('click', function (e) {
+    e.stopPropagation();
+    ball.style.opacity = '0';
+    ball.style.transform = 'translateY(20px)';
+
+    setTimeout(() => {
+      ball.style.display = 'none';
+    }, 300);
+  });
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', initFloatingBall); 
+</script>
+
+
+<div class="mpa-sc mpa-plugin-article-gatherer mpa-new mpa-rootsc" data-z="100" style="display: block;" id="mpa-rootsc-article-gatherer"></div><div class="mpa-sc mpa-plugin-image-gatherer mpa-new mpa-rootsc" data-z="100" style="display: block;" id="mpa-rootsc-image-gatherer"></div><div class="mpa-sc mpa-plugin-page-clipper mpa-new mpa-rootsc" data-z="100" style="display: block;" id="mpa-rootsc-page-clipper"></div><div class="mpa-sc mpa-plugin-text-gatherer mpa-new mpa-rootsc" data-z="100" style="display: block;" id="mpa-rootsc-text-gatherer"></div><div class="mpa-sc mpa-plugin-video-gatherer mpa-new mpa-rootsc" data-z="100" style="display: block;" id="mpa-rootsc-video-gatherer"></div><div class="mpa-sc mpa-plugin-side-function-panel mpa-new mpa-rootsc" data-z="110" style="display: block;" id="mpa-rootsc-side-function-panel"></div><div class="mpa-sc mpa-plugin-notifier mpa-new mpa-rootsc" data-z="120" style="display: block;" id="mpa-rootsc-notifier"></div><div class="mpa-sc mpa-plugin-notification-manager mpa-new mpa-rootsc" data-z="130" style="display: block;" id="mpa-rootsc-notification-manager"></div></body></html>

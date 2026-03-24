@@ -110,6 +110,68 @@ async function getCustomerList(accessToken, isDev, current, rowCount, searchPhra
     }
 }
 
+// 设备巡检统计 - 转发到第三方服务器
+async function equipmentReport(apiPath, accessToken, isDev, extraParams = {}) {
+    if (!accessToken) {
+        return { success: false, msg: 'access_token不能为空' };
+    }
+    
+    const targetUrl = (isDev === '1' || isDev === 'true') ? DEV_URL : PROD_URL;
+    const fullUrl = `${targetUrl}/h5/equipmentProjectReport/${apiPath}`;
+    const isDevText = (isDev === '1' || isDev === 'true') ? '开发' : '生产';
+    console.log(`[${isDevText}环境] 转发设备巡检到: ${fullUrl}`);
+    
+    const params = {
+        access_token: accessToken,
+        time: Date.now(),
+        ...extraParams
+    };
+    
+    try {
+        const result = await httpRequestPromise(fullUrl, params);
+        return result;
+    } catch (error) {
+        console.error(`转发设备巡检${apiPath}请求失败:`, error.message);
+        return {
+            success: false,
+            msg: '第三方服务调用失败: ' + error.message,
+            error: error.message
+        };
+    }
+}
+
+// 获取组织单元 - 转发到第三方服务器
+async function getOrgUnits(accessToken, isDev, searchPhrase) {
+    if (!accessToken) {
+        return { success: false, msg: 'access_token不能为空' };
+    }
+    
+    const targetUrl = (isDev === '1' || isDev === 'true') ? DEV_URL : PROD_URL;
+    const fullUrl = `${targetUrl}/h5/orgUnits/getAllOrgUnitForAuth`;
+    const isDevText = (isDev === '1' || isDev === 'true') ? '开发' : '生产';
+    console.log(`[${isDevText}环境] 转发组织单元到: ${fullUrl}`);
+    
+    const params = {
+        access_token: accessToken,
+        time: Date.now()
+    };
+    if (searchPhrase) {
+        params.searchPhrase = searchPhrase;
+    }
+    
+    try {
+        const result = await httpRequestPromise(fullUrl, params);
+        return result;
+    } catch (error) {
+        console.error('转发组织单元请求失败:', error.message);
+        return {
+            success: false,
+            msg: '第三方服务调用失败: ' + error.message,
+            error: error.message
+        };
+    }
+}
+
 const server = http.createServer(async (req, res) => {
     // CORS头
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -156,6 +218,37 @@ const server = http.createServer(async (req, res) => {
         const searchPhrase = query.searchPhrase || '';
         
         const result = await getCustomerList(accessToken, isDev, current, rowCount, searchPhrase);
+        
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify(result));
+        return;
+    }
+    
+    // 设备巡检统计接口
+    if (pathname.startsWith('/equipmentProjectReport/')) {
+        const accessToken = query.access_token || '';
+        const isDev = query.isdev || query.isDev || '0';
+        const apiPath = pathname.replace('/equipmentProjectReport/', '');
+        
+        // 获取其他参数
+        const extraParams = { ...query };
+        delete extraParams.access_token;
+        delete extraParams.isdev;
+        
+        const result = await equipmentReport(apiPath, accessToken, isDev, extraParams);
+        
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify(result));
+        return;
+    }
+    
+    // 组织单元接口
+    if (pathname === '/orgUnits/getAllOrgUnitForAuth' || pathname === '/api/orgUnits/getAllOrgUnitForAuth') {
+        const accessToken = query.access_token || '';
+        const isDev = query.isdev || query.isDev || '0';
+        const searchPhrase = query.searchPhrase || '';
+        
+        const result = await getOrgUnits(accessToken, isDev, searchPhrase);
         
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify(result));
