@@ -174,7 +174,20 @@
             <div class="dialog-form">
                 <el-form :model="form" label-width="100px">
                     <el-form-item label="企业名称" required>
-                        <el-input v-model="form.company_name"></el-input>
+                        <el-autocomplete
+                            v-model="form.company_name"
+                            :fetch-suggestions="queryCustomer"
+                            placeholder="输入客户名称搜索"
+                            :trigger-on-focus="false"
+                            @select="handleSelectCustomer"
+                            style="width:100%">
+                            <template #default="{item}">
+                                <div style="padding:5px 0">
+                                    <div style="font-weight:bold">{{item.value}}</div>
+                                    <div style="font-size:12px;color:#666">手机：{{item.phone || '-'}} {{item.type === 'P' ? '个人' : item.type === 'E' ? '企业' : ''}}</div>
+                                </div>
+                            </template>
+                        </el-autocomplete>
                     </el-form-item>
                     <el-form-item label="区域地址" required>
                         <el-input v-model="form.region"></el-input>
@@ -264,6 +277,7 @@
                 const form = reactive({
                     id: '',
                     company_name: '',
+                    customerID: '',
                     region: '',
                     visitor: '',
                     visitor_name: '',
@@ -271,6 +285,48 @@
                     content: '',
                     visit_time: ''
                 });
+                
+                // 客户搜索相关变量
+                let customerSearchTimer = null;
+                const customerResults = ref([]);
+                
+                // 搜索客户
+                const queryCustomer = async (queryString, cb) => {
+                    if (!queryString || queryString.length < 1) {
+                        cb([]);
+                        return;
+                    }
+                    
+                    clearTimeout(customerSearchTimer);
+                    customerSearchTimer = setTimeout(async () => {
+                        try {
+                            const res = await fetch(`${USER_API}/rentCus/list?access_token=${encodeURIComponent(accessToken)}&isdev=${encodeURIComponent(isDev)}&current=1&rowCount=10&searchPhrase=${encodeURIComponent(queryString)}`);
+                            const data = await res.json();
+                            
+                            if (data.success && data.data && data.data.rows) {
+                                const results = data.data.rows.map(c => ({
+                                    value: c.name,
+                                    id: c.id,
+                                    phone: c.phone,
+                                    type: c.type,
+                                    performEvaluation: c.performEvaluation
+                                }));
+                                cb(results);
+                            } else {
+                                cb([]);
+                            }
+                        } catch(e) {
+                            console.error('搜索客户失败:', e);
+                            cb([]);
+                        }
+                    }, 300);
+                };
+                
+                // 选择客户
+                const handleSelectCustomer = (item) => {
+                    form.customerID = item.id;
+                    form.company_name = item.value;
+                };
                 
                 const stats = reactive({
                     total: 0,
@@ -353,6 +409,7 @@
                     isEdit.value = false;
                     dialogTitle.value = '新增记录';
                     Object.keys(form).forEach(k => form[k] = '');
+                    form.customerID = '';
                     dialogVisible.value = true;
                 };
                 
@@ -360,6 +417,7 @@
                     isEdit.value = true;
                     dialogTitle.value = '编辑记录';
                     Object.assign(form, row);
+                    form.customerID = row.customerID || '';
                     dialogVisible.value = true;
                 };
                 
@@ -464,7 +522,8 @@
                 
                 return {
                     activeMenu, tableData, search, pagination, form, dialogVisible, dialogTitle, isEdit, detailVisible, detailData, stats,
-                    getCategoryType, loadList, loadStats, resetSearch, showAdd, showEdit, showDetail, submitForm, handleDelete
+                    getCategoryType, loadList, loadStats, resetSearch, showAdd, showEdit, showDetail, submitForm, handleDelete,
+                    queryCustomer, handleSelectCustomer
                 };
             }
         });
