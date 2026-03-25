@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>社区商业 - 首页</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding-bottom: 60px;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        /* Banner轮播 */
+        .banner-carousel {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, #1890ff 0%, #52c41a 100%);
+            overflow: hidden;
+        }
+        
+        .banner-item {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        .banner-item.active {
+            opacity: 1;
+        }
+        
+        .banner-dots {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+        }
+        
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .dot.active {
+            background-color: white;
+        }
+        
+        /* 用户信息卡片 */
+        .user-card {
+            background: white;
+            margin: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .user-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #1890ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+        }
+        
+        .user-details h3 {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .user-level {
+            display: inline-block;
+            background-color: #52c41a;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+        
+        .user-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            text-align: center;
+        }
+        
+        .stat-item {
+            background-color: #f0f2f5;
+            padding: 10px;
+            border-radius: 6px;
+        }
+        
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1890ff;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        /* 模块网格 */
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            padding: 15px;
+        }
+        
+        .module-item {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .module-item:active {
+            transform: scale(0.95);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .module-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+        
+        .module-name {
+            font-size: 14px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        /* 底部导航 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: white;
+            border-top: 1px solid #e8e8e8;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            color: #666;
+            font-size: 12px;
+            flex: 1;
+            height: 100%;
+        }
+        
+        .nav-item.active {
+            color: #1890ff;
+        }
+        
+        .nav-icon {
+            font-size: 24px;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .error {
+            display: none;
+            background-color: #fff2f0;
+            color: #ff4d4f;
+            padding: 12px;
+            margin: 15px;
+            border-radius: 4px;
+            border-left: 4px solid #ff4d4f;
+        }
+        
+        .error.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Banner轮播 -->
+        <div class="banner-carousel">
+            <div class="banner-item active">🎉 欢迎来到社区商业平台</div>
+            <div class="banner-item">📢 新用户享受首单优惠</div>
+            <div class="banner-item">🎁 积分兑换活动进行中</div>
+            <div class="banner-dots">
+                <div class="dot active" onclick="goToBanner(0)"></div>
+                <div class="dot" onclick="goToBanner(1)"></div>
+                <div class="dot" onclick="goToBanner(2)"></div>
+            </div>
+        </div>
+        
+        <!-- 用户信息卡片 -->
+        <div class="user-card">
+            <div class="user-header">
+                <div class="user-info">
+                    <div class="user-avatar">👤</div>
+                    <div class="user-details">
+                        <h3 id="userName">用户名</h3>
+                        <span class="user-level" id="userLevel">普通会员</span>
+                    </div>
+                </div>
+            </div>
+            <div class="user-stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="points">0</div>
+                    <div class="stat-label">积分</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="balance">¥0</div>
+                    <div class="stat-label">余额</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="coupons">0</div>
+                    <div class="stat-label">优惠券</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 加载状态 -->
+        <div class="loading" id="loading">加载中...</div>
+        <div class="error" id="error"></div>
+        
+        <!-- 模块网格 -->
+        <div class="modules-grid">
+            <div class="module-item" onclick="navigateTo('cafeteria.html')">
+                <div class="module-icon">🍽️</div>
+                <div class="module-name">社区食堂</div>
+            </div>
+            <div class="module-item" onclick="navigateTo('banquet.html')">
+                <div class="module-icon">🥂</div>
+                <div class="module-name">私宴包间</div>
+            </div>
+            <div class="module-item" onclick="navigateTo('drink.html')">
+                <div class="module-icon">☕</div>
+                <div class="module-name">大堂饮品</div>
+            </div>
+            <div class="module-item" onclick="navigateTo('sports.html')">
+                <div class="module-icon">🏃</div>
+                <div class="module-name">运动场馆</div>
+            </div>
+            <div class="module-item" onclick="navigateTo('carwash.html')">
+                <div class="module-icon">🚗</div>
+                <div class="module-name">洗车房</div>
+            </div>
+            <div class="module-item" onclick="navigateTo('laundry.html')">
+                <div class="module-icon">👕</div>
+                <div class="module-name">洗衣房</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 底部导航 -->
+    <div class="bottom-nav">
+        <a class="nav-item active" href="index.html">
+            <div class="nav-icon">🏠</div>
+            <div>首页</div>
+        </a>
+        <a class="nav-item" href="orders.html">
+            <div class="nav-icon">📦</div>
+            <div>订单</div>
+        </a>
+        <a class="nav-item" href="member.html">
+            <div class="nav-icon">👑</div>
+            <div>会员</div>
+        </a>
+        <a class="nav-item" href="profile.html">
+            <div class="nav-icon">👤</div>
+            <div>我的</div>
+        </a>
+    </div>
+    
+    <script>
+        // 获取URL参数
+        function getUrlParam(name) {
+            const url = new URL(window.location.href);
+            return url.searchParams.get(name);
+        }
+        
+        // 统一API请求函数
+        async function apiRequest(endpoint, method = 'GET', data = null) {
+            const accessToken = getUrlParam('access_token') || 'demo_token';
+            const isDev = getUrlParam('isdev') || 'true';
+            const apiUrl = 'http://47.98.238.209:22311';
+            
+            const url = new URL(apiUrl + endpoint);
+            url.searchParams.append('access_token', accessToken);
+            url.searchParams.append('isdev', isDev);
+            
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+                
+                if (data && method !== 'GET') {
+                    options.body = JSON.stringify(data);
+                }
+                
+                const response = await fetch(url.toString(), options);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                showError('加载失败，请稍后重试');
+                throw error;
+            }
+        }
+        
+        // 显示错误信息
+        function showError(message) {
+            const errorEl = document.getElementById('error');
+            errorEl.textContent = message;
+            errorEl.classList.add('show');
+            setTimeout(() => {
+                errorEl.classList.remove('show');
+            }, 3000);
+        }
+        
+        // 页面导航
+        function navigateTo(page) {
+            const accessToken = getUrlParam('access_token') || 'demo_token';
+            const isDev = getUrlParam('isdev') || 'true';
+            window.location.href = `${page}?access_token=${accessToken}&isdev=${isDev}`;
+        }
+        
+        // Banner轮播
+        let currentBannerIndex = 0;
+        const bannerItems = document.querySelectorAll('.banner-item');
+        const dots = document.querySelectorAll('.dot');
+        
+        function goToBanner(index) {
+            bannerItems[currentBannerIndex].classList.remove('active');
+            dots[currentBannerIndex].classList.remove('active');
+            
+            currentBannerIndex = index;
+            
+            bannerItems[currentBannerIndex].classList.add('active');
+            dots[currentBannerIndex].classList.add('active');
+        }
+        
+        // 自动轮播
+        setInterval(() => {
+            goToBanner((currentBannerIndex + 1) % bannerItems.length);
+        }, 5000);
+        
+        // 加载用户信息
+        async function loadUserInfo() {
+            try {
+                document.getElementById('loading').classList.add('show');
+                const response = await apiRequest('/api/business/member');
+                
+                if (response.code === 0 && response.data) {
+                    const user = response.data;
+                    document.getElementById('userName').textContent = user.name || '用户';
+                    document.getElementById('userLevel').textContent = user.level || '普通会员';
+                    document.getElementById('points').textContent = user.points || 0;
+                    document.getElementById('balance').textContent = '¥' + (user.balance || 0);
+                    document.getElementById('coupons').textContent = user.coupons || 0;
+                }
+            } catch (error) {
+                console.error('Failed to load user info:', error);
+            } finally {
+                document.getElementById('loading').classList.remove('show');
+            }
+        }
+        
+        // 页面加载
+        window.addEventListener('load', () => {
+            loadUserInfo();
+        });
+    </script>
+</body>
+</html>

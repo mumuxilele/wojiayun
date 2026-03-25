@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>洗车房</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding-bottom: 60px;
+        }
+        
+        .header {
+            background: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #e8e8e8;
+        }
+        
+        .back-btn {
+            font-size: 24px;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+        
+        .header h1 {
+            font-size: 18px;
+            flex: 1;
+        }
+        
+        /* 洗车位状态 */
+        .wash-positions {
+            background: white;
+            padding: 15px;
+            margin: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .wash-positions h3 {
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        
+        .positions-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .position-block {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .position-block:active {
+            transform: scale(0.95);
+        }
+        
+        .position-free {
+            background-color: #f6ffed;
+            color: #52c41a;
+            border: 2px solid #52c41a;
+        }
+        
+        .position-using {
+            background-color: #fff2f0;
+            color: #ff4d4f;
+            border: 2px solid #ff4d4f;
+        }
+        
+        .position-maintenance {
+            background-color: #f5f5f5;
+            color: #999;
+            border: 2px solid #d9d9d9;
+        }
+        
+        .position-number {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .position-status {
+            font-size: 11px;
+        }
+        
+        /* 洗车类型选择 */
+        .service-section {
+            background: white;
+            padding: 15px;
+            margin: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .service-section h3 {
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        
+        .service-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .service-option {
+            padding: 12px;
+            border: 2px solid #d9d9d9;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .service-option:active {
+            border-color: #1890ff;
+            background-color: #f0f7ff;
+        }
+        
+        .service-option.selected {
+            border-color: #1890ff;
+            background-color: #f0f7ff;
+        }
+        
+        .service-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .service-price {
+            font-size: 14px;
+            font-weight: bold;
+            color: #1890ff;
+        }
+        
+        /* 预约排队 */
+        .queue-section {
+            background: white;
+            padding: 15px;
+            margin: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .queue-section h3 {
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        
+        .queue-info {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 15px;
+            padding: 15px;
+            background-color: #f0f7ff;
+            border-radius: 6px;
+        }
+        
+        .queue-item {
+            text-align: center;
+        }
+        
+        .queue-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1890ff;
+        }
+        
+        .queue-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        /* 增值服务 */
+        .addon-section {
+            background: white;
+            padding: 15px;
+            margin: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .addon-section h3 {
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        
+        .addon-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .addon-option {
+            padding: 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .addon-option input[type="checkbox"] {
+            width: auto;
+        }
+        
+        .addon-info {
+            flex: 1;
+        }
+        
+        .addon-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .addon-desc {
+            font-size: 12px;
+            color: #999;
+            margin-top: 3px;
+        }
+        
+        .addon-price {
+            font-size: 14px;
+            font-weight: bold;
+            color: #1890ff;
+        }
+        
+        /* 表单 */
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #1890ff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .submit-btn:active {
+            background-color: #0050b3;
+        }
+        
+        /* 底部导航 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: white;
+            border-top: 1px solid #e8e8e8;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            color: #666;
+            font-size: 12px;
+            flex: 1;
+            height: 100%;
+        }
+        
+        .nav-item.active {
+            color: #1890ff;
+        }
+        
+        .nav-icon {
+            font-size: 24px;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <button class="back-btn" onclick="goBack()">←</button>
+        <h1>洗车房</h1>
+    </div>
+    
+    <div class="loading" id="loading">加载中...</div>
+    
+    <!-- 洗车位状态 -->
+    <div class="wash-positions">
+        <h3>洗车位状态</h3>
+        <div class="positions-grid" id="positionsGrid">
+            <!-- 洗车位将动态插入 -->
+        </div>
+    </div>
+    
+    <!-- 洗车类型选择 -->
+    <div class="service-section">
+        <h3>选择洗车类型</h3>
+        <div class="service-options">
+            <div class="service-option" onclick="selectService(this, 'standard', 30)">
+                <div>
+                    <div class="service-name">标准洗</div>
+                </div>
+                <div class="service-price">¥30</div>
+            </div>
+            <div class="service-option" onclick="selectService(this, 'deluxe', 50)">
+                <div>
+                    <div class="service-name">精致洗</div>
+                </div>
+                <div class="service-price">¥50</div>
+            </div>
+            <div class="service-option" onclick="selectService(this, 'deep', 80)">
+                <div>
+                    <div class="service-name">深度洗</div>
+                </div>
+                <div class="service-price">¥80</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 预约排队 -->
+    <div class="queue-section">
+        <h3>在线预约排队</h3>
+        <div class="queue-info">
+            <div class="queue-item">
+                <div class="queue-number" id="queueNumber">5</div>
+                <div class="queue-label">前面还有</div>
+            </div>
+            <div class="queue-item">
+                <div class="queue-number" id="estimateTime">30</div>
+                <div class="queue-label">预计等待(分钟)</div>
+            </div>
+        </div>
+        <button class="submit-btn" onclick="joinQueue()">加入排队</button>
+    </div>
+    
+    <!-- 增值服务 -->
+    <div class="addon-section">
+        <h3>增值服务</h3>
+        <div class="addon-options">
+            <div class="addon-option">
+                <input type="checkbox" id="addon1" value="pickup">
+                <div class="addon-info">
+                    <div class="addon-name">上门取车</div>
+                    <div class="addon-desc">我们上门取车，为您节省时间</div>
+                </div>
+                <div class="addon-price">+¥20</div>
+            </div>
+            <div class="addon-option">
+                <input type="checkbox" id="addon2" value="delivery">
+                <div class="addon-info">
+                    <div class="addon-name">送车上门</div>
+                    <div class="addon-desc">洗车完成后送回您的住处</div>
+                </div>
+                <div class="addon-price">+¥20</div>
+            </div>
+            <div class="addon-option">
+                <input type="checkbox" id="addon3" value="wax">
+                <div class="addon-info">
+                    <div class="addon-name">打蜡护理</div>
+                    <div class="addon-desc">增加车漆光泽度和保护</div>
+                </div>
+                <div class="addon-price">+¥50</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 预定表单 -->
+    <div class="service-section">
+        <h3>预定信息</h3>
+        <div class="form-group">
+            <label>预定日期</label>
+            <input type="date" id="bookDate" required>
+        </div>
+        <div class="form-group">
+            <label>预定时间</label>
+            <input type="time" id="bookTime" required>
+        </div>
+        <div class="form-group">
+            <label>车牌号</label>
+            <input type="text" id="carPlate" placeholder="请输入车牌号" required>
+        </div>
+        <div class="form-group">
+            <label>联系电话</label>
+            <input type="tel" id="phone" placeholder="请输入联系电话" required>
+        </div>
+        <button class="submit-btn" onclick="submitBooking()">确认预定</button>
+    </div>
+    
+    <!-- 底部导航 -->
+    <div class="bottom-nav">
+        <a class="nav-item" href="index.html">
+            <div class="nav-icon">🏠</div>
+            <div>首页</div>
+        </a>
+        <a class="nav-item" href="orders.html">
+            <div class="nav-icon">📦</div>
+            <div>订单</div>
+        </a>
+        <a class="nav-item" href="member.html">
+            <div class="nav-icon">👑</div>
+            <div>会员</div>
+        </a>
+        <a class="nav-item" href="profile.html">
+            <div class="nav-icon">👤</div>
+            <div>我的</div>
+        </a>
+    </div>
+    
+    <script>
+        let selectedService = null;
+        let selectedServicePrice = 0;
+        
+        // 获取URL参数
+        function getUrlParam(name) {
+            const url = new URL(window.location.href);
+            return url.searchParams.get(name);
+        }
+        
+        // 统一API请求函数
+        async function apiRequest(endpoint, method = 'GET', data = null) {
+            const accessToken = getUrlParam('access_token') || 'demo_token';
+            const isDev = getUrlParam('isdev') || 'true';
+            const apiUrl = 'http://47.98.238.209:22311';
+            
+            const url = new URL(apiUrl + endpoint);
+            url.searchParams.append('access_token', accessToken);
+            url.searchParams.append('isdev', isDev);
+            
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+                
+                if (data && method !== 'GET') {
+                    options.body = JSON.stringify(data);
+                }
+                
+                const response = await fetch(url.toString(), options);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+        
+        // 返回上一页
+        function goBack() {
+            const accessToken = getUrlParam('access_token') || 'demo_token';
+            const isDev = getUrlParam('isdev') || 'true';
+            window.location.href = `index.html?access_token=${accessToken}&isdev=${isDev}`;
+        }
+        
+        // 生成洗车位
+        function generatePositions() {
+            const grid = document.getElementById('positionsGrid');
+            grid.innerHTML = '';
+            
+            for (let i = 1; i <= 9; i++) {
+                const status = Math.random() > 0.5 ? 'free' : (Math.random() > 0.5 ? 'using' : 'maintenance');
+                const statusText = status === 'free' ? '空闲' : (status === 'using' ? '使用中' : '维护');
+                
+                const block = document.createElement('div');
+                block.className = `position-block position-${status}`;
+                block.innerHTML = `
+                    <div class="position-number">${i}</div>
+                    <div class="position-status">${statusText}</div>
+                `;
+                grid.appendChild(block);
+            }
+        }
+        
+        // 选择洗车类型
+        function selectService(element, service, price) {
+            document.querySelectorAll('.service-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            element.classList.add('selected');
+            selectedService = service;
+            selectedServicePrice = price;
+        }
+        
+        // 加入排队
+        function joinQueue() {
+            if (!selectedService) {
+                alert('请先选择洗车类型');
+                return;
+            }
+            alert('已加入排队，前面还有5辆车，预计等待30分钟');
+        }
+        
+        // 提交预定
+        async function submitBooking() {
+            if (!selectedService) {
+                alert('请选择洗车类型');
+                return;
+            }
+            
+            const bookDate = document.getElementById('bookDate').value;
+            const bookTime = document.getElementById('bookTime').value;
+            const carPlate = document.getElementById('carPlate').value;
+            const phone = document.getElementById('phone').value;
+            
+            if (!bookDate || !bookTime || !carPlate || !phone) {
+                alert('请填写完整信息');
+                return;
+            }
+            
+            // 获取选中的增值服务
+            const addons = [];
+            if (document.getElementById('addon1').checked) addons.push('pickup');
+            if (document.getElementById('addon2').checked) addons.push('delivery');
+            if (document.getElementById('addon3').checked) addons.push('wax');
+            
+            try {
+                const response = await apiRequest('/api/business/venues/book', 'POST', {
+                    venue_type: 'car_wash',
+                    service_type: selectedService,
+                    book_date: bookDate,
+                    book_time: bookTime,
+                    car_plate: carPlate,
+                    phone: phone,
+                    addons: addons
+                });
+                
+                if (response.code === 0) {
+                    alert('预定成功！');
+                    // 清空表单
+                    document.getElementById('bookDate').value = '';
+                    document.getElementById('bookTime').value = '';
+                    document.getElementById('carPlate').value = '';
+                    document.getElementById('phone').value = '';
+                } else {
+                    alert('预定失败：' + (response.message || '未知错误'));
+                }
+            } catch (error) {
+                alert('预定失败，请稍后重试');
+            }
+        }
+        
+        // 页面加载
+        window.addEventListener('load', () => {
+            generatePositions();
+            
+            // 设置最小日期为今天
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('bookDate').value = today;
+            document.getElementById('bookDate').min = today;
+        });
+    </script>
+</body>
+</html>

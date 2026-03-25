@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大堂饮品</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding-bottom: 60px;
+        }
+        
+        .header {
+            background: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #e8e8e8;
+        }
+        
+        .back-btn {
+            font-size: 24px;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+        
+        .header h1 {
+            font-size: 18px;
+            flex: 1;
+        }
+        
+        /* 分类Tab */
+        .category-tabs {
+            background: white;
+            display: flex;
+            overflow-x: auto;
+            padding: 10px 0;
+            border-bottom: 1px solid #e8e8e8;
+            margin-bottom: 10px;
+        }
+        
+        .category-tab {
+            flex-shrink: 0;
+            padding: 10px 15px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 14px;
+            color: #666;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .category-tab.active {
+            color: #1890ff;
+            border-bottom-color: #1890ff;
+        }
+        
+        /* 商品列表 */
+        .products-list {
+            padding: 10px;
+        }
+        
+        .product-item {
+            background: white;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            gap: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .product-item:active {
+            transform: scale(0.98);
+        }
+        
+        .product-image {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #1890ff 0%, #52c41a 100%);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            flex-shrink: 0;
+        }
+        
+        .product-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        .product-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+        
+        .product-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .product-price {
+            font-size: 14px;
+            font-weight: bold;
+            color: #1890ff;
+        }
+        
+        .product-desc {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 8px;
+        }
+        
+        .product-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .size-select {
+            font-size: 12px;
+            padding: 4px 8px;
+            border: 1px solid #d9d9d9;
+            border-radius: 3px;
+            background: white;
+            cursor: pointer;
+        }
+        
+        .add-btn {
+            background-color: #52c41a;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        /* 模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: flex-end;
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            width: 100%;
+            border-radius: 8px 8px 0 0;
+            padding: 20px;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        
+        .radio-group {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .radio-item input[type="radio"] {
+            width: auto;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #1890ff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .submit-btn:active {
+            background-color: #0050b3;
+        }
+        
+        /* 底部导航 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: white;
+            border-top: 1px solid #e8e8e8;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            color: #666;
+            font-size: 12px;
+            flex: 1;
+            height: 100%;
+        }
+        
+        .nav-item.active {
+            color: #1890ff;
+        }
+        
+        .nav-icon {
+            font-size: 24px;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <button class="back-btn" onclick="goBack()">←</button>
+        <h1>大堂饮品</h1>
+    </div>
+    
+    <div class="category-tabs" id="categoryTabs">
+        <button class="category-tab active" onclick="switchCategory('coffee')">咖啡</button>
+        <button class="category-tab" onclick="switchCategory('juice')">鲜榨果汁</button>
+        <button class="category-tab" onclick="switchCategory('tea')">中式茶饮</button>
+        <button class="category-tab" onclick="switchCategory('dessert')">甜品</button>
+        <button class="category-tab" onclick="switchCategory('snack')">轻食</button>
+    </div>
+    
+    <div class="loading" id="loading">加载中...</div>
+    
+    <div class="products-list" id="productsList">
+        <!-- 商品项将动态插入 -->
+    </div>
+    
+    <!-- 订单模态框 -->
+    <div class="modal" id="orderModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>下单</h2>
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+            
+            <form id="orderForm">
+                <div class="form-group">
+                    <label>商品名称</label>
+                    <input type="text" id="productName" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label>规格</label>
+                    <select id="size" required>
+                        <option value="">请选择规格</option>
+                        <option value="small">小杯</option>
+                        <option value="medium">中杯</option>
+                        <option value="large">大杯</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>数量</label>
+                    <input type="number" id="quantity" value="1" min="1">
+                </div>
+                
+                <div class="form-group">
+                    <label>配送选项</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="delivery" value="home" checked>
+                            <label>自家住宅</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="delivery" value="lobby">
+                            <label>社区大堂</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>配送时间</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="timing" value="now" checked>
+                            <label>即时制作</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="timing" value="scheduled">
+                            <label>定时配送</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group" id="scheduleTimeGroup" style="display: none;">
+                    <label>配送时间</label>
+                    <input type="time" id="scheduleTime">
+                </div>
+                
+                <button type="button" class="submit-btn" onclick="submitOrder()">确认下单</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 底部导航 -->
+    <div class="bottom-nav">
+        <a class="nav-item" href="index.html">
+            <div class="nav-icon">🏠</div>
+            <div>首页</div>
+        </a>
+        <a class="nav-item" href="orders.html">
+            <div class="nav-icon">📦</div>
+            <div>订单</div>
+        </a>
+        <a class="nav-item" href="member.html">
+            <div class="nav-icon">👑</div>
+            <div>会员</div>
+        </a>
+        <a class="nav-item" href="profile.html">
+            <div class="nav-icon">👤</div>
+            <div>我的</div>
+        </a>
+    </div>
+    
+    <script>
+        let currentCategory = 'coffee';
+        let currentProduct = null;
+        
+        // 获取URL参数
+        function getUrlParam(name) {
+            const url = new URL(window.location.href);
+            return url.searchParams.get(name);
+        }
+        
+        // 统一API请求函数
+        async function apiRequest(endpoint, method = 'GET', data = null) {
+            const accessToken = getUrlParam('access_token') || 'demo_token';
+            const isDev = getUrlParam('isdev') || 'true';
+            const apiUrl = 'http://47.98.238.209:22311';
+            
+            const url = new URL(apiUrl + endpoint);
+            url.searchParams.append('access_token', accessToken);
+            url.searchParams.append('isdev', isDev);
+            
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+                
+                if (data && method !== 'GET') {
+                    options.body = JSON.stringify(data);
+                }
+                
+                const response = await fetch(url.toString(), options);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+        
+        // 返回上一页
+        function goBack() {
+            const accessToken = getUrlParam('access_token') || 'demo_token';
+            const isDev = getUrlParam('isdev') || 'true';
+            window.location.href = `index.html?access_token=${accessToken}&isdev=${isDev}`;
+        }
+        
+        // 切换分类
+        function switchCategory(category) {
+            currentCategory = category;
+            
+            document.querySelectorAll('.category-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            loadProducts();
+        }
+        
+        // 加载商品
+        async function loadProducts() {
+            try {
+                document.getElementById('loading').classList.add('show');
+                const response = await apiRequest(`/api/business/products?shop_id=3&category=${currentCategory}`);
+                
+                const list = document.getElementById('productsList');
+                list.innerHTML = '';
+                
+                if (response.code === 0 && response.data && response.data.length > 0) {
+                    response.data.forEach(product => {
+                        const item = createProductItem(product);
+                        list.appendChild(item);
+                    });
+                } else {
+                    list.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">暂无商品</div>';
+                }
+            } catch (error) {
+                console.error('Failed to load products:', error);
+            } finally {
+                document.getElementById('loading').classList.remove('show');
+            }
+        }
+        
+        // 创建商品项
+        function createProductItem(product) {
+            const item = document.createElement('div');
+            item.className = 'product-item';
+            item.innerHTML = `
+                <div class="product-image">☕</div>
+                <div class="product-content">
+                    <div class="product-header">
+                        <div class="product-name">${product.name}</div>
+                        <div class="product-price">¥${product.price}</div>
+                    </div>
+                    <div class="product-desc">${product.description || '美味饮品'}</div>
+                    <div class="product-footer">
+                        <select class="size-select">
+                            <option>小杯</option>
+                            <option selected>中杯</option>
+                            <option>大杯</option>
+                        </select>
+                        <button class="add-btn" onclick="openOrderModal(event)">下单</button>
+                    </div>
+                </div>
+            `;
+            item.dataset.product = JSON.stringify(product);
+            return item;
+        }
+        
+        // 打开订单模态框
+        function openOrderModal(event) {
+            event.stopPropagation();
+            const item = event.target.closest('.product-item');
+            currentProduct = JSON.parse(item.dataset.product);
+            
+            document.getElementById('productName').value = currentProduct.name;
+            document.getElementById('size').value = 'medium';
+            document.getElementById('quantity').value = 1;
+            document.querySelector('input[name="delivery"][value="home"]').checked = true;
+            document.querySelector('input[name="timing"][value="now"]').checked = true;
+            document.getElementById('scheduleTimeGroup').style.display = 'none';
+            
+            document.getElementById('orderModal').classList.add('show');
+        }
+        
+        // 关闭模态框
+        function closeModal() {
+            document.getElementById('orderModal').classList.remove('show');
+        }
+        
+        // 定时配送选项变化
+        document.addEventListener('change', function(e) {
+            if (e.target.name === 'timing') {
+                const scheduleGroup = document.getElementById('scheduleTimeGroup');
+                if (e.target.value === 'scheduled') {
+                    scheduleGroup.style.display = 'block';
+                } else {
+                    scheduleGroup.style.display = 'none';
+                }
+            }
+        });
+        
+        // 提交订单
+        async function submitOrder() {
+            if (!currentProduct) return;
+            
+            const size = document.getElementById('size').value;
+            const quantity = parseInt(document.getElementById('quantity').value);
+            const delivery = document.querySelector('input[name="delivery"]:checked').value;
+            const timing = document.querySelector('input[name="timing"]:checked').value;
+            const scheduleTime = document.getElementById('scheduleTime').value;
+            
+            if (!size) {
+                alert('请选择规格');
+                return;
+            }
+            
+            try {
+                const response = await apiRequest('/api/business/orders', 'POST', {
+                    product_id: currentProduct.id,
+                    quantity: quantity,
+                    size: size,
+                    delivery: delivery,
+                    timing: timing,
+                    schedule_time: timing === 'scheduled' ? scheduleTime : null,
+                    shop_id: 3
+                });
+                
+                if (response.code === 0) {
+                    alert('下单成功！');
+                    closeModal();
+                } else {
+                    alert('下单失败：' + (response.message || '未知错误'));
+                }
+            } catch (error) {
+                alert('下单失败，请稍后重试');
+            }
+        }
+        
+        // 页面加载
+        window.addEventListener('load', () => {
+            loadProducts();
+        });
+    </script>
+</body>
+</html>

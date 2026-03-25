@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>会员中心</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding-bottom: 60px;
+        }
+        
+        .header {
+            background: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #e8e8e8;
+        }
+        
+        .back-btn {
+            font-size: 24px;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+        
+        .header h1 {
+            font-size: 18px;
+            flex: 1;
+        }
+        
+        /* 会员卡片 */
+        .member-card {
+            background: linear-gradient(135deg, #1890ff 0%, #52c41a 100%);
+            color: white;
+            padding: 20px;
+            margin: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .member-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+        
+        .member-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .member-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .member-details h3 {
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+        
+        .member-level {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        
+        .member-badge {
+            background-color: rgba(255, 255, 255, 0.3);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+        
+        .member-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            text-align: center;
+        }
+        
+        .stat-item {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            border-radius: 6px;
+        }
+        
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        
+        /* 内容区域 */
+        .content-section {
+            background: white;
+            padding: 15px;
+            margin: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .section-more {
+            font-size: 12px;
+            color: #1890ff;
+            cursor: pointer;
+        }
+        
+        /* 积分记录 */
+        .points-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .points-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        
+        .points-desc {
+            color: #666;
+        }
+        
+        .points-value {
+            font-weight: bold;
+            color: #52c41a;
+        }
+        
+        .points-value.negative {
+            color: #ff4d4f;
+        }
+        
+        /* 优惠券列表 */
+        .coupon-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .coupon-item {
+            padding: 12px;
+            border: 2px dashed #1890ff;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .coupon-info {
+            flex: 1;
+        }
+        
+        .coupon-amount {
+            font-size: 16px;
+            font-weight: bold;
+            color: #1890ff;
+            margin-bottom: 4px;
+        }
+        
+        .coupon-desc {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .coupon-status {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        /* 充值按钮 */
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .btn {
+            padding: 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background-color: #1890ff;
+            color: white;
+        }
+        
+        .btn-primary:active {
+            background-color: #0050b3;
+        }
+        
+        .btn-secondary {
+            background-color: #f0f0f0;
+            color: #333;
+            border: 1px solid #d9d9d9;
+        }
+        
+        .btn-secondary:active {
+            background-color: #e8e8e8;
+        }
+        
+        /* 消费总账 */
+        .consumption-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .consumption-item {
+            padding: 12px;
+            background-color: #f5f5f5;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .consumption-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 6px;
+        }
+        
+        .consumption-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1890ff;
+        }
+        
+        /* 标签页 */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+        
+        .tab {
+            padding: 8px 12px;
+            border: none;
+            background: none;
+            font-size: 13px;
+            color: #666;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .tab.active {
+            color: #1890ff;
+            border-bottom-color: #1890ff;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* 底部导航 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: white;
+            border-top: 1px solid #e8e8e8;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            color: #666;
+            font-size: 12px;
+            flex: 1;
+            height: 100%;
+        }
+        
+        .nav-item.active {
+            color: #1890ff;
+        }
+        
+        .nav-icon {
+            font-size: 24px;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <button class="back-btn" onclick="goBack()">←</button>
+        <h1>会员中心</h1>
+    </div>
+    
+    <div class="loading" id="loading">加载中...</div>
+    
+    <!-- 会员卡片 -->
+    <div class="member-card">
+        <div class="member-header">
+            <div class="member-info">
+                <div class="member-avatar">👤</div>
+                <div class="member-details">
+                    <h3 id="memberName">用户名</h3>
+                    <div class="member-level" id="memberLevel">普通会员</div>
+                </div>
+            </div>
+            <div class="member-badge" id="memberBadge">会员</div>
+        </div>
+        
+        <div class="member-stats">
+            <div class="stat-item">
+                <div class="stat-value" id="memberPoints">0</div>
+                <div class="stat-label">积分</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="memberBalance">¥0</div>
+                <div class="stat-label">余额</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="memberCoupons">0</div>
+                <div class="stat-label">优惠券</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 充值和消费 -->
+    <div class="content-section">
+        <div class="action-buttons">
+            <button class="btn btn-primary" onclick="recharge()">储值充值</button>
+            <button class="btn btn-secondary" onclick="viewConsumption()">消费总账</button>
+        </div>
+    </div>
+    
+    <!-- 积分记录 -->
+    <div class="content-section">
+        <div class="section-title">
+            <span>积分记录</span>
+            <span class="section-more" onclick="viewAllPoints()">查看全部</span>
+        </div>
+        <div class="points-list" id="pointsList">
+            <!-- 积分项将动态插入 -->
+        </div>
+    </div>
+    
+    <!-- 优惠券 -->
+    <div class="content-section">
+        <div class="section-title">
+            <span>优惠券</span>
+            <span class="section-more" onclick="viewAllCoupons()">查看全部</span>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchCouponTab(this, 'unused')">未使用</button>
+            <button class="tab" onclick="switchCouponTab(this, 'used')">已使用</button>
+            <button class="tab" onclick="switchCouponTab(this, 'expired')">已过期</button>
+        </div>
+        
+        <div class="tab-content active" id="unusedCoupons">
+            <!-- 未使用优惠券将动态插入 -->
+        </div>
+        <div class="tab-content" id="usedCoupons">
+            <!-- 已使用优惠券将动态插入 -->
+        </div>
+        <div class="tab-content" id="expiredCoupons">
+            <!-- 已过期优惠券将动态插入 -->
+        </div>
+    </div>
+    
+    <!-- 消费总账 -->
+    <div class="content-section" id="consumptionSection" style="display: none;">
+        <div class="section-title">消费总账</div>
+        <div class="consumption-stats">
+            <div class="consumption-item">
+                <div class="consumption-label">本月消费</div>
+                <div class="consumption-value" id="monthConsumption">¥0</div>
+            </div>
+            <div class="consumption-item">
+                <div class="consumption-label">累计消费</div>
+                <div class="consumption-value" id="totalConsumption">¥0</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 底部导航 -->
+    <div class="bottom-nav">
+        <a class="nav-item" href="index.html">
+            <div class="nav-icon">🏠</div>
+            <div>首页</div>
+        </a>
+        <a class="nav-item" href="orders.html">
+            <div class="nav-icon">📦</div>
+            <div>订单</div>
+        </a>
+        <a class="nav-item active" href="member.html">
+            <div class="nav-icon">👑</div>
+            <div>会员</div>
+        </a>
+        <a class="nav-item" href="profile.html">
+            <div class="nav-icon">👤</div>
+            <div>我的</div>
+        </a>
+    </div>
+    
+    <script>
+        // 获取URL参数
+        function getUrlParam(name) {
+            const url = new URL(window.location.href);
+            return url.searchParams.get(name);
+        }
+        
+        // 统一API请求函数
+        async function apiRequest(endpoint, method = 'GET', data = null) {
+            const accessToken = getUrlParam('access_token') || 'demo_token';
+            const isDev = getUrlParam('isdev') || 'true';
+            const apiUrl = 'http://47.98.238.209:22311';
+            
+            const url = new URL(apiUrl + endpoint);
+            url.searchParams.append('access_token', accessToken);
+            url.searchParams.append('isdev', isDev);
+            
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+                
+                if (data && method !== 'GET') {
+                    options.body = JSON.stringify(data);
+                }
+                
+                const response = await fetch(url.toString(), options);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+        
+        // 返回上一页
+        function goBack() {
+            const accessToken = getUrlParam('access_token') || 'demo_token';
+            const isDev = getUrlParam('isdev') || 'true';
+            window.location.href = `index.html?access_token=${accessToken}&isdev=${isDev}`;
+        }
+        
+        // 加载会员信息
+        async function loadMemberInfo() {
+            try {
+                document.getElementById('loading').classList.add('show');
+                const response = await apiRequest('/api/business/member');
+                
+                if (response.code === 0 && response.data) {
+                    const member = response.data;
+                    document.getElementById('memberName').textContent = member.name || '用户';
+                    document.getElementById('memberLevel').textContent = member.level || '普通会员';
+                    document.getElementById('memberBadge').textContent = member.badge || '会员';
+                    document.getElementById('memberPoints').textContent = member.points || 0;
+                    document.getElementById('memberBalance').textContent = '¥' + (member.balance || 0);
+                    document.getElementById('memberCoupons').textContent = member.coupons || 0;
+                }
+            } catch (error) {
+                console.error('Failed to load member info:', error);
+            } finally {
+                document.getElementById('loading').classList.remove('show');
+            }
+        }
+        
+        // 加载积分记录
+        async function loadPointsLog() {
+            try {
+                const response = await apiRequest('/api/business/points/log');
+                
+                const list = document.getElementById('pointsList');
+                list.innerHTML = '';
+                
+                if (response.code === 0 && response.data && response.data.length > 0) {
+                    response.data.slice(0, 5).forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'points-item';
+                        const isNegative = item.points < 0;
+                        div.innerHTML = `
+                            <div class="points-desc">${item.description}</div>
+                            <div class="points-value ${isNegative ? 'negative' : ''}">${isNegative ? '' : '+'}${item.points}</div>
+                        `;
+                        list.appendChild(div);
+                    });
+                } else {
+                    list.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">暂无积分记录</div>';
+                }
+            } catch (error) {
+                console.error('Failed to load points log:', error);
+            }
+        }
+        
+        // 加载优惠券
+        async function loadCoupons() {
+            try {
+                const response = await apiRequest('/api/business/my/coupons?status=unused');
+                
+                const container = document.getElementById('unusedCoupons');
+                container.innerHTML = '';
+                
+                if (response.code === 0 && response.data && response.data.length > 0) {
+                    response.data.forEach(coupon => {
+                        const div = document.createElement('div');
+                        div.className = 'coupon-item';
+                        div.innerHTML = `
+                            <div class="coupon-info">
+                                <div class="coupon-amount">¥${coupon.amount}</div>
+                                <div class="coupon-desc">${coupon.description}</div>
+                            </div>
+                            <div class="coupon-status">有效期至${coupon.expire_date}</div>
+                        `;
+                        container.appendChild(div);
+                    });
+                } else {
+                    container.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">暂无优惠券</div>';
+                }
+            } catch (error) {
+                console.error('Failed to load coupons:', error);
+            }
+        }
+        
+        // 切换优惠券标签页
+        function switchCouponTab(element, status) {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            element.classList.add('active');
+            
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            const statusMap = {
+                'unused': 'unusedCoupons',
+                'used': 'usedCoupons',
+                'expired': 'expiredCoupons'
+            };
+            
+            document.getElementById(statusMap[status]).classList.add('active');
+        }
+        
+        // 充值
+        function recharge() {
+            alert('跳转到充值页面');
+        }
+        
+        // 查看消费总账
+        function viewConsumption() {
+            const section = document.getElementById('consumptionSection');
+            if (section.style.display === 'none') {
+                section.style.display = 'block';
+                document.getElementById('monthConsumption').textContent = '¥' + Math.floor(Math.random() * 5000);
+                document.getElementById('totalConsumption').textContent = '¥' + Math.floor(Math.random() * 50000);
+            } else {
+                section.style.display = 'none';
+            }
+        }
+        
+        // 查看全部积分
+        function viewAllPoints() {
+            alert('跳转到积分详情页面');
+        }
+        
+        // 查看全部优惠券
+        function viewAllCoupons() {
+            alert('跳转到优惠券列表页面');
+        }
+        
+        // 页面加载
+        window.addEventListener('load', () => {
+            loadMemberInfo();
+            loadPointsLog();
+            loadCoupons();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>运动场馆</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding-bottom: 60px;
+        }
+        
+        .header {
+            background: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #e8e8e8;
+        }
+        
+        .back-btn {
+            font-size: 24px;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+        
+        .header h1 {
+            font-size: 18px;
+            flex: 1;
+        }
+        
+        /* 场馆类型选择 */
+        .type-selector {
+            background: white;
+            display: flex;
+            overflow-x: auto;
+            padding: 10px 0;
+            border-bottom: 1px solid #e8e8e8;
+            margin-bottom: 10px;
+        }
+        
+        .type-btn {
+            flex-shrink: 0;
+            padding: 10px 15px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 14px;
+            color: #666;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .type-btn.active {
+            color: #1890ff;
+            border-bottom-color: #1890ff;
+        }
+        
+        /* 场馆卡片 */
+        .venues-list {
+            padding: 10px;
+        }
+        
+        .venue-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .venue-header {
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .venue-name {
+            font-size: 16px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .venue-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-open {
+            background-color: #f6ffed;
+            color: #52c41a;
+        }
+        
+        .status-closed {
+            background-color: #fff2f0;
+            color: #ff4d4f;
+        }
+        
+        .status-maintenance {
+            background-color: #e6f7ff;
+            color: #1890ff;
+        }
+        
+        /* 场地可视化 */
+        .courts-grid {
+            padding: 15px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+        
+        .court-block {
+            aspect-ratio: 1;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .court-block:active {
+            transform: scale(0.95);
+        }
+        
+        .court-free {
+            background-color: #f6ffed;
+            color: #52c41a;
+            border: 2px solid #52c41a;
+        }
+        
+        .court-occupied {
+            background-color: #fff2f0;
+            color: #ff4d4f;
+            border: 2px solid #ff4d4f;
+        }
+        
+        .court-maintenance {
+            background-color: #f5f5f5;
+            color: #999;
+            border: 2px solid #d9d9d9;
+        }
+        
+        /* 预定表单 */
+        .booking-section {
+            background: white;
+            padding: 15px;
+            margin: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        
+        .time-slots {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        
+        .time-slot {
+            padding: 10px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .time-slot:active {
+            background-color: #1890ff;
+            color: white;
+            border-color: #1890ff;
+        }
+        
+        .time-slot.selected {
+            background-color: #1890ff;
+            color: white;
+            border-color: #1890ff;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #1890ff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .submit-btn:active {
+            background-color: #0050b3;
+        }
+        
+        /* 核销码 */
+        .verification-code {
+            background: white;
+            padding: 15px;
+            margin: 10px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+        
+        .verification-code.show {
+            display: block;
+        }
+        
+        .code-title {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .code-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #1890ff;
+            letter-spacing: 4px;
+            margin-bottom: 10px;
+        }
+        
+        /* 底部导航 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: white;
+            border-top: 1px solid #e8e8e8;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            color: #666;
+            font-size: 12px;
+            flex: 1;
+            height: 100%;
+        }
+        
+        .nav-item.active {
+            color: #1890ff;
+        }
+        
+        .nav-icon {
+            font-size: 24px;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <button class="back-btn" onclick="goBack()">←</button>
+        <h1>运动场馆</h1>
+    </div>
+    
+    <div class="type-selector" id="typeSelector">
+        <button class="type-btn active" onclick="switchType('swimming')">🏊 游泳</button>
+        <button class="type-btn" onclick="switchType('fitness')">💪 健身</button>
+        <button class="type-btn" onclick="switchType('basketball')">🏀 篮球</button>
+        <button class="type-btn" onclick="switchType('badminton')">🏸 羽毛球</button>
+        <button class="type-btn" onclick="switchType('pingpong')">🏓 乒乓球</button>
+    </div>
+    
+    <div class="loading" id="loading">加载中...</div>
+    
+    <div class="venues-list" id="venuesList">
+        <!-- 场馆卡片将动态插入 -->
+    </div>
+    
+    <!-- 预定表单 -->
+    <div class="booking-section" id="bookingSection" style="display: none;">
+        <h3 style="margin-bottom: 15px;">预定场地</h3>
+        
+        <div class="form-group">
+            <label>预定日期</label>
+            <input type="date" id="bookDate" required>
+        </div>
+        
+        <div class="form-group">
+            <label>预定时段</label>
+            <div class="time-slots" id="timeSlots">
+                <!-- 时段将动态插入 -->
+            </div>
+        </div>
+        
+        <button class="submit-btn" onclick="submitBooking()">确认预定</button>
+    </div>
+    
+    <!-- 核销码 -->
+    <div class="verification-code" id="verificationCode">
+        <div class="code-title">您的核销码</div>
+        <div class="code-value" id="codeValue">000000</div>
+        <div style="font-size: 12px; color: #999;">请在场馆出示此码</div>
+    </div>
+    
+    <!-- 底部导航 -->
+    <div class="bottom-nav">
+        <a class="nav-item" href="index.html">
+            <div class="nav-icon">🏠</div>
+            <div>首页</div>
+        </a>
+        <a class="nav-item" href="orders.html">
+            <div class="nav-icon">📦</div>
+            <div>订单</div>
+        </a>
+        <a class="nav-item" href="member.html">
+            <div class="nav-icon">👑</div>
+            <div>会员</div>
+        </a>
+        <a class="nav-item" href="profile.html">
+            <div class="nav-icon">👤</div>
+            <div>我的</div>
+        </a>
+    </div>
+    
+    <script>
+        let currentType = 'swimming';
+        let currentVenue = null;
+        let selectedTimeSlot = null;
+        
+        // 获取URL参数
+        function getUrlParam(name) {
+            const url = new URL(window.location.href);
+            return url.searchParams.get(name);
+        }
+        
+        // 统一API请求函数
+        async function apiRequest(endpoint, method = 'GET', data = null) {
+            const accessToken = getUrlParam('access_token') || 'demo_token';
+            const isDev = getUrlParam('isdev') || 'true';
+            const apiUrl = 'http://47.98.238.209:22311';
+            
+            const url = new URL(apiUrl + endpoint);
+            url.searchParams.append('access_token', accessToken);
+            url.searchParams.append('isdev', isDev);
+            
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+                
+                if (data && method !== 'GET') {
+                    options.body = JSON.stringify(data);
+                }
+                
+                const response = await fetch(url.toString(), options);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+        
+        // 返回上一页
+        function goBack() {
+            const accessToken = getUrlParam('access_token') || 'demo_token';
+            const isDev = getUrlParam('isdev') || 'true';
+            window.location.href = `index.html?access_token=${accessToken}&isdev=${isDev}`;
+        }
+        
+        // 切换场馆类型
+        function switchType(type) {
+            currentType = type;
+            
+            document.querySelectorAll('.type-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            document.getElementById('bookingSection').style.display = 'none';
+            document.getElementById('verificationCode').classList.remove('show');
+            
+            loadVenues();
+        }
+        
+        // 加载场馆列表
+        async function loadVenues() {
+            try {
+                document.getElementById('loading').classList.add('show');
+                const response = await apiRequest(`/api/business/venues?type=${currentType}`);
+                
+                const list = document.getElementById('venuesList');
+                list.innerHTML = '';
+                
+                if (response.code === 0 && response.data && response.data.length > 0) {
+                    response.data.forEach(venue => {
+                        const card = createVenueCard(venue);
+                        list.appendChild(card);
+                    });
+                } else {
+                    list.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">暂无场馆</div>';
+                }
+            } catch (error) {
+                console.error('Failed to load venues:', error);
+            } finally {
+                document.getElementById('loading').classList.remove('show');
+            }
+        }
+        
+        // 创建场馆卡片
+        function createVenueCard(venue) {
+            const card = document.createElement('div');
+            card.className = 'venue-card';
+            
+            const statusClass = venue.status === 'open' ? 'status-open' : 
+                               venue.status === 'closed' ? 'status-closed' : 'status-maintenance';
+            const statusText = venue.status === 'open' ? '开放' : 
+                              venue.status === 'closed' ? '关闭' : '维护中';
+            
+            card.innerHTML = `
+                <div class="venue-header">
+                    <div class="venue-name">${venue.name}</div>
+                    <div class="venue-status ${statusClass}">${statusText}</div>
+                </div>
+                <div class="courts-grid">
+                    ${generateCourtsGrid(venue.courts || 8)}
+                </div>
+                <div style="padding: 15px; text-align: center;">
+                    <button class="submit-btn" onclick="selectVenue(event)" style="margin: 0;">预定此场馆</button>
+                </div>
+            `;
+            
+            card.dataset.venue = JSON.stringify(venue);
+            return card;
+        }
+        
+        // 生成场地网格
+        function generateCourtsGrid(count) {
+            let html = '';
+            for (let i = 1; i <= count; i++) {
+                const status = Math.random() > 0.6 ? 'occupied' : 'free';
+                const statusText = status === 'free' ? '空闲' : '占用';
+                html += `<div class="court-block court-${status}">${i}</div>`;
+            }
+            return html;
+        }
+        
+        // 选择场馆
+        function selectVenue(event) {
+            const card = event.target.closest('.venue-card');
+            currentVenue = JSON.parse(card.dataset.venue);
+            
+            // 设置最小日期为今天
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('bookDate').value = today;
+            document.getElementById('bookDate').min = today;
+            
+            // 生成时段
+            generateTimeSlots();
+            
+            document.getElementById('bookingSection').style.display = 'block';
+            document.getElementById('verificationCode').classList.remove('show');
+            
+            // 滚动到预定表单
+            document.getElementById('bookingSection').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // 生成时段
+        function generateTimeSlots() {
+            const slotsContainer = document.getElementById('timeSlots');
+            slotsContainer.innerHTML = '';
+            
+            const slots = [
+                '08:00-09:00', '09:00-10:00', '10:00-11:00',
+                '11:00-12:00', '12:00-13:00', '13:00-14:00',
+                '14:00-15:00', '15:00-16:00', '16:00-17:00',
+                '17:00-18:00', '18:00-19:00', '19:00-20:00'
+            ];
+            
+            slots.forEach(slot => {
+                const btn = document.createElement('div');
+                btn.className = 'time-slot';
+                btn.textContent = slot;
+                btn.onclick = () => selectTimeSlot(btn, slot);
+                slotsContainer.appendChild(btn);
+            });
+        }
+        
+        // 选择时段
+        function selectTimeSlot(element, slot) {
+            document.querySelectorAll('.time-slot').forEach(s => {
+                s.classList.remove('selected');
+            });
+            element.classList.add('selected');
+            selectedTimeSlot = slot;
+        }
+        
+        // 提交预定
+        async function submitBooking() {
+            if (!currentVenue) {
+                alert('请选择场馆');
+                return;
+            }
+            
+            const bookDate = document.getElementById('bookDate').value;
+            
+            if (!bookDate || !selectedTimeSlot) {
+                alert('请选择日期和时段');
+                return;
+            }
+            
+            try {
+                const response = await apiRequest('/api/business/venues/book', 'POST', {
+                    venue_id: currentVenue.id,
+                    book_date: bookDate,
+                    time_slot: selectedTimeSlot
+                });
+                
+                if (response.code === 0) {
+                    // 生成核销码
+                    const code = Math.random().toString().substr(2, 6).padEnd(6, '0');
+                    document.getElementById('codeValue').textContent = code;
+                    document.getElementById('verificationCode').classList.add('show');
+                    
+                    alert('预定成功！');
+                } else {
+                    alert('预定失败：' + (response.message || '未知错误'));
+                }
+            } catch (error) {
+                alert('预定失败，请稍后重试');
+            }
+        }
+        
+        // 页面加载
+        window.addEventListener('load', () => {
+            loadVenues();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>社区食堂</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding-bottom: 60px;
+        }
+        
+        .header {
+            background: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #e8e8e8;
+        }
+        
+        .back-btn {
+            font-size: 24px;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+        
+        .header h1 {
+            font-size: 18px;
+            flex: 1;
+        }
+        
+        /* 分类Tab */
+        .category-tabs {
+            background: white;
+            display: flex;
+            overflow-x: auto;
+            padding: 10px 0;
+            border-bottom: 1px solid #e8e8e8;
+            margin-bottom: 10px;
+        }
+        
+        .category-tab {
+            flex-shrink: 0;
+            padding: 10px 15px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 14px;
+            color: #666;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .category-tab.active {
+            color: #1890ff;
+            border-bottom-color: #1890ff;
+        }
+        
+        /* 菜品网格 */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            padding: 10px;
+        }
+        
+        .product-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .product-card:active {
+            transform: scale(0.98);
+        }
+        
+        .product-image {
+            width: 100%;
+            height: 120px;
+            background: linear-gradient(135deg, #1890ff 0%, #52c41a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+        }
+        
+        .product-info {
+            padding: 10px;
+        }
+        
+        .product-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .product-tags {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .tag {
+            display: inline-block;
+            background-color: #f0f0f0;
+            color: #666;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+        
+        .product-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .product-price {
+            font-size: 16px;
+            font-weight: bold;
+            color: #1890ff;
+        }
+        
+        .add-btn {
+            background-color: #52c41a;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        /* 模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: flex-end;
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            width: 100%;
+            border-radius: 8px 8px 0 0;
+            padding: 20px;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .radio-group {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .radio-item input[type="radio"] {
+            width: auto;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #1890ff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .submit-btn:active {
+            background-color: #0050b3;
+        }
+        
+        /* 底部导航 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: white;
+            border-top: 1px solid #e8e8e8;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            color: #666;
+            font-size: 12px;
+            flex: 1;
+            height: 100%;
+        }
+        
+        .nav-item.active {
+            color: #1890ff;
+        }
+        
+        .nav-icon {
+            font-size: 24px;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <button class="back-btn" onclick="goBack()">←</button>
+        <h1>社区食堂</h1>
+    </div>
+    
+    <div class="category-tabs" id="categoryTabs">
+        <button class="category-tab active" onclick="switchCategory('breakfast')">早餐</button>
+        <button class="category-tab" onclick="switchCategory('lunch')">午餐</button>
+        <button class="category-tab" onclick="switchCategory('dinner')">晚餐</button>
+        <button class="category-tab" onclick="switchCategory('nutrition')">营养套餐</button>
+        <button class="category-tab" onclick="switchCategory('special')">特色菜</button>
+        <button class="category-tab" onclick="switchCategory('elderly')">老年餐</button>
+        <button class="category-tab" onclick="switchCategory('children')">儿童餐</button>
+        <button class="category-tab" onclick="switchCategory('vegetarian')">素食</button>
+    </div>
+    
+    <div class="loading" id="loading">加载中...</div>
+    
+    <div class="products-grid" id="productsGrid">
+        <!-- 菜品卡片将动态插入 -->
+    </div>
+    
+    <!-- 订单模态框 -->
+    <div class="modal" id="orderModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>下单</h2>
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+            
+            <form id="orderForm">
+                <div class="form-group">
+                    <label>商品名称</label>
+                    <input type="text" id="productName" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label>价格</label>
+                    <input type="text" id="productPrice" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label>数量</label>
+                    <input type="number" id="quantity" value="1" min="1">
+                </div>
+                
+                <div class="form-group">
+                    <label>取餐方式</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" name="method" value="dine_in" checked>
+                            <label>堂食</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="method" value="takeout">
+                            <label>外卖</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" name="method" value="pickup">
+                            <label>自取</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>备注</label>
+                    <textarea id="remarks" placeholder="请输入特殊需求..."></textarea>
+                </div>
+                
+                <button type="button" class="submit-btn" onclick="submitOrder()">确认下单</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 底部导航 -->
+    <div class="bottom-nav">
+        <a class="nav-item" href="index.html">
+            <div class="nav-icon">🏠</div>
+            <div>首页</div>
+        </a>
+        <a class="nav-item" href="orders.html">
+            <div class="nav-icon">📦</div>
+            <div>订单</div>
+        </a>
+        <a class="nav-item" href="member.html">
+            <div class="nav-icon">👑</div>
+            <div>会员</div>
+        </a>
+        <a class="nav-item" href="profile.html">
+            <div class="nav-icon">👤</div>
+            <div>我的</div>
+        </a>
+    </div>
+    
+    <script>
+        let currentCategory = 'breakfast';
+        let currentProduct = null;
+        
+        // 获取URL参数
+        function getUrlParam(name) {
+            const url = new URL(window.location.href);
+            return url.searchParams.get(name);
+        }
+        
+        // 统一API请求函数
+        async function apiRequest(endpoint, method = 'GET', data = null) {
+            const accessToken = getUrlParam('access_token') || 'demo_token';
+            const isDev = getUrlParam('isdev') || 'true';
+            const apiUrl = 'http://47.98.238.209:22311';
+            
+            const url = new URL(apiUrl + endpoint);
+            url.searchParams.append('access_token', accessToken);
+            url.searchParams.append('isdev', isDev);
+            
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+                
+                if (data && method !== 'GET') {
+                    options.body = JSON.stringify(data);
+                }
+                
+                const response = await fetch(url.toString(), options);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+        
+        // 返回上一页
+        function goBack() {
+            const accessToken = getUrlParam('access_token') || 'demo_token';
+            const isDev = getUrlParam('isdev') || 'true';
+            window.location.href = `index.html?access_token=${accessToken}&isdev=${isDev}`;
+        }
+        
+        // 切换分类
+        function switchCategory(category) {
+            currentCategory = category;
+            
+            // 更新Tab样式
+            document.querySelectorAll('.category-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            loadProducts();
+        }
+        
+        // 加载菜品
+        async function loadProducts() {
+            try {
+                document.getElementById('loading').classList.add('show');
+                const response = await apiRequest(`/api/business/products?shop_id=1&category=${currentCategory}`);
+                
+                const grid = document.getElementById('productsGrid');
+                grid.innerHTML = '';
+                
+                if (response.code === 0 && response.data && response.data.length > 0) {
+                    response.data.forEach(product => {
+                        const card = createProductCard(product);
+                        grid.appendChild(card);
+                    });
+                } else {
+                    grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #999;">暂无菜品</div>';
+                }
+            } catch (error) {
+                console.error('Failed to load products:', error);
+            } finally {
+                document.getElementById('loading').classList.remove('show');
+            }
+        }
+        
+        // 创建菜品卡片
+        function createProductCard(product) {
+            const card = document.createElement('div');
+            card.className = 'product-card';
+            card.innerHTML = `
+                <div class="product-image">🍽️</div>
+                <div class="product-info">
+                    <div class="product-name">${product.name}</div>
+                    <div class="product-tags">
+                        ${product.tags ? product.tags.map(tag => `<span class="tag">${tag}</span>`).join('') : ''}
+                    </div>
+                    <div class="product-footer">
+                        <div class="product-price">¥${product.price}</div>
+                        <button class="add-btn" onclick="openOrderModal(event)">下单</button>
+                    </div>
+                </div>
+            `;
+            card.dataset.product = JSON.stringify(product);
+            return card;
+        }
+        
+        // 打开订单模态框
+        function openOrderModal(event) {
+            event.stopPropagation();
+            const card = event.target.closest('.product-card');
+            currentProduct = JSON.parse(card.dataset.product);
+            
+            document.getElementById('productName').value = currentProduct.name;
+            document.getElementById('productPrice').value = '¥' + currentProduct.price;
+            document.getElementById('quantity').value = 1;
+            document.getElementById('remarks').value = '';
+            
+            document.getElementById('orderModal').classList.add('show');
+        }
+        
+        // 关闭模态框
+        function closeModal() {
+            document.getElementById('orderModal').classList.remove('show');
+        }
+        
+        // 提交订单
+        async function submitOrder() {
+            if (!currentProduct) return;
+            
+            const quantity = parseInt(document.getElementById('quantity').value);
+            const method = document.querySelector('input[name="method"]:checked').value;
+            const remarks = document.getElementById('remarks').value;
+            
+            try {
+                const response = await apiRequest('/api/business/orders', 'POST', {
+                    product_id: currentProduct.id,
+                    quantity: quantity,
+                    method: method,
+                    remarks: remarks,
+                    shop_id: 1
+                });
+                
+                if (response.code === 0) {
+                    alert('下单成功！');
+                    closeModal();
+                } else {
+                    alert('下单失败：' + (response.message || '未知错误'));
+                }
+            } catch (error) {
+                alert('下单失败，请稍后重试');
+            }
+        }
+        
+        // 页面加载
+        window.addEventListener('load', () => {
+            loadProducts();
+        });
+    </script>
+</body>
+</html>

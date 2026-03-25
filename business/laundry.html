@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>洗衣房</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding-bottom: 60px;
+        }
+        
+        .header {
+            background: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #e8e8e8;
+        }
+        
+        .back-btn {
+            font-size: 24px;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+        
+        .header h1 {
+            font-size: 18px;
+            flex: 1;
+        }
+        
+        /* 服务类型选择 */
+        .service-section {
+            background: white;
+            padding: 15px;
+            margin: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .service-section h3 {
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        
+        .service-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .service-option {
+            padding: 12px;
+            border: 2px solid #d9d9d9;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .service-option:active {
+            border-color: #1890ff;
+            background-color: #f0f7ff;
+        }
+        
+        .service-option.selected {
+            border-color: #1890ff;
+            background-color: #f0f7ff;
+        }
+        
+        .service-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .service-price {
+            font-size: 14px;
+            font-weight: bold;
+            color: #1890ff;
+        }
+        
+        /* 衣物状态追踪 */
+        .tracking-section {
+            background: white;
+            padding: 15px;
+            margin: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tracking-section h3 {
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        
+        .tracking-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .tracking-item {
+            padding: 12px;
+            background-color: #f5f5f5;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .tracking-info {
+            flex: 1;
+        }
+        
+        .tracking-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .tracking-status {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-pending {
+            background-color: #fff7e6;
+            color: #d46b08;
+        }
+        
+        .status-washing {
+            background-color: #e6f7ff;
+            color: #1890ff;
+        }
+        
+        .status-returned {
+            background-color: #f6ffed;
+            color: #52c41a;
+        }
+        
+        .status-completed {
+            background-color: #f6ffed;
+            color: #52c41a;
+        }
+        
+        /* 预约表单 */
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .checkbox-item input[type="checkbox"] {
+            width: auto;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #1890ff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .submit-btn:active {
+            background-color: #0050b3;
+        }
+        
+        /* 底部导航 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: white;
+            border-top: 1px solid #e8e8e8;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            color: #666;
+            font-size: 12px;
+            flex: 1;
+            height: 100%;
+        }
+        
+        .nav-item.active {
+            color: #1890ff;
+        }
+        
+        .nav-icon {
+            font-size: 24px;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <button class="back-btn" onclick="goBack()">←</button>
+        <h1>洗衣房</h1>
+    </div>
+    
+    <div class="loading" id="loading">加载中...</div>
+    
+    <!-- 服务类型选择 -->
+    <div class="service-section">
+        <h3>选择洗衣服务</h3>
+        <div class="service-options">
+            <div class="service-option" onclick="selectService(this, 'normal', 5)">
+                <div>
+                    <div class="service-name">普通洗</div>
+                </div>
+                <div class="service-price">¥5/件</div>
+            </div>
+            <div class="service-option" onclick="selectService(this, 'delicate', 8)">
+                <div>
+                    <div class="service-name">精洗</div>
+                </div>
+                <div class="service-price">¥8/件</div>
+            </div>
+            <div class="service-option" onclick="selectService(this, 'ironing', 10)">
+                <div>
+                    <div class="service-name">熨烫</div>
+                </div>
+                <div class="service-price">¥10/件</div>
+            </div>
+            <div class="service-option" onclick="selectService(this, 'dry_clean', 15)">
+                <div>
+                    <div class="service-name">干洗</div>
+                </div>
+                <div class="service-price">¥15/件</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 衣物状态追踪 -->
+    <div class="tracking-section">
+        <h3>衣物状态追踪</h3>
+        <div class="tracking-list" id="trackingList">
+            <!-- 追踪项将动态插入 -->
+        </div>
+    </div>
+    
+    <!-- 上门取送预约 -->
+    <div class="service-section">
+        <h3>上门取送预约</h3>
+        
+        <div class="form-group">
+            <label>预约日期</label>
+            <input type="date" id="appointDate" required>
+        </div>
+        
+        <div class="form-group">
+            <label>预约时间</label>
+            <input type="time" id="appointTime" required>
+        </div>
+        
+        <div class="form-group">
+            <label>衣物数量</label>
+            <input type="number" id="clothCount" min="1" value="10" required>
+        </div>
+        
+        <div class="form-group">
+            <label>特殊需求</label>
+            <textarea id="specialRequests" placeholder="请输入特殊需求，如易损衣物、颜色分类等..."></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label>增值服务</label>
+            <div class="checkbox-group">
+                <div class="checkbox-item">
+                    <input type="checkbox" id="addon1" value="express">
+                    <label>快速服务 (+¥10)</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="addon2" value="fragrance">
+                    <label>香氛护理 (+¥5)</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="addon3" value="softener">
+                    <label>柔顺剂 (+¥3)</label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>联系电话</label>
+            <input type="tel" id="phone" placeholder="请输入联系电话" required>
+        </div>
+        
+        <button class="submit-btn" onclick="submitOrder()">确认预约</button>
+    </div>
+    
+    <!-- 底部导航 -->
+    <div class="bottom-nav">
+        <a class="nav-item" href="index.html">
+            <div class="nav-icon">🏠</div>
+            <div>首页</div>
+        </a>
+        <a class="nav-item" href="orders.html">
+            <div class="nav-icon">📦</div>
+            <div>订单</div>
+        </a>
+        <a class="nav-item" href="member.html">
+            <div class="nav-icon">👑</div>
+            <div>会员</div>
+        </a>
+        <a class="nav-item" href="profile.html">
+            <div class="nav-icon">👤</div>
+            <div>我的</div>
+        </a>
+    </div>
+    
+    <script>
+        let selectedService = null;
+        let selectedServicePrice = 0;
+        
+        // 获取URL参数
+        function getUrlParam(name) {
+            const url = new URL(window.location.href);
+            return url.searchParams.get(name);
+        }
+        
+        // 统一API请求函数
+        async function apiRequest(endpoint, method = 'GET', data = null) {
+            const accessToken = getUrlParam('access_token') || 'demo_token';
+            const isDev = getUrlParam('isdev') || 'true';
+            const apiUrl = 'http://47.98.238.209:22311';
+            
+            const url = new URL(apiUrl + endpoint);
+            url.searchParams.append('access_token', accessToken);
+            url.searchParams.append('isdev', isDev);
+            
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+                
+                if (data && method !== 'GET') {
+                    options.body = JSON.stringify(data);
+                }
+                
+                const response = await fetch(url.toString(), options);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+        
+        // 返回上一页
+        function goBack() {
+            const accessToken = getUrlParam('access_token') || 'demo_token';
+            const isDev = getUrlParam('isdev') || 'true';
+            window.location.href = `index.html?access_token=${accessToken}&isdev=${isDev}`;
+        }
+        
+        // 选择服务
+        function selectService(element, service, price) {
+            document.querySelectorAll('.service-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            element.classList.add('selected');
+            selectedService = service;
+            selectedServicePrice = price;
+        }
+        
+        // 生成追踪列表
+        function generateTrackingList() {
+            const list = document.getElementById('trackingList');
+            list.innerHTML = '';
+            
+            const items = [
+                { name: '白色T恤', status: 'pending', statusText: '未清洗' },
+                { name: '牛仔裤', status: 'washing', statusText: '已送洗' },
+                { name: '黑色外套', status: 'returned', statusText: '已送回' },
+                { name: '红色连衣裙', status: 'completed', statusText: '已完成' }
+            ];
+            
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'tracking-item';
+                div.innerHTML = `
+                    <div class="tracking-info">
+                        <div class="tracking-name">${item.name}</div>
+                        <div class="tracking-status">
+                            <span class="status-badge status-${item.status}">${item.statusText}</span>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+        
+        // 提交订单
+        async function submitOrder() {
+            if (!selectedService) {
+                alert('请选择洗衣服务');
+                return;
+            }
+            
+            const appointDate = document.getElementById('appointDate').value;
+            const appointTime = document.getElementById('appointTime').value;
+            const clothCount = parseInt(document.getElementById('clothCount').value);
+            const specialRequests = document.getElementById('specialRequests').value;
+            const phone = document.getElementById('phone').value;
+            
+            if (!appointDate || !appointTime || !phone) {
+                alert('请填写完整信息');
+                return;
+            }
+            
+            // 获取选中的增值服务
+            const addons = [];
+            if (document.getElementById('addon1').checked) addons.push('express');
+            if (document.getElementById('addon2').checked) addons.push('fragrance');
+            if (document.getElementById('addon3').checked) addons.push('softener');
+            
+            try {
+                const response = await apiRequest('/api/business/orders', 'POST', {
+                    service_type: selectedService,
+                    appoint_date: appointDate,
+                    appoint_time: appointTime,
+                    cloth_count: clothCount,
+                    special_requests: specialRequests,
+                    addons: addons,
+                    phone: phone,
+                    venue_type: 'laundry'
+                });
+                
+                if (response.code === 0) {
+                    alert('预约成功！');
+                    // 清空表单
+                    document.getElementById('appointDate').value = '';
+                    document.getElementById('appointTime').value = '';
+                    document.getElementById('clothCount').value = 10;
+                    document.getElementById('specialRequests').value = '';
+                    document.getElementById('phone').value = '';
+                    document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                        cb.checked = false;
+                    });
+                } else {
+                    alert('预约失败：' + (response.message || '未知错误'));
+                }
+            } catch (error) {
+                alert('预约失败，请稍后重试');
+            }
+        }
+        
+        // 页面加载
+        window.addEventListener('load', () => {
+            generateTrackingList();
+            
+            // 设置最小日期为今天
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('appointDate').value = today;
+            document.getElementById('appointDate').min = today;
+        });
+    </script>
+</body>
+</html>
