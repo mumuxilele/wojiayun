@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我家云即时通讯</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; background: #f5f5f5; height: 100vh; display: flex; flex-direction: column; }
+        
+        .header { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 18px; font-weight: 500; }
+        .header-right { display: flex; align-items: center; gap: 10px; }
+        .user-info { font-size: 14px; }
+        
+        .main { flex: 1; display: flex; overflow: hidden; }
+        
+        /* 左侧用户列表 */
+        .user-list { width: 200px; background: #fff; border-right: 1px solid #e0e0e0; overflow-y: auto; }
+        .list-title { padding: 12px; font-size: 13px; color: #999; border-bottom: 1px solid #f0f0f0; }
+        .user-item { padding: 12px; display: flex; align-items: center; gap: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
+        .user-item:hover { background: #f5f5f5; }
+        .user-item.active { background: #e8f4ff; }
+        .user-avatar { width: 40px; height: 40px; border-radius: 50%; background: #667eea; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; position: relative; }
+        .user-avatar .badge { position: absolute; top: -5px; right: -5px; background: #f00; color: #fff; font-size: 10px; padding: 2px 5px; border-radius: 10px; display: none; }
+        .user-avatar .badge.show { display: block; }
+        .user-info-text { flex: 1; overflow: hidden; }
+        .user-name { font-size: 14px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .user-preview { font-size: 12px; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        /* 中间聊天区域 */
+        .chat-area { flex: 1; display: flex; flex-direction: column; background: #f5f5f5; }
+        .chat-header { background: #fff; padding: 12px 20px; border-bottom: 1px solid #e0e0e0; display: flex; align-items: center; gap: 10px; }
+        .chat-header-avatar { width: 36px; height: 36px; border-radius: 50%; background: #667eea; color: #fff; display: flex; align-items: center; justify-content: center; }
+        .chat-header-name { font-size: 16px; font-weight: 500; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 15px; }
+        
+        /* 消息气泡 */
+        .message { margin-bottom: 15px; display: flex; align-items: flex-start; }
+        .message.self { flex-direction: row-reverse; }
+        .message-avatar { width: 36px; height: 36px; border-radius: 50%; background: #667eea; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; margin: 0 10px; }
+        .message.self .message-avatar { background: #52c41a; }
+        .message-content { max-width: 70%; }
+        .message-bubble { padding: 10px 14px; border-radius: 12px; background: #fff; position: relative; word-wrap: break-word; }
+        .message.self .message-bubble { background: #667eea; color: #fff; }
+        .message-time { font-size: 10px; color: #bbb; margin-top: 4px; }
+        .message.self .message-time { text-align: right; }
+        .message-img { max-width: 200px; max-height: 200px; border-radius: 8px; cursor: pointer; }
+        .message-voice { display: flex; align-items: center; gap: 8px; padding: 8px 12px; min-width: 100px; cursor: pointer; }
+        .message-voice .icon { font-size: 18px; }
+        .message-voice .duration { font-size: 12px; }
+        .message-video { max-width: 250px; border-radius: 8px; }
+        
+        /* 输入区域 */
+        .input-area { background: #fff; border-top: 1px solid #e0e0e0; padding: 10px; }
+        .input-tools { display: flex; gap: 15px; margin-bottom: 10px; }
+        .tool-btn { font-size: 24px; cursor: pointer; color: #666; }
+        .tool-btn:hover { color: #667eea; }
+        .input-wrapper { display: flex; gap: 10px; }
+        .message-input { flex: 1; padding: 10px; border: 1px solid #e0e0e0; border-radius: 20px; outline: none; resize: none; height: 40px; font-size: 14px; }
+        .message-input:focus { border-color: #667eea; }
+        .send-btn { padding: 8px 20px; background: #667eea; color: #fff; border: none; border-radius: 20px; cursor: pointer; font-size: 14px; }
+        
+        /* 录音状态 */
+        .recording { display: none; align-items: center; gap: 10px; padding: 10px; background: #fff; border-radius: 8px; }
+        .recording.show { display: flex; }
+        .recording-dot { width: 10px; height: 10px; border-radius: 50%; background: #f00; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
+        /* 预览 */
+        .preview-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 2000; align-items: center; justify-content: center; }
+        .preview-modal.show { display: flex; }
+        .preview-img { max-width: 95%; max-height: 95%; }
+        .preview-close { position: absolute; top: 20px; right: 20px; color: #fff; font-size: 30px; cursor: pointer; }
+        
+        /* 移动端 */
+        @media (max-width: 768px) {
+            .user-list { width: 70px; }
+            .list-title { display: none; }
+            .user-info-text { display: none; }
+            .message-content { max-width: 85%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>💬 我家云消息</h1>
+        <div class="header-right">
+            <span class="user-info" id="currentUser"></span>
+        </div>
+    </div>
+    
+    <div class="main">
+        <!-- 左侧会话列表 -->
+        <div class="user-list" id="userList">
+            <div class="list-title">会话列表</div>
+            <!-- 群聊 -->
+            <div class="user-item active" data-id="all" onclick="selectChat('all', '群聊', 'all')">
+                <div class="user-avatar">📢</div>
+                <div class="user-info-text">
+                    <div class="user-name">群聊</div>
+                    <div class="user-preview" id="preview-all"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 聊天区域 -->
+        <div class="chat-area">
+            <div class="chat-header">
+                <div class="chat-header-avatar" id="chatAvatar">📢</div>
+                <div class="chat-header-name" id="chatName">群聊</div>
+            </div>
+            
+            <div class="chat-messages" id="chatMessages">
+                <div style="text-align:center;padding:40px;color:#999;">暂无消息，开始聊天吧~</div>
+            </div>
+            
+            <div class="recording" id="recordingStatus">
+                <div class="recording-dot"></div>
+                <span>正在录音...</span>
+                <span id="recordDuration">0:00</span>
+                <button onclick="stopRecording()" style="padding:4px 10px;background:#f00;color:#fff;border:none;border-radius:4px;cursor:pointer;">结束</button>
+            </div>
+            
+            <div class="input-area">
+                <div class="input-tools">
+                    <span class="tool-btn" onclick="document.getElementById('imageInput').click()">🖼️</span>
+                    <span class="tool-btn" onclick="startRecording()">🎤</span>
+                    <span class="tool-btn" onclick="document.getElementById('videoInput').click()">🎬</span>
+                    <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="handleImageUpload(this)">
+                    <input type="file" id="videoInput" accept="video/*" style="display:none" onchange="handleVideoUpload(this)">
+                </div>
+                <div class="input-wrapper">
+                    <textarea class="message-input" id="messageInput" placeholder="输入消息..." onkeydown="handleKeyDown(event)"></textarea>
+                    <button class="send-btn" onclick="sendMessage()">发送</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="preview-modal" id="previewModal">
+        <span class="preview-close" onclick="closePreview()">&times;</span>
+        <img class="preview-img" id="previewImg">
+    </div>
+
+    <script>
+        const WS_URL = `ws://${window.location.host}/ws`;
+        let ws = null;
+        let currentUser = null;
+        let userId = null;
+        let selectedReceiver = 'all';  // 当前聊天对象
+        let selectedReceiverName = '群聊';
+        
+        // 会话消息缓存 { receiverId: [messages] }
+        let conversations = { 'all': [] };
+        // 未读消息计数 { receiverId: count }
+        let unreadCounts = {};
+        // 在线用户列表
+        let onlineUsers = [];
+        
+        // 录音
+        let mediaRecorder = null;
+        let audioChunks = [];
+        
+        function getToken() {
+            return new URLSearchParams(window.location.search).get('access_token') || 
+                   new URLSearchParams(window.location.search).get('token');
+        }
+        
+        function getIsDev() {
+            return new URLSearchParams(window.location.search).get('isdev') || '0';
+        }
+        
+        async function init() {
+            const token = getToken();
+            if (!token) {
+                document.body.innerHTML = '<div style="padding:40px;text-align:center;"><h2>请先登录</h2><p>URL中需要包含 access_token 参数</p></div>';
+                return;
+            }
+            
+            // 获取用户信息
+            try {
+                const res = await fetch(`/api/userinfo?access_token=${encodeURIComponent(token)}&isdev=${getIsDev()}`);
+                const data = await res.json();
+                if (data.success) {
+                    currentUser = data.data;
+                    userId = currentUser.userId || currentUser.empId || currentUser.id;
+                    document.getElementById('currentUser').textContent = currentUser.userName || currentUser.empName || '用户';
+                }
+            } catch(e) {
+                console.error('获取用户信息失败:', e);
+            }
+            
+            connectWebSocket();
+            loadHistoryMessages();
+        }
+        
+        function connectWebSocket() {
+            const token = getToken();
+            ws = new WebSocket(`${WS_URL}?access_token=${encodeURIComponent(token)}&isdev=${getIsDev()}`);
+            
+            ws.onopen = () => console.log('WebSocket连接成功');
+            ws.onmessage = (event) => handleMessage(JSON.parse(event.data));
+            ws.onclose = () => { console.log('断开，3秒重连...'); setTimeout(connectWebSocket, 3000); };
+            ws.onerror = (err) => console.error('WebSocket错误:', err);
+        }
+        
+        function handleMessage(data) {
+            switch (data.type) {
+                case 'welcome':
+                case 'user_online':
+                    updateOnlineUsers(data.users || []);
+                    break;
+                case 'user_offline':
+                    updateOnlineUsers(data.users || []);
+                    break;
+                case 'message':
+                    const msg = data.data;
+                    // 消息发给所有人 or 发给我 or 我发的
+                    const isToMe = msg.receiverId === userId;
+                    const isFromMe = msg.senderId === userId;
+                    const isToAll = msg.receiverId === 'all';
+                    
+                    if (isToAll || isToMe || isFromMe) {
+                        // 确定消息属于哪个会话
+                        let chatId;
+                        if (isFromMe) {
+                            chatId = msg.receiverId;
+                        } else if (isToMe) {
+                            chatId = msg.senderId;
+                        } else {
+                            chatId = 'all';
+                        }
+                        
+                        if (!conversations[chatId]) conversations[chatId] = [];
+                        conversations[chatId].push(msg);
+                        
+                        // 如果不是当前聊天窗口，增加未读
+                        if (chatId !== selectedReceiver && !isFromMe) {
+                            unreadCounts[chatId] = (unreadCounts[chatId] || 0) + 1;
+                            updateUnreadBadge(chatId);
+                        }
+                        
+                        // 如果是当前窗口，渲染
+                        if (chatId === selectedReceiver) {
+                            renderMessages();
+                        }
+                        
+                        // 更新预览
+                        updateConversationPreview(chatId, msg);
+                    }
+                    break;
+            }
+        }
+        
+        function updateOnlineUsers(users) {
+            onlineUsers = users.filter(u => u.userId !== userId);
+            
+            // 更新左侧列表中的在线用户
+            const list = document.getElementById('userList');
+            let html = '<div class="list-title">会话列表</div>';
+            
+            // 群聊
+            html += `<div class="user-item ${selectedReceiver === 'all' ? 'active' : ''}" data-id="all" onclick="selectChat('all', '群聊', 'all')">
+                <div class="user-avatar">📢</div>
+                <div class="user-info-text">
+                    <div class="user-name">群聊</div>
+                    <div class="user-preview" id="preview-all"></div>
+                </div>
+            </div>`;
+            
+            // 在线用户
+            users.forEach(u => {
+                if (u.userId !== userId) {
+                    const isActive = selectedReceiver === u.userId;
+                    const unread = unreadCounts[u.userId] || 0;
+                    html += `<div class="user-item ${isActive ? 'active' : ''}" data-id="${u.userId}" onclick="selectChat('${u.userId}', '${u.userName}', 'user')">
+                        <div class="user-avatar">
+                            ${(u.userName || '用户')[0]}
+                            <span class="badge ${unread > 0 ? 'show' : ''}">${unread}</span>
+                        </div>
+                        <div class="user-info-text">
+                            <div class="user-name">${u.userName || '用户'}</div>
+                            <div class="user-preview" id="preview-${u.userId}"></div>
+                        </div>
+                    </div>`;
+                }
+            });
+            
+            list.innerHTML = html;
+        }
+        
+        function selectChat(receiverId, receiverName, type) {
+            selectedReceiver = receiverId;
+            selectedReceiverName = receiverName;
+            
+            // 更新选中状态
+            document.querySelectorAll('.user-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.id === receiverId);
+            });
+            
+            // 更新头部
+            const avatar = (receiverName || '用户')[0];
+            document.getElementById('chatAvatar').textContent = receiverId === 'all' ? '📢' : avatar;
+            document.getElementById('chatName').textContent = receiverName;
+            
+            // 清除未读
+            unreadCounts[receiverId] = 0;
+            updateUnreadBadge(receiverId);
+            
+            // 渲染消息
+            renderMessages();
+        }
+        
+        function renderMessages() {
+            const container = document.getElementById('chatMessages');
+            const msgs = conversations[selectedReceiver] || [];
+            
+            if (msgs.length === 0) {
+                container.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">暂无消息，开始聊天吧~</div>';
+                return;
+            }
+            
+            container.innerHTML = msgs.map(m => {
+                const isSelf = m.senderId === userId;
+                const senderName = isSelf ? '我' : m.senderName;
+                const avatarText = (senderName || '用户')[0];
+                const time = new Date(m.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+                
+                let content = '';
+                switch (m.type) {
+                    case 'text':
+                        content = `<div class="message-bubble">${escapeHtml(m.content)}</div>`;
+                        break;
+                    case 'image':
+                        content = `<img class="message-img" src="${m.content}" onclick="previewImage('${m.content}')">`;
+                        break;
+                    case 'voice':
+                        content = `<div class="message-bubble message-voice" onclick="this.querySelector('audio').play()">
+                            <span class="icon">🔊</span>
+                            <span class="duration">${m.duration || '0:00'}</span>
+                            <audio src="${m.content}" style="display:none"></audio>
+                        </div>`;
+                        break;
+                    case 'video':
+                        content = `<video class="message-video" src="${m.content}" controls></video>`;
+                        break;
+                }
+                
+                return `<div class="message ${isSelf ? 'self' : ''}">
+                    <div class="message-avatar">${avatarText}</div>
+                    <div class="message-content">
+                        <div class="message-bubble">${content}</div>
+                        <div class="message-time">${time}</div>
+                    </div>
+                </div>`;
+            }).join('');
+            
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        function updateConversationPreview(chatId, msg) {
+            let preview = '';
+            switch (msg.type) {
+                case 'text': preview = msg.content.substring(0, 20); break;
+                case 'image': preview = '[图片]'; break;
+                case 'voice': preview = '[语音]'; break;
+                case 'video': preview = '[视频]'; break;
+            }
+            
+            const el = document.getElementById(`preview-${chatId}`);
+            if (el) el.textContent = (msg.senderName || '我') + ': ' + preview;
+        }
+        
+        function updateUnreadBadge(chatId) {
+            const badge = document.querySelector(`.user-item[data-id="${chatId}"] .badge`);
+            if (badge) {
+                const count = unreadCounts[chatId] || 0;
+                badge.textContent = count;
+                badge.classList.toggle('show', count > 0);
+            }
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function sendMessage(msgType = 'text', content = '') {
+            let messageContent = content;
+            if (msgType === 'text') {
+                const input = document.getElementById('messageInput');
+                messageContent = input.value.trim();
+                if (!messageContent) return;
+                input.value = '';
+            }
+            
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                alert('连接断开，请刷新页面');
+                return;
+            }
+            
+            ws.send(JSON.stringify({
+                type: 'chat',
+                msgType: msgType,
+                content: messageContent,
+                receiverId: selectedReceiver
+            }));
+        }
+        
+        // 文件上传处理
+        function handleImageUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => sendMessage('image', e.target.result);
+            reader.readAsDataURL(file);
+            input.value = '';
+        }
+        
+        function handleVideoUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => sendMessage('video', e.target.result);
+            reader.readAsDataURL(file);
+            input.value = '';
+        }
+        
+        // 录音
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                
+                mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const reader = new FileReader();
+                    reader.onload = (e) => sendMessage('voice', e.target.result);
+                    reader.readAsDataURL(audioBlob);
+                };
+                
+                mediaRecorder.start();
+                const startTime = Date.now();
+                document.getElementById('recordingStatus').classList.add('show');
+                
+                const updateDuration = setInterval(() => {
+                    if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+                        clearInterval(updateDuration);
+                        return;
+                    }
+                    const duration = Math.floor((Date.now() - startTime) / 1000);
+                    document.getElementById('recordDuration').textContent = 
+                        Math.floor(duration / 60) + ':' + (duration % 60).toString().padStart(2, '0');
+                }, 1000);
+            } catch(e) {
+                alert('无法获取麦克风: ' + e.message);
+            }
+        }
+        
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            }
+            document.getElementById('recordingStatus').classList.remove('show');
+        }
+        
+        function previewImage(src) {
+            document.getElementById('previewImg').src = src;
+            document.getElementById('previewModal').classList.add('show');
+        }
+        
+        function closePreview() {
+            document.getElementById('previewModal').classList.remove('show');
+        }
+        
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+        
+        async function loadHistoryMessages() {
+            const token = getToken();
+            try {
+                const res = await fetch(`/api/messages?access_token=${encodeURIComponent(token)}&isdev=${getIsDev()}&limit=100`);
+                const data = await res.json();
+                if (data.success && data.data) {
+                    // 按会话分组
+                    data.data.forEach(msg => {
+                        let chatId;
+                        if (msg.senderId === userId) {
+                            chatId = msg.receiverId;
+                        } else if (msg.receiverId === userId) {
+                            chatId = msg.senderId;
+                        } else {
+                            chatId = 'all';
+                        }
+                        if (!conversations[chatId]) conversations[chatId] = [];
+                        conversations[chatId].push(msg);
+                    });
+                    renderMessages();
+                }
+            } catch(e) { console.error('加载历史消息失败:', e); }
+        }
+        
+        setInterval(() => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'ping' }));
+            }
+        }, 30000);
+        
+        init();
+    </script>
+</body>
+</html>
