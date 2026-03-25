@@ -119,7 +119,7 @@ def init_table():
     # 创建走访记录表，包含creator字段
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS visit_records (
-            id INT AUTO_INCREMENT PRIMARY KEY,e
+            id INT AUTO_INCREMENT PRIMARY KEY,
             region VARCHAR(100) COMMENT '区域地址',
             company_name VARCHAR(200) COMMENT '企业名称',
             visitor VARCHAR(50) COMMENT '走访人',

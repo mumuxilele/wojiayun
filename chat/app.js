@@ -1,60 +1,103 @@
 /**
  * 我家云即时通讯服务
- * 支持WebSocket即时消息、消息存储
+ * 支持WebSocket即时消息、MySQL数据库存储
  */
 const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
-const { v4: uuidv4 } = require('uuid');
-const fs = require('fs');
+const crypto = require('crypto');
+const mysql = require('mysql2/promise');
 const path = require('path');
 
 const PORT = 22309;
-const HTTP_PORT = 22310;
 
 // 用户服务配置
 const USER_SERVICE_URL = 'http://127.0.0.1:22307/getUserInfo';
 
-// 消息存储文件
-const MESSAGES_FILE = path.join(__dirname, 'messages.json');
-const USERS_FILE = path.join(__dirname, 'users.json');
+// 数据库配置
+const dbConfig = {
+    host: '47.98.238.209',
+    port: 3306,
+    user: 'root',
+    password: 'Wojiacloud$2023',
+    database: 'visit_system',
+    waitForConnections: true,
+    connectionLimit: 10
+};
 
-// 初始化存储文件
-function initStorage() {
-    if (!fs.existsSync(MESSAGES_FILE)) {
-        fs.writeFileSync(MESSAGES_FILE, JSON.stringify([], null, 2));
-    }
-    if (!fs.existsSync(USERS_FILE)) {
-        fs.writeFileSync(USERS_FILE, JSON.stringify({}, null, 2));
+// 创建数据库连接池
+const pool = mysql.createPool(dbConfig);
+
+// 生成32位MD5 ID
+function generateId() {
+    const timestamp = Date.now().toString();
+    const random = Math.random().toString();
+    return crypto.createHash('md5').update(timestamp + random).digest('hex');
+}
+
+// 初始化数据库表
+async function initDatabase() {
+    try {
+        const conn = await pool.getConnection();
+        // 表已存在，只需验证连接
+        await conn.execute('SELECT 1');
+        conn.release();
+        console.log('数据库连接成功');
+    } catch (e) {
+        console.error('数据库连接失败:', e);
     }
 }
 
-// 读取消息
-function getMessages() {
+// 保存消息到数据库
+async function saveMessage(msgData) {
     try {
-        return JSON.parse(fs.readFileSync(MESSAGES_FILE, 'utf-8'));
+        const conn = await pool.getConnection();
+        await conn.execute(
+            'INSERT INTO chat_messages (msg_id, msg_type, content, sender_id, sender_name, receiver_id, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [msgData.id, msgData.type || 'text', msgData.content, msgData.senderId, msgData.senderName, msgData.receiverId, msgData.timestamp]
+        );
+        conn.release();
+        return true;
     } catch (e) {
+        console.error('保存消息失败:', e);
+        return false;
+    }
+}
+
+// 获取消息历史
+async function getMessages(userId, isStaff, limit = 50) {
+    try {
+        const conn = await pool.getConnection();
+        let rows;
+        
+        if (isStaff) {
+            // 客服：显示所有发给客服的消息，以及客服发送的消息
+            [rows] = await conn.execute(
+                `SELECT * FROM chat_messages WHERE receiver_id = 'staff' OR sender_id = ? ORDER BY timestamp DESC LIMIT ?`,
+                [userId, limit]
+            );
+        } else {
+            // 普通用户：显示自己发送/接收的消息
+            [rows] = await conn.execute(
+                `SELECT * FROM chat_messages WHERE sender_id = ? OR receiver_id = ? OR receiver_id = 'all' ORDER BY timestamp DESC LIMIT ?`,
+                [userId, userId, limit]
+            );
+        }
+        
+        conn.release();
+        return rows.map(r => ({
+            id: r.msg_id,
+            type: r.msg_type,
+            content: r.content,
+            senderId: r.sender_id,
+            senderName: r.sender_name,
+            receiverId: r.receiver_id,
+            timestamp: r.timestamp instanceof Date ? r.timestamp.toISOString() : r.timestamp
+        }));
+    } catch (e) {
+        console.error('获取消息失败:', e);
         return [];
     }
-}
-
-// 保存消息
-function saveMessages(messages) {
-    fs.writeFileSync(MESSAGES_FILE, JSON.stringify(messages, null, 2));
-}
-
-// 读取用户
-function getUsers() {
-    try {
-        return JSON.parse(fs.readFileSync(USERS_FILE, 'utf-8'));
-    } catch (e) {
-        return {};
-    }
-}
-
-// 保存用户
-function saveUsers(users) {
-    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
 }
 
 // 验证用户
@@ -73,8 +116,8 @@ async function verifyUser(token, isdev = '0') {
     }
 }
 
-// 初始化存储
-initStorage();
+// 初始化数据库
+initDatabase();
 
 // 创建Express应用
 const app = express();
@@ -119,7 +162,6 @@ app.get('/api/messages', async (req, res) => {
     const token = req.query.access_token;
     const isdev = req.query.isdev || '0';
     const limit = parseInt(req.query.limit) || 50;
-    const before = req.query.before; // 消息ID，用于分页
     
     if (!token) {
         return res.json({ success: false, msg: 'token不能为空' });
@@ -130,37 +172,10 @@ app.get('/api/messages', async (req, res) => {
         return res.json({ success: false, msg: '用户验证失败' });
     }
     
-    let messages = getMessages();
-    
-    // 获取用户ID
     const userId = userInfo.userId || userInfo.empId || userInfo.id;
-    const isStaff = userInfo.empId || userInfo.staffId; // 客服有 empId
+    const isStaff = userInfo.empId || userInfo.staffId;
     
-    // 过滤消息
-    if (isStaff) {
-        // 客服：显示所有用户发给客服的消息，以及客服发送的消息
-        messages = messages.filter(m => 
-            m.receiverId === 'staff' || 
-            m.senderId === userId ||
-            m.senderId === isStaff
-        );
-    } else {
-        // 普通用户：显示自己发送/接收的消息
-        messages = messages.filter(m => m.senderId === userId || m.receiverId === userId || m.receiverId === 'all');
-    }
-    
-    // 按时间倒序
-    messages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    
-    // 分页
-    if (before) {
-        const beforeIndex = messages.findIndex(m => m.id === before);
-        if (beforeIndex > 0) {
-            messages = messages.slice(0, beforeIndex);
-        }
-    }
-    
-    messages = messages.slice(0, limit);
+    const messages = await getMessages(userId, isStaff, limit);
     
     return res.json({ success: true, data: messages });
 });
@@ -194,29 +209,35 @@ app.get('/api/online-users', async (req, res) => {
     return res.json({ success: true, data: users });
 });
 
-// 上传文件
-app.post('/api/upload', async (req, res) => {
-    const token = req.query.access_token;
-    const isdev = req.query.isdev || '0';
-    
-    if (!token) {
-        return res.json({ success: false, msg: 'token不能为空' });
-    }
-    
-    const userInfo = await verifyUser(token, isdev);
-    if (!userInfo) {
-        return res.json({ success: false, msg: '用户验证失败' });
-    }
-    
-    // 文件处理由前端直接发送base64，这里简单返回成功
-    return res.json({ success: true, msg: '上传接口已准备' });
-});
-
 // 创建HTTP服务器
 const server = http.createServer(app);
 
 // 创建WebSocket服务器
 const wss = new WebSocket.Server({ server });
+
+// 广播消息给所有在线用户
+function broadcast(data) {
+    const message = JSON.stringify(data);
+    for (const [, info] of onlineUsers) {
+        if (info.ws.readyState === WebSocket.OPEN) {
+            info.ws.send(message);
+        }
+    }
+}
+
+// 获取在线用户列表
+function getOnlineUsers() {
+    const users = [];
+    for (const [userId, info] of onlineUsers) {
+        if (info.userInfo) {
+            users.push({
+                userId,
+                userName: info.userInfo.userName || info.userInfo.empName || info.userInfo.name
+            });
+        }
+    }
+    return users;
+}
 
 // WebSocket连接处理
 wss.on('connection', async (ws, req) => {
@@ -245,10 +266,8 @@ wss.on('connection', async (ws, req) => {
             
             // 如果是在线的用户（非客服），通知所有客服有新会话
             if (!userInfo.empId && !userInfo.staffId) {
-                // 查找所有在线客服并通知
                 for (const [uid, info] of onlineUsers) {
                     if (info.userInfo && (info.userInfo.empId || info.userInfo.staffId)) {
-                        // 这是一个客服账号
                         info.ws.send(JSON.stringify({
                             type: 'new_session',
                             userId: userId,
@@ -285,15 +304,14 @@ wss.on('connection', async (ws, req) => {
             
             switch (message.type) {
                 case 'chat':
-                    // 处理聊天消息
                     if (!userInfo) {
                         ws.send(JSON.stringify({ type: 'error', msg: '用户未认证' }));
                         return;
                     }
                     
                     const msgData = {
-                        id: uuidv4(),
-                        type: message.msgType || 'text', // text, image, voice, video
+                        id: generateId(),
+                        type: message.msgType || 'text',
                         content: message.content,
                         senderId: userId,
                         senderName: userInfo.userName || userInfo.empName || userInfo.name,
@@ -301,28 +319,20 @@ wss.on('connection', async (ws, req) => {
                         timestamp: new Date().toISOString()
                     };
                     
-                    // 保存消息
-                    const messages = getMessages();
-                    messages.push(msgData);
-                    // 只保留最近1000条消息
-                    if (messages.length > 1000) {
-                        messages.splice(0, messages.length - 1000);
-                    }
-                    saveMessages(messages);
+                    // 保存消息到数据库
+                    await saveMessage(msgData);
                     
-                    // 广播消息给所有相关用户
+                    // 广播消息
                     broadcast({
                         type: 'message',
                         data: msgData,
-                        // 额外信息，用于区分消息类型
                         isToStaff: msgData.receiverId === 'staff'
                     });
                     
-                    // 如果是发给客服的消息，也直接推送给在线的客服
+                    // 如果是发给客服的消息，直接推送给在线的客服
                     if (msgData.receiverId === 'staff' || msgData.receiverId === 'all') {
                         for (const [uid, info] of onlineUsers) {
                             if (info.userInfo && (info.userInfo.empId || info.userInfo.staffId)) {
-                                // 这是客服
                                 info.ws.send(JSON.stringify({
                                     type: 'message',
                                     data: msgData
@@ -333,7 +343,6 @@ wss.on('connection', async (ws, req) => {
                     break;
                     
                 case 'ping':
-                    // 心跳
                     if (userId) {
                         const user = onlineUsers.get(userId);
                         if (user) {
@@ -357,7 +366,6 @@ wss.on('connection', async (ws, req) => {
             onlineUsers.delete(userId);
             console.log(`用户离线: ${userId}`);
             
-            // 广播用户离线消息
             broadcast({
                 type: 'user_offline',
                 userId,
@@ -365,42 +373,13 @@ wss.on('connection', async (ws, req) => {
             });
         }
     });
-    
-    ws.on('error', (err) => {
-        console.error('WebSocket错误:', err);
-    });
 });
-
-// 获取在线用户列表
-function getOnlineUsers() {
-    const users = [];
-    for (const [userId, info] of onlineUsers) {
-        if (info.userInfo) {
-            users.push({
-                userId,
-                userName: info.userInfo.userName || info.userInfo.empName || info.userInfo.name,
-                avatar: info.userInfo.avatar || ''
-            });
-        }
-    }
-    return users;
-}
-
-// 广播消息给所有在线用户
-function broadcast(data) {
-    const message = JSON.stringify(data);
-    for (const [, info] of onlineUsers) {
-        if (info.ws.readyState === WebSocket.OPEN) {
-            info.ws.send(message);
-        }
-    }
-}
 
 // 定时清理离线用户
 setInterval(() => {
     const now = Date.now();
     for (const [userId, info] of onlineUsers) {
-        if (now - info.lastTime > 60000) { // 60秒无响应视为离线
+        if (now - info.lastTime > 60000) {
             onlineUsers.delete(userId);
             console.log(`用户超时离线: ${userId}`);
             broadcast({
@@ -414,7 +393,9 @@ setInterval(() => {
 
 // 启动服务器
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`即时通讯服务已启动: ws://localhost:${PORT}`);
-    console.log(`HTTP API: http://localhost:${PORT}`);
-    console.log(`WebSocket: ws://localhost:${PORT}`);
+    console.log(`========================================`);
+    console.log(`  即时通讯服务已启动 (MySQL数据库存储)`);
+    console.log(`  端口: ${PORT}`);
+    console.log(`  WebSocket: ws://47.98.238.209:${PORT}`);
+    console.log(`========================================`);
 });
