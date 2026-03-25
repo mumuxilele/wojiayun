@@ -160,48 +160,64 @@ async function verifyUser(token, isdev = '0') {
 // 处理用户信息API请求
 function handleUserInfo(res, token, isdev) {
     if (!token) {
+        const resp = { success: false, msg: 'token不能为空' };
+        console.log('  <- 响应:', JSON.stringify(resp));
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: false, msg: 'token不能为空' }));
+        res.end(JSON.stringify(resp));
         return;
     }
     
     verifyUser(token, isdev).then(userInfo => {
         if (userInfo) {
+            const resp = { success: true, data: { userId: userInfo.userId || userInfo.empId || userInfo.id, name: userInfo.userName || userInfo.empName } };
+            console.log('  <- 响应:', JSON.stringify(resp));
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ success: true, data: userInfo }));
         } else {
+            const resp = { success: false, msg: '用户验证失败' };
+            console.log('  <- 响应:', JSON.stringify(resp));
             res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ success: false, msg: '用户验证失败' }));
+            res.end(JSON.stringify(resp));
         }
     }).catch(e => {
+        const resp = { success: false, msg: '验证失败: ' + e.message };
+        console.log('  <- 响应:', JSON.stringify(resp));
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: false, msg: '验证失败: ' + e.message }));
+        res.end(JSON.stringify(resp));
     });
 }
 
 // 处理获取消息API请求
 async function handleMessages(res, token, isdev, limit) {
     if (!token) {
+        const resp = { success: false, msg: 'token不能为空' };
+        console.log('  <- 响应:', JSON.stringify(resp));
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: false, msg: 'token不能为空' }));
+        res.end(JSON.stringify(resp));
         return;
     }
     
     verifyUser(token, isdev).then(async userInfo => {
         if (!userInfo) {
+            const resp = { success: false, msg: '用户验证失败' };
+            console.log('  <- 响应:', JSON.stringify(resp));
             res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ success: false, msg: '用户验证失败' }));
+            res.end(JSON.stringify(resp));
             return;
         }
         
         const userId = userInfo.userId || userInfo.empId || userInfo.id;
         let messages = await getMessages(userId, limit);
         
+        const resp = { success: true, dataLength: messages.length };
+        console.log('  <- 响应:', JSON.stringify(resp), '首条消息:', messages.length > 0 ? JSON.stringify(messages[0]).substring(0, 100) + '...' : '无');
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true, data: messages }));
     }).catch(e => {
+        const resp = { success: false, msg: '获取消息失败: ' + e.message };
+        console.log('  <- 响应:', JSON.stringify(resp));
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: false, msg: '获取消息失败: ' + e.message }));
+        res.end(JSON.stringify(resp));
     });
 }
 
@@ -218,6 +234,10 @@ const MIME_TYPES = {
 };
 
 const server = http.createServer((req, res) => {
+    // 记录HTTP请求（包含域名）
+    const host = req.headers.host || 'localhost';
+    console.log(`[${new Date().toISOString()}] ${host} ${req.method} ${req.url}`);
+    
     // CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -239,6 +259,7 @@ const server = http.createServer((req, res) => {
     if (pathname === '/api/userinfo') {
         const token = urlObj.searchParams.get('access_token') || urlObj.searchParams.get('token');
         const isdev = urlObj.searchParams.get('isdev') || '0';
+        console.log(`  -> 转发到 /api/userinfo, token=${token ? token.substring(0, 10) + '...' : 'null'}`);
         handleUserInfo(res, token, isdev);
         return;
     }
@@ -248,7 +269,39 @@ const server = http.createServer((req, res) => {
         const token = urlObj.searchParams.get('access_token') || urlObj.searchParams.get('token');
         const isdev = urlObj.searchParams.get('isdev') || '0';
         const limit = parseInt(urlObj.searchParams.get('limit')) || 50;
+        console.log(`  -> 转发到 /api/messages, limit=${limit}`);
         handleMessages(res, token, isdev, limit);
+        return;
+    }
+    
+    // 转发 /visit/api/ 请求到后端服务
+    if (pathname.startsWith('/visit/api/')) {
+        const targetUrl = `http://127.0.0.1:22307${pathname.replace('/visit', '')}${urlObj.search}`;
+        console.log(`  -> 转发到后端: ${targetUrl}`);
+        
+        const options = {
+            hostname: '127.0.0.1',
+            port: 22307,
+            path: pathname.replace('/visit', '') + urlObj.search,
+            method: req.method,
+            headers: {
+                ...req.headers,
+                host: '127.0.0.1:22307'
+            }
+        };
+        
+        const proxyReq = http.request(options, (proxyRes) => {
+            res.writeHead(proxyRes.statusCode, proxyRes.headers);
+            proxyRes.pipe(res, { end: true });
+        });
+        
+        proxyReq.on('error', (err) => {
+            console.error('  <- 转发失败:', err.message);
+            res.writeHead(502);
+            res.end(JSON.stringify({ success: false, msg: '后端服务不可用' }));
+        });
+        
+        req.pipe(proxyReq, { end: true });
         return;
     }
     

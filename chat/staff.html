@@ -224,19 +224,25 @@
         }
         
         async function init() {
+            console.log('init() 被调用');
             const token = getToken();
+            console.log('token:', token ? token.substring(0, 10) + '...' : 'null');
+            
             if (!token) {
                 document.body.innerHTML = '<div style="padding:40px;text-align:center;"><h2>请先登录</h2><p>URL中需要包含 access_token 参数</p></div>';
                 return;
             }
             
             try {
+                console.log('正在获取用户信息...');
                 const res = await fetch(`/api/userinfo?access_token=${encodeURIComponent(token)}&isdev=${getIsDev()}`);
                 const data = await res.json();
+                console.log('用户信息返回:', data);
                 if (data.success) {
                     currentUser = data.data;
                     staffId = currentUser.userId || currentUser.empId || currentUser.id;
                     document.getElementById('currentUser').textContent = currentUser.userName || currentUser.empName || '客服';
+                    console.log('staffId:', staffId);
                 } else {
                     document.body.innerHTML = `<div style="padding:40px;text-align:center;">
                         <h2>登录已失效</h2>
@@ -251,6 +257,7 @@
             }
             
             // 加载历史消息
+            console.log('正在加载历史消息...');
             try {
                 const msgRes = await fetch(`/api/messages?access_token=${encodeURIComponent(token)}&isdev=${getIsDev()}&limit=100`);
                 const msgData = await msgRes.json();
@@ -272,6 +279,8 @@
                         });
                     });
                     console.log('加载了历史消息，会话数:', Object.keys(sessions).length);
+                } else {
+                    console.log('没有历史消息或获取失败');
                 }
             } catch(e) {
                 console.error('获取历史消息失败:', e);

@@ -201,7 +201,7 @@
                 } else {
                     document.getElementById('chatArea').innerHTML = `<div class="waiting">
                         <div class="waiting-icon">❌</div>
-                        <div>${data.msg || '登录已失效，请重新登录获取有效token</div>
+                        <div>${data.msg || '登录已失效，请重新登录获取有效token'}</div>
                     </div>`;
                     document.getElementById('messageInput').disabled = true;
                     document.querySelector('.send-btn').disabled = true;
@@ -295,7 +295,7 @@
         }
         
         function renderMessages() {
-            console.log('renderMessages被调用，messages长度:', messages.length);
+            console.log('renderMessages被调用，messages长度:', messages.length, 'userId:', userId);
             const container = document.getElementById('chatArea');
             
             // 始终清空容器
@@ -315,7 +315,7 @@
             // 转换字段名（数据库返回下划线格式）
             const normalizedMessages = messages.map(m => ({
                 id: m.msg_id || m.id,
-                type: m.msg_type || m.type,
+                type: m.msg_type || m.type || 'text',
                 content: m.content,
                 senderId: m.sender_id || m.senderId,
                 receiverId: m.receiver_id || m.receiverId,
@@ -323,31 +323,36 @@
                 timestamp: m.timestamp
             }));
             
+            console.log('标准化后的消息:', normalizedMessages);
+            
             // 按时间正序排列（最新在最下）
             const sortedMessages = [...normalizedMessages].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
             
-            container.innerHTML = sortedMessages.map(m => {
+            const html = sortedMessages.map(m => {
                 const isSelf = String(m.senderId) === String(userId);
-                const senderName = isSelf ? '我' : '客服';
                 const avatarText = isSelf ? (currentUser?.userName?.[0] || '我') : '服';
                 const time = new Date(m.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
                 
-                let content = '';
+                let contentHtml = '';
                 if (m.type === 'text') {
-                    content = `<div class="message-bubble">${escapeHtml(m.content)}</div>`;
+                    contentHtml = escapeHtml(m.content || '');
                 } else if (m.type === 'image') {
-                    content = `<img class="message-img" src="${m.content}" onclick="previewImage('${m.content}')">`;
+                    contentHtml = `<img class="message-img" src="${m.content}" onclick="previewImage('${m.content}')">`;
+                } else {
+                    contentHtml = escapeHtml(String(m.content) || '');
                 }
                 
                 return `<div class="message ${isSelf ? 'self' : ''}">
                     <div class="message-avatar">${avatarText}</div>
                     <div class="message-content">
-                        <div class="message-bubble">${content}</div>
+                        <div class="message-bubble">${contentHtml}</div>
                         <div class="message-time">${time}</div>
                     </div>
                 </div>`;
             }).join('');
             
+            console.log('生成的HTML长度:', html.length);
+            container.innerHTML = html;
             container.scrollTop = container.scrollHeight;
         }
         
