@@ -132,9 +132,22 @@ app.get('/api/messages', async (req, res) => {
     
     let messages = getMessages();
     
-    // 过滤：只显示该用户发送的或接收的消息
+    // 获取用户ID
     const userId = userInfo.userId || userInfo.empId || userInfo.id;
-    messages = messages.filter(m => m.senderId === userId || m.receiverId === userId || m.receiverId === 'all');
+    const isStaff = userInfo.empId || userInfo.staffId; // 客服有 empId
+    
+    // 过滤消息
+    if (isStaff) {
+        // 客服：显示所有用户发给客服的消息，以及客服发送的消息
+        messages = messages.filter(m => 
+            m.receiverId === 'staff' || 
+            m.senderId === userId ||
+            m.senderId === isStaff
+        );
+    } else {
+        // 普通用户：显示自己发送/接收的消息
+        messages = messages.filter(m => m.senderId === userId || m.receiverId === userId || m.receiverId === 'all');
+    }
     
     // 按时间倒序
     messages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -229,6 +242,22 @@ wss.on('connection', async (ws, req) => {
                 userName: userInfo.userName || userInfo.empName || userInfo.name,
                 users: getOnlineUsers()
             });
+            
+            // 如果是在线的用户（非客服），通知所有客服有新会话
+            if (!userInfo.empId && !userInfo.staffId) {
+                // 查找所有在线客服并通知
+                for (const [uid, info] of onlineUsers) {
+                    if (info.userInfo && (info.userInfo.empId || info.userInfo.staffId)) {
+                        // 这是一个客服账号
+                        info.ws.send(JSON.stringify({
+                            type: 'new_session',
+                            userId: userId,
+                            userName: userInfo.userName || userInfo.name || '用户',
+                            users: getOnlineUsers()
+                        }));
+                    }
+                }
+            }
         }
     }
     
@@ -281,11 +310,26 @@ wss.on('connection', async (ws, req) => {
                     }
                     saveMessages(messages);
                     
-                    // 广播消息
+                    // 广播消息给所有相关用户
                     broadcast({
                         type: 'message',
-                        data: msgData
+                        data: msgData,
+                        // 额外信息，用于区分消息类型
+                        isToStaff: msgData.receiverId === 'staff'
                     });
+                    
+                    // 如果是发给客服的消息，也直接推送给在线的客服
+                    if (msgData.receiverId === 'staff' || msgData.receiverId === 'all') {
+                        for (const [uid, info] of onlineUsers) {
+                            if (info.userInfo && (info.userInfo.empId || info.userInfo.staffId)) {
+                                // 这是客服
+                                info.ws.send(JSON.stringify({
+                                    type: 'message',
+                                    data: msgData
+                                }));
+                            }
+                        }
+                    }
                     break;
                     
                 case 'ping':
