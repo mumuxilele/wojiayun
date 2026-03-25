@@ -12,6 +12,9 @@ const mysql = require('mysql2/promise');
 
 const PORT = 22309;
 
+// 用户服务配置
+const USER_SERVICE_URL = 'http://127.0.0.1:22307/getUserInfo';
+
 // MySQL 连接池
 const pool = mysql.createPool({
     host: '47.98.238.209',
@@ -38,6 +41,23 @@ const groups = new Map();
 const messageReadStatus = new Map();
 
 // ============ 工具函数 ============
+
+
+// ============ 用户验证 ============
+
+async function verifyUser(token, isdev = '0') {
+    try {
+        const response = await fetch(USER_SERVICE_URL + '?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev);
+        const data = await response.json();
+        if (data.success && data.data) {
+            return data.data;
+        }
+        return null;
+    } catch (err) {
+        console.error('用户验证失败:', err);
+        return null;
+    }
+}
 
 function generateId() {
     const timestamp = Date.now().toString();
@@ -168,6 +188,35 @@ async function markMessageAsRead(msgId, userId) {
     }
 }
 
+
+async function getMessages(userId, isStaff, limit = 50) {
+    const conn = await getConnection();
+    try {
+        let sql, params;
+        if (isStaff) {
+            sql = "SELECT * FROM chat_messages WHERE (receiver_id = 'staff' OR sender_id = 'staff') AND deleted = 0 AND is_recalled = 0 ORDER BY timestamp DESC LIMIT ?";
+            params = [limit];
+        } else {
+            sql = "SELECT * FROM chat_messages WHERE (sender_id = ? OR receiver_id = ?) AND deleted = 0 AND is_recalled = 0 ORDER BY timestamp DESC LIMIT ?";
+            params = [userId, userId, limit];
+        }
+        const [rows] = await conn.execute(sql, params);
+        return rows.map(row => ({
+            id: row.msg_id,
+            msg_id: row.msg_id,
+            msg_type: row.msg_type,
+            type: row.msg_type,
+            content: row.content,
+            senderId: row.sender_id,
+            senderName: row.sender_name,
+            receiverId: row.receiver_id,
+            timestamp: row.timestamp
+        }));
+    } finally {
+        conn.release();
+    }
+}
+
 async function recallMessage(msgId, userId) {
     const conn = await getConnection();
     try {
@@ -217,6 +266,77 @@ async function searchMessages(keyword, userId, limit = 20) {
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
+
+
+// ============ HTTP API 路由 ============
+
+// 获取用户信息
+app.get('/api/userinfo', async (req, res) => {
+    const token = req.query.access_token || req.query.token;
+    const isdev = req.query.isdev || '0';
+    
+    if (!token) {
+        return res.json({ success: false, msg: 'token不能为空' });
+    }
+    
+    const userInfo = await verifyUser(token, isdev);
+    if (userInfo) {
+        return res.json({ success: true, data: userInfo });
+    }
+    return res.json({ success: false, msg: '用户验证失败' });
+});
+
+// 获取历史消息
+app.get('/api/messages', async (req, res) => {
+    const token = req.query.access_token;
+    const isdev = req.query.isdev || '0';
+    const limit = parseInt(req.query.limit) || 50;
+    
+    if (!token) {
+        return res.json({ success: false, msg: 'token不能为空' });
+    }
+    
+    const userInfo = await verifyUser(token, isdev);
+    if (!userInfo) {
+        return res.json({ success: false, msg: '用户验证失败' });
+    }
+    
+    const userId = userInfo.userId || userInfo.empId || userInfo.id;
+    const isStaff = userInfo.empId || userInfo.staffId;
+    
+    const messages = await getMessages(userId, isStaff, limit);
+    
+    return res.json({ success: true, data: messages });
+});
+
+// 获取在线用户列表
+app.get('/api/online-users', async (req, res) => {
+    const token = req.query.access_token;
+    const isdev = req.query.isdev || '0';
+    
+    if (!token) {
+        return res.json({ success: false, msg: 'token不能为空' });
+    }
+    
+    const userInfo = await verifyUser(token, isdev);
+    if (!userInfo) {
+        return res.json({ success: false, msg: '用户验证失败' });
+    }
+    
+    const users = [];
+    for (const [uid, info] of onlineUsers) {
+        if (info.userInfo) {
+            users.push({
+                userId: uid,
+                userName: info.userInfo.userName || info.userInfo.empName || info.userInfo.name,
+                lastTime: info.lastTime
+            });
+        }
+    }
+    
+    return res.json({ success: true, data: users });
+});
+
 
 app.use(express.static(path.join(__dirname)));
 
