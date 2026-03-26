@@ -78,7 +78,6 @@ async function getConnection() {
 async function initDatabase() {
     const conn = await getConnection();
     try {
-        // 创建消息表（如果不存在）
         await conn.execute(`
             CREATE TABLE IF NOT EXISTS chat_messages (
                 id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -192,13 +191,14 @@ async function markMessageAsRead(msgId, userId) {
 async function getMessages(userId, isStaff, limit = 50) {
     const conn = await getConnection();
     try {
+        const limitInt = parseInt(limit) || 50;
         let sql, params;
         if (isStaff) {
-            sql = "SELECT * FROM chat_messages WHERE (receiver_id = 'staff' OR sender_id = 'staff') AND deleted = 0 AND is_recalled = 0 ORDER BY timestamp DESC LIMIT ?";
-            params = [limit];
+            sql = "SELECT * FROM chat_messages WHERE (receiver_id = 'staff' OR sender_id = 'staff') AND deleted = 0 AND is_recalled = 0 ORDER BY timestamp DESC LIMIT " + limitInt;
+            params = [];
         } else {
-            sql = "SELECT * FROM chat_messages WHERE (sender_id = ? OR receiver_id = ?) AND deleted = 0 AND is_recalled = 0 ORDER BY timestamp DESC LIMIT ?";
-            params = [userId, userId, limit];
+            sql = "SELECT * FROM chat_messages WHERE (sender_id = ? OR receiver_id = ?) AND deleted = 0 AND is_recalled = 0 ORDER BY timestamp DESC LIMIT " + limitInt;
+            params = [userId, userId];
         }
         const [rows] = await conn.execute(sql, params);
         return rows.map(row => ({

@@ -34,21 +34,33 @@ def error(msg='error', code=400):
 # ============ 通用功能 ============
 
 def get_current_user():
-    """获取当前用户信息"""
+    """获取当前用户信息 - 通过用户服务(22307)验证"""
     token = request.args.get('access_token') or request.headers.get('Token')
-    isdev = request.args.get('isdev', '0')
+    isdev = request.args.get('isdev') or '0'
     if not token:
         return None
-    # 验证 token 获取用户信息
     try:
-        db = get_db()
-        cursor = db.cursor(pymysql.cursors.DictCursor)
-        cursor.execute("SELECT * FROM sys_user WHERE token=%s", (token,))
-        user = cursor.fetchone()
-        db.close()
-        return user
-    except:
-        return None
+        import urllib.request
+        import json
+        url = 'http://127.0.0.1:22307/getUserInfo?access_token=' + urllib.parse.quote(token, safe='') + '&isdev=' + isdev
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            if data.get('success') and data.get('data'):
+                user_data = data['data']
+                return {
+                    'id': user_data.get('id') or user_data.get('userId'),
+                    'userId': user_data.get('userId') or user_data.get('id'),
+                    'user_name': user_data.get('userName') or user_data.get('empName'),
+                    'emp_name': user_data.get('empName'),
+                    'phone': user_data.get('userPhone') or user_data.get('empPhone'),
+                    'emp_id': user_data.get('empId'),
+                    'staff_id': user_data.get('staffId'),
+                    'is_staff': bool(user_data.get('empId') or user_data.get('staffId'))
+                }
+    except Exception as e:
+        print(f'User verify error: {e}')
+    return None
 
 # ============ 门店管理 API ============
 
