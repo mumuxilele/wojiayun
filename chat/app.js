@@ -106,13 +106,20 @@ async function saveMessage(msg) {
     }
 }
 
-async function getMessages(userId, userName, isStaff, limit) {
+async function getMessages(senderType, limit, offset = 0, beforeTimestamp = null) {
     const conn = await getConnection();
     try {
-        let sql, params;
-        const senderType = isStaff ? 'staff' : 'user';
-        sql = "SELECT msg_id as id, msg_id, msg_type, content, sender_id as senderId, sender_name as senderName, sender_type, receiver_id as receiverId, timestamp FROM chat_messages WHERE sender_type = ? AND deleted = 0 ORDER BY timestamp DESC LIMIT ?";
-        params = [senderType, limit || 50];
+        let sql = "SELECT msg_id as id, msg_id, msg_type, content, sender_id as senderId, sender_name as senderName, sender_type, receiver_id as receiverId, timestamp FROM chat_messages WHERE sender_type = ? AND deleted = 0";
+        let params = [senderType];
+        
+        if (beforeTimestamp) {
+            sql += " AND timestamp < ?";
+            params.push(beforeTimestamp);
+        }
+        
+        sql += " ORDER BY timestamp DESC LIMIT ? OFFSET ?";
+        params.push(parseInt(limit) || 50, parseInt(offset) || 0);
+        
         const [rows] = await conn.query(sql, params);
         return rows;
     } finally {
@@ -142,13 +149,15 @@ app.get('/api/messages', async (req, res) => {
     const token = req.query.access_token;
     const isdev = req.query.isdev || '0';
     const limit = Math.max(1, Math.min(100, parseInt(req.query.limit) || 50));
+    const offset = parseInt(req.query.offset) || 0;
+    const before = req.query.before || null; // timestamp for pagination
     if (!token) return res.json({ success: false, msg: 'token required' });
     const userInfo = await verifyUser(token, isdev);
     if (!userInfo) return res.json({ success: false, msg: 'auth failed' });
     
     const senderType = req.query.type === 'staff' ? 'staff' : 'user';
-    const messages = await getMessages(senderType, limit);
-    return res.json({ success: true, data: messages });
+    const messages = await getMessages(senderType, limit, offset, before);
+    return res.json({ success: true, data: messages, hasMore: messages.length === limit });
 });
 
 // 获取在线用户
