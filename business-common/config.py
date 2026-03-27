@@ -14,6 +14,8 @@ DB_CONFIG = {
 
 # 用户服务配置
 USER_SERVICE_URL = 'http://127.0.0.1:22307/getUserInfo'
+USER_SERVICE_URL_CLOUD = 'https://wj.wojiacloud.com/getUserInfo'  # 用户端云端
+STAFF_SERVICE_URL_CLOUD = 'https://gj.wojiacloud.com/getUserInfo'  # 员工端云端
 
 # 服务端口配置
 PORTS = {

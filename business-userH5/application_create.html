@@ -17,12 +17,12 @@
         .form-select { width: 100%; padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; background: white; }
         textarea.form-input { min-height: 100px; resize: vertical; }
         .btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 12px; font-size: 16px; cursor: pointer; }
-        .btn:active { opacity: 0.9; }
+        .btn:disabled { opacity: 0.6; }
     </style>
 </head>
 <body>
     <div class="header">
-        <a href="applications.html" class="back">← 返回</a>
+        <a href="javascript:void(0)" class="back" onclick="goBack()">← 返回</a>
         <h1>提交申请</h1>
         <span></span>
     </div>
@@ -46,35 +46,48 @@
             <label class="form-label">详细内容</label>
             <textarea class="form-input" id="content" placeholder="请详细描述您的问题或需求"></textarea>
         </div>
-        <button class="btn" onclick="submit()">提交申请</button>
+        <button class="btn" id="submitBtn" onclick="submit()">提交申请</button>
     </div>
 
     <script>
-        const token = localStorage.getItem('token') || new URLSearchParams(location.search).get('access_token');
-        const isdev = new URLSearchParams(location.search).get('isdev') || '0';
+        var urlParams = new URLSearchParams(location.search);
+        var token = urlParams.get('access_token');
+        var isdev = urlParams.get('isdev') || '0';
+        
+        if (token) {
+            localStorage.setItem('user_token', token);
+            localStorage.setItem('user_isdev', isdev);
+        } else {
+            token = localStorage.getItem('user_token');
+            isdev = localStorage.getItem('user_isdev') || '0';
+        }
+
+        function goBack() {
+            location.href = 'applications.html?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+        }
 
         async function submit() {
-            const appType = document.getElementById('appType').value;
-            const title = document.getElementById('title').value.trim();
-            const content = document.getElementById('content').value.trim();
+            var appType = document.getElementById('appType').value;
+            var title = document.getElementById('title').value.trim();
+            var content = document.getElementById('content').value.trim();
 
             if (!title) { alert('请输入标题'); return; }
             if (!content) { alert('请输入详细内容'); return; }
 
-            const btn = document.querySelector('.btn');
+            var btn = document.getElementById('submitBtn');
             btn.disabled = true;
             btn.textContent = '提交中...';
 
             try {
-                const res = await fetch('/api/user/applications', {
+                var res = await fetch('/api/user/applications?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({app_type: appType, title, content})
+                    body: JSON.stringify({app_type: appType, title: title, content: content})
                 });
-                const data = await res.json();
+                var data = await res.json();
                 if (data.success) {
                     alert('提交成功');
-                    location.href = 'applications.html';
+                    location.href = 'applications.html?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
                 } else {
                     alert(data.msg || '提交失败');
                 }

@@ -7,93 +7,189 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; min-height: 100vh; }
+        
         .header { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; padding: 20px; }
         .header h1 { font-size: 20px; margin-bottom: 5px; }
-        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; }
-        .stat-item { background: rgba(255,255,255,0.2); padding: 10px; border-radius: 8px; text-align: center; }
+        .header-sub { font-size: 13px; opacity: 0.9; }
+        
+        .stats-row { display: flex; gap: 10px; margin-top: 15px; }
+        .stat-card { background: rgba(255,255,255,0.2); padding: 12px; border-radius: 10px; flex: 1; text-align: center; }
         .stat-num { font-size: 24px; font-weight: 600; }
-        .stat-label { font-size: 11px; opacity: 0.9; }
-        .nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; background: white; margin: 10px; border-radius: 12px; }
-        .nav-item { text-align: center; padding: 15px; border-radius: 8px; cursor: pointer; }
-        .nav-item:active { background: #f5f5f5; }
-        .nav-icon { font-size: 28px; margin-bottom: 5px; }
-        .nav-text { font-size: 12px; color: #333; }
-        .section { background: white; margin: 10px; border-radius: 12px; padding: 15px; }
-        .section-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; display: flex; justify-content: space-between; }
-        .section-title a { font-size: 12px; color: #11998e; text-decoration: none; }
-        .item { display: flex; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
-        .item:last-child { border-bottom: none; }
-        .item-icon { width: 40px; height: 40px; background: #f5f5f5; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-right: 12px; }
-        .item-info { flex: 1; }
-        .item-title { font-size: 14px; color: #333; margin-bottom: 4px; }
-        .item-desc { font-size: 12px; color: #999; }
-        .item-badge { font-size: 11px; padding: 3px 8px; border-radius: 8px; }
-        .badge-pending { background: #fff3e0; color: #f57c00; }
+        .stat-label { font-size: 11px; opacity: 0.85; margin-top: 2px; }
+        
+        .menu-row { display: flex; gap: 10px; padding: 15px; background: white; margin: 10px 15px; border-radius: 12px; }
+        .menu-item { flex: 1; text-align: center; padding: 12px 8px; border-radius: 8px; cursor: pointer; }
+        .menu-item:active { background: #f5f5f5; }
+        .menu-icon { font-size: 26px; margin-bottom: 4px; }
+        .menu-text { font-size: 12px; color: #333; font-weight: 500; }
+        
+        .section { background: white; margin: 0 15px 15px; border-radius: 12px; overflow: hidden; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #f5f5f5; }
+        .section-title { font-size: 15px; font-weight: 600; color: #333; }
+        .section-more { font-size: 12px; color: #11998e; text-decoration: none; }
+        
+        /* 筛选器 */
+        .filter-bar { display: flex; gap: 8px; padding: 10px 15px; background: #fafafa; overflow-x: auto; }
+        .filter-tag { padding: 5px 12px; border-radius: 15px; font-size: 12px; white-space: nowrap; background: #f0f0f0; color: #666; cursor: pointer; }
+        .filter-tag.active { background: #11998e; color: white; }
+        
+        /* 列表项 */
+        .record-item { display: flex; padding: 12px 15px; border-bottom: 1px solid #f5f5f5; cursor: pointer; }
+        .record-item:last-child { border-bottom: none; }
+        .record-icon { width: 36px; height: 36px; background: #f5f5f5; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; margin-right: 10px; }
+        .record-info { flex: 1; min-width: 0; }
+        .record-title { font-size: 14px; color: #333; }
+        .record-desc { font-size: 12px; color: #999; margin-top: 2px; }
+        .record-status { font-size: 11px; padding: 2px 6px; border-radius: 4px; }
+        
+        .status-pending { background: #fff7e6; color: #fa8c16; }
+        .status-processing { background: #e6f7ff; color: #1890ff; }
+        .status-completed { background: #f6ffed; color: #52c41a; }
+        
+        /* 图表区 */
+        .chart-section { padding: 15px; }
+        .chart-bar { display: flex; align-items: center; margin-bottom: 8px; }
+        .chart-label { width: 70px; font-size: 12px; color: #666; }
+        .chart-bar-outer { flex: 1; height: 18px; background: #f0f0f0; border-radius: 4px; overflow: hidden; }
+        .chart-bar-inner { height: 100%; background: linear-gradient(90deg, #11998e, #38ef7d); border-radius: 4px; }
+        .chart-value { width: 40px; text-align: right; font-size: 12px; color: #333; margin-left: 8px; }
+        
+        .empty { text-align: center; padding: 25px; color: #bbb; font-size: 13px; }
+        .login-tip { text-align: center; padding: 60px 20px; color: #999; }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>🏢 工作台</h1>
-        <div>员工端</div>
-        <div class="stats">
-            <div class="stat-item"><div class="stat-num" id="pendingApps">0</div><div class="stat-label">待处理</div></div>
-            <div class="stat-item"><div class="stat-num" id="processingApps">0</div><div class="stat-label">处理中</div></div>
-            <div class="stat-item"><div class="stat-num" id="todayOrders">0</div><div class="stat-label">今日订单</div></div>
-            <div class="stat-item"><div class="stat-num" id="todayIncome">¥0</div><div class="stat-label">今日收入</div></div>
+        <div class="header-sub">员工端</div>
+        <div class="stats-row">
+            <div class="stat-card"><div class="stat-num" id="statPending">0</div><div class="stat-label">待处理</div></div>
+            <div class="stat-card"><div class="stat-num" id="statProcessing">0</div><div class="stat-label">处理中</div></div>
+            <div class="stat-card"><div class="stat-num" id="statTodayOrders">0</div><div class="stat-label">今日订单</div></div>
+            <div class="stat-card"><div class="stat-num" id="statIncome">¥0</div><div class="stat-label">今日收入</div></div>
         </div>
     </div>
 
-    <div class="nav">
-        <div class="nav-item" onclick="location.href='application_list.html'">
-            <div class="nav-icon">📋</div>
-            <div class="nav-text">申请单</div>
+    <div class="menu-row">
+        <div class="menu-item" onclick="goTo('application_list.html')">
+            <div class="menu-icon">📋</div>
+            <div class="menu-text">申请单</div>
         </div>
-        <div class="nav-item" onclick="location.href='order_list.html'">
-            <div class="nav-icon">📦</div>
-            <div class="nav-text">订单</div>
+        <div class="menu-item" onclick="goTo('order_list.html')">
+            <div class="menu-icon">📦</div>
+            <div class="menu-text">订单</div>
         </div>
-        <div class="nav-item" onclick="location.href='statistics.html'">
-            <div class="nav-icon">📊</div>
-            <div class="nav-text">统计</div>
+        <div class="menu-item" onclick="goTo('statistics.html')">
+            <div class="menu-icon">📊</div>
+            <div class="menu-text">统计</div>
         </div>
     </div>
 
     <div class="section">
-        <div class="section-title"><span>待处理申请</span><a href="application_list.html?status=pending">更多 ></a></div>
-        <div id="pendingList"><div style="text-align:center;padding:20px;color:#999;">暂无</div></div>
+        <div class="section-header">
+            <span class="section-title">待处理申请</span>
+            <a href="javascript:void(0)" class="section-more" onclick="goTo('application_list.html?status=pending')">更多 ></a>
+        </div>
+        <div class="filter-bar">
+            <div class="filter-tag active" data-type="">全部</div>
+            <div class="filter-tag" data-type="repair">报修</div>
+            <div class="filter-tag" data-type="booking">预约</div>
+            <div class="filter-tag" data-type="complaint">投诉</div>
+        </div>
+        <div id="pendingList"><div class="empty">加载中...</div></div>
+    </div>
+
+    <div class="section">
+        <div class="section-header"><span class="section-title">申请统计</span></div>
+        <div class="chart-section" id="appChart"><div class="empty">加载中...</div></div>
+    </div>
+
+    <div class="section">
+        <div class="section-header"><span class="section-title">订单统计</span></div>
+        <div class="chart-section" id="orderChart"><div class="empty">加载中...</div></div>
     </div>
 
     <script>
-        const token = localStorage.getItem('token') || new URLSearchParams(location.search).get('access_token');
-        const isdev = new URLSearchParams(location.search).get('isdev') || '0';
-
-        async function loadStats() {
-            try {
-                const res = await fetch('/api/staff/statistics?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev);
-                const data = await res.json();
-                if (data.success && data.data) {
-                    document.getElementById('pendingApps').textContent = data.data.pending_applications || 0;
-                    document.getElementById('processingApps').textContent = data.data.processing_applications || 0;
-                    document.getElementById('todayOrders').textContent = data.data.today_orders || 0;
-                    document.getElementById('todayIncome').textContent = '¥' + (data.data.today_income || 0);
-                }
-            } catch(e) { console.error(e); }
+        var urlParams = new URLSearchParams(location.search);
+        var token = urlParams.get('access_token');
+        var isdev = urlParams.get('isdev') || '0';
+        var currentType = '';
+        
+        if (token) {
+            localStorage.setItem('staff_token', token);
+            localStorage.setItem('staff_isdev', isdev);
+        } else {
+            token = localStorage.getItem('staff_token');
+            isdev = localStorage.getItem('staff_isdev') || '0';
         }
 
-        async function loadPending() {
-            try {
-                const res = await fetch('/api/staff/applications?page=1&page_size=5&status=pending&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev);
-                const data = await res.json();
-                if (data.success && data.data && data.data.items && data.data.items.length > 0) {
-                    document.getElementById('pendingList').innerHTML = data.data.items.map(item => 
-                        '<div class="item" onclick="location.href=\'application_detail.html?id=' + item.id + '\'">' +
-                        '<div class="item-icon">📋</div>' +
-                        '<div class="item-info"><div class="item-title">' + (item.title || '') + '</div><div class="item-desc">' + (item.user_name || '') + ' | ' + (item.created_at || '') + '</div></div>' +
-                        '<span class="item-badge badge-pending">待处理</span></div>'
-                    ).join('');
-                }
-            } catch(e) { console.error(e); }
+        if (!token) {
+            document.body.innerHTML = '<div class="login-tip"><h2>请先登录</h2></div>';
+            throw new Error('No token');
         }
+
+        function goTo(url) {
+            var sep = url.indexOf('?') >= 0 ? '&' : '?';
+            location.href = url + sep + 'access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+        }
+
+        function loadStats() {
+            fetch('/api/staff/statistics?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev)
+            .then(function(r){return r.json()})
+            .then(function(d){
+                if(d.success && d.data) {
+                    document.getElementById('statPending').textContent = d.data.pending_applications || 0;
+                    document.getElementById('statProcessing').textContent = d.data.processing_applications || 0;
+                    document.getElementById('statTodayOrders').textContent = d.data.today_orders || 0;
+                    document.getElementById('statIncome').textContent = '¥' + (d.data.today_income || 0);
+                    
+                    // 申请统计图
+                    if(d.data.application_stats && d.data.application_stats.length > 0) {
+                        var maxApp = Math.max.apply(null, d.data.application_stats.map(function(s){return s.cnt}));
+                        var statusMap = {pending:'待处理',processing:'处理中',completed:'已完成',rejected:'已拒绝'};
+                        document.getElementById('appChart').innerHTML = d.data.application_stats.map(function(s){
+                            var pct = maxApp > 0 ? Math.round(s.cnt/maxApp*100) : 0;
+                            return '<div class="chart-bar"><span class="chart-label">' + (statusMap[s.status]||s.status) + '</span><div class="chart-bar-outer"><div class="chart-bar-inner" style="width:' + pct + '%"></div></div><span class="chart-value">' + s.cnt + '</span></div>';
+                        }).join('');
+                    }
+                    
+                    // 订单统计图
+                    if(d.data.order_stats && d.data.order_stats.length > 0) {
+                        var maxOrder = Math.max.apply(null, d.data.order_stats.map(function(s){return s.cnt}));
+                        var statusMap2 = {pending:'待支付',paid:'已支付',completed:'已完成',cancelled:'已取消'};
+                        document.getElementById('orderChart').innerHTML = d.data.order_stats.map(function(s){
+                            var pct = maxOrder > 0 ? Math.round(s.cnt/maxOrder*100) : 0;
+                            return '<div class="chart-bar"><span class="chart-label">' + (statusMap2[s.status]||s.status) + '</span><div class="chart-bar-outer"><div class="chart-bar-inner" style="width:' + pct + '%"></div></div><span class="chart-value">' + s.cnt + '</span></div>';
+                        }).join('');
+                    }
+                }
+            });
+        }
+
+        function loadPending() {
+            var url = '/api/staff/applications?page=1&page_size=5&status=pending';
+            if(currentType) url += '&app_type=' + currentType;
+            url += '&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+            
+            fetch(url).then(function(r){return r.json()}).then(function(d){
+                if(d.success && d.data && d.data.items && d.data.items.length > 0) {
+                    document.getElementById('pendingList').innerHTML = d.data.items.map(function(item){
+                        return '<div class="record-item" onclick="goTo(\'application_detail.html?id=' + item.id + '\')"><div class="record-icon">📋</div><div class="record-info"><div class="record-title">' + (item.title||'') + '</div><div class="record-desc">' + (item.user_name||'') + ' | ' + (item.created_at||'') + '</div></div><span class="record-status status-pending">待处理</span></div>';
+                    }).join('');
+                } else {
+                    document.getElementById('pendingList').innerHTML = '<div class="empty">暂无待处理申请</div>';
+                }
+            });
+        }
+
+        document.querySelectorAll('.filter-tag').forEach(function(el){
+            el.addEventListener('click', function(){
+                document.querySelectorAll('.filter-tag').forEach(function(e){e.classList.remove('active')});
+                el.classList.add('active');
+                currentType = el.dataset.type;
+                loadPending();
+            });
+        });
 
         loadStats();
         loadPending();

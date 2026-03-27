@@ -20,9 +20,7 @@
         .item-status { font-size: 12px; padding: 4px 10px; border-radius: 10px; }
         .status-pending { background: #fff3e0; color: #f57c00; }
         .status-paid { background: #e3f2fd; color: #1976d2; }
-        .status-processing { background: #fff8e1; color: #ffa000; }
         .status-completed { background: #e8f5e9; color: #388e3c; }
-        .status-cancelled { background: #f5f5f5; color: #999; }
         .item-amount { font-size: 18px; font-weight: 600; color: #f57c00; }
         .item-info { font-size: 12px; color: #999; margin-top: 8px; }
         .empty { text-align: center; padding: 60px 20px; color: #999; }
@@ -30,7 +28,7 @@
 </head>
 <body>
     <div class="header">
-        <a href="index.html" class="back">← 返回</a>
+        <a href="javascript:void(0)" class="back" onclick="goBack()">← 返回</a>
         <h1>我的订单</h1>
         <span></span>
     </div>
@@ -43,29 +41,47 @@
     <div class="list" id="list"><div class="empty">加载中...</div></div>
 
     <script>
-        const token = localStorage.getItem('token') || new URLSearchParams(location.search).get('access_token');
-        const isdev = new URLSearchParams(location.search).get('isdev') || '0';
-        let currentStatus = '';
+        var urlParams = new URLSearchParams(location.search);
+        var token = urlParams.get('access_token');
+        var isdev = urlParams.get('isdev') || '0';
+        
+        if (token) {
+            localStorage.setItem('user_token', token);
+            localStorage.setItem('user_isdev', isdev);
+        } else {
+            token = localStorage.getItem('user_token');
+            isdev = localStorage.getItem('user_isdev') || '0';
+        }
+
+        function goBack() {
+            location.href = 'index.html?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+        }
+
+        var currentStatus = '';
 
         function getStatusClass(s) { return 'item-status status-' + (s || 'pending'); }
-        function getStatusText(s) { return {pending:'待支付',paid:'已支付',processing:'处理中',completed:'已完成',cancelled:'已取消'}[s] || s; }
+        function getStatusText(s) { return {pending:'待支付',paid:'已支付',completed:'已完成'}[s] || s; }
 
         async function loadList() {
-            const url = '/api/user/orders?page=1&page_size=20' + (currentStatus ? '&status=' + currentStatus : '') + '&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
-            const res = await fetch(url);
-            const data = await res.json();
-            if (data.success && data.data.items && data.data.items.length > 0) {
-                document.getElementById('list').innerHTML = data.data.items.map(o => 
-                    '<div class="item"><div class="item-header"><span class="item-title">' + (o.order_no || '') + '</span><span class="' + getStatusClass(o.status) + '">' + getStatusText(o.status) + '</span></div><div class="item-amount">¥' + (o.total_amount || 0) + '</div><div class="item-info">创建时间: ' + (o.create_time || '') + '</div></div>'
-                ).join('');
-            } else {
-                document.getElementById('list').innerHTML = '<div class="empty">暂无订单</div>';
+            var url = '/api/user/orders?page=1&page_size=20' + (currentStatus ? '&status=' + currentStatus : '') + '&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+            try {
+                var res = await fetch(url);
+                var data = await res.json();
+                if (data.success && data.data && data.data.items && data.data.items.length > 0) {
+                    document.getElementById('list').innerHTML = data.data.items.map(function(o) {
+                        return '<div class="item"><div class="item-header"><span class="item-title">' + (o.order_no || '') + '</span><span class="' + getStatusClass(o.status) + '">' + getStatusText(o.status) + '</span></div><div class="item-amount">¥' + (o.total_amount || 0) + '</div><div class="item-info">创建时间: ' + (o.create_time || '') + '</div></div>';
+                    }).join('');
+                } else {
+                    document.getElementById('list').innerHTML = '<div class="empty">暂无订单</div>';
+                }
+            } catch(e) {
+                document.getElementById('list').innerHTML = '<div class="empty">加载失败</div>';
             }
         }
 
-        document.querySelectorAll('.filter-item').forEach(el => {
-            el.addEventListener('click', () => {
-                document.querySelectorAll('.filter-item').forEach(e => e.classList.remove('active'));
+        document.querySelectorAll('.filter-item').forEach(function(el) {
+            el.addEventListener('click', function() {
+                document.querySelectorAll('.filter-item').forEach(function(e) { e.classList.remove('active'); });
                 el.classList.add('active');
                 currentStatus = el.dataset.status;
                 loadList();

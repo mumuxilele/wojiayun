@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>申请单列表 - 员工端</title>
+    <title>订单管理 - 员工端</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; min-height: 100vh; }
@@ -16,13 +16,14 @@
         .list { padding: 10px; }
         .item { background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; }
         .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .item-title { font-size: 15px; font-weight: 500; color: #333; }
-        .item-status { font-size: 12px; padding: 4px 10px; border-radius: 10px; }
+        .order-no { font-size: 14px; color: #333; font-weight: 500; }
+        .order-amount { font-size: 16px; color: #f57c00; font-weight: 600; }
+        .order-status { font-size: 12px; padding: 4px 10px; border-radius: 10px; }
         .status-pending { background: #fff3e0; color: #f57c00; }
-        .status-processing { background: #e3f2fd; color: #1976d2; }
+        .status-paid { background: #e3f2fd; color: #1976d2; }
         .status-completed { background: #e8f5e9; color: #388e3c; }
-        .item-info { font-size: 12px; color: #999; }
-        .priority { color: #f57c00; font-weight: 600; }
+        .status-cancelled { background: #f5f5f5; color: #999; }
+        .order-info { font-size: 12px; color: #999; margin-top: 8px; }
         .empty { text-align: center; padding: 60px 20px; color: #999; }
         .login-tip { text-align: center; padding: 40px; color: #999; }
     </style>
@@ -30,20 +31,18 @@
 <body>
     <div class="header">
         <a href="index.html" class="back" onclick="return goBack()">← 返回</a>
-        <h1>申请单列表</h1>
+        <h1>订单管理</h1>
         <span></span>
     </div>
     <div class="filter">
         <div class="filter-item active" data-status="">全部</div>
-        <div class="filter-item" data-status="pending">待处理</div>
-        <div class="filter-item" data-status="processing">处理中</div>
+        <div class="filter-item" data-status="pending">待支付</div>
+        <div class="filter-item" data-status="paid">已支付</div>
         <div class="filter-item" data-status="completed">已完成</div>
-        <div class="filter-item" data-status="rejected">已拒绝</div>
     </div>
     <div class="list" id="list"><div class="empty">加载中...</div></div>
 
     <script>
-        // Token 管理
         const urlParams = new URLSearchParams(location.search);
         let token = urlParams.get('access_token');
         let isdev = urlParams.get('isdev') || '0';
@@ -68,33 +67,27 @@
 
         let currentStatus = '';
 
-        function getStatusClass(s) { return 'item-status status-' + (s || 'pending'); }
-        function getStatusText(s) { return {pending:'待处理',processing:'处理中',completed:'已完成',rejected:'已拒绝'}[s] || s; }
+        function getStatusClass(s) { return 'order-status status-' + (s || 'pending'); }
+        function getStatusText(s) { return {pending:'待支付',paid:'已支付',processing:'处理中',completed:'已完成',cancelled:'已取消'}[s] || s; }
 
         async function loadList() {
-            const url = '/api/staff/applications?page=1&page_size=20' + (currentStatus ? '&status=' + currentStatus : '') + '&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+            const url = '/api/staff/orders?page=1&page_size=20' + (currentStatus ? '&status=' + currentStatus : '') + '&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
             try {
                 const res = await fetch(url);
                 const data = await res.json();
                 if (data.success && data.data && data.data.items && data.data.items.length > 0) {
-                    document.getElementById('list').innerHTML = data.data.items.map(item => 
-                        '<div class="item" onclick="goToDetail(' + item.id + ')">' +
-                        '<div class="item-header"><span class="item-title">' + (item.title || '') + '</span><span class="' + getStatusClass(item.status) + '">' + getStatusText(item.status) + '</span></div>' +
-                        '<div class="item-info">申请人: ' + (item.user_name || '') + ' | ' + (item.created_at || '') + (item.priority > 1 ? ' | <span class="priority">优先级' + item.priority + '</span>' : '') + '</div></div>'
+                    document.getElementById('list').innerHTML = data.data.items.map(o => 
+                        '<div class="item"><div class="item-header"><span class="order-no">' + (o.order_no || '') + '</span><span class="' + getStatusClass(o.status) + '">' + getStatusText(o.status) + '</span></div><div class="order-amount">¥' + (o.total_amount || 0) + '</div><div class="order-info">用户: ' + (o.user_name || '-') + ' | ' + (o.create_time || '') + '</div></div>'
                     ).join('');
                 } else if (data.msg && data.msg.includes('登录')) {
                     localStorage.removeItem('staff_token');
                     location.reload();
                 } else {
-                    document.getElementById('list').innerHTML = '<div class="empty">暂无申请单</div>';
+                    document.getElementById('list').innerHTML = '<div class="empty">暂无订单</div>';
                 }
             } catch(e) {
                 document.getElementById('list').innerHTML = '<div class="empty">加载失败</div>';
             }
-        }
-
-        function goToDetail(id) {
-            location.href = 'application_detail.html?id=' + id + '&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
         }
 
         document.querySelectorAll('.filter-item').forEach(el => {

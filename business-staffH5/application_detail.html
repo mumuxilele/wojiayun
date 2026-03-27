@@ -18,21 +18,23 @@
         .status-pending { background: #fff3e0; color: #f57c00; }
         .status-processing { background: #e3f2fd; color: #1976d2; }
         .status-completed { background: #e8f5e9; color: #388e3c; }
+        .status-rejected { background: #ffebee; color: #d32f2f; }
         .btns { display: flex; gap: 10px; padding: 15px; }
         .btn { flex: 1; padding: 14px; border: none; border-radius: 12px; font-size: 15px; cursor: pointer; }
         .btn-process { background: #11998e; color: white; }
         .btn-complete { background: #38ef7d; color: white; }
         .btn-reject { background: #f5f5f5; color: #666; }
         textarea { width: 100%; min-height: 80px; padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; margin-top: 10px; }
+        .login-tip { text-align: center; padding: 40px; color: #999; }
     </style>
 </head>
 <body>
     <div class="header">
-        <a href="application_list.html" class="back">← 返回</a>
+        <a href="application_list.html" class="back" onclick="return goBack()">← 返回</a>
         <h1>处理申请</h1>
         <span></span>
     </div>
-    <div class="detail" id="detail"><div style="text-align:center;padding:40px;">加载中...</div></div>
+    <div class="detail" id="detail"><div style="text-align: center; padding: 40px;">加载中...</div></div>
     <div id="actionArea" style="display:none;">
         <div class="card">
             <div class="card-title">处理意见</div>
@@ -46,31 +48,57 @@
     </div>
 
     <script>
-        const token = localStorage.getItem('token') || new URLSearchParams(location.search).get('access_token');
-        const isdev = new URLSearchParams(location.search).get('isdev') || '0';
-        const id = new URLSearchParams(location.search).get('id');
+        const urlParams = new URLSearchParams(location.search);
+        let token = urlParams.get('access_token');
+        let isdev = urlParams.get('isdev') || '0';
+        const id = urlParams.get('id');
         let currentStatus = 'pending';
+        
+        if (token) {
+            localStorage.setItem('staff_token', token);
+            localStorage.setItem('staff_isdev', isdev);
+        } else {
+            token = localStorage.getItem('staff_token');
+            isdev = localStorage.getItem('staff_isdev') || '0';
+        }
+
+        if (!token) {
+            document.body.innerHTML = '<div class="login-tip"><h2>请先登录</h2></div>';
+            throw new Error('No token');
+        }
+
+        function goBack() {
+            location.href = 'application_list.html?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+            return false;
+        }
 
         async function load() {
-            const res = await fetch('/api/staff/applications/' + id + '?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev);
-            const data = await res.json();
-            if (data.success && data.data) {
-                const app = data.data;
-                currentStatus = app.status;
-                const statusClass = 'status-' + (app.status || 'pending');
-                const statusText = {pending:'待处理',processing:'处理中',completed:'已完成',rejected:'已拒绝'}[app.status] || app.status;
-                document.getElementById('detail').innerHTML = 
-                    '<div class="card"><div class="card-title">申请单号</div><div class="card-value">' + (app.app_no || '') + '</div></div>' +
-                    '<div class="card"><div class="card-title">标题</div><div class="card-value">' + (app.title || '') + '</div></div>' +
-                    '<div class="card"><div class="card-title">申请人</div><div class="card-value">' + (app.user_name || '') + ' (' + (app.user_phone || '') + ')</div></div>' +
-                    '<div class="card"><div class="card-title">详细内容</div><div class="card-value">' + (app.content || '') + '</div></div>' +
-                    '<div class="card"><div class="card-title">状态</div><div class="card-value"><span class="status ' + statusClass + '">' + statusText + '</span></div></div>' +
-                    (app.result ? '<div class="card"><div class="card-title">处理结果</div><div class="card-value">' + app.result + '</div></div>' : '') +
-                    '<div class="card"><div class="card-title">提交时间</div><div class="card-value">' + (app.created_at || '') + '</div></div>';
-                
-                if (app.status !== 'completed' && app.status !== 'rejected') {
-                    document.getElementById('actionArea').style.display = 'block';
+            try {
+                const res = await fetch('/api/staff/applications/' + id + '?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev);
+                const data = await res.json();
+                if (data.success && data.data) {
+                    const app = data.data;
+                    currentStatus = app.status;
+                    const statusClass = 'status-' + (app.status || 'pending');
+                    const statusText = {pending:'待处理',processing:'处理中',completed:'已完成',rejected:'已拒绝'}[app.status] || app.status;
+                    document.getElementById('detail').innerHTML = 
+                        '<div class="card"><div class="card-title">申请单号</div><div class="card-value">' + (app.app_no || '') + '</div></div>' +
+                        '<div class="card"><div class="card-title">标题</div><div class="card-value">' + (app.title || '') + '</div></div>' +
+                        '<div class="card"><div class="card-title">申请人</div><div class="card-value">' + (app.user_name || '') + ' (' + (app.user_phone || '') + ')</div></div>' +
+                        '<div class="card"><div class="card-title">详细内容</div><div class="card-value">' + (app.content || '') + '</div></div>' +
+                        '<div class="card"><div class="card-title">状态</div><div class="card-value"><span class="status ' + statusClass + '">' + statusText + '</span></div></div>' +
+                        (app.result ? '<div class="card"><div class="card-title">处理结果</div><div class="card-value">' + app.result + '</div></div>' : '') +
+                        '<div class="card"><div class="card-title">提交时间</div><div class="card-value">' + (app.created_at || '') + '</div></div>';
+                    
+                    if (app.status !== 'completed' && app.status !== 'rejected') {
+                        document.getElementById('actionArea').style.display = 'block';
+                    }
+                } else if (data.msg && data.msg.includes('登录')) {
+                    localStorage.removeItem('staff_token');
+                    location.reload();
                 }
+            } catch(e) {
+                document.getElementById('detail').innerHTML = '<div style="text-align:center;padding:40px;">加载失败</div>';
             }
         }
 
@@ -80,17 +108,24 @@
                 alert('请输入处理意见');
                 return;
             }
-            const res = await fetch('/api/staff/applications/' + id + '/process', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({action, result})
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert('处理成功');
-                location.href = 'application_list.html';
-            } else {
-                alert(data.msg || '处理失败');
+            try {
+                const res = await fetch('/api/staff/applications/' + id + '/process?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({action, result})
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('处理成功');
+                    location.href = 'application_list.html?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+                } else {
+                    alert(data.msg || '处理失败');
+                    if (data.msg && data.msg.includes('登录')) {
+                        localStorage.removeItem('staff_token');
+                    }
+                }
+            } catch(e) {
+                alert('处理失败');
             }
         }
 

@@ -7,158 +7,226 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; min-height: 100vh; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; }
-        .header h1 { font-size: 20px; margin-bottom: 5px; }
-        .user-info { font-size: 14px; opacity: 0.9; }
-        .nav-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 15px; background: white; margin: -15px 10px 10px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .nav-item { text-align: center; padding: 15px 5px; cursor: pointer; border-radius: 8px; transition: background 0.2s; }
-        .nav-item:active { background: #f0f0f0; }
-        .nav-icon { font-size: 28px; margin-bottom: 5px; }
-        .nav-text { font-size: 12px; color: #333; }
-        .section { background: white; margin: 10px; border-radius: 12px; padding: 15px; }
-        .section-title { font-size: 16px; font-weight: 600; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
-        .section-title a { font-size: 12px; color: #667eea; text-decoration: none; }
-        .order-item { display: flex; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
-        .order-item:last-child { border-bottom: none; }
-        .order-icon { width: 50px; height: 50px; background: #f5f5f5; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-right: 12px; }
-        .order-info { flex: 1; }
-        .order-title { font-size: 14px; color: #333; margin-bottom: 4px; }
-        .order-desc { font-size: 12px; color: #999; }
-        .order-status { font-size: 12px; padding: 4px 8px; border-radius: 4px; }
-        .status-pending { background: #fff3e0; color: #f57c00; }
-        .status-processing { background: #e3f2fd; color: #1976d2; }
-        .status-completed { background: #e8f5e9; color: #388e3c; }
+        
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; }
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .header h1 { font-size: 20px; }
+        .user-info { font-size: 13px; opacity: 0.9; }
+        
+        .stats-row { display: flex; gap: 10px; }
+        .stat-card { background: rgba(255,255,255,0.15); border-radius: 10px; padding: 12px; flex: 1; text-align: center; }
+        .stat-num { font-size: 22px; font-weight: 600; }
+        .stat-label { font-size: 11px; opacity: 0.8; margin-top: 2px; }
+        
+        .menu-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 15px; }
+        .menu-item { background: white; border-radius: 12px; padding: 18px 10px; text-align: center; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .menu-item:active { transform: scale(0.98); }
+        .menu-icon { font-size: 28px; margin-bottom: 6px; display: block; }
+        .menu-text { font-size: 13px; color: #333; font-weight: 500; }
+        
+        .filter-section { background: white; margin: 0 15px 10px; border-radius: 12px; padding: 12px; }
+        .filter-title { font-size: 13px; color: #666; margin-bottom: 8px; }
+        .filter-row { display: flex; gap: 8px; flex-wrap: wrap; }
+        .filter-tag { padding: 5px 12px; border-radius: 15px; font-size: 12px; background: #f0f0f0; color: #666; cursor: pointer; }
+        .filter-tag.active { background: #667eea; color: white; }
+        
+        .section { background: white; margin: 0 15px 15px; border-radius: 12px; overflow: hidden; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #f5f5f5; }
+        .section-title { font-size: 15px; font-weight: 600; color: #333; }
+        .section-more { font-size: 12px; color: #667eea; text-decoration: none; }
+        
+        .record-item { display: flex; padding: 12px 15px; border-bottom: 1px solid #f5f5f5; cursor: pointer; }
+        .record-item:last-child { border-bottom: none; }
+        .record-item:active { background: #fafafa; }
+        .record-icon { width: 40px; height: 40px; background: #f5f5f5; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-right: 10px; flex-shrink: 0; }
+        .record-info { flex: 1; min-width: 0; }
+        .record-title { font-size: 14px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .record-desc { font-size: 12px; color: #999; margin-top: 3px; }
+        .record-status { font-size: 11px; padding: 2px 6px; border-radius: 4px; margin-left: 8px; flex-shrink: 0; }
+        
+        .status-pending { background: #fff7e6; color: #fa8c16; }
+        .status-processing { background: #e6f7ff; color: #1890ff; }
+        .status-completed { background: #f6ffed; color: #52c41a; }
+        .status-rejected { background: #fff1f0; color: #f5222d; }
+        
+        .empty { text-align: center; padding: 25px; color: #bbb; font-size: 13px; }
+        .login-tip { text-align: center; padding: 60px 20px; color: #999; }
+        .footer { text-align: center; padding: 15px; color: #bbb; font-size: 11px; }
+        .loading { display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .loading::after { content: '加载中...'; color: #999; }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>🏠 社区服务中心</h1>
-        <div class="user-info" id="userName">加载中...</div>
+        <div class="header-top">
+            <h1>🏠 社区服务中心</h1>
+            <div class="user-info" id="userName">加载中...</div>
+        </div>
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-num" id="statPending">-</div>
+                <div class="stat-label">待处理</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" id="statProcessing">-</div>
+                <div class="stat-label">处理中</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" id="statCompleted">-</div>
+                <div class="stat-label">已完成</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" id="statOrders">-</div>
+                <div class="stat-label">订单数</div>
+            </div>
+        </div>
     </div>
 
-    <div class="nav-grid">
-        <div class="nav-item" onclick="location.href='applications.html'">
-            <div class="nav-icon">📋</div>
-            <div class="nav-text">我的申请</div>
+    <div class="menu-grid">
+        <div class="menu-item" onclick="goTo('applications.html')">
+            <span class="menu-icon">📋</span>
+            <div class="menu-text">我的申请</div>
         </div>
-        <div class="nav-item" onclick="location.href='application_create.html'">
-            <div class="nav-icon">➕</div>
-            <div class="nav-text">提交申请</div>
+        <div class="menu-item" onclick="goTo('application_create.html')">
+            <span class="menu-icon">➕</span>
+            <div class="menu-text">提交申请</div>
         </div>
-        <div class="nav-item" onclick="location.href='orders.html'">
-            <div class="nav-icon">🛒</div>
-            <div class="nav-text">我的订单</div>
+        <div class="menu-item" onclick="goTo('orders.html')">
+            <span class="menu-icon">🛒</span>
+            <div class="menu-text">我的订单</div>
         </div>
-        <div class="nav-item" onclick="location.href='bookings.html'">
-            <div class="nav-icon">📅</div>
-            <div class="nav-text">场馆预约</div>
+        <div class="menu-item" onclick="goTo('bookings.html')">
+            <span class="menu-icon">📅</span>
+            <div class="menu-text">场馆预约</div>
         </div>
-        <div class="nav-item" onclick="location.href='../business/index.html'">
-            <div class="nav-icon">🏪</div>
-            <div class="nav-text">商家服务</div>
-        </div>
-        <div class="nav-item" onclick="location.href='../business/member.html'">
-            <div class="nav-icon">👤</div>
-            <div class="nav-text">会员中心</div>
-        </div>
-        <div class="nav-item" onclick="location.href='../business/coupons.html'">
-            <div class="nav-icon">🎟️</div>
-            <div class="nav-text">优惠券</div>
-        </div>
-        <div class="nav-item" onclick="location.href='../business/profile.html'">
-            <div class="nav-icon">⚙️</div>
-            <div class="nav-text">个人中心</div>
+    </div>
+
+    <div class="filter-section">
+        <div class="filter-title">申请类型筛选</div>
+        <div class="filter-row" id="filterRow">
+            <div class="filter-tag active" data-type="">全部</div>
+            <div class="filter-tag" data-type="repair">报修</div>
+            <div class="filter-tag" data-type="booking">预约</div>
+            <div class="filter-tag" data-type="complaint">投诉</div>
+            <div class="filter-tag" data-type="consult">咨询</div>
         </div>
     </div>
 
     <div class="section">
-        <div class="section-title">
-            <span>最近申请</span>
-            <a href="applications.html">查看全部 ></a>
+        <div class="section-header">
+            <span class="section-title">最近申请</span>
+            <a href="javascript:void(0)" class="section-more" onclick="goTo('applications.html')">更多 ></a>
         </div>
-        <div id="recentApps">
-            <div style="text-align: center; padding: 30px; color: #999;">暂无申请记录</div>
-        </div>
+        <div id="recentApps"><div class="loading"></div></div>
     </div>
 
     <div class="section">
-        <div class="section-title">
-            <span>最近订单</span>
-            <a href="orders.html">查看全部 ></a>
+        <div class="section-header">
+            <span class="section-title">最近订单</span>
+            <a href="javascript:void(0)" class="section-more" onclick="goTo('orders.html')">更多 ></a>
         </div>
-        <div id="recentOrders">
-            <div style="text-align: center; padding: 30px; color: #999;">暂无订单记录</div>
-        </div>
+        <div id="recentOrders"><div class="loading"></div></div>
     </div>
+
+    <div class="footer">© 社区服务中心</div>
 
     <script>
-        const token = new URLSearchParams(location.search).get('access_token') || localStorage.getItem('token');
-        const isdev = new URLSearchParams(location.search).get('isdev') || '0';
-        const apiBase = '';
-
-        if (token) localStorage.setItem('token', token);
-
-        async function init() {
-            if (!token) {
-                document.body.innerHTML = '<div style="padding:40px;text-align:center;"><h2>请先登录</h2></div>';
-                return;
-            }
-            await loadUserInfo();
-            await loadRecentApps();
-            await loadRecentOrders();
+        var urlParams = new URLSearchParams(location.search);
+        var token = urlParams.get('access_token');
+        var isdev = urlParams.get('isdev') || '0';
+        var currentType = '';
+        
+        if (token) {
+            localStorage.setItem('user_token', token);
+            localStorage.setItem('user_isdev', isdev);
+        } else {
+            token = localStorage.getItem('user_token');
+            isdev = localStorage.getItem('user_isdev') || '0';
         }
 
-        async function loadUserInfo() {
-            try {
-                const res = await fetch(apiBase + '/api/user/applications?page=1&page_size=1&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev);
-                document.getElementById('userName').textContent = '欢迎您';
-            } catch(e) {
-                document.getElementById('userName').textContent = '用户';
-            }
+        if (!token) {
+            document.body.innerHTML = '<div class="login-tip"><h2>请先登录</h2><p>需要 access_token 参数</p></div>';
+            throw new Error('No token');
         }
 
-        async function loadRecentApps() {
-            try {
-                const res = await fetch(apiBase + '/api/user/applications?page=1&page_size=3&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev);
-                const data = await res.json();
-                if (data.success && data.data.items && data.data.items.length > 0) {
-                    document.getElementById('recentApps').innerHTML = data.data.items.map(app => renderAppItem(app)).join('');
+        function goTo(url) {
+            var sep = url.indexOf('?') >= 0 ? '&' : '?';
+            location.href = url + sep + 'access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+        }
+
+        function loadStats() {
+            var url = '/api/user/stats?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+            fetch(url)
+            .then(function(r){return r.json()})
+            .then(function(d){
+                if(d.success && d.data) {
+                    document.getElementById('statPending').textContent = d.data.pending || 0;
+                    document.getElementById('statProcessing').textContent = d.data.processing || 0;
+                    document.getElementById('statCompleted').textContent = d.data.completed || 0;
+                    document.getElementById('statOrders').textContent = d.data.orders || 0;
                 }
-            } catch(e) { console.error(e); }
+            })
+            .catch(function(e){
+                console.error('Stats error:', e);
+            });
         }
 
-        async function loadRecentOrders() {
-            try {
-                const res = await fetch(apiBase + '/api/user/orders?page=1&page_size=3&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev);
-                const data = await res.json();
-                if (data.success && data.data.items && data.data.items.length > 0) {
-                    document.getElementById('recentOrders').innerHTML = data.data.items.map(order => renderOrderItem(order)).join('');
+        function loadRecentApps() {
+            var url = '/api/user/applications?page=1&page_size=5';
+            if(currentType) url += '&app_type=' + currentType;
+            url += '&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+            
+            fetch(url).then(function(r){return r.json()}).then(function(data){
+                if (data.success && data.data && data.data.items && data.data.items.length > 0) {
+                    var html = '';
+                    for(var i=0; i<data.data.items.length; i++) {
+                        var app = data.data.items[i];
+                        var statusMap = {pending:'待处理',processing:'处理中',completed:'已完成',rejected:'已拒绝'};
+                        var iconMap = {repair:'🔧',booking:'📅',complaint:'📝',consult:'💬',other:'📋'};
+                        html += '<div class="record-item" onclick="goTo(\'application_detail.html?id=' + app.id + '\')"><div class="record-icon">' + (iconMap[app.app_type]||'📋') + '</div><div class="record-info"><div class="record-title">' + (app.title||'') + '</div><div class="record-desc">' + (app.created_at||'') + '</div></div><span class="record-status status-' + (app.status||'pending') + '">' + (statusMap[app.status]||app.status) + '</span></div>';
+                    }
+                    document.getElementById('recentApps').innerHTML = html;
+                } else {
+                    document.getElementById('recentApps').innerHTML = '<div class="empty">暂无申请记录</div>';
                 }
-            } catch(e) { console.error(e); }
+            }).catch(function(){
+                document.getElementById('recentApps').innerHTML = '<div class="empty">加载失败</div>';
+            });
         }
 
-        function renderAppItem(app) {
-            const statusClass = 'status-' + (app.status || 'pending');
-            const statusText = {pending:'待处理',processing:'处理中',completed:'已完成',rejected:'已拒绝'}[app.status] || app.status;
-            const icon = {repair:'🔧',booking:'📅',complaint:'📝',consult:'💬',other:'📋'}[app.app_type] || '📋';
-            return '<div class="order-item" onclick="location.href=\'application_detail.html?id=' + app.id + '\'">' +
-                '<div class="order-icon">' + icon + '</div>' +
-                '<div class="order-info"><div class="order-title">' + (app.title || '') + '</div>' +
-                '<div class="order-desc">' + (app.created_at || '') + '</div></div>' +
-                '<span class="order-status ' + statusClass + '">' + statusText + '</span></div>';
+        function loadRecentOrders() {
+            fetch('/api/user/orders?page=1&page_size=3&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev)
+            .then(function(r){return r.json()})
+            .then(function(data){
+                if (data.success && data.data && data.data.items && data.data.items.length > 0) {
+                    var html = '';
+                    for(var i=0; i<data.data.items.length; i++) {
+                        var o = data.data.items[i];
+                        var statusMap = {pending:'待支付',paid:'已支付',completed:'已完成'};
+                        html += '<div class="record-item"><div class="record-icon">🛒</div><div class="record-info"><div class="record-title">' + (o.order_no||'') + '</div><div class="record-desc">¥' + (o.total_amount||0) + '</div></div><span class="record-status status-' + (o.status||'pending') + '">' + (statusMap[o.status]||o.status) + '</span></div>';
+                    }
+                    document.getElementById('recentOrders').innerHTML = html;
+                } else {
+                    document.getElementById('recentOrders').innerHTML = '<div class="empty">暂无订单记录</div>';
+                }
+            }).catch(function(){
+                document.getElementById('recentOrders').innerHTML = '<div class="empty">加载失败</div>';
+            });
         }
 
-        function renderOrderItem(order) {
-            const statusClass = 'status-' + (order.status || 'pending');
-            const statusText = {pending:'待支付',paid:'已支付',processing:'处理中',completed:'已完成',cancelled:'已取消'}[order.status] || order.status;
-            return '<div class="order-item" onclick="location.href=\'order_detail.html?id=' + order.id + '\'">' +
-                '<div class="order-icon">🛒</div>' +
-                '<div class="order-info"><div class="order-title">订单: ' + (order.order_no || '') + '</div>' +
-                '<div class="order-desc">¥' + (order.total_amount || 0) + '</div></div>' +
-                '<span class="order-status ' + statusClass + '">' + statusText + '</span></div>';
-        }
+        document.querySelectorAll('.filter-tag').forEach(function(el){
+            el.addEventListener('click', function(){
+                document.querySelectorAll('.filter-tag').forEach(function(e){e.classList.remove('active')});
+                el.classList.add('active');
+                currentType = el.dataset.type;
+                loadRecentApps();
+            });
+        });
 
-        init();
+        document.getElementById('userName').textContent = '欢迎您';
+        loadStats();
+        loadRecentApps();
+        loadRecentOrders();
     </script>
 </body>
 </html>

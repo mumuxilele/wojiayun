@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据统计 - 员工端</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; min-height: 100vh; }
+        .header { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; padding: 15px; display: flex; align-items: center; }
+        .header h1 { font-size: 18px; flex: 1; }
+        .back { color: white; text-decoration: none; font-size: 14px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 15px; }
+        .stat-card { background: white; border-radius: 12px; padding: 20px; text-align: center; }
+        .stat-value { font-size: 28px; font-weight: 600; color: #11998e; }
+        .stat-label { font-size: 12px; color: #999; margin-top: 5px; }
+        .section { background: white; margin: 0 15px 15px; border-radius: 12px; padding: 15px; }
+        .section-title { font-size: 15px; font-weight: 600; margin-bottom: 15px; }
+        .chart-bar { display: flex; align-items: center; margin-bottom: 10px; }
+        .chart-label { width: 80px; font-size: 12px; color: #666; }
+        .chart-bar-inner { flex: 1; height: 20px; background: #f0f0f0; border-radius: 4px; overflow: hidden; }
+        .chart-bar-fill { height: 100%; background: linear-gradient(90deg, #11998e, #38ef7d); border-radius: 4px; }
+        .chart-value { width: 50px; text-align: right; font-size: 12px; color: #333; }
+        .login-tip { text-align: center; padding: 40px; color: #999; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="index.html" class="back" onclick="return goBack()">← 返回</a>
+        <h1>数据统计</h1>
+        <span></span>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value" id="todayApps">0</div>
+            <div class="stat-label">今日申请</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="todayOrders">0</div>
+            <div class="stat-label">今日订单</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="pendingApps">0</div>
+            <div class="stat-label">待处理申请</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="todayIncome">¥0</div>
+            <div class="stat-label">今日收入</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">申请单状态分布</div>
+        <div id="appChart">加载中...</div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">订单状态分布</div>
+        <div id="orderChart">加载中...</div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(location.search);
+        let token = urlParams.get('access_token');
+        let isdev = urlParams.get('isdev') || '0';
+        
+        if (token) {
+            localStorage.setItem('staff_token', token);
+            localStorage.setItem('staff_isdev', isdev);
+        } else {
+            token = localStorage.getItem('staff_token');
+            isdev = localStorage.getItem('staff_isdev') || '0';
+        }
+
+        if (!token) {
+            document.body.innerHTML = '<div class="login-tip"><h2>请先登录</h2></div>';
+            throw new Error('No token');
+        }
+
+        function goBack() {
+            location.href = 'index.html?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+            return false;
+        }
+
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/staff/statistics?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev);
+                const data = await res.json();
+                if (data.success && data.data) {
+                    const stats = data.data;
+                    document.getElementById('todayApps').textContent = stats.today?.applications || 0;
+                    document.getElementById('todayOrders').textContent = stats.today?.orders || 0;
+                    document.getElementById('pendingApps').textContent = stats.pending_applications || 0;
+                    document.getElementById('todayIncome').textContent = '¥' + (stats.today?.income || 0);
+
+                    if (stats.application_stats && stats.application_stats.length > 0) {
+                        const maxApp = Math.max(...stats.application_stats.map(s => s.cnt));
+                        document.getElementById('appChart').innerHTML = stats.application_stats.map(s => 
+                            '<div class="chart-bar"><span class="chart-label">' + ({pending:'待处理',processing:'处理中',completed:'已完成',rejected:'已拒绝'}[s.status] || s.status) + '</span><div class="chart-bar-inner"><div class="chart-bar-fill" style="width:' + (s.cnt / maxApp * 100) + '%"></div></div><span class="chart-value">' + s.cnt + '</span></div>'
+                        ).join('');
+                    } else {
+                        document.getElementById('appChart').innerHTML = '<div style="text-align:center;color:#999;padding:20px;">暂无数据</div>';
+                    }
+
+                    if (stats.order_stats && stats.order_stats.length > 0) {
+                        const maxOrder = Math.max(...stats.order_stats.map(s => s.cnt));
+                        document.getElementById('orderChart').innerHTML = stats.order_stats.map(s => 
+                            '<div class="chart-bar"><span class="chart-label">' + ({pending:'待支付',paid:'已支付',processing:'处理中',completed:'已完成',cancelled:'已取消'}[s.status] || s.status) + '</span><div class="chart-bar-inner"><div class="chart-bar-fill" style="width:' + (s.cnt / maxOrder * 100) + '%"></div></div><span class="chart-value">' + s.cnt + '</span></div>'
+                        ).join('');
+                    } else {
+                        document.getElementById('orderChart').innerHTML = '<div style="text-align:center;color:#999;padding:20px;">暂无数据</div>';
+                    }
+                } else if (data.msg && data.msg.includes('登录')) {
+                    localStorage.removeItem('staff_token');
+                    location.reload();
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        loadStats();
+    </script>
+</body>
+</html>

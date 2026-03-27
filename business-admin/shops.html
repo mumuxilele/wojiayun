@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>门店管理</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f2f5; }
+        .header { background: #001529; color: white; padding: 15px 20px; display: flex; align-items: center; }
+        .header h1 { font-size: 18px; flex: 1; }
+        .back { color: white; text-decoration: none; font-size: 14px; }
+        .toolbar { background: white; padding: 15px; display: flex; gap: 10px; }
+        .btn { padding: 8px 15px; background: #1890ff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-success { background: #52c41a; }
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #f0f0f0; }
+        th { background: #fafafa; font-weight: 500; color: #666; }
+        .status { padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+        .status-open { background: #f6ffed; color: #52c41a; }
+        .status-closed { background: #fff1f0; color: #f5222d; }
+        .actions a { color: #1890ff; margin-right: 10px; text-decoration: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="index.html" class="back">← 返回</a>
+        <h1>门店管理</h1>
+        <span></span>
+    </div>
+    <div class="toolbar">
+        <button class="btn btn-success" onclick="addShop()">+ 添加门店</button>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>门店名称</th>
+                <th>类型</th>
+                <th>地址</th>
+                <th>电话</th>
+                <th>状态</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody id="listBody"><tr><td colspan="7" style="text-align:center;padding:30px;">加载中...</td></tr></tbody>
+    </table>
+
+    <script>
+        const token = localStorage.getItem('admin_token') || new URLSearchParams(location.search).get('access_token');
+        const isdev = new URLSearchParams(location.search).get('isdev') || '0';
+
+        async function loadList() {
+            try {
+                const res = await fetch('/api/admin/shops?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev);
+                const data = await res.json();
+                if (data.success && data.data) {
+                    if (data.data.length === 0) {
+                        document.getElementById('listBody').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;">暂无数据</td></tr>';
+                        return;
+                    }
+                    document.getElementById('listBody').innerHTML = data.data.map(item => 
+                        '<tr><td>' + (item.id || '') + '</td><td>' + (item.shop_name || '') + '</td><td>' + (item.shop_type || '-') + '</td><td>' + (item.address || '-') + '</td><td>' + (item.phone || '-') + '</td><td><span class="status status-' + (item.status || 'open') + '">' + ({open:'营业中',closed:'已停业'}[item.status] || item.status) + '</span></td><td class="actions"><a onclick="editShop(' + item.id + ')">编辑</a><a onclick="deleteShop(' + item.id + ')">删除</a></td></tr>'
+                    ).join('');
+                }
+            } catch(e) {
+                document.getElementById('listBody').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;">加载失败</td></tr>';
+            }
+        }
+
+        function addShop() { alert('添加门店功能'); }
+        function editShop(id) { alert('编辑门店 ' + id); }
+        async function deleteShop(id) {
+            if (!confirm('确定要删除吗？')) return;
+            try {
+                const res = await fetch('/api/admin/shops/' + id + '?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev, {method: 'DELETE'});
+                const data = await res.json();
+                if (data.success) { alert('删除成功'); loadList(); }
+                else { alert(data.msg || '删除失败'); }
+            } catch(e) { alert('删除失败'); }
+        }
+
+        loadList();
+    </script>
+</body>
+</html>

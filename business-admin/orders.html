@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订单管理</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f2f5; }
+        .header { background: #001529; color: white; padding: 15px 20px; display: flex; align-items: center; }
+        .header h1 { font-size: 18px; flex: 1; }
+        .back { color: white; text-decoration: none; font-size: 14px; }
+        .toolbar { background: white; padding: 15px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .search-input { padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 200px; }
+        .select { padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; }
+        .btn { padding: 8px 15px; background: #1890ff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #f0f0f0; }
+        th { background: #fafafa; font-weight: 500; color: #666; }
+        .amount { color: #f57c00; font-weight: 600; }
+        .status { padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+        .status-pending { background: #fff7e6; color: #fa8c16; }
+        .status-paid { background: #e6f7ff; color: #1890ff; }
+        .status-completed { background: #f6ffed; color: #52c41a; }
+        .actions a { color: #1890ff; margin-right: 10px; text-decoration: none; cursor: pointer; }
+        .pagination { background: white; padding: 15px; display: flex; justify-content: center; gap: 10px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="index.html" class="back">← 返回</a>
+        <h1>订单管理</h1>
+        <span></span>
+    </div>
+    <div class="toolbar">
+        <input type="text" class="search-input" id="keyword" placeholder="搜索订单号/用户名">
+        <select class="select" id="statusFilter">
+            <option value="">全部状态</option>
+            <option value="pending">待支付</option>
+            <option value="paid">已支付</option>
+            <option value="completed">已完成</option>
+            <option value="cancelled">已取消</option>
+        </select>
+        <button class="btn" onclick="loadList(1)">搜索</button>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>订单号</th>
+                <th>用户</th>
+                <th>金额</th>
+                <th>支付状态</th>
+                <th>订单状态</th>
+                <th>创建时间</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody id="listBody"><tr><td colspan="7" style="text-align:center;padding:30px;">加载中...</td></tr></tbody>
+    </table>
+    <div class="pagination">
+        <button id="prevBtn" onclick="changePage(-1)">上一页</button>
+        <span id="pageInfo">第 1 页</span>
+        <button id="nextBtn" onclick="changePage(1)">下一页</button>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('admin_token') || new URLSearchParams(location.search).get('access_token');
+        const isdev = new URLSearchParams(location.search).get('isdev') || '0';
+        let currentPage = 1;
+        let totalPages = 1;
+
+        async function loadList(page) {
+            currentPage = page;
+            const keyword = document.getElementById('keyword').value;
+            const status = document.getElementById('statusFilter').value;
+            
+            let url = '/api/admin/orders?page=' + page + '&page_size=20';
+            if (keyword) url += '&keyword=' + encodeURIComponent(keyword);
+            if (status) url += '&status=' + status;
+            url += '&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.success && data.data) {
+                    totalPages = Math.ceil(data.data.total / 20);
+                    document.getElementById('pageInfo').textContent = '第 ' + page + ' 页';
+                    document.getElementById('prevBtn').disabled = page <= 1;
+                    document.getElementById('nextBtn').disabled = page >= totalPages;
+
+                    if (data.data.items.length === 0) {
+                        document.getElementById('listBody').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;">暂无数据</td></tr>';
+                        return;
+                    }
+
+                    document.getElementById('listBody').innerHTML = data.data.items.map(item => 
+                        '<tr><td>' + (item.order_no || '') + '</td><td>' + (item.user_name || '-') + '</td><td class="amount">¥' + (item.total_amount || 0) + '</td><td><span class="status status-' + (item.pay_status || item.status) + '">' + ({pending:'待支付',paid:'已支付'}[item.pay_status] || '-') + '</span></td><td><span class="status status-' + (item.status || 'pending') + '">' + ({pending:'待支付',paid:'已支付',processing:'处理中',completed:'已完成',cancelled:'已取消'}[item.status] || item.status) + '</span></td><td>' + (item.create_time || '') + '</td><td class="actions"><a onclick="viewOrder(' + item.id + ')">查看</a><a onclick="editOrder(' + item.id + ')">编辑</a></td></tr>'
+                    ).join('');
+                }
+            } catch(e) {
+                document.getElementById('listBody').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;">加载失败</td></tr>';
+            }
+        }
+
+        function changePage(delta) { loadList(currentPage + delta); }
+        function viewOrder(id) { alert('查看订单 ' + id); }
+        function editOrder(id) { alert('编辑订单 ' + id); }
+
+        loadList(1);
+    </script>
+</body>
+</html>
