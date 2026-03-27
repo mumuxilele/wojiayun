@@ -1,5 +1,5 @@
 /**
- * 我家云即时通讯服务 - 修复版
+ * 我家云即时通讯服务 - 修复版 (Staff消息推送修复)
  */
 const express = require('express');
 const http = require('http');
@@ -74,6 +74,7 @@ async function initDatabase() {
                 content LONGTEXT,
                 sender_id VARCHAR(64) NOT NULL,
                 sender_name VARCHAR(128),
+                sender_type VARCHAR(32) DEFAULT 'user',
                 receiver_id VARCHAR(64),
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
                 deleted TINYINT DEFAULT 0,
@@ -94,9 +95,10 @@ async function saveMessage(msg) {
     const conn = await getConnection();
     try {
         const msgId = msg.id || generateId();
+        const senderType = msg.senderType || 'user';
         await conn.execute(
-            'INSERT INTO chat_messages (msg_id, msg_type, content, sender_id, sender_name, receiver_id, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [msgId, msg.msgType || 'text', msg.content || '', msg.senderId, msg.senderName || 'Unknown', msg.receiverId || null, new Date()]
+            'INSERT INTO chat_messages (msg_id, msg_type, content, sender_id, sender_name, sender_type, receiver_id, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [msgId, msg.msgType || 'text', msg.content || '', msg.senderId, msg.senderName || 'Unknown', senderType, msg.receiverId || null, new Date()]
         );
         return msgId;
     } finally {
@@ -104,18 +106,14 @@ async function saveMessage(msg) {
     }
 }
 
-async function getMessages(userId, isStaff, limit) {
+async function getMessages(userId, userName, isStaff, limit) {
     const conn = await getConnection();
     try {
         let sql, params;
-        if (isStaff) {
-            sql = "SELECT msg_id as id, msg_id, msg_type, type, content, sender_id as senderId, sender_name as senderName, receiver_id as receiverId, timestamp FROM chat_messages WHERE (receiver_id = 'staff' OR sender_id = 'staff') AND deleted = 0 ORDER BY timestamp DESC LIMIT ?";
-            params = [limit];
-        } else {
-            sql = "SELECT msg_id as id, msg_id, msg_type, type, content, sender_id as senderId, sender_name as senderName, receiver_id as receiverId, timestamp FROM chat_messages WHERE (sender_id = ? OR receiver_id = ?) AND deleted = 0 ORDER BY timestamp DESC LIMIT ?";
-            params = [userId, userId, limit];
-        }
-        const [rows] = await conn.execute(sql, params);
+        const senderType = isStaff ? 'staff' : 'user';
+        sql = "SELECT msg_id as id, msg_id, msg_type, content, sender_id as senderId, sender_name as senderName, sender_type, receiver_id as receiverId, timestamp FROM chat_messages WHERE sender_type = ? AND deleted = 0 ORDER BY timestamp DESC LIMIT ?";
+        params = [senderType, limit || 50];
+        const [rows] = await conn.query(sql, params);
         return rows;
     } finally {
         conn.release();
@@ -143,13 +141,13 @@ app.get('/api/userinfo', async (req, res) => {
 app.get('/api/messages', async (req, res) => {
     const token = req.query.access_token;
     const isdev = req.query.isdev || '0';
-    const limit = parseInt(req.query.limit) || 50;
+    const limit = Math.max(1, Math.min(100, parseInt(req.query.limit) || 50));
     if (!token) return res.json({ success: false, msg: 'token required' });
     const userInfo = await verifyUser(token, isdev);
     if (!userInfo) return res.json({ success: false, msg: 'auth failed' });
-    const userId = userInfo.userId;
-    const isStaff = !!(userInfo.empId || userInfo.staffId);
-    const messages = await getMessages(userId, isStaff, limit);
+    
+    const senderType = req.query.type === 'staff' ? 'staff' : 'user';
+    const messages = await getMessages(senderType, limit);
     return res.json({ success: true, data: messages });
 });
 
@@ -177,16 +175,33 @@ wss.on('connection', async (ws, req) => {
     const isdev = url.searchParams.get('isdev') || '0';
     const type = url.searchParams.get('type') || 'user';
 
+    let messageQueue = [];
+    let isVerified = false;
     let userId = null;
     let userInfo = null;
 
+    ws.on('message', (data) => {
+        if (!isVerified) {
+            messageQueue.push(data);
+            return;
+        }
+        processMessage(data);
+    });
+
+    ws.on('close', () => {
+        if (userId) {
+            onlineUsers.delete(userId);
+            console.log('Offline: ' + userId);
+        }
+    });
+
     if (token) {
-        userId = token.substring(0, 32);
         userInfo = await verifyUser(token, isdev);
         if (!userInfo) {
             ws.close(1008, 'Unauthorized');
             return;
         }
+        userId = userInfo.userId;
         userInfo.type = type;
     }
 
@@ -195,45 +210,51 @@ wss.on('connection', async (ws, req) => {
         return;
     }
 
+    isVerified = true;
     onlineUsers.set(userId, { ws, userInfo, connectedAt: new Date() });
     console.log('Online: ' + userId + ' (' + type + ')');
 
     ws.send(JSON.stringify({ type: 'welcome', userId, timestamp: new Date().toISOString() }));
 
-    ws.on('message', async (data) => {
+    while (messageQueue.length > 0) {
+        processMessage(messageQueue.shift());
+    }
+
+    function processMessage(data) {
+        console.log('WS message received:', data.toString());
         try {
             const msg = JSON.parse(data);
-            switch (msg.type) {
-                case 'chat':
-                    await handleChatMessage(msg, userId, userInfo, ws);
-                    break;
-                case 'ping':
-                    ws.send(JSON.stringify({ type: 'pong' }));
-                    break;
+            const connectionType = userInfo.type || 'user';
+            if (msg.type === 'chat') {
+                handleChatMessage(msg, userId, userInfo, connectionType, ws);
+            } else if (msg.type === 'ping') {
+                ws.send(JSON.stringify({ type: 'pong' }));
             }
         } catch (err) {
             console.error('Msg error:', err.message);
             ws.send(JSON.stringify({ type: 'error', msg: err.message }));
         }
-    });
-
-    ws.on('close', () => {
-        onlineUsers.delete(userId);
-        console.log('Offline: ' + userId);
-    });
+    }
 });
 
-// ============ 消息处理 ============
+// ============ 消息处理 - 修复Staff推送 ============
 
-async function handleChatMessage(msg, senderId, senderInfo, ws) {
+async function handleChatMessage(msg, senderId, senderInfo, senderType, ws) {
+    console.log('handleChatMessage called:', senderId, senderType, msg.content);
     const senderName = senderInfo.userName || senderInfo.empName || senderId;
+    const msgSenderType = senderType || 'user';
+    
+    // 判断是否为员工/staff发送
+    const isStaff = senderInfo.empId || senderInfo.staffId || msgSenderType === 'staff';
+    
     const msgId = await saveMessage({
         id: msg.id,
         msgType: msg.msgType || 'text',
         content: msg.content,
         senderId,
         senderName,
-        receiverId: msg.receiverId || 'staff'
+        senderType: msgSenderType,
+        receiverId: msg.receiverId || (isStaff ? null : 'staff')
     });
 
     const msgData = {
@@ -242,20 +263,33 @@ async function handleChatMessage(msg, senderId, senderInfo, ws) {
         content: msg.content,
         senderId,
         senderName,
-        receiverId: msg.receiverId || 'staff',
+        senderType: msgSenderType,
+        receiverId: msg.receiverId || (isStaff ? null : 'staff'),
         timestamp: new Date().toISOString()
     };
 
-    // 发送给客服
-    if (msg.receiverId === 'staff' || !msg.receiverId) {
+    // Staff 发送消息给用户 - 修复：主动推送给目标用户
+    if (isStaff && msg.receiverId && msg.receiverId !== 'staff') {
+        const targetUser = onlineUsers.get(msg.receiverId);
+        if (targetUser && targetUser.ws && targetUser.ws.readyState === WebSocket.OPEN) {
+            targetUser.ws.send(JSON.stringify({ type: 'message', data: msgData }));
+            console.log('Staff message sent to user:', msg.receiverId);
+        } else {
+            console.log('Target user not online:', msg.receiverId);
+        }
+    }
+    // 用户发送消息给 staff
+    else if (msg.receiverId === 'staff' || !msg.receiverId) {
         for (const [uid, info] of onlineUsers) {
             if (info.userInfo && (info.userInfo.empId || info.userInfo.staffId)) {
-                info.ws.send(JSON.stringify({ type: 'message', data: msgData }));
+                if (info.ws && info.ws.readyState === WebSocket.OPEN) {
+                    info.ws.send(JSON.stringify({ type: 'message', data: msgData }));
+                }
             }
         }
     }
 
-    // 发送回给发送者
+    // 发送回给发送者(确认收到)
     ws.send(JSON.stringify({ type: 'message', data: msgData }));
 }
 
@@ -264,7 +298,7 @@ async function handleChatMessage(msg, senderId, senderInfo, ws) {
 async function start() {
     try {
         await initDatabase();
-        server.listen(PORT, () => {
+        server.listen(PORT, '0.0.0.0', () => {
             console.log('Chat service OK on port ' + PORT);
         });
     } catch (e) {

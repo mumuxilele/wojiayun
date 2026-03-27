@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>庆和苑社区服务</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; min-height: 100vh; }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header h1 { font-size: 24px; margin-bottom: 5px; }
+        .header p { font-size: 14px; opacity: 0.9; }
+        
+        .nav {
+            display: flex;
+            background: white;
+            padding: 10px;
+            overflow-x: auto;
+            position: sticky;
+            top: 80px;
+            z-index: 99;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .nav-item {
+            flex: none;
+            padding: 10px 20px;
+            margin: 0 5px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        .nav-item.active { background: #667eea; color: white; }
+        .nav-item:not(.active) { background: #f0f0f0; color: #333; }
+        
+        .container { max-width: 800px; margin: 0 auto; padding: 15px; }
+        
+        .section { display: none; }
+        .section.active { display: block; }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+        .card-img {
+            width: 100%;
+            height: 150px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+        }
+        .card-body { padding: 15px; }
+        .card-title { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+        .card-desc { font-size: 14px; color: #666; margin-bottom: 10px; }
+        .card-info { display: flex; justify-content: space-between; align-items: center; }
+        .card-price { color: #ff4757; font-size: 18px; font-weight: 600; }
+        .card-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .notice-card {
+            background: linear-gradient(135deg, #fff9c4 0%, #fff59d 100%);
+            border-left: 4px solid #ffc107;
+        }
+        .notice-title { font-weight: 600; color: #f57c00; margin-bottom: 5px; }
+        .notice-content { font-size: 14px; color: #666; }
+        
+        .venue-card { display: flex; align-items: center; padding: 15px; }
+        .venue-icon { font-size: 36px; margin-right: 15px; }
+        .venue-info { flex: 1; }
+        .venue-name { font-weight: 600; margin-bottom: 5px; }
+        .venue-meta { font-size: 12px; color: #999; }
+        .venue-price { color: #ff4757; font-weight: 600; }
+        .venue-price span { font-size: 12px; color: #999; font-weight: normal; }
+        
+        .empty { text-align: center; padding: 40px; color: #999; }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.show { display: flex; }
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            padding: 20px;
+        }
+        .modal-title { font-size: 18px; font-weight: 600; margin-bottom: 15px; }
+        .modal-close { float: right; cursor: pointer; font-size: 20px; }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-label { display: block; margin-bottom: 5px; font-size: 14px; color: #666; }
+        .form-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .form-btn {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        
+        .tabs { display: flex; border-bottom: 1px solid #eee; margin-bottom: 15px; }
+        .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; border-bottom: 2px solid transparent; }
+        .tab.active { border-bottom-color: #667eea; color: #667eea; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏠 庆和苑社区服务</h1>
+        <p>便民生活，尽在掌握</p>
+    </div>
+    
+    <div class="nav">
+        <div class="nav-item active" data-section="notice">公告</div>
+        <div class="nav-item" data-section="food">食堂</div>
+        <div class="nav-item" data-section="siyan">私宴</div>
+        <div class="nav-item" data-section="drink">饮品</div>
+        <div class="nav-item" data-section="venue">场馆</div>
+        <div class="nav-item" data-section="car">洗车</div>
+        <div class="nav-item" data-section="laundry">洗衣</div>
+    </div>
+    
+    <div class="container">
+        <!-- 公告 -->
+        <div class="section active" id="section-notice">
+            <div id="notices"></div>
+        </div>
+        
+        <!-- 食堂 -->
+        <div class="section" id="section-food"></div>
+        
+        <!-- 私宴 -->
+        <div class="section" id="section-siyan"></div>
+        
+        <!-- 饮品 -->
+        <div class="section" id="section-drink"></div>
+        
+        <!-- 场馆 -->
+        <div class="section" id="section-venue">
+            <div class="tabs">
+                <div class="tab active" data-type="all">全部</div>
+                <div class="tab" data-type="yumaoqiu">羽毛球</div>
+                <div class="tab" data-type="lanqiu">篮球</div>
+                <div class="tab" data-type="youyong">游泳</div>
+            </div>
+            <div id="venues"></div>
+        </div>
+        
+        <!-- 洗车 -->
+        <div class="section" id="section-car"></div>
+        
+        <!-- 洗衣 -->
+        <div class="section" id="section-laundry"></div>
+    </div>
+    
+    <!-- 预约弹窗 -->
+    <div class="modal" id="bookingModal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal()">&times;</span>
+            <div class="modal-title">预约服务</div>
+            <div class="form-group">
+                <label class="form-label">预约日期</label>
+                <input type="date" class="form-input" id="bookingDate">
+            </div>
+            <div class="form-group">
+                <label class="form-label">预约时间</label>
+                <select class="form-input" id="bookingTime">
+                    <option value="09:00">09:00-10:00</option>
+                    <option value="10:00">10:00-11:00</option>
+                    <option value="11:00">11:00-12:00</option>
+                    <option value="14:00">14:00-15:00</option>
+                    <option value="15:00">15:00-16:00</option>
+                    <option value="16:00">16:00-17:00</option>
+                    <option value="17:00">17:00-18:00</option>
+                    <option value="18:00">18:00-19:00</option>
+                    <option value="19:00">19:00-20:00</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">联系电话</label>
+                <input type="tel" class="form-input" id="bookingPhone" placeholder="请输入手机号">
+            </div>
+            <div class="form-group">
+                <label class="form-label">备注</label>
+                <textarea class="form-input" id="bookingNote" rows="2" placeholder="其他需求"></textarea>
+            </div>
+            <button class="form-btn" onclick="submitBooking()">确认预约</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://47.98.238.209:22311/api/business';
+        
+        // 导航切换
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById('section-' + this.dataset.section).classList.add('active');
+            });
+        });
+        
+        // 场馆筛选
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                loadVenues(this.dataset.type);
+            });
+        });
+        
+        // 加载公告
+        async function loadNotices() {
+            const res = await fetch(`${API_BASE}/notices`);
+            const data = await res.json();
+            const container = document.getElementById('notices');
+            
+            if (data.success && data.data.length > 0) {
+                container.innerHTML = data.data.map(n => `
+                    <div class="card notice-card">
+                        <div class="card-body">
+                            <div class="notice-title">📢 ${n.title}</div>
+                            <div class="notice-content">${n.content}</div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = '<div class="empty">暂无公告</div>';
+            }
+        }
+        
+        // 加载门店
+        async function loadShops() {
+            const res = await fetch(`${API_BASE}/shops`);
+            const data = await res.json();
+            
+            const typeMap = {
+                'canting': { section: 'food', icon: '🍲', title: '社区食堂' },
+                'siyan': { section: 'siyan', icon: '🥘', title: '私宴定制' },
+                'yinpin': { section: 'drink', icon: '🧋', title: '解忧饮品' },
+                'xiche': { section: 'car', icon: '🚗', title: '爱车洗护' },
+                'xiyi': { section: 'laundry', icon: '👔', title: '速干洗衣' }
+            };
+            
+            if (data.success) {
+                Object.keys(typeMap).forEach(type => {
+                    const shops = data.data.filter(s => s.shop_type === type);
+                    const container = document.getElementById(`section-${typeMap[type].section}`);
+                    
+                    if (shops.length > 0) {
+                        container.innerHTML = shops.map(s => `
+                            <div class="card">
+                                <div class="card-img">${typeMap[type].icon}</div>
+                                <div class="card-body">
+                                    <div class="card-title">${s.shop_name}</div>
+                                    <div class="card-desc">${s.description || ''}</div>
+                                    <div style="font-size:12px;color:#999;margin-bottom:10px">
+                                        📍 ${s.address || ''} | 📞 ${s.phone || ''}
+                                    </div>
+                                    <div class="card-info">
+                                        <span class="card-price">查看详情</span>
+                                        <button class="card-btn" onclick="openBooking('${s.shop_name}')">立即预约</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        container.innerHTML = '<div class="empty">暂无服务</div>';
+                    }
+                });
+            }
+        }
+        
+        // 加载场馆
+        async function loadVenues(type = 'all') {
+            const res = await fetch(`${API_BASE}/venues`);
+            const data = await res.json();
+            const container = document.getElementById('venues');
+            
+            let venues = data.data || [];
+            if (type !== 'all') {
+                venues = venues.filter(v => v.venue_type === type);
+            }
+            
+            const iconMap = {
+                'yumaoqiu': '🏸',
+                'lanqiu': '🏀',
+                'pingpang': '🏓',
+                'yujia': '🧘',
+                'youyong': '🏊'
+            };
+            
+            if (venues.length > 0) {
+                container.innerHTML = venues.map(v => `
+                    <div class="card">
+                        <div class="venue-card">
+                            <div class="venue-icon">${iconMap[v.venue_type] || '🏟️'}</div>
+                            <div class="venue-info">
+                                <div class="venue-name">${v.venue_name}</div>
+                                <div class="venue-meta">容量: ${v.capacity}人 | 状态: 营业中</div>
+                            </div>
+                            <div style="text-align:right">
+                                <div class="venue-price">¥${v.price}<span>/时</span></div>
+                                <button class="card-btn" onclick="openBooking('${v.venue_name}')" style="margin-top:8px">预约</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = '<div class="empty">暂无场馆</div>';
+            }
+        }
+        
+        // 打开预约弹窗
+        let currentService = '';
+        function openBooking(serviceName) {
+            currentService = serviceName;
+            document.getElementById('bookingModal').classList.add('show');
+        }
+        
+        function closeModal() {
+            document.getElementById('bookingModal').classList.remove('show');
+        }
+        
+        // 提交预约
+        async function submitBooking() {
+            const date = document.getElementById('bookingDate').value;
+            const time = document.getElementById('bookingTime').value;
+            const phone = document.getElementById('bookingPhone').value;
+            const note = document.getElementById('bookingNote').value;
+            
+            if (!date || !phone) {
+                alert('请填写完整信息');
+                return;
+            }
+            
+            alert(`预约成功！\n服务: ${currentService}\n时间: ${date} ${time}\n电话: ${phone}`);
+            closeModal();
+        }
+        
+        // 初始化
+        loadNotices();
+        loadShops();
+        loadVenues();
+    </script>
+</body>
+</html>
