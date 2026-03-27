@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>申请单列表 - 员工端</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; min-height: 100vh; }
+        .header { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; padding: 15px; display: flex; align-items: center; }
+        .header h1 { font-size: 18px; flex: 1; }
+        .back { color: white; text-decoration: none; font-size: 14px; }
+        .filter { display: flex; gap: 8px; padding: 10px 15px; background: white; overflow-x: auto; }
+        .filter-item { padding: 6px 12px; border-radius: 15px; font-size: 12px; white-space: nowrap; background: #f0f0f0; color: #666; }
+        .filter-item.active { background: #11998e; color: white; }
+        .list { padding: 10px; }
+        .item { background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; }
+        .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .item-title { font-size: 15px; font-weight: 500; color: #333; }
+        .item-status { font-size: 12px; padding: 4px 10px; border-radius: 10px; }
+        .status-pending { background: #fff3e0; color: #f57c00; }
+        .status-processing { background: #e3f2fd; color: #1976d2; }
+        .status-completed { background: #e8f5e9; color: #388e3c; }
+        .item-info { font-size: 12px; color: #999; }
+        .priority { color: #f57c00; font-weight: 600; }
+        .empty { text-align: center; padding: 60px 20px; color: #999; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="index.html" class="back">← 返回</a>
+        <h1>申请单列表</h1>
+        <span></span>
+    </div>
+    <div class="filter">
+        <div class="filter-item active" data-status="">全部</div>
+        <div class="filter-item" data-status="pending">待处理</div>
+        <div class="filter-item" data-status="processing">处理中</div>
+        <div class="filter-item" data-status="completed">已完成</div>
+        <div class="filter-item" data-status="rejected">已拒绝</div>
+    </div>
+    <div class="list" id="list"><div class="empty">加载中...</div></div>
+
+    <script>
+        const token = localStorage.getItem('token') || new URLSearchParams(location.search).get('access_token');
+        const isdev = new URLSearchParams(location.search).get('isdev') || '0';
+        let currentStatus = '';
+
+        function getStatusClass(s) { return 'item-status status-' + (s || 'pending'); }
+        function getStatusText(s) { return {pending:'待处理',processing:'处理中',completed:'已完成',rejected:'已拒绝'}[s] || s; }
+
+        async function loadList() {
+            const url = '/api/staff/applications?page=1&page_size=20' + (currentStatus ? '&status=' + currentStatus : '') + '&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+            const res = await fetch(url);
+            const data = await res.json();
+            if (data.success && data.data && data.data.items && data.data.items.length > 0) {
+                document.getElementById('list').innerHTML = data.data.items.map(item => 
+                    '<div class="item" onclick="location.href=\'application_detail.html?id=' + item.id + '\'">' +
+                    '<div class="item-header"><span class="item-title">' + (item.title || '') + '</span><span class="' + getStatusClass(item.status) + '">' + getStatusText(item.status) + '</span></div>' +
+                    '<div class="item-info">申请人: ' + (item.user_name || '') + ' | ' + (item.created_at || '') + (item.priority > 1 ? ' | <span class="priority">优先级' + item.priority + '</span>' : '') + '</div></div>'
+                ).join('');
+            } else {
+                document.getElementById('list').innerHTML = '<div class="empty">暂无申请单</div>';
+            }
+        }
+
+        document.querySelectorAll('.filter-item').forEach(el => {
+            el.addEventListener('click', () => {
+                document.querySelectorAll('.filter-item').forEach(e => e.classList.remove('active'));
+                el.classList.add('active');
+                currentStatus = el.dataset.status;
+                loadList();
+            });
+        });
+
+        loadList();
+    </script>
+</body>
+</html>

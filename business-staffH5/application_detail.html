@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>处理申请 - 员工端</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; min-height: 100vh; }
+        .header { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; padding: 15px; display: flex; align-items: center; }
+        .header h1 { font-size: 18px; flex: 1; }
+        .back { color: white; text-decoration: none; font-size: 14px; }
+        .detail { padding: 15px; }
+        .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; }
+        .card-title { font-size: 12px; color: #999; margin-bottom: 6px; }
+        .card-value { font-size: 14px; color: #333; }
+        .status { display: inline-block; padding: 4px 12px; border-radius: 10px; font-size: 12px; }
+        .status-pending { background: #fff3e0; color: #f57c00; }
+        .status-processing { background: #e3f2fd; color: #1976d2; }
+        .status-completed { background: #e8f5e9; color: #388e3c; }
+        .btns { display: flex; gap: 10px; padding: 15px; }
+        .btn { flex: 1; padding: 14px; border: none; border-radius: 12px; font-size: 15px; cursor: pointer; }
+        .btn-process { background: #11998e; color: white; }
+        .btn-complete { background: #38ef7d; color: white; }
+        .btn-reject { background: #f5f5f5; color: #666; }
+        textarea { width: 100%; min-height: 80px; padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="application_list.html" class="back">← 返回</a>
+        <h1>处理申请</h1>
+        <span></span>
+    </div>
+    <div class="detail" id="detail"><div style="text-align:center;padding:40px;">加载中...</div></div>
+    <div id="actionArea" style="display:none;">
+        <div class="card">
+            <div class="card-title">处理意见</div>
+            <textarea id="result" placeholder="请输入处理意见或结果"></textarea>
+        </div>
+        <div class="btns">
+            <button class="btn btn-reject" onclick="process('reject')">拒绝</button>
+            <button class="btn btn-process" onclick="process('process')">开始处理</button>
+            <button class="btn btn-complete" onclick="process('complete')">完成</button>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token') || new URLSearchParams(location.search).get('access_token');
+        const isdev = new URLSearchParams(location.search).get('isdev') || '0';
+        const id = new URLSearchParams(location.search).get('id');
+        let currentStatus = 'pending';
+
+        async function load() {
+            const res = await fetch('/api/staff/applications/' + id + '?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev);
+            const data = await res.json();
+            if (data.success && data.data) {
+                const app = data.data;
+                currentStatus = app.status;
+                const statusClass = 'status-' + (app.status || 'pending');
+                const statusText = {pending:'待处理',processing:'处理中',completed:'已完成',rejected:'已拒绝'}[app.status] || app.status;
+                document.getElementById('detail').innerHTML = 
+                    '<div class="card"><div class="card-title">申请单号</div><div class="card-value">' + (app.app_no || '') + '</div></div>' +
+                    '<div class="card"><div class="card-title">标题</div><div class="card-value">' + (app.title || '') + '</div></div>' +
+                    '<div class="card"><div class="card-title">申请人</div><div class="card-value">' + (app.user_name || '') + ' (' + (app.user_phone || '') + ')</div></div>' +
+                    '<div class="card"><div class="card-title">详细内容</div><div class="card-value">' + (app.content || '') + '</div></div>' +
+                    '<div class="card"><div class="card-title">状态</div><div class="card-value"><span class="status ' + statusClass + '">' + statusText + '</span></div></div>' +
+                    (app.result ? '<div class="card"><div class="card-title">处理结果</div><div class="card-value">' + app.result + '</div></div>' : '') +
+                    '<div class="card"><div class="card-title">提交时间</div><div class="card-value">' + (app.created_at || '') + '</div></div>';
+                
+                if (app.status !== 'completed' && app.status !== 'rejected') {
+                    document.getElementById('actionArea').style.display = 'block';
+                }
+            }
+        }
+
+        async function process(action) {
+            const result = document.getElementById('result').value;
+            if (action !== 'process' && !result) {
+                alert('请输入处理意见');
+                return;
+            }
+            const res = await fetch('/api/staff/applications/' + id + '/process', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({action, result})
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('处理成功');
+                location.href = 'application_list.html';
+            } else {
+                alert(data.msg || '处理失败');
+            }
+        }
+
+        load();
+    </script>
+</body>
+</html>

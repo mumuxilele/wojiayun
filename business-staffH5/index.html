@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工作台 - 员工端</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; min-height: 100vh; }
+        .header { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; padding: 20px; }
+        .header h1 { font-size: 20px; margin-bottom: 5px; }
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; }
+        .stat-item { background: rgba(255,255,255,0.2); padding: 10px; border-radius: 8px; text-align: center; }
+        .stat-num { font-size: 24px; font-weight: 600; }
+        .stat-label { font-size: 11px; opacity: 0.9; }
+        .nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px; background: white; margin: 10px; border-radius: 12px; }
+        .nav-item { text-align: center; padding: 15px; border-radius: 8px; cursor: pointer; }
+        .nav-item:active { background: #f5f5f5; }
+        .nav-icon { font-size: 28px; margin-bottom: 5px; }
+        .nav-text { font-size: 12px; color: #333; }
+        .section { background: white; margin: 10px; border-radius: 12px; padding: 15px; }
+        .section-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; display: flex; justify-content: space-between; }
+        .section-title a { font-size: 12px; color: #11998e; text-decoration: none; }
+        .item { display: flex; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+        .item:last-child { border-bottom: none; }
+        .item-icon { width: 40px; height: 40px; background: #f5f5f5; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-right: 12px; }
+        .item-info { flex: 1; }
+        .item-title { font-size: 14px; color: #333; margin-bottom: 4px; }
+        .item-desc { font-size: 12px; color: #999; }
+        .item-badge { font-size: 11px; padding: 3px 8px; border-radius: 8px; }
+        .badge-pending { background: #fff3e0; color: #f57c00; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏢 工作台</h1>
+        <div>员工端</div>
+        <div class="stats">
+            <div class="stat-item"><div class="stat-num" id="pendingApps">0</div><div class="stat-label">待处理</div></div>
+            <div class="stat-item"><div class="stat-num" id="processingApps">0</div><div class="stat-label">处理中</div></div>
+            <div class="stat-item"><div class="stat-num" id="todayOrders">0</div><div class="stat-label">今日订单</div></div>
+            <div class="stat-item"><div class="stat-num" id="todayIncome">¥0</div><div class="stat-label">今日收入</div></div>
+        </div>
+    </div>
+
+    <div class="nav">
+        <div class="nav-item" onclick="location.href='application_list.html'">
+            <div class="nav-icon">📋</div>
+            <div class="nav-text">申请单</div>
+        </div>
+        <div class="nav-item" onclick="location.href='order_list.html'">
+            <div class="nav-icon">📦</div>
+            <div class="nav-text">订单</div>
+        </div>
+        <div class="nav-item" onclick="location.href='statistics.html'">
+            <div class="nav-icon">📊</div>
+            <div class="nav-text">统计</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title"><span>待处理申请</span><a href="application_list.html?status=pending">更多 ></a></div>
+        <div id="pendingList"><div style="text-align:center;padding:20px;color:#999;">暂无</div></div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token') || new URLSearchParams(location.search).get('access_token');
+        const isdev = new URLSearchParams(location.search).get('isdev') || '0';
+
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/staff/statistics?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev);
+                const data = await res.json();
+                if (data.success && data.data) {
+                    document.getElementById('pendingApps').textContent = data.data.pending_applications || 0;
+                    document.getElementById('processingApps').textContent = data.data.processing_applications || 0;
+                    document.getElementById('todayOrders').textContent = data.data.today_orders || 0;
+                    document.getElementById('todayIncome').textContent = '¥' + (data.data.today_income || 0);
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function loadPending() {
+            try {
+                const res = await fetch('/api/staff/applications?page=1&page_size=5&status=pending&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev);
+                const data = await res.json();
+                if (data.success && data.data && data.data.items && data.data.items.length > 0) {
+                    document.getElementById('pendingList').innerHTML = data.data.items.map(item => 
+                        '<div class="item" onclick="location.href=\'application_detail.html?id=' + item.id + '\'">' +
+                        '<div class="item-icon">📋</div>' +
+                        '<div class="item-info"><div class="item-title">' + (item.title || '') + '</div><div class="item-desc">' + (item.user_name || '') + ' | ' + (item.created_at || '') + '</div></div>' +
+                        '<span class="item-badge badge-pending">待处理</span></div>'
+                    ).join('');
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        loadStats();
+        loadPending();
+    </script>
+</body>
+</html>

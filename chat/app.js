@@ -1,15 +1,20 @@
 /**
- * 我家云即时通讯服务 - 修复版 (Staff消息推送修复)
+ * 我家云即时通讯服务 - DAO 架构版
+ * SQL 语句分离到 sql/queries.json 配置文件中
  */
 const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
-const crypto = require('crypto');
 const path = require('path');
 const mysql = require('mysql2/promise');
 
+// 引入 DAO 层
+const ChatDao = require('./ChatDao');
+
 const PORT = 22309;
-const USER_SERVICE_URL = 'http://127.0.0.1:22307/getUserInfo';
+const USER_SERVICE_URL_LOCAL = 'http://127.0.0.1:22307/getUserInfo';
+const USER_SERVICE_URL_STAFF = 'https://gj.wojiacloud.com/getUserInfo';
+const USER_SERVICE_URL_USER = 'https://wj.wojiacloud.com/getUserInfo';
 
 // MySQL连接池
 const pool = mysql.createPool({
@@ -21,110 +26,45 @@ const pool = mysql.createPool({
     connectionLimit: 10
 });
 
+// 初始化 DAO
+const chatDao = new ChatDao(pool);
+
 // 在线用户
 const onlineUsers = new Map();
 
 // ============ 工具函数 ============
 
-function generateId() {
-    const ts = Date.now().toString();
-    const rnd = Math.random().toString();
-    return crypto.createHash('md5').update(ts + rnd).digest('hex');
-}
-
-async function getConnection() {
-    return await pool.getConnection();
-}
-
-// ============ 用户验证 ============
-
-async function verifyUser(token, isdev) {
-    try {
-        const url = USER_SERVICE_URL + '?access_token=' + encodeURIComponent(token) + '&isdev=' + (isdev || '0');
-        const resp = await fetch(url);
-        const data = await resp.json();
-        if (data && data.success && data.data) {
-            const u = data.data;
-            return {
-                userId: u.userId || u.id || u.empId || token.substring(0, 32),
-                userName: u.userName || u.empName || u.name || 'User',
-                empName: u.empName || u.name,
-                empId: u.empId,
-                staffId: u.staffId,
-                phone: u.userPhone || u.empPhone
-            };
+async function verifyUser(token, isdev, userType = 'user') {
+    // 优先使用云端服务，如果失败则回退到本地
+    const urls = userType === 'staff' 
+        ? [USER_SERVICE_URL_STAFF, USER_SERVICE_URL_LOCAL]
+        : [USER_SERVICE_URL_USER, USER_SERVICE_URL_LOCAL];
+    
+    for (const baseUrl of urls) {
+        try {
+            console.log('verifyUser: userType=', userType, 'trying:', baseUrl);
+            const url = baseUrl + '?access_token=' + encodeURIComponent(token) + '&isdev=' + (isdev || '0');
+            const resp = await fetch(url, { signal: AbortSignal.timeout(5000) });
+            const data = await resp.json();
+            
+            if (data && data.success && data.data) {
+                const u = data.data;
+                return {
+                    userId: u.userId || u.id || u.empId || token.substring(0, 32),
+                    userName: u.userName || u.empName || u.name || 'User',
+                    empName: u.empName || u.name,
+                    empId: u.empId,
+                    staffId: u.staffId,
+                    phone: u.userPhone || u.empPhone
+                };
+            }
+            // 如果是云端失败，继续尝试下一个
+            console.log('verifyUser failed, trying next...');
+        } catch (e) {
+            console.log('verifyUser error:', e.message, 'trying next...');
         }
-        return null;
-    } catch (e) {
-        console.error('verifyUser error:', e.message);
-        return null;
     }
-}
-
-// ============ 数据库初始化 ============
-
-async function initDatabase() {
-    const conn = await getConnection();
-    try {
-        await conn.execute(`
-            CREATE TABLE IF NOT EXISTS chat_messages (
-                id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                msg_id VARCHAR(64) UNIQUE NOT NULL,
-                msg_type VARCHAR(32) DEFAULT 'text',
-                content LONGTEXT,
-                sender_id VARCHAR(64) NOT NULL,
-                sender_name VARCHAR(128),
-                sender_type VARCHAR(32) DEFAULT 'user',
-                receiver_id VARCHAR(64),
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-                deleted TINYINT DEFAULT 0,
-                INDEX idx_sender (sender_id),
-                INDEX idx_receiver (receiver_id),
-                INDEX idx_timestamp (timestamp)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-        `);
-        console.log('DB tables ready');
-    } finally {
-        conn.release();
-    }
-}
-
-// ============ 消息存储 ============
-
-async function saveMessage(msg) {
-    const conn = await getConnection();
-    try {
-        const msgId = msg.id || generateId();
-        const senderType = msg.senderType || 'user';
-        await conn.execute(
-            'INSERT INTO chat_messages (msg_id, msg_type, content, sender_id, sender_name, sender_type, receiver_id, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            [msgId, msg.msgType || 'text', msg.content || '', msg.senderId, msg.senderName || 'Unknown', senderType, msg.receiverId || null, new Date()]
-        );
-        return msgId;
-    } finally {
-        conn.release();
-    }
-}
-
-async function getMessages(senderType, limit, offset = 0, beforeTimestamp = null) {
-    const conn = await getConnection();
-    try {
-        let sql = "SELECT msg_id as id, msg_id, msg_type, content, sender_id as senderId, sender_name as senderName, sender_type, receiver_id as receiverId, timestamp FROM chat_messages WHERE sender_type = ? AND deleted = 0";
-        let params = [senderType];
-        
-        if (beforeTimestamp) {
-            sql += " AND timestamp < ?";
-            params.push(beforeTimestamp);
-        }
-        
-        sql += " ORDER BY timestamp DESC LIMIT ? OFFSET ?";
-        params.push(parseInt(limit) || 50, parseInt(offset) || 0);
-        
-        const [rows] = await conn.query(sql, params);
-        return rows;
-    } finally {
-        conn.release();
-    }
+    return null;
 }
 
 // ============ HTTP服务器 ============
@@ -139,24 +79,32 @@ app.get('/api/userinfo', async (req, res) => {
     const token = req.query.access_token || req.query.token;
     const isdev = req.query.isdev || '0';
     if (!token) return res.json({ success: false, msg: 'token required' });
-    const userInfo = await verifyUser(token, isdev);
+    const userType = (req.query.type === 'staff') ? 'staff' : 'user';
+    const userInfo = await verifyUser(token, isdev, userType);
     if (userInfo) return res.json({ success: true, data: userInfo });
     return res.json({ success: false, msg: 'auth failed' });
 });
 
-// 获取消息
+// 获取消息列表 (支持分页)
 app.get('/api/messages', async (req, res) => {
     const token = req.query.access_token;
     const isdev = req.query.isdev || '0';
     const limit = Math.max(1, Math.min(100, parseInt(req.query.limit) || 50));
     const offset = parseInt(req.query.offset) || 0;
-    const before = req.query.before || null; // timestamp for pagination
+    const before = req.query.before || null;
+    
     if (!token) return res.json({ success: false, msg: 'token required' });
-    const userInfo = await verifyUser(token, isdev);
+    const userType = (req.query.type === 'staff') ? 'staff' : 'user';
+    const userInfo = await verifyUser(token, isdev, userType);
     if (!userInfo) return res.json({ success: false, msg: 'auth failed' });
     
     const senderType = req.query.type === 'staff' ? 'staff' : 'user';
-    const messages = await getMessages(senderType, limit, offset, before);
+    const messages = await chatDao.getMessages({
+        senderType,
+        limit,
+        offset,
+        beforeTimestamp: before
+    });
     return res.json({ success: true, data: messages, hasMore: messages.length === limit });
 });
 
@@ -165,19 +113,56 @@ app.get('/api/online-users', async (req, res) => {
     const token = req.query.access_token;
     const isdev = req.query.isdev || '0';
     if (!token) return res.json({ success: false, msg: 'token required' });
-    const userInfo = await verifyUser(token, isdev);
+    const userInfo = await verifyUser(token, isdev, req.query.type || 'user');
     if (!userInfo) return res.json({ success: false, msg: 'auth failed' });
     const users = [];
-    for (const [uid, info] of onlineUsers) {
-        if (info.userInfo) {
-            users.push({ userId: uid, userName: info.userInfo.userName || 'User' });
-        }
+    for (const [userId, info] of onlineUsers) {
+        users.push({ userId, userName: info.userInfo?.userName, type: info.userInfo?.type });
     }
     return res.json({ success: true, data: users });
 });
 
-// ============ WebSocket ============
+// ============ WebSocket 处理 ============
 
+function sendToUser(ws, type, data) {
+    if (ws && ws.readyState === ws.OPEN) {
+        ws.send(JSON.stringify({ type, data }));
+    }
+}
+
+function broadcast(type, data, excludeWs = null) {
+    for (const [, info] of onlineUsers) {
+        if (info.ws !== excludeWs && info.ws.readyState === info.ws.OPEN) {
+            info.ws.send(JSON.stringify({ type, data }));
+        }
+    }
+}
+
+// 消息处理
+async function handleChatMessage(msg, userId, userInfo, senderType, ws) {
+    const msgData = {
+        id: msg.id || chatDao.generateId(),
+        msgType: msg.msgType || msg.type || 'text',
+        content: msg.content,
+        senderId: userId,
+        senderName: userInfo.userName || userInfo.empName || 'User',
+        senderType: senderType,
+        receiverId: msg.receiverId,
+        timestamp: new Date().toISOString()
+    };
+
+    // 保存到数据库
+    const msgId = await chatDao.saveMessage(msgData);
+    msgData.id = msgId;
+
+    // 发送给自己
+    sendToUser(ws, 'message', msgData);
+
+    // 广播给其他人
+    broadcast('message', msgData, ws);
+}
+
+// WebSocket 连接
 wss.on('connection', async (ws, req) => {
     const url = new URL(req.url, 'http://' + req.headers.host);
     const token = url.searchParams.get('access_token');
@@ -205,7 +190,7 @@ wss.on('connection', async (ws, req) => {
     });
 
     if (token) {
-        userInfo = await verifyUser(token, isdev);
+        userInfo = await verifyUser(token, isdev, type);
         if (!userInfo) {
             ws.close(1008, 'Unauthorized');
             return;
@@ -220,6 +205,7 @@ wss.on('connection', async (ws, req) => {
     }
 
     isVerified = true;
+
     onlineUsers.set(userId, { ws, userInfo, connectedAt: new Date() });
     console.log('Online: ' + userId + ' (' + type + ')');
 
@@ -246,67 +232,11 @@ wss.on('connection', async (ws, req) => {
     }
 });
 
-// ============ 消息处理 - 修复Staff推送 ============
-
-async function handleChatMessage(msg, senderId, senderInfo, senderType, ws) {
-    console.log('handleChatMessage called:', senderId, senderType, msg.content);
-    const senderName = senderInfo.userName || senderInfo.empName || senderId;
-    const msgSenderType = senderType || 'user';
-    
-    // 判断是否为员工/staff发送
-    const isStaff = senderInfo.empId || senderInfo.staffId || msgSenderType === 'staff';
-    
-    const msgId = await saveMessage({
-        id: msg.id,
-        msgType: msg.msgType || 'text',
-        content: msg.content,
-        senderId,
-        senderName,
-        senderType: msgSenderType,
-        receiverId: msg.receiverId || (isStaff ? null : 'staff')
-    });
-
-    const msgData = {
-        id: msgId,
-        msgType: msg.msgType || 'text',
-        content: msg.content,
-        senderId,
-        senderName,
-        senderType: msgSenderType,
-        receiverId: msg.receiverId || (isStaff ? null : 'staff'),
-        timestamp: new Date().toISOString()
-    };
-
-    // Staff 发送消息给用户 - 修复：主动推送给目标用户
-    if (isStaff && msg.receiverId && msg.receiverId !== 'staff') {
-        const targetUser = onlineUsers.get(msg.receiverId);
-        if (targetUser && targetUser.ws && targetUser.ws.readyState === WebSocket.OPEN) {
-            targetUser.ws.send(JSON.stringify({ type: 'message', data: msgData }));
-            console.log('Staff message sent to user:', msg.receiverId);
-        } else {
-            console.log('Target user not online:', msg.receiverId);
-        }
-    }
-    // 用户发送消息给 staff
-    else if (msg.receiverId === 'staff' || !msg.receiverId) {
-        for (const [uid, info] of onlineUsers) {
-            if (info.userInfo && (info.userInfo.empId || info.userInfo.staffId)) {
-                if (info.ws && info.ws.readyState === WebSocket.OPEN) {
-                    info.ws.send(JSON.stringify({ type: 'message', data: msgData }));
-                }
-            }
-        }
-    }
-
-    // 发送回给发送者(确认收到)
-    ws.send(JSON.stringify({ type: 'message', data: msgData }));
-}
-
 // ============ 启动 ============
 
 async function start() {
     try {
-        await initDatabase();
+        await chatDao.initTable();
         server.listen(PORT, '0.0.0.0', () => {
             console.log('Chat service OK on port ' + PORT);
         });

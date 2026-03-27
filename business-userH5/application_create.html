@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>提交申请</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; min-height: 100vh; }
+        .header { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 15px; display: flex; align-items: center; }
+        .header h1 { font-size: 18px; flex: 1; }
+        .back { color: white; text-decoration: none; font-size: 14px; }
+        .form { padding: 15px; }
+        .form-item { background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; }
+        .form-label { font-size: 14px; color: #333; margin-bottom: 8px; display: block; }
+        .form-input { width: 100%; padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; }
+        .form-select { width: 100%; padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; background: white; }
+        textarea.form-input { min-height: 100px; resize: vertical; }
+        .btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 12px; font-size: 16px; cursor: pointer; }
+        .btn:active { opacity: 0.9; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="applications.html" class="back">← 返回</a>
+        <h1>提交申请</h1>
+        <span></span>
+    </div>
+
+    <div class="form">
+        <div class="form-item">
+            <label class="form-label">申请类型</label>
+            <select class="form-select" id="appType">
+                <option value="repair">🔧 报修</option>
+                <option value="booking">📅 预约</option>
+                <option value="complaint">📝 投诉</option>
+                <option value="consult">💬 咨询</option>
+                <option value="other">📋 其他</option>
+            </select>
+        </div>
+        <div class="form-item">
+            <label class="form-label">标题</label>
+            <input type="text" class="form-input" id="title" placeholder="请输入申请标题">
+        </div>
+        <div class="form-item">
+            <label class="form-label">详细内容</label>
+            <textarea class="form-input" id="content" placeholder="请详细描述您的问题或需求"></textarea>
+        </div>
+        <button class="btn" onclick="submit()">提交申请</button>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token') || new URLSearchParams(location.search).get('access_token');
+        const isdev = new URLSearchParams(location.search).get('isdev') || '0';
+
+        async function submit() {
+            const appType = document.getElementById('appType').value;
+            const title = document.getElementById('title').value.trim();
+            const content = document.getElementById('content').value.trim();
+
+            if (!title) { alert('请输入标题'); return; }
+            if (!content) { alert('请输入详细内容'); return; }
+
+            const btn = document.querySelector('.btn');
+            btn.disabled = true;
+            btn.textContent = '提交中...';
+
+            try {
+                const res = await fetch('/api/user/applications', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({app_type: appType, title, content})
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('提交成功');
+                    location.href = 'applications.html';
+                } else {
+                    alert(data.msg || '提交失败');
+                }
+            } catch(e) {
+                alert('提交失败: ' + e.message);
+            }
+            btn.disabled = false;
+            btn.textContent = '提交申请';
+        }
+    </script>
+</body>
+</html>

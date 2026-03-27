@@ -1,0 +1,33 @@
+{
+    "namespace": "chat",
+    "queries": {
+        "saveMessage": {
+            "sql": "INSERT INTO chat_messages (msg_id, msg_type, content, sender_id, sender_name, sender_type, receiver_id, timestamp) VALUES (#{msgId}, #{msgType}, #{content}, #{senderId}, #{senderName}, #{senderType}, #{receiverId}, #{timestamp})",
+            "description": "保存聊天消息"
+        },
+        "getMessages": {
+            "sql": "SELECT msg_id as id, msg_id, msg_type, content, sender_id as senderId, sender_name as senderName, sender_type, receiver_id as receiverId, timestamp FROM chat_messages WHERE sender_type = #{senderType} AND deleted = 0 #{whereClause} ORDER BY timestamp DESC LIMIT #{limit} OFFSET #{offset}",
+            "description": "获取消息列表，支持分页"
+        },
+        "getMessagesByTime": {
+            "sql": "SELECT msg_id as id, msg_id, msg_type, content, sender_id as senderId, sender_name as senderName, sender_type, receiver_id as receiverId, timestamp FROM chat_messages WHERE sender_type = #{senderType} AND deleted = 0 AND timestamp < #{beforeTimestamp} ORDER BY timestamp DESC LIMIT #{limit}",
+            "description": "根据时间戳获取历史消息（用于分页）"
+        },
+        "getMessageById": {
+            "sql": "SELECT * FROM chat_messages WHERE msg_id = #{msgId}",
+            "description": "根据ID获取单条消息"
+        },
+        "updateMessage": {
+            "sql": "UPDATE chat_messages SET content = #{content} WHERE msg_id = #{msgId}",
+            "description": "更新消息内容"
+        },
+        "deleteMessage": {
+            "sql": "UPDATE chat_messages SET deleted = 1 WHERE msg_id = #{msgId}",
+            "description": "软删除消息"
+        },
+        "getOnlineUsers": {
+            "sql": "SELECT * FROM chat_messages WHERE 1=1 GROUP BY sender_id",
+            "description": "获取在线用户列表"
+        }
+    }
+}
