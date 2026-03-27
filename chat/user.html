@@ -114,6 +114,9 @@
         let assignedStaffId = null;
         let messages = [];
         let messageIds = new Set(); // 用于去重
+        let hasMore = true;
+        let isLoadingMore = false;
+        let lastTimestamp = null;
         
         function getToken() {
             return new URLSearchParams(window.location.search).get('access_token') || 
@@ -154,10 +157,14 @@
             
             // 获取历史消息
             try {
-                const msgRes = await fetch(`/api/messages?access_token=${encodeURIComponent(token)}&isdev=${getIsDev()}&limit=50`);
+                const msgRes = await fetch(`/api/messages?access_token=${encodeURIComponent(token)}&isdev=${getIsDev()}&type=user&limit=30`);
                 const msgData = await msgRes.json();
                 if (msgData.success && msgData.data && msgData.data.length > 0) {
                     messages = msgData.data;
+                    hasMore = msgData.hasMore !== false;
+                    if (messages.length > 0) {
+                        lastTimestamp = messages[0].timestamp;
+                    }
                     // 记录已有的消息 ID
                     messages.forEach(m => messageIds.add(m.id));
                 }
@@ -167,6 +174,34 @@
             
             renderMessages();
             connectWebSocket();
+            
+            // 监听滚动事件实现无限滚动
+            const chatArea = document.getElementById('chatArea');
+            chatArea.addEventListener('scroll', async function() {
+                if (chatArea.scrollTop < 50 && hasMore && !isLoadingMore && messages.length > 0) {
+                    isLoadingMore = true;
+                    const token = getToken();
+                    try {
+                        const msgRes = await fetch(`/api/messages?access_token=${encodeURIComponent(token)}&isdev=${getIsDev()}&type=user&limit=30&before=${encodeURIComponent(lastTimestamp)}`);
+                        const msgData = await msgRes.json();
+                        if (msgData.success && msgData.data && msgData.data.length > 0) {
+                            const newMessages = msgData.data.filter(m => !messageIds.has(m.id));
+                            messages = [...newMessages, ...messages];
+                            hasMore = msgData.hasMore !== false;
+                            if (messages.length > 0) {
+                                lastTimestamp = messages[0].timestamp;
+                            }
+                            newMessages.forEach(m => messageIds.add(m.id));
+                            renderMessages();
+                        } else {
+                            hasMore = false;
+                        }
+                    } catch(e) {
+                        console.error('加载更多消息失败:', e);
+                    }
+                    isLoadingMore = false;
+                }
+            });
         }
         
         function connectWebSocket() {

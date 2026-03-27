@@ -194,6 +194,9 @@
         // 会话列表 { userId: { name, messages: [], unread: 0, lastMessage: '', lastTime: '' } }
         let sessions = {};
         let messageIds = new Set(); // 用于去重
+        let hasMore = true;
+        let isLoadingMore = false;
+        let lastTimestamp = null;
         
         function getToken() {
             return new URLSearchParams(window.location.search).get('access_token') || 
@@ -230,8 +233,9 @@
             
             // 加载历史消息
             try {
-                const msgRes = await fetch(`/api/messages?access_token=${encodeURIComponent(token)}&isdev=${getIsDev()}&limit=100`);
+                const msgRes = await fetch(`/api/messages?access_token=${encodeURIComponent(token)}&isdev=${getIsDev()}&type=staff&limit=50`);
                 const msgData = await msgRes.json();
+                hasMore = msgData.hasMore !== false;
                 if (msgData.success && msgData.data && msgData.data.length > 0) {
                     msgData.data.forEach(m => {
                         const senderId = m.sender_id || m.senderId;
@@ -258,6 +262,10 @@
                                 senderName: m.sender_name || m.senderName,
                                 timestamp: m.timestamp
                             });
+                            // 更新最早时间戳
+                            if (!lastTimestamp || m.timestamp < lastTimestamp) {
+                                lastTimestamp = m.timestamp;
+                            }
                         }
                     });
                 }
@@ -267,6 +275,58 @@
             
             renderSessionList();
             connectWebSocket();
+            
+            // 监听滚动实现无限滚动
+            const chatArea = document.getElementById('chatArea');
+            chatArea.addEventListener('scroll', async function() {
+                if (chatArea.scrollTop < 50 && hasMore && !isLoadingMore && lastTimestamp) {
+                    isLoadingMore = true;
+                    const token = getToken();
+                    try {
+                        const msgRes = await fetch(`/api/messages?access_token=${encodeURIComponent(token)}&isdev=${getIsDev()}&type=staff&limit=50&before=${encodeURIComponent(lastTimestamp)}`);
+                        const msgData = await msgRes.json();
+                        if (msgData.success && msgData.data && msgData.data.length > 0) {
+                            msgData.data.forEach(m => {
+                                const senderId = m.sender_id || m.senderId;
+                                const msgId = m.id || m.msg_id;
+                                if (!messageIds.has(msgId)) {
+                                    messageIds.add(msgId);
+                                    if (!sessions[senderId]) {
+                                        sessions[senderId] = { 
+                                            name: m.sender_name || m.senderName || '用户', 
+                                            messages: [], 
+                                            unread: 0,
+                                            lastMessage: m.content,
+                                            lastTime: m.timestamp
+                                        };
+                                    }
+                                    sessions[senderId].messages.push({
+                                        id: msgId,
+                                        type: m.msg_type || m.type || 'text',
+                                        content: m.content,
+                                        senderId: senderId,
+                                        senderName: m.sender_name || m.senderName,
+                                        timestamp: m.timestamp
+                                    });
+                                    if (!lastTimestamp || m.timestamp < lastTimestamp) {
+                                        lastTimestamp = m.timestamp;
+                                    }
+                                }
+                            });
+                            renderSessionList();
+                            if (selectedSession) {
+                                renderMessages(selectedSession);
+                            }
+                            hasMore = msgData.hasMore !== false;
+                        } else {
+                            hasMore = false;
+                        }
+                    } catch(e) {
+                        console.error('加载更多消息失败:', e);
+                    }
+                    isLoadingMore = false;
+                }
+            });
             
             // 监听窗口大小变化
             window.addEventListener('resize', () => {
