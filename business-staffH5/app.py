@@ -159,7 +159,7 @@ def get_all_orders(user):
     
     total = db.get_total("SELECT COUNT(*) FROM business_orders WHERE " + where, params)
     offset = (page - 1) * page_size
-    sql = "SELECT id, order_no, status, user_name, user_phone, created_at FROM business_orders WHERE " + where + " ORDER BY created_at DESC LIMIT %s OFFSET %s"
+    sql = "SELECT id, order_no, order_status, user_name, user_phone, created_at FROM business_orders WHERE " + where + " ORDER BY created_at DESC LIMIT %s OFFSET %s"
     params.extend([page_size, offset])
     orders = db.get_all(sql, params)
     

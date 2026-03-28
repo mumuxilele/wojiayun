@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>场地管理 - 管理后台</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f0f2f5;min-height:100vh}
+.header{background:#001529;color:white;padding:0 20px;display:flex;align-items:center;height:56px;position:fixed;top:0;left:0;right:0;z-index:100}
+.header h1{font-size:18px;font-weight:600}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:15px}
+.layout{display:flex;padding-top:56px;min-height:100vh}
+.sidebar{width:200px;background:white;border-right:1px solid #f0f0f0;position:fixed;top:56px;left:0;bottom:0;overflow-y:auto}
+.sidebar-item{padding:14px 20px;cursor:pointer;color:#333;font-size:14px;border-left:3px solid transparent}
+.sidebar-item:hover{background:#f5f5f5}
+.sidebar-item.active{background:#e6f7ff;color:#1890ff;border-left-color:#1890ff}
+.main{flex:1;margin-left:200px;padding:20px}
+.card{background:white;border-radius:8px;padding:20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.card-title{font-size:16px;font-weight:600;color:#333}
+.search-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.search-input{padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px;min-width:160px}
+.btn{padding:8px 16px;border-radius:4px;font-size:14px;cursor:pointer;border:none}
+.btn-primary{background:#1890ff;color:white}
+.btn-primary:hover{background:#40a9ff}
+.btn-default{background:white;color:#333;border:1px solid #d9d9d9}
+.btn-default:hover{color:#1890ff;border-color:#1890ff}
+.btn-danger{background:#ff4d4f;color:white}
+.btn-danger:hover{background:#ff7875}
+.btn-success{background:#52c41a;color:white}
+.btn-success:hover{background:#73d13d}
+.btn-sm{padding:4px 10px;font-size:12px}
+.table{width:100%;border-collapse:collapse}
+.table th,.table td{padding:12px;text-align:left;border-bottom:1px solid #f0f0f0;font-size:14px}
+.table th{background:#fafafa;font-weight:600;color:#333}
+.table tr:hover td{background:#fafafa}
+.pagination{display:flex;justify-content:flex-end;align-items:center;gap:6px;margin-top:16px}
+.page-btn{min-width:32px;height:32px;border:1px solid #d9d9d9;border-radius:4px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;background:white}
+.page-btn:hover{color:#1890ff;border-color:#1890ff}
+.page-btn.active{background:#1890ff;color:white;border-color:#1890ff}
+.page-btn:disabled{color:#d9d9d9;cursor:not-allowed}
+.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:200}
+.modal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;border-radius:8px;width:720px;max-width:92vw;max-height:90vh;overflow-y:auto;z-index:201}
+.modal-header{padding:16px 20px;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center}
+.modal-title{font-size:16px;font-weight:600}
+.modal-close{width:32px;height:32px;border-radius:4px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:#999}
+.modal-close:hover{background:#f5f5f5}
+.modal-body{padding:20px}
+.modal-footer{padding:12px 20px;border-top:1px solid #f0f0f0;display:flex;justify-content:flex-end;gap:10px}
+.form-row{display:flex;gap:16px;margin-bottom:16px}
+.form-item{flex:1}
+.form-label{font-size:13px;color:#666;margin-bottom:6px;display:block}
+.form-input{width:100%;padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px}
+.form-select{width:100%;padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px;background:white}
+.form-textarea{width:100%;padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;font-size:14px;min-height:80px;resize:vertical}
+.img-upload{display:flex;gap:10px;flex-wrap:wrap}
+.img-item{width:90px;height:90px;border-radius:4px;border:1px dashed #d9d9d9;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;position:relative;flex-shrink:0}
+.img-item img{width:100%;height:100%;object-fit:cover}
+.img-item .del{position:absolute;top:2px;right:2px;width:20px;height:20px;background:rgba(0,0,0,.5);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1}
+.img-add{font-size:28px;color:#bbb}
+.tag{padding:2px 8px;border-radius:4px;font-size:12px}
+.tag-open{background:#f6ffed;color:#52c41a}
+.tag-closed{background:#fff1f0;color:#ff4d4f}
+.tag-maintenance{background:#fff7e6;color:#fa8c16}
+.tag-pending{background:#fff7e6;color:#fa8c16}
+.tag-confirmed{background:#e6f7ff;color:#1890ff}
+.tag-completed{background:#f6ffed;color:#52c41a}
+.tag-cancelled{background:#f5f5f5;color:#999}
+.tag-unpaid{background:#fff7e6;color:#fa8c16}
+.tag-paid{background:#f6ffed;color:#52c41a}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px}
+.stat-card{background:white;border-radius:8px;padding:16px;text-align:center}
+.stat-num{font-size:28px;font-weight:600;color:#1890ff}
+.stat-label{font-size:13px;color:#999;margin-top:4px}
+.time-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.time-slot{padding:4px 10px;border-radius:4px;font-size:12px;background:#f5f5f5;color:#666;border:1px solid #d9d9d9}
+.time-slot.booked{background:#ff4d4f;color:white;border-color:#ff4d4f;cursor:not-allowed}
+.time-slot.selected{background:#1890ff;color:white;border-color:#1890ff}
+.empty{text-align:center;padding:40px;color:#bbb}
+.tab-bar{display:flex;border-bottom:1px solid #f0f0f0;margin-bottom:16px}
+.tab-item{padding:10px 20px;cursor:pointer;font-size:14px;color:#666;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab-item.active{color:#1890ff;border-bottom-color:#1890ff;font-weight:600}
+.action-btns{display:flex;gap:6px;flex-wrap:wrap}
+.desc-text{font-size:13px;color:#666;line-height:1.6;max-height:60px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.rules-text{font-size:12px;color:#999;line-height:1.5;white-space:pre-wrap;max-height:40px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.price-input-group{display:flex;align-items:center}
+.price-input-group .form-input{border-radius:4px 0 0 4px}
+.price-input-group span{padding:8px 12px;background:#f5f5f5;border:1px solid #d9d9d9;border-left:none;border-radius:0 4px 4px 0;color:#666;font-size:14px}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>🏢 社区服务管理后台</h1>
+  <div class="header-right"><span id="userName">管理员</span><span class="logout" style="cursor:pointer;color:rgba(255,255,255,.65)" onclick="location.reload()">退出</span></div>
+</div>
+<div class="layout">
+  <div class="sidebar">
+    <div class="sidebar-item active" onclick="switchPage('venues', this)">🏟️ 场地管理</div>
+    <div class="sidebar-item" onclick="switchPage('bookings', this)">📅 预约管理</div>
+    <div class="sidebar-item" onclick="switchPage('statistics', this)">📊 数据统计</div>
+  </div>
+  <div class="main">
+    <!-- 场地管理 -->
+    <div id="pageVenues">
+      <div class="card">
+        <div class="card-header"><span class="card-title">🏟️ 场地列表</span><button class="btn btn-primary" onclick="openVenueModal()">+ 新增场地</button></div>
+        <div class="search-bar">
+          <input type="text" class="search-input" id="kw" placeholder="场地名称/编码" onkeyup="ev&&ev.key==='Enter'&&loadVenues()">
+          <select class="search-input" id="st" style="width:120px" onchange="loadVenues()">
+            <option value="">全部状态</option><option value="open">开放</option><option value="closed">关闭</option><option value="maintenance">维护中</option>
+          </select>
+          <button class="btn btn-default" onclick="loadVenues()">🔍 搜索</button>
+          <button class="btn btn-default" onclick="document.getElementById('kw').value='';document.getElementById('st').value='';loadVenues()">重置</button>
+        </div>
+        <table class="table">
+          <thead><tr><th>ID</th><th>场地名称</th><th>类型</th><th>价格/时</th><th>容纳</th><th>状态</th><th>简介</th><th>操作</th></tr></thead>
+          <tbody id="vTbl"><tr><td colspan="8" class="empty">加载中...</td></tr></tbody>
+        </table>
+        <div class="pagination" id="vPager"></div>
+      </div>
+    </div>
+    <!-- 预约管理 -->
+    <div id="pageBookings" style="display:none">
+      <div class="card">
+        <div class="card-header"><span class="card-title">📅 场地预约管理</span></div>
+        <div class="search-bar">
+          <select class="search-input" id="bkVenue" style="width:150px" onchange="loadBookings()"><option value="">全部场地</option></select>
+          <input type="date" class="search-input" id="bkDate" style="width:140px" onchange="loadBookings()">
+          <select class="search-input" id="bkStatus" style="width:120px" onchange="loadBookings()">
+            <option value="">全部状态</option><option value="pending">待确认</option><option value="confirmed">已确认</option><option value="completed">已完成</option><option value="cancelled">已取消</option>
+          </select>
+          <button class="btn btn-default" onclick="loadBookings()">🔍 筛选</button>
+        </div>
+        <table class="table">
+          <thead><tr><th>核销码</th><th>场地</th><th>预约人</th><th>日期</th><th>时段</th><th>时长</th><th>金额</th><th>预约状态</th><th>支付</th><th>操作</th></tr></thead>
+          <tbody id="bkTbl"><tr><td colspan="10" class="empty">加载中...</td></tr></tbody>
+        </table>
+        <div class="pagination" id="bkPager"></div>
+      </div>
+    </div>
+    <!-- 数据统计 -->
+    <div id="pageStatistics" style="display:none">
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-num" id="sTotal">0</div><div class="stat-label">总预约数</div></div>
+        <div class="stat-card"><div class="stat-num" id="sPending">0</div><div class="stat-label">待确认</div></div>
+        <div class="stat-card"><div class="stat-num" id="sCompleted">0</div><div class="stat-label">已完成</div></div>
+        <div class="stat-card"><div class="stat-num" id="sIncome">¥0</div><div class="stat-label">总收入</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📊 预约明细报表</span>
+          <div style="display:flex;gap:10px;align-items:center">
+            <input type="date" class="search-input" id="dFrom" style="width:140px" onchange="loadStats()">
+            <span style="color:#999">至</span>
+            <input type="date" class="search-input" id="dTo" style="width:140px" onchange="loadStats()">
+            <button class="btn btn-default" onclick="loadStats()">查询</button>
+          </div>
+        </div>
+        <table class="table">
+          <thead><tr><th>日期</th><th>场地</th><th>预约人</th><th>时段</th><th>金额</th><th>状态</th></tr></thead>
+          <tbody id="stTbl"><tr><td colspan="6" class="empty">加载中...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 场地弹窗 -->
+<div class="modal-overlay" id="vOverlay" onclick="if(event.target===this)closeVM()"></div>
+<div class="modal" id="vModal">
+  <div class="modal-header">
+    <span class="modal-title" id="vMTitle">新增场地</span>
+    <span class="modal-close" onclick="closeVM()">✕</span>
+  </div>
+  <div class="modal-body">
+    <input type="hidden" id="vId">
+    <div class="form-row">
+      <div class="form-item"><label class="form-label">场地名称 *</label><input type="text" class="form-input" id="vName" placeholder="如：羽毛球馆A区"></div>
+      <div class="form-item"><label class="form-label">场地编码</label><input type="text" class="form-input" id="vCode" placeholder="如：BADM-001"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-item">
+        <label class="form-label">场地类型</label>
+        <select class="form-select" id="vType">
+          <option value="yumaoqiu">🏸 羽毛球</option><option value="lanqiu">🏀 篮球</option><option value="pingpang">🏓 乒乓球</option>
+          <option value="yujia">🧘 瑜伽</option><option value="youyong">🏊 游泳</option><option value="gym">💪 健身</option><option value="other">其他</option>
+        </select>
+      </div>
+      <div class="form-item">
+        <label class="form-label">状态</label>
+        <select class="form-select" id="vStatus">
+          <option value="open">🟢 开放</option><option value="closed">🔴 关闭</option><option value="maintenance">🟡 维护中</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-item">
+        <label class="form-label">每小时价格（元）</label>
+        <div class="price-input-group">
+          <input type="number" class="form-input" id="vPrice" placeholder="30.00" step="0.01" min="0" style="border-radius:4px">
+          <span>元/小时</span>
+        </div>
+      </div>
+      <div class="form-item"><label class="form-label">容纳人数</label><input type="number" class="form-input" id="vCap" placeholder="20"></div>
+    </div>
+    <div class="form-item">
+      <label class="form-label">🖼️ 场地图片（点击 + 添加，建议尺寸 800×600）</label>
+      <div class="img-upload" id="vImgs"><div class="img-item img-add" onclick="document.getElementById('vFileInput').click()">+</div></div>
+      <input type="file" id="vFileInput" accept="image/*" multiple style="display:none" onchange="handleImgUpload(this)">
+      <input type="hidden" id="vImgsData">
+    </div>
+    <div class="form-item">
+      <label class="form-label">📝 详细介绍</label>
+      <textarea class="form-textarea" id="vDesc" placeholder="描述场地的特点、设施、服务、周边配套等信息..."></textarea>
+    </div>
+    <div class="form-item">
+      <label class="form-label">📋 使用规则</label>
+      <textarea class="form-textarea" id="vRules" placeholder="1. 请提前10分钟到场&#10;2. 爱护场地设施&#10;3. 不得在场内饮食&#10;4. 超过30分钟未使用则自动取消"></textarea>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-default" onclick="closeVM()">取消</button>
+    <button class="btn btn-primary" onclick="saveVenue()">💾 保存</button>
+  </div>
+</div>
+
+<script>
+var UP={};var CP={venues:1,bookings:1};
+var urlP=new URLSearchParams(location.search);
+var TOKEN=urlP.get('access_token');
+var ISDEV=urlP.get('isdev')||'0';
+if(!TOKEN){document.body.innerHTML='<div style="padding:60px;text-align:center;color:#999">需要 access_token 参数</div>';throw 0;}
+
+function A(path,method,body){
+  var url='/api/admin'+path+(path.includes('?')?'&':'?')+'access_token='+encodeURIComponent(TOKEN)+'&isdev='+ISDEV;
+  return fetch(url,{method:method||'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined}).then(function(r){return r.json()});
+}
+
+function switchPage(page,el){
+  document.querySelectorAll('.sidebar-item').forEach(function(e){e.classList.remove('active')});
+  if(el)el.classList.add('active');
+  document.getElementById('pageVenues').style.display=page==='venues'?'block':'none';
+  document.getElementById('pageBookings').style.display=page==='bookings'?'block':'none';
+  document.getElementById('pageStatistics').style.display=page==='statistics'?'block':'none';
+  if(page==='venues')loadVenues();
+  if(page==='bookings'){loadBookings();loadVenueOpts();}
+  if(page==='statistics')loadStats();
+}
+
+// ===== 场地管理 =====
+function loadVenues(p){
+  if(p)CP.venues=p;
+  var kw=document.getElementById('kw').value;
+  var st=document.getElementById('st').value;
+  var url='/venues?page='+CP.venues+'&page_size=10'+(kw?'&keyword='+encodeURIComponent(kw):'')+(st?'&status='+st:'');
+  A(url).then(function(d){
+    if(d.success&&d.data&&d.data.items){
+      var TM={yumaoqiu:'🏸 羽毛球',lanqiu:'🏀 篮球',pingpang:'🏓 乒乓球',yujia:'🧘 瑜伽',youyong:'🏊 游泳',gym:'💪 健身',other:'其他'};
+      var SM={open:'开放',closed:'关闭',maintenance:'维护中'};
+      document.getElementById('vTbl').innerHTML=d.data.items.length?d.data.items.map(function(v){
+        var imgs='';
+        try{var arr=JSON.parse(v.images||'[]');if(arr.length)imgs='<img src="'+arr[0]+'" style="width:50px;height:50px;border-radius:4px;object-fit:cover">';}catch(e){}
+        return '<tr>'+
+          '<td>'+v.id+'</td>'+
+          '<td><b>'+(v.venue_name||'')+'</b><br><span style="color:#999;font-size:11px">'+(v.venue_code||'')+'</span></td>'+
+          '<td>'+(TM[v.venue_type]||v.venue_type||'')+'</td>'+
+          '<td style="color:#f57c00;font-weight:600">¥'+parseFloat(v.price||0).toFixed(2)+'</td>'+
+          '<td>'+(v.capacity||'-')+'人</td>'+
+          '<td><span class="tag tag-'+(v.status||'open')+'">'+(SM[v.status]||v.status||'')+'</span></td>'+
+          '<td style="max-width:180px"><div class="desc-text">'+(v.description||'') +'</div></td>'+
+          '<td><div class="action-btns">'+
+            '<button class="btn btn-default btn-sm" onclick="editVenue('+v.id+')">编辑</button>'+
+            '<button class="btn btn-danger btn-sm" onclick="delVenue('+v.id+')">删除</button>'+
+          '</div></td></tr>';
+      }).join(''):'<tr><td colspan="8" class="empty">暂无场地</td></tr>';
+      renderPager('vPager',d.data.pages||1,CP.venues,function(pg){loadVenues(pg)});
+    }else document.getElementById('vTbl').innerHTML='<tr><td colspan="8" class="empty">加载失败</td></tr>';
+  });
+}
+
+function openVenueModal(venue){
+  UP={};
+  document.getElementById('vId').value=venue?venue.id:'';
+  document.getElementById('vMTitle').textContent=venue?'编辑场地':'新增场地';
+  document.getElementById('vName').value=venue?(venue.venue_name||''):'';
+  document.getElementById('vCode').value=venue?(venue.venue_code||''):'';
+  document.getElementById('vType').value=venue?(venue.venue_type||'other'):'yumaoqiu';
+  document.getElementById('vStatus').value=venue?(venue.status||'open'):'open';
+  document.getElementById('vPrice').value=venue?parseFloat(venue.price||0):'';
+  document.getElementById('vCap').value=venue?(venue.capacity||''):'';
+  document.getElementById('vDesc').value=venue?(venue.description||''):'';
+  document.getElementById('vRules').value=venue?(venue.rules||''):'';
+  var imgs=[];
+  try{imgs=venue&&venue.images?JSON.parse(venue.images):[];}catch(e){}
+  renderImgs(imgs);
+  document.getElementById('vOverlay').style.display='block';
+  document.getElementById('vModal').style.display='block';
+}
+function closeVM(){
+  document.getElementById('vOverlay').style.display='none';
+  document.getElementById('vModal').style.display='none';
+}
+
+function renderImgs(imgs){
+  UP.imgs=imgs||[];
+  var el=document.getElementById('vImgs');
+  var html='';
+  (UP.imgs||[]).forEach(function(url,i){
+    html+='<div class="img-item"><img src="'+url+'"><span class="del" onclick="removeImg('+i+')">×</span></div>';
+  });
+  html+='<div class="img-item img-add" onclick="document.getElementById(\'vFileInput\').click()">+</div>';
+  el.innerHTML=html;
+  document.getElementById('vImgsData').value=JSON.stringify(UP.imgs||[]);
+}
+
+function handleImgUpload(input){
+  var imgs=UP.imgs||[];
+  Array.from(input.files).forEach(function(file){
+    var reader=new FileReader();
+    reader.onload=function(e){
+      imgs.push(e.target.result);
+      renderImgs(imgs);
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value='';
+}
+function removeImg(i){
+  (UP.imgs||[]).splice(i,1);
+  renderImgs(UP.imgs);
+}
+
+function saveVenue(){
+  var id=document.getElementById('vId').value;
+  var data={
+    venue_name:document.getElementById('vName').value.trim(),
+    venue_code:document.getElementById('vCode').value.trim(),
+    venue_type:document.getElementById('vType').value,
+    status:document.getElementById('vStatus').value,
+    price:parseFloat(document.getElementById('vPrice').value)||0,
+    capacity:parseInt(document.getElementById('vCap').value)||0,
+    description:document.getElementById('vDesc').value,
+    rules:document.getElementById('vRules').value,
+    images:JSON.parse(document.getElementById('vImgsData').value||'[]')
+  };
+  if(!data.venue_name){alert('请填写场地名称');return;}
+  var method=id?'PUT':'POST';
+  var path=id?'/venues/'+id:'/venues';
+  A(path,method,data).then(function(d){
+    if(d.success){alert(id?'更新成功':'创建成功');closeVM();loadVenues();}
+    else alert(d.msg||'保存失败');
+  });
+}
+
+function editVenue(id){A('/venues/'+id).then(function(d){if(d.success&&d.data)openVenueModal(d.data);else alert(d.msg||'加载失败');});}
+function delVenue(id){if(!confirm('确定删除该场地？'))return;A('/venues/'+id,'DELETE').then(function(d){if(d.success){alert('删除成功');loadVenues();}else alert(d.msg||'删除失败');});}
+
+// ===== 预约管理 =====
+function loadVenueOpts(){A('/venues?page=1&page_size=100').then(function(d){if(d.success&&d.data&&d.data.items){var h='<option value="">全部场地</option>';d.data.items.forEach(function(v){h+='<option value="'+v.id+'">'+(v.venue_name||'')+'</option>';});document.getElementById('bkVenue').innerHTML=h;}});}
+
+function loadBookings(p){
+  if(p)CP.bookings=p;
+  var venue=document.getElementById('bkVenue').value;
+  var status=document.getElementById('bkStatus').value;
+  var date=document.getElementById('bkDate').value;
+  var url='/venue-bookings?page='+CP.bookings+'&page_size=10'+(venue?'&venue_id='+venue:'')+(status?'&status='+status:'')+(date?'&date='+date:'');
+  A(url).then(function(d){
+    if(d.success&&d.data&&d.data.items){
+      var SM={pending:'待确认',confirmed:'已确认',completed:'已完成',cancelled:'已取消'};
+      var PM={unpaid:'未付款',paid:'已付款'};
+      document.getElementById('bkTbl').innerHTML=d.data.items.length?d.data.items.map(function(b){
+        var t1=(b.start_time||'00:00:00').substr(0,5);
+        var t2=(b.end_time||'00:00:00').substr(0,5);
+        var btns='<div class="action-btns">';
+        if(b.status==='pending')btns+='<button class="btn btn-success btn-sm" onclick="confirmB('+b.id+')">确认</button>';
+        if(b.status!=='completed'&&b.status!=='cancelled')btns+='<button class="btn btn-danger btn-sm" onclick="cancelB('+b.id+')">取消</button>';
+        btns+='</div>';
+        return '<tr>'+
+          '<td><strong style="color:#1890ff">'+ (b.verify_code||'') +'</strong></td>'+
+          '<td>'+(b.venue_name||'-')+'</td>'+
+          '<td>'+(b.user_name||'')+'<br><span style="color:#999;font-size:11px">'+(b.user_phone||'')+'</span></td>'+
+          '<td>'+(b.book_date||'')+'</td>'+
+          '<td>'+t1+'~'+t2+'</td>'+
+          '<td>'+(b.total_hours||0)+'h</td>'+
+          '<td style="color:#f57c00;font-weight:600">¥'+(parseFloat(b.total_price||0)).toFixed(2)+'</td>'+
+          '<td><span class="tag tag-'+(b.status||'pending')+'">'+(SM[b.status]||b.status)+'</span></td>'+
+          '<td><span class="tag tag-'+(b.pay_status||'unpaid')+'">'+(PM[b.pay_status]||'未付款')+'</span></td>'+
+          '<td>'+btns+'</td></tr>';
+      }).join(''):'<tr><td colspan="10" class="empty">暂无预约记录</td></tr>';
+      renderPager('bkPager',d.data.pages||1,CP.bookings,function(pg){loadBookings(pg)});
+    }else document.getElementById('bkTbl').innerHTML='<tr><td colspan="10" class="empty">加载失败</td></tr>';
+  });
+}
+
+function confirmB(id){if(!confirm('确认该预约并标记已付款？'))return;A('/venue-bookings/'+id+'/pay','POST',{pay_status:'paid'}).then(function(d){if(d.success){alert('确认成功');loadBookings();loadStats();}else alert(d.msg||'操作失败');});}
+function cancelB(id){if(!confirm('确定取消该预约？'))return;A('/venue-bookings/'+id,'PUT',{status:'cancelled'}).then(function(d){if(d.success){alert('已取消');loadBookings();}else alert(d.msg||'操作失败');});}
+
+// ===== 统计 =====
+function loadStats(){
+  var dFrom=document.getElementById('dFrom').value;
+  var dTo=document.getElementById('dTo').value;
+  var url='/venue-statistics'+(dFrom?'?date_from='+dFrom:'')+(dTo?(dFrom?'&':'?')+'date_to='+dTo:'');
+  A(url).then(function(d){
+    if(d.success&&d.data){
+      document.getElementById('sTotal').textContent=d.data.total_bookings||0;
+      document.getElementById('sPending').textContent=d.data.pending_bookings||0;
+      document.getElementById('sCompleted').textContent=d.data.completed_bookings||0;
+      document.getElementById('sIncome').textContent='¥'+(d.data.total_income||0).toFixed(2);
+    }
+  });
+  A('/venue-bookings?page=1&page_size=100'+(dFrom?'&date='+dFrom:'')).then(function(d){
+    if(d.success&&d.data&&d.data.items){
+      var SM={pending:'待确认',confirmed:'已确认',completed:'已完成',cancelled:'已取消'};
+      document.getElementById('stTbl').innerHTML=d.data.items.map(function(b){
+        return '<tr><td>'+(b.book_date||'')+'</td><td>'+(b.venue_name||'')+'</td><td>'+(b.user_name||'')+'</td><td>'+(b.start_time||'').substr(0,5)+'~'+(b.end_time||'').substr(0,5)+'</td><td style="color:#f57c00">¥'+(parseFloat(b.total_price||0)).toFixed(2)+'</td><td><span class="tag tag-'+(b.status||'pending')+'">'+(SM[b.status]||b.status)+'</span></td></tr>';
+      }).join('');
+    }else document.getElementById('stTbl').innerHTML='<tr><td colspan="6" class="empty">暂无数据</td></tr>';
+  });
+}
+
+// 分页
+function renderPager(elId,total,current,fn){
+  var el=document.getElementById(elId);
+  if(!el||total<=1){if(el)el.innerHTML='';return;}
+  var html='';
+  for(var i=1;i<=total;i++){
+    if(i===1||i===total||Math.abs(i-current)<=2){
+      html+='<div class="page-btn'+(i===current?' active':'')+'" onclick="'+fn.name+'('+i+')">'+i+'</div>';
+    }else if(Math.abs(i-current)===3){
+      html+='<span style="color:#999;padding:0 4px">...</span>';
+    }
+  }
+  el.innerHTML=html;
+}
+
+// init
+loadVenues();
+</script>
+</body>
+</html>

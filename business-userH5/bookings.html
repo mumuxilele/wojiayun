@@ -1,63 +1,544 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>场馆预约</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; min-height: 100vh; }
-        .header { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 15px; display: flex; align-items: center; }
-        .header h1 { font-size: 18px; flex: 1; }
-        .back { color: white; text-decoration: none; font-size: 14px; }
-        .list { padding: 10px; }
-        .item { background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; }
-        .item-title { font-size: 15px; font-weight: 500; color: #333; margin-bottom: 8px; }
-        .item-info { font-size: 12px; color: #999; }
-        .empty { text-align: center; padding: 60px 20px; color: #999; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>场馆预约</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f5;min-height:100vh}
+/* 顶部 */
+.header{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:15px;display:flex;align-items:center;position:sticky;top:0;z-index:50}
+.header h1{font-size:18px;flex:1}
+.back{color:white;text-decoration:none;font-size:14px}
+.tab-bar{background:white;display:flex;overflow-x:auto}
+.tab{flex:1;min-width:80px;text-align:center;padding:12px;font-size:13px;color:#666;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.tab.active{color:#667eea;border-bottom-color:#667eea;font-weight:600}
+
+/* 搜索筛选 */
+.filter{background:white;padding:10px 15px;display:flex;gap:8px;overflow-x:auto;border-bottom:1px solid #f0f0f0}
+.filter select,.filter input{padding:6px 10px;border:1px solid #e0e0e0;border-radius:15px;font-size:12px;background:white;white-space:nowrap}
+.filter select{min-width:80px}
+
+/* 场馆卡片 */
+.list{padding:12px}
+.venue-card{background:white;border-radius:12px;padding:15px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.v-top{display:flex;gap:12px;margin-bottom:10px}
+.v-img{width:70px;height:70px;border-radius:8px;background:#f5f5f5;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:32px}
+.v-img img{width:100%;height:100%;object-fit:cover}
+.v-info{flex:1;min-width:0}
+.v-name{font-size:15px;font-weight:600;color:#333;margin-bottom:4px}
+.v-tags{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px}
+.tag{padding:2px 6px;background:#f0f0f0;border-radius:3px;font-size:11px;color:#666}
+.tag-price{background:#fff7e6;color:#f57c00}
+.v-desc{font-size:12px;color:#999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v-bottom{display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid #f5f5f5}
+.v-price{font-size:18px;color:#f57c00;font-weight:700}
+.v-price span{font-size:12px;font-weight:normal;color:#999}
+.btn-book{padding:7px 16px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;border-radius:20px;font-size:13px;cursor:pointer}
+.btn-book:active{transform:scale(.96)}
+
+/* 预约面板 */
+.overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:100}
+.panel{display:none;position:fixed;bottom:0;left:0;right:0;background:white;border-radius:16px 16px 0 0;z-index:101;max-height:92vh;overflow-y:auto}
+.panel.show{display:block}
+.overlay.show{display:block}
+.panel-hd{padding:16px;display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid #f0f0f0;position:sticky;top:0;background:white;z-index:1}
+.panel-title{font-size:16px;font-weight:600;color:#333}
+.panel-close{width:28px;height:28px;border-radius:50%;background:#f5f5f5;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:#999;border:none}
+.panel-body{padding:16px}
+
+/* 场地信息 */
+.v-info-panel{display:flex;gap:12px;padding-bottom:12px;border-bottom:1px solid #f0f0f5;margin-bottom:12px}
+.v-info-panel .v-img{width:60px;height:60px}
+.v-info-panel .v-name{font-size:15px;font-weight:600;margin-bottom:4px}
+.v-info-panel .v-price{font-size:16px}
+
+/* 时间段网格 */
+.time-section{margin-bottom:12px}
+.time-label{font-size:13px;color:#666;margin-bottom:8px;font-weight:500}
+.time-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px}
+.time-btn{padding:8px 4px;text-align:center;border:1px solid #e0e0e0;border-radius:8px;font-size:12px;cursor:pointer;background:white;color:#333;transition:all .15s}
+.time-btn:active{transform:scale(.96)}
+.time-btn.used{background:#ffeaea;color:#ff4d4f;border-color:#ff4d4f;cursor:not-allowed;opacity:.7}
+.time-btn.selected{background:#667eea;color:white;border-color:#667eea}
+.time-btn:hover:not(.used):not(.selected){border-color:#667eea}
+
+/* 快捷时间 */
+.quick-section{margin-bottom:12px}
+.quick-btns{display:flex;gap:6px;flex-wrap:wrap}
+.quick-btn{padding:5px 12px;border:1px solid #667eea;background:white;color:#667eea;border-radius:15px;font-size:12px;cursor:pointer}
+.quick-btn:active{background:#667eea;color:white}
+
+/* 预约信息 */
+.info-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f5f5f5;font-size:14px}
+.info-label{color:#999}
+.info-value{color:#333;font-weight:500}
+.info-value.highlight{color:#f57c00;font-size:16px;font-weight:700}
+
+/* 规则 */
+.rules-box{background:#f9f9f9;padding:10px;border-radius:8px;margin:10px 0;font-size:12px;color:#666;line-height:1.6;white-space:pre-wrap}
+
+/* 提交按钮 */
+.submit-btn{width:100%;padding:14px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;border-radius:12px;font-size:16px;cursor:pointer;margin-top:10px}
+.submit-btn:active{transform:scale(.98)}
+.submit-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* 我的预约列表 */
+.booking-item{background:white;border-radius:12px;padding:14px;margin:12px;box-shadow:0 2px 6px rgba(0,0,0,.05)}
+.bk-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.bk-venue{font-size:15px;font-weight:600;color:#333}
+.bk-status{padding:2px 8px;border-radius:8px;font-size:11px}
+.bk-status.pending{background:#fff7e6;color:#fa8c16}
+.bk-status.confirmed{background:#e3f2fd;color:#1976d2}
+.bk-status.completed{background:#e8f5e9;color:#388e3c}
+.bk-status.cancelled{background:#f5f5f5;color:#999}
+.bk-info{font-size:13px;color:#666;margin-bottom:6px}
+.bk-info div{margin-top:3px}
+.bk-code{background:#f0f0f0;padding:8px;border-radius:6px;text-align:center;margin-top:8px}
+.bk-code span{font-size:11px;color:#999}
+.bk-code strong{font-size:16px;color:#333;letter-spacing:2px;margin-left:6px}
+
+/* 账单确认弹窗 */
+.bill-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:200}
+.bill-panel{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;border-radius:16px;width:340px;z-index:201;padding:24px}
+.bill-panel.show{display:block}
+.bill-overlay.show{display:block}
+.bill-title{font-size:18px;font-weight:700;text-align:center;margin-bottom:16px}
+.bill-row{display:flex;justify-content:space-between;padding:10px 0;font-size:14px;border-bottom:1px solid #f5f5f5}
+.bill-row.total{border-bottom:none;font-size:16px;font-weight:700;color:#f57c00;padding-top:14px}
+.bill-btns{display:flex;gap:10px;margin-top:20px}
+.bill-btns button{flex:1;padding:12px;border-radius:10px;font-size:15px;border:none;cursor:pointer}
+.bill-cancel{background:#f5f5f5;color:#666}
+.bill-confirm{background:linear-gradient(135deg,#52c41a,#73d13d);color:white}
+
+.empty{text-align:center;padding:50px 20px;color:#bbb;font-size:14px}
+.loading{text-align:center;padding:50px 20px;color:#999;font-size:14px}
+.venue-imgs{width:100%;height:160px;background:#f5f5f5;border-radius:8px;overflow:hidden;margin-bottom:12px;display:flex;align-items:center;justify-content:center;font-size:48px}
+.venue-imgs img{width:100%;height:100%;object-fit:cover}
+</style>
 </head>
 <body>
-    <div class="header">
-        <a href="javascript:void(0)" class="back" onclick="goBack()">← 返回</a>
-        <h1>场馆预约</h1>
-        <span></span>
+<div class="header">
+  <a href="javascript:void(0)" class="back" onclick="goBack()">← 返回</a>
+  <h1>场馆预约</h1>
+  <span></span>
+</div>
+
+<div class="tab-bar">
+  <div class="tab active" onclick="switchTab('venues')">🏟️ 选场馆</div>
+  <div class="tab" onclick="switchTab('my')">📋 我的预约</div>
+</div>
+
+<div id="tabVenues">
+  <div class="filter">
+    <select id="filterType" onchange="loadVenues()"><option value="">全部类型</option><option value="yumaoqiu">🏸 羽毛球</option><option value="lanqiu">🏀 篮球</option><option value="pingpang">🏓 乒乓球</option><option value="yujia">🧘 瑜伽</option><option value="youyong">🏊 游泳</option><option value="gym">💪 健身</option></select>
+  </div>
+  <div class="list" id="venueList"><div class="loading">加载场馆中...</div></div>
+</div>
+
+<div id="tabMy" style="display:none">
+  <div class="filter">
+    <select id="myStatus" onchange="loadMyBookings()"><option value="">全部状态</option><option value="pending">待确认</option><option value="confirmed">已确认</option><option value="completed">已完成</option><option value="cancelled">已取消</option></select>
+  </div>
+  <div id="myBookingList"><div class="loading">加载中...</div></div>
+</div>
+
+<!-- 预约底部面板 -->
+<div class="overlay" id="overlay" onclick="closePanel()"></div>
+<div class="panel" id="bookingPanel">
+  <div class="panel-hd">
+    <span class="panel-title">📅 预约场馆</span>
+    <button class="panel-close" onclick="closePanel()">✕</button>
+  </div>
+  <div class="panel-body">
+    <div class="v-info-panel" id="panelVenue"></div>
+    
+    <!-- 图片轮播 -->
+    <div class="venue-imgs" id="panelImgs">🏟️</div>
+    
+    <!-- 规则 -->
+    <div class="rules-box" id="panelRules" style="display:none"></div>
+    
+    <!-- 日期选择 -->
+    <div class="time-section">
+      <div class="time-label">📅 预约日期</div>
+      <input type="date" class="form-input" id="bookDate" style="width:100%;padding:10px;border:1px solid #e0e0e0;border-radius:8px;font-size:14px" onchange="onDateChange()">
     </div>
-    <div class="list" id="list"><div class="empty">加载中...</div></div>
+    
+    <!-- 时间段选择 -->
+    <div class="time-section">
+      <div class="time-label">🕐 选择时段（已被预约的不可选）</div>
+      <div class="time-grid" id="timeSlots"></div>
+    </div>
+    
+    <!-- 快捷选择 -->
+    <div class="quick-section">
+      <div class="time-label">⚡ 快捷选择</div>
+      <div class="quick-btns" id="quickBtns">
+        <button class="quick-btn" onclick="quickSelect(1)">1小时</button>
+        <button class="quick-btn" onclick="quickSelect(2)">2小时</button>
+        <button class="quick-btn" onclick="quickSelect(3)">3小时</button>
+        <button class="quick-btn" onclick="quickSelect(4)">4小时</button>
+      </div>
+    </div>
+    
+    <!-- 预约信息 -->
+    <div class="info-row"><span class="info-label">预约场地</span><span class="info-value" id="infoVenue">-</span></div>
+    <div class="info-row"><span class="info-label">预约日期</span><span class="info-value" id="infoDate">-</span></div>
+    <div class="info-row"><span class="info-label">开始时间</span><span class="info-value" id="infoStart">-</span></div>
+    <div class="info-row"><span class="info-label">结束时间</span><span class="info-value" id="infoEnd">-</span></div>
+    <div class="info-row"><span class="info-label">预约时长</span><span class="info-value" id="infoHours">-</span></div>
+    <div class="info-row"><span class="info-label">单价</span><span class="info-value" id="infoPrice">-</span></div>
+    <div class="info-row"><span class="info-label">应付金额</span><span class="info-value highlight" id="infoTotal">¥0.00</span></div>
+    
+    <button class="submit-btn" id="submitBtn" onclick="goBill()" disabled>请选择预约时间</button>
+  </div>
+</div>
 
-    <script>
-        var urlParams = new URLSearchParams(location.search);
-        var token = urlParams.get('access_token');
-        var isdev = urlParams.get('isdev') || '0';
-        
-        if (token) {
-            localStorage.setItem('user_token', token);
-            localStorage.setItem('user_isdev', isdev);
-        } else {
-            token = localStorage.getItem('user_token');
-            isdev = localStorage.getItem('user_isdev') || '0';
-        }
+<!-- 账单确认弹窗 -->
+<div class="bill-overlay" id="billOverlay" onclick="closeBill()"></div>
+<div class="bill-panel" id="billPanel">
+  <div class="bill-title">📋 确认订单</div>
+  <div class="bill-row"><span>场地</span><span id="billVenue">-</span></div>
+  <div class="bill-row"><span>日期</span><span id="billDate">-</span></div>
+  <div class="bill-row"><span>时段</span><span id="billTime">-</span></div>
+  <div class="bill-row"><span>时长</span><span id="billHours">-</span></div>
+  <div class="bill-row"><span>单价</span><span id="billPrice">-</span></div>
+  <div class="bill-row total"><span>应付金额</span><span id="billTotal">¥0.00</span></div>
+  <div class="bill-btns">
+    <button class="bill-cancel" onclick="closeBill()">取消</button>
+    <button class="bill-confirm" onclick="submitBooking()">✅ 确认预约</button>
+  </div>
+</div>
 
-        function goBack() {
-            location.href = 'index.html?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
-        }
+<script>
+var UP={};
+var urlP=new URLSearchParams(location.search);
+var TOKEN=urlP.get('access_token');
+var ISDEV=urlP.get('isdev')||'0';
 
-        async function load() {
-            try {
-                var res = await fetch('/api/user/bookings?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev);
-                var data = await res.json();
-                if (data.success && data.data && data.data.length > 0) {
-                    document.getElementById('list').innerHTML = data.data.map(function(b) {
-                        return '<div class="item"><div class="item-title">' + (b.venue_name || '场馆预约') + '</div><div class="item-info">预约时间: ' + (b.booking_time || '') + '</div></div>';
-                    }).join('');
-                } else {
-                    document.getElementById('list').innerHTML = '<div class="empty">暂无预约记录</div>';
-                }
-            } catch(e) {
-                document.getElementById('list').innerHTML = '<div class="empty">加载失败</div>';
-            }
-        }
-        load();
-    </script>
+if(TOKEN){localStorage.setItem('user_token',TOKEN);localStorage.setItem('user_isdev',ISDEV);}
+else{TOKEN=localStorage.getItem('user_token');ISDEV=localStorage.getItem('user_isdev')||'0';}
+if(!TOKEN){document.body.innerHTML='<div class="empty">请先登录</div>';throw 0;}
+
+function api(path,method,body){
+  var url='/api'+path+(path.includes('?')?'&':'?')+'access_token='+encodeURIComponent(TOKEN)+'&isdev='+ISDEV;
+  return fetch(url,{method:method||'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined}).then(function(r){return r.json()});
+}
+
+function goBack(){location.href='index.html?access_token='+encodeURIComponent(TOKEN)+'&isdev='+ISDEV;}
+
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach(function(e){e.classList.remove('active')});
+  event.target.classList.add('active');
+  document.getElementById('tabVenues').style.display=tab==='venues'?'block':'none';
+  document.getElementById('tabMy').style.display=tab==='my'?'block':'none';
+  if(tab==='venues'&&!UP.vLoaded)loadVenues();
+  if(tab==='my'&&!UP.bLoaded)loadMyBookings();
+}
+
+// 加载场馆
+function loadVenues(){
+  UP.vLoaded=true;
+  var type=document.getElementById('filterType').value;
+  api('/user/venues?page=1&page_size=50'+(type?'&type='+type:'')).then(function(d){
+    if(d.success&&d.data&&d.data.items&&d.data.items.length>0){
+      var TM={yumaoqiu:'🏸',lanqiu:'🏀',pingpang:'🏓',yujia:'🧘',youyong:'🏊',gym:'💪',other:'其他'};
+      document.getElementById('venueList').innerHTML=d.data.items.map(function(v){
+        var imgs='';
+        try{var arr=JSON.parse(v.images||'[]');if(arr&&arr.length)imgs='<img src="'+arr[0]+'" onerror="this.parentElement.innerHTML=TM[\''+(v.venue_type||'')+'\']||\'🏟️\'">';}catch(e){}
+        var desc=(v.description||'').substr(0,30);
+        return '<div class="venue-card">'+
+          '<div class="v-top">'+
+            '<div class="v-img">'+(imgs||TM[v.venue_type]||'🏟️')+'</div>'+
+            '<div class="v-info">'+
+              '<div class="v-name">'+(v.venue_name||'')+'</div>'+
+              '<div class="v-tags">'+
+                '<span class="tag">'+TM[v.venue_type]+'</span>'+
+                '<span class="tag">可容'+(v.capacity||'-')+'人</span>'+
+                '<span class="tag tag-price">¥'+(parseFloat(v.price||0)).toFixed(0)+'/时</span>'+
+              '</div>'+
+              '<div class="v-desc">'+(desc||'优质场地，欢迎预约')+'</div>'+
+            '</div>'+
+          '</div>'+
+          '<div class="v-bottom">'+
+            '<span class="v-price">¥'+(parseFloat(v.price||0)).toFixed(2)+'<span>/小时</span></span>'+
+            '<button class="btn-book" onclick="openPanel('+v.id+')">立即预约</button>'+
+          '</div>'+
+        '</div>';
+      }).join('');
+    }else document.getElementById('venueList').innerHTML='<div class="empty">暂无场馆</div>';
+  }).catch(function(){document.getElementById('venueList').innerHTML='<div class="empty">加载失败</div>';});
+}
+
+// 打开预约面板
+var selectedVenue=null;
+var bookedSlots={}; // {date: [hour, hour, ...]}
+
+function openPanel(venueId){
+  api('/user/venues/'+venueId).then(function(d){
+    if(d.success&&d.data){
+      selectedVenue=d.data;
+      UP.curVenueId=venueId;
+      // 重置状态
+      UP.startHour=null;UP.endHour=null;UP.startTime=null;UP.endTime=null;
+      document.getElementById('bookDate').value='';
+      document.getElementById('timeSlots').innerHTML='<div style="padding:20px;text-align:center;color:#bbb;font-size:13px">请先选择日期</div>';
+      updateInfo();
+      
+      // 渲染场地信息
+      var TM={yumaoqiu:'🏸',lanqiu:'🏀',pingpang:'🏓',yujia:'🧘',youyong:'🏊',gym:'💪',other:'其他'};
+      var imgsEl=document.getElementById('panelImgs');
+      try{var arr=JSON.parse(selectedVenue.images||'[]');if(arr&&arr.length){imgsEl.innerHTML='<img src="'+arr[0]+'">';}else{imgsEl.innerHTML=TM[selectedVenue.venue_type]||'🏟️';}}catch(e){imgsEl.innerHTML=TM[selectedVenue.venue_type]||'🏟️';}
+      
+      document.getElementById('panelVenue').innerHTML=
+        '<div class="v-img" id="pvImg"></div>'+
+        '<div class="v-info"><div class="v-name">'+selectedVenue.venue_name+'</div>'+
+        '<div class="v-price">¥'+(parseFloat(selectedVenue.price||0)).toFixed(2)+'/小时</div></div>';
+      
+      // 显示规则
+      var rulesEl=document.getElementById('panelRules');
+      if(selectedVenue.rules){
+        rulesEl.textContent=selectedVenue.rules;
+        rulesEl.style.display='block';
+      }else rulesEl.style.display='none';
+      
+      document.getElementById('overlay').classList.add('show');
+      document.getElementById('bookingPanel').classList.add('show');
+    }
+  });
+}
+
+function closePanel(){
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('bookingPanel').classList.remove('show');
+}
+
+// 日期变更时加载已预约时段
+function onDateChange(){
+  var date=document.getElementById('bookDate').value;
+  if(!date||!UP.curVenueId)return;
+  // 查询该场地该日期的已预约时段
+  api('/user/venues/'+UP.curVenueId+'/booked?date='+date).then(function(d){
+    bookedSlots[date]=d.data&&d.data.hours?d.data.hours:[];
+    renderTimeSlots(date);
+  }).catch(function(){
+    bookedSlots[date]=[];
+    renderTimeSlots(date);
+  });
+}
+
+// 渲染时间段（8:00-22:00，每小时一个格子）
+function renderTimeSlots(date){
+  var booked=bookedSlots[date]||[];
+  var html='';
+  for(var h=8;h<=22;h++){
+    var label=String(h).padStart(2,'0')+':00';
+    var isUsed=booked.includes(h);
+    html+='<div class="time-btn'+(isUsed?' used':' available')+'" data-hour="'+h+'" onclick="onSlotClick('+h+','+isUsed+')">'+label+(isUsed?' 已约':' ✓')+'</div>';
+  }
+  document.getElementById('timeSlots').innerHTML=html;
+}
+
+// 点击时间段
+function onSlotClick(hour,isUsed){
+  if(isUsed)return;
+  if(!UP.startHour||!UP.endHour){
+    // 第一个选中的作为开始时间
+    UP.startHour=hour;
+    UP.endHour=hour+1;
+    UP.startTime=hour+':00';
+    UP.endTime=(hour+1)+':00';
+  } else {
+    // 清空重新选择
+    UP.startHour=hour;
+    UP.endHour=hour+1;
+    UP.startTime=hour+':00';
+    UP.endTime=(hour+1)+':00';
+  }
+  renderTimeSlots(date);
+  updateInfo();
+  checkContinuity();
+}
+
+// 检查连续性并更新选中样式
+function checkContinuity(){
+  if(!UP.startHour)return;
+  var booked=bookedSlots[document.getElementById('bookDate').value]||[];
+  document.querySelectorAll('.time-btn').forEach(function(el){
+    var h=parseInt(el.dataset.hour);
+    if(h>=UP.startHour&&h<UP.endHour&&!booked.includes(h)){
+      el.classList.add('selected');
+    } else {
+      el.classList.remove('selected');
+    }
+  });
+}
+
+// 快捷选择
+function quickSelect(hours){
+  var date=document.getElementById('bookDate').value;
+  if(!date){alert('请先选择预约日期');return;}
+  var booked=bookedSlots[date]||[];
+  // 找从8点开始的连续空时段
+  var start=8;
+  var found=false;
+  for(var s=8;s<=22-hours;s++){
+    var ok=true;
+    for(var h=s;h<s+hours;h++){
+      if(booked.includes(h)){ok=false;break;}
+    }
+    if(ok){
+      UP.startHour=s;
+      UP.endHour=s+hours;
+      UP.startTime=s+':00';
+      UP.endTime=(s+hours)+':00';
+      found=true;
+      break;
+    }
+  }
+  if(!found){alert('没有足够的连续时段，请手动选择');return;}
+  renderTimeSlots(date);
+  updateInfo();
+  checkContinuity();
+}
+
+// 手动延长时间（点击结束时间按钮）
+document.addEventListener('click',function(e){
+  if(e.target.classList.contains('time-btn')&&!e.target.classList.contains('used')&&!e.target.classList.contains('selected')){
+    var h=parseInt(e.target.dataset.hour);
+    if(UP.startHour&&h>UP.startHour){
+      var date=document.getElementById('bookDate').value;
+      var booked=bookedSlots[date]||[];
+      // 检查中间是否有被预约的
+      var ok=true;
+      for(var i=UP.startHour;i<=h;i++){
+        if(booked.includes(i)&&i!==UP.startHour){ok=false;break;}
+      }
+      if(ok){
+        UP.endHour=h+1;
+        UP.endTime=(h+1)+':00';
+        renderTimeSlots(date);
+        updateInfo();
+        checkContinuity();
+      }
+    }
+  }
+});
+
+// 更新预约信息
+function updateInfo(){
+  var venue=selectedVenue||{};
+  var price=parseFloat(venue.price||0);
+  var date=document.getElementById('bookDate').value;
+  var hours=UP.endHour&&UP.startHour?UP.endHour-UP.startHour:0;
+  var total=price*hours;
+  
+  document.getElementById('infoVenue').textContent=venue.venue_name||'-';
+  document.getElementById('infoDate').textContent=date||'-';
+  document.getElementById('infoStart').textContent=UP.startTime||'-';
+  document.getElementById('infoEnd').textContent=UP.endTime||'-';
+  document.getElementById('infoHours').textContent=hours>0?hours+'小时':'-';
+  document.getElementById('infoPrice').textContent='¥'+price.toFixed(2)+'/小时';
+  document.getElementById('infoTotal').textContent='¥'+total.toFixed(2);
+  
+  var btn=document.getElementById('submitBtn');
+  if(date&&hours>0){
+    btn.disabled=false;
+    btn.textContent='确认预约 ¥'+total.toFixed(2);
+  } else {
+    btn.disabled=true;
+    btn.textContent='请选择预约时间';
+  }
+}
+
+// 弹出账单确认
+function goBill(){
+  var venue=selectedVenue||{};
+  var price=parseFloat(venue.price||0);
+  var date=document.getElementById('bookDate').value;
+  var hours=UP.endHour&&UP.startHour?UP.endHour-UP.startHour:0;
+  var total=price*hours;
+  
+  document.getElementById('billVenue').textContent=venue.venue_name||'-';
+  document.getElementById('billDate').textContent=date;
+  document.getElementById('billTime').textContent=UP.startTime+' - '+UP.endTime;
+  document.getElementById('billHours').textContent=hours+'小时';
+  document.getElementById('billPrice').textContent='¥'+price.toFixed(2)+'/小时';
+  document.getElementById('billTotal').textContent='¥'+total.toFixed(2);
+  
+  document.getElementById('billOverlay').classList.add('show');
+  document.getElementById('billPanel').classList.add('show');
+}
+
+function closeBill(){
+  document.getElementById('billOverlay').classList.remove('show');
+  document.getElementById('billPanel').classList.remove('show');
+}
+
+// 提交预约
+function submitBooking(){
+  var venue=selectedVenue;
+  var date=document.getElementById('bookDate').value;
+  if(!date||!UP.startTime||!UP.endTime){alert('请完善预约信息');return;}
+  var btn=document.querySelector('.bill-confirm');
+  btn.disabled=true;btn.textContent='提交中...';
+  api('/user/venues/'+venue.id+'/book','POST',{
+    book_date:date,
+    start_time:UP.startTime,
+    end_time:UP.endTime
+  }).then(function(d){
+    if(d.success){
+      closeBill();
+      closePanel();
+      alert('预约成功！核销码：'+(d.data&&d.data.verify_code||''));
+      switchTab('my');
+      UP.bLoaded=false;
+      loadMyBookings();
+    }else{
+      alert(d.msg||'预约失败');
+    }
+    btn.disabled=false;btn.textContent='✅ 确认预约';
+  }).catch(function(e){
+    alert('预约失败：'+e.message);
+    btn.disabled=false;btn.textContent='✅ 确认预约';
+  });
+}
+
+// 加载我的预约
+function loadMyBookings(){
+  UP.bLoaded=true;
+  var status=document.getElementById('myStatus').value;
+  api('/user/bookings?page=1&page_size=50'+(status?'&status='+status:'')).then(function(d){
+    if(d.success&&d.data&&d.data.items&&d.data.items.length>0){
+      var SM={pending:'待确认',confirmed:'已确认',completed:'已完成',cancelled:'已取消'};
+      document.getElementById('myBookingList').innerHTML=d.data.items.map(function(b){
+        var t1=(b.start_time||'').substr(0,5);
+        var t2=(b.end_time||'').substr(0,5);
+        return '<div class="booking-item">'+
+          '<div class="bk-top">'+
+            '<span class="bk-venue">'+(b.venue_name||'场馆预约')+'</span>'+
+            '<span class="bk-status '+b.status+'">'+SM[b.status]||b.status+'</span>'+
+          '</div>'+
+          '<div class="bk-info">'+
+            '<div>📅 '+b.book_date+' '+t1+'~'+t2+'</div>'+
+            '<div>⏱️ 时长 '+(b.total_hours||'-')+'小时 | 💰 ¥'+(parseFloat(b.total_price||0)).toFixed(2)+'</div>'+
+          '</div>'+
+          (b.verify_code?'<div class="bk-code"><span>核销码</span><strong>'+b.verify_code+'</strong></div>':'')+
+        '</div>';
+      }).join('');
+    }else document.getElementById('myBookingList').innerHTML='<div class="empty">暂无预约记录<br><br><button onclick="switchTab(\'venues\')" style="padding:8px 20px;background:#667eea;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer">去预约场馆</button></div>';
+  }).catch(function(){document.getElementById('myBookingList').innerHTML='<div class="empty">加载失败</div>';});
+}
+
+// 初始化
+var today=new Date();
+var dd=String(today.getDate()).padStart(2,'0');
+var mm=String(today.getMonth()+1).padStart(2,'0');
+var yyyy=today.getFullYear();
+document.getElementById('bookDate').min=yyyy+'-'+mm+'-'+dd;
+loadVenues();
+</script>
 </body>
 </html>
