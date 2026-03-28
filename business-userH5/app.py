@@ -155,9 +155,10 @@ def get_user_bookings(user):
     offset = (page - 1) * page_size
     # business_venues 字段: venue_name, price (不是 name/price_per_hour)
     items  = db.get_all(
-        "SELECT vb.id, vb.venue_id, vb.book_date, vb.start_time, vb.end_time, "
-        "vb.total_hours, vb.total_price, vb.status, vb.verify_code, vb.created_at, "
-        "v.venue_name, v.venue_type "
+        "SELECT vb.id, vb.venue_id, vb.book_date, "
+        "CAST(vb.start_time AS CHAR) as start_time, CAST(vb.end_time AS CHAR) as end_time, "
+        "CAST(vb.total_hours AS CHAR) as total_hours, vb.total_price, vb.status, vb.verify_code, vb.created_at, "
+        "v.venue_name, v.venue_type, v.images "
         "FROM business_venue_bookings vb "
         "LEFT JOIN business_venues v ON vb.venue_id=v.id "
         "WHERE " + where + " ORDER BY vb.book_date DESC, vb.created_at DESC LIMIT %s OFFSET %s",
@@ -302,3 +303,23 @@ def static_files(filename):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=22311, debug=False)
+
+
+@app.route('/api/user/bookings/<booking_id>/pay', methods=['POST'])
+@require_login
+def pay_booking(user, booking_id):
+    """支付预约（模拟支付）"""
+    booking = db.get_one(
+        "SELECT * FROM business_venue_bookings WHERE id=%s AND user_id=%s AND deleted=0",
+        [booking_id, user['user_id']]
+    )
+    if not booking:
+        return jsonify({'success': False, 'msg': '预约不存在'})
+    if booking.get('pay_status') == 'paid':
+        return jsonify({'success': True, 'msg': '已支付'})
+    db.execute(
+        "UPDATE business_venue_bookings SET pay_status='paid', status='confirmed' WHERE id=%s",
+        [booking_id]
+    )
+    return jsonify({'success': True, 'msg': '支付成功'})
+

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+<!-- v2026.03.28 - cache bust -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>场馆预约</title>
@@ -86,6 +87,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f5;
 
 /* 我的预约列表 */
 .booking-item{background:white;border-radius:12px;padding:14px;margin:12px;box-shadow:0 2px 6px rgba(0,0,0,.05)}
+.bk-main{display:flex;gap:12px;}
+.bk-img{width:70px;height:70px;border-radius:8px;object-fit:cover;flex-shrink:0;background:#f5f5f5;}
+.bk-details{flex:1;min-width:0;}
+.bk-venue{font-size:15px;font-weight:600;color:#333;}
+.bk-info{font-size:13px;color:#666;margin-top:4px;}
+.bk-info strong{color:#667eea;}
 .bk-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .bk-venue{font-size:15px;font-weight:600;color:#333}
 .bk-status{padding:2px 8px;border-radius:8px;font-size:11px}
@@ -231,7 +238,7 @@ function goBack(){location.href='index.html?access_token='+encodeURIComponent(TO
 
 function switchTab(tab){
   document.querySelectorAll('.tab').forEach(function(e){e.classList.remove('active')});
-  event.target.classList.add('active');
+  /* fix */ event.currentTarget.classList.add('active');
   document.getElementById('tabVenues').style.display=tab==='venues'?'block':'none';
   document.getElementById('tabMy').style.display=tab==='my'?'block':'none';
   if(tab==='venues'&&!UP.vLoaded)loadVenues();
@@ -516,14 +523,31 @@ function loadMyBookings(){
       document.getElementById('myBookingList').innerHTML=d.data.items.map(function(b){
         var t1=(b.start_time||'').substr(0,5);
         var t2=(b.end_time||'').substr(0,5);
+        // 格式化日期
+        var bookDate = b.book_date ? b.book_date.split(' ')[0] : '-';
+        // 获取图片
+        var imgHtml = '';
+        if (b.images) {
+            try {
+                var imgs = JSON.parse(b.images);
+                if (imgs && imgs.length > 0) {
+                    imgHtml = '<img src="'+imgs[0]+'" class="bk-img" onerror="this.style.display=\'none\'">';
+                }
+            } catch(e) {}
+        }
         return '<div class="booking-item">'+
-          '<div class="bk-top">'+
-            '<span class="bk-venue">'+(b.venue_name||'场馆预约')+'</span>'+
-            '<span class="bk-status '+b.status+'">'+SM[b.status]||b.status+'</span>'+
-          '</div>'+
-          '<div class="bk-info">'+
-            '<div>📅 '+b.book_date+' '+t1+'~'+t2+'</div>'+
-            '<div>⏱️ 时长 '+(b.total_hours||'-')+'小时 | 💰 ¥'+(parseFloat(b.total_price||0)).toFixed(2)+'</div>'+
+          '<div class="bk-main">'+
+            imgHtml +
+            '<div class="bk-details">'+
+              '<div class="bk-top">'+
+                '<span class="bk-venue">'+(b.venue_name||'场馆预约')+'</span>'+
+                '<span class="bk-status '+b.status+'">'+SM[b.status]||b.status+'</span>'+
+              '</div>'+
+              '<div class="bk-info">'+
+                '<div>📅 '+bookDate+' | ⏰ '+t1+' ~ '+t2+'</div>'+
+                '<div>⏱️ 时长 <strong>'+(b.total_hours||'-')+'</strong> 小时 | 💰 总价 <strong>¥'+(parseFloat(b.total_price||0)).toFixed(2)+'</strong></div>'+
+              '</div>'+
+            '</div>'+
           '</div>'+
           (b.verify_code?'<div class="bk-code"><span>核销码</span><strong>'+b.verify_code+'</strong></div>':'')+
         '</div>';
@@ -540,5 +564,16 @@ var yyyy=today.getFullYear();
 document.getElementById('bookDate').min=yyyy+'-'+mm+'-'+dd;
 loadVenues();
 </script>
+
+<!-- 预约详情弹窗 -->
+<div class="bill-overlay" id="detailOverlay" onclick="if(event.target===this)closeDetail()"></div>
+<div class="bill-panel" id="detailPanel" style="width:360px;max-height:85vh;overflow-y:auto;display:none">
+  <div style="padding:20px 24px;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center">
+    <span style="font-size:16px;font-weight:700">📋 预约详情</span>
+    <span onclick="closeDetail()" style="cursor:pointer;font-size:18px;color:#999;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#f5f5f5">✕</span>
+  </div>
+  <div style="padding:16px 24px" id="detailContent"></div>
+  <div style="padding:12px 24px;border-top:1px solid #f0f0f0" id="detailActions"></div>
+</div>
 </body>
 </html>

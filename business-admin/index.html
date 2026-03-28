@@ -42,6 +42,7 @@
             <div class="menu-item" onclick="loadPage('orders')"><span>📦</span><span>订单管理</span></div>
             <div class="menu-item" onclick="loadPage('shops')"><span>🏪</span><span>门店管理</span></div>
             <div class="menu-item" onclick="loadPage('users')"><span>👥</span><span>用户管理</span></div>
+            <div class="menu-item" onclick="location.href='venues.html'+location.search"><span>🏟️</span><span>场地管理</span></div>
             <div class="menu-item" onclick="loadPage('statistics')"><span>📈</span><span>数据统计</span></div>
         </div>
     </div>
@@ -103,14 +104,47 @@
             const titles = {dashboard:'概览',applications:'申请单管理',orders:'订单管理',shops:'门店管理',users:'用户管理',statistics:'数据统计'};
             document.getElementById('pageTitle').textContent = titles[page] || page;
             
-            if (page === 'dashboard') {
+            if (page === 'statistics') {
+                loadStatistics();
+            } else if (page === 'dashboard') {
                 loadDashboard();
             } else {
                 loadList(page);
             }
         }
 
-        async function loadList(type) {
+        
+
+        async function loadStatistics() {
+            const token = new URLSearchParams(location.search).get('access_token') || '';
+            const isDev = new URLSearchParams(location.search).get('isdev') || '0';
+            
+            document.getElementById('pageContent').innerHTML = '<div class="stats-grid"></div>';
+            
+            try {
+                const resp = await fetch(`/api/admin/statistics?access_token=${token}&isdev=${isDev}`);
+                const data = await resp.json();
+                if (data.success) {
+                    const d = data.data;
+                    document.getElementById('pageContent').innerHTML = `
+                        <div class="stats-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px;">
+                            <div class="stat-card"><div class="stat-title">今日订单</div><div class="stat-value" style="color:#667eea">${d.today_orders||0}</div></div>
+                            <div class="stat-card"><div class="stat-title">今日申请</div><div class="stat-value" style="color:#11998e">${d.today_applications||0}</div></div>
+                            <div class="stat-card"><div class="stat-title">待审申请</div><div class="stat-value" style="color:#f5576c">${d.pending_applications||0}</div></div>
+                            <div class="stat-card"><div class="stat-title">总收入</div><div class="stat-value" style="color:#4facfe">¥${(d.total_income||0).toFixed(2)}</div></div>
+                        </div>
+                        <div style="margin-top:20px;background:white;padding:20px;border-radius:8px;">
+                            <h4 style="margin-bottom:15px;">累计数据</h4>
+                            <p>总订单: <strong>${d.total_orders||0}</strong></p>
+                            <p>总申请: <strong>${d.total_applications||0}</strong></p>
+                        </div>
+                    `;
+                }
+            } catch(e) {
+                document.getElementById('pageContent').innerHTML = '<p>加载失败</p>';
+            }
+        }
+async function loadList(type) {
             const endpoints = {applications:'applications',orders:'orders',shops:'shops',users:'users'};
             const endpoint = endpoints[type];
             if (!endpoint) return;
@@ -127,7 +161,7 @@
                         return;
                     }
                     const keys = Object.keys(items[0]).slice(0, 6);
-                    document.getElementById('pageContent').innerHTML = '<div class="content"><table><thead><tr>' + keys.map(k => '<th>' + k + '</th>').join('') + '<th>操作</th></tr></thead><tbody>' + items.map(item => '<tr>' + keys.map(k => '<td>' + (item[k] || '-') + '</td>').join('') + '<td class="actions"><a>查看</a><a>编辑</a><a onclick="deleteItem(\'' + type + '\',' + item.id + ')">删除</a></td></tr>').join('') + '</tbody></table></div>';
+                    document.getElementById('pageContent').innerHTML = '<div class="content"><table><thead><tr>' + keys.map(k => '<th>' + k + '</th>').join('') + '<th>操作</th></tr></thead><tbody>' + items.map(item => '<tr>' + keys.map(k => '<td>' + (item[k] || '-') + '</td>').join('') + '<td class="actions"><a onclick="viewItem(type, item.id)">查看</a><a onclick="editItem(type, item.id)">编辑</a><a onclick="deleteItem(\'' + type + '\',' + item.id + ')">删除</a></td></tr>').join('') + '</tbody></table></div>';
                 }
             } catch(e) { console.error(e); }
         }
@@ -148,6 +182,14 @@
         }
 
         function viewApp(id) { alert('查看申请 ' + id); }
+        
+        function viewItem(type, id) {
+            alert('查看 ' + type + ' ID: ' + id);
+        }
+        
+        function editItem(type, id) {
+            alert('编辑 ' + type + ' ID: ' + id);
+        }
         function editApp(id) { alert('编辑申请 ' + id); }
 
         loadDashboard();
