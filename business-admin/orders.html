@@ -5,25 +5,88 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>订单管理</title>
     <style>
+        /* ==================== 基础样式 ==================== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f2f5; }
+
+        :root {
+            --primary-color: #1890ff;
+            --primary-light: #40a9ff;
+            --primary-dark: #096dd9;
+            --success-color: #52c41a;
+            --warning-color: #faad14;
+            --danger-color: #ff4d4f;
+            --info-color: #909399;
+            --text-primary: #303133;
+            --text-regular: #606266;
+            --text-secondary: #909399;
+            --border-color: #ebeef5;
+            --bg-white: #ffffff;
+            --bg-light: #f5f7fa;
+            --bg-striped: #fafafa;
+        }
+
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg-light); font-size: 14px; color: var(--text-regular); }
+        
+        /* ==================== 页面布局 ==================== */
         .header { background: #001529; color: white; padding: 15px 20px; display: flex; align-items: center; }
         .header h1 { font-size: 18px; flex: 1; }
         .back { color: white; text-decoration: none; font-size: 14px; }
-        .toolbar { background: white; padding: 15px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-        .search-input { padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 200px; }
-        .select { padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; }
-        .btn { padding: 8px 15px; background: #1890ff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        table { width: 100%; border-collapse: collapse; background: white; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #f0f0f0; }
-        th { background: #fafafa; font-weight: 500; color: #666; }
-        .amount { color: #f57c00; font-weight: 600; }
-        .status { padding: 4px 8px; border-radius: 4px; font-size: 12px; }
-        .status-pending { background: #fff7e6; color: #fa8c16; }
-        .status-paid { background: #e6f7ff; color: #1890ff; }
-        .status-completed { background: #f6ffed; color: #52c41a; }
-        .actions a { color: #1890ff; margin-right: 10px; text-decoration: none; cursor: pointer; }
-        .pagination { background: white; padding: 15px; display: flex; justify-content: center; gap: 10px; }
+        
+        /* ==================== 工具栏 ==================== */
+        .toolbar { background: var(--bg-white); padding: 15px 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; border-bottom: 1px solid var(--border-color); }
+        .search-input { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; width: 200px; font-size: 14px; transition: border-color .2s; }
+        .search-input:hover { border-color: #c0c4cc; }
+        .search-input:focus { border-color: var(--primary-color); outline: none; }
+        .select { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; background: var(--bg-white); cursor: pointer; }
+        
+        /* ==================== 按钮 ==================== */
+        .btn { padding: 9px 15px; border-radius: 4px; font-size: 14px; cursor: pointer; border: 1px solid var(--border-color); background: var(--bg-white); color: var(--text-regular); transition: all .2s; }
+        .btn:hover { color: var(--primary-color); border-color: var(--primary-color); }
+        .btn-primary { background: var(--primary-color); border-color: var(--primary-color); color: var(--bg-white); }
+        .btn-primary:hover { background: var(--primary-light); border-color: var(--primary-light); }
+        
+        /* ==================== Element UI 表格 ==================== */
+        .el-table { width: 100%; border: 1px solid var(--border-color); border-radius: 4px; background-color: var(--bg-white); color: var(--text-regular); font-size: 14px; border-collapse: collapse; }
+        
+        /* 表头 */
+        .el-table__header th { padding: 12px 10px; background-color: var(--bg-light); color: var(--text-primary); font-weight: 500; text-align: left; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); }
+        .el-table__header th:last-child { border-right: none; }
+        
+        /* 表体 */
+        .el-table__body td { padding: 12px 10px; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); }
+        .el-table__body td:last-child { border-right: none; }
+        
+        /* 行悬停 */
+        .el-table__body tr:hover > td { background-color: var(--bg-light); }
+        
+        /* 斑马纹 */
+        .el-table--striped .el-table__body tr:nth-child(2n) td { background-color: var(--bg-striped); }
+        .el-table--striped .el-table__body tr:nth-child(2n):hover td { background-color: var(--bg-light); }
+        
+        /* 空状态 */
+        .empty { text-align: center; padding: 40px; color: var(--info-color); }
+        
+        /* ==================== Element UI 标签 ==================== */
+        .el-tag { display: inline-block; padding: 0 8px; height: 22px; line-height: 20px; font-size: 12px; border-radius: 4px; border: 1px solid; white-space: nowrap; }
+        .el-tag--success { background-color: #f6ffed; border-color: #b7eb8f; color: var(--success-color); }
+        .el-tag--warning { background-color: #fffbe6; border-color: #ffe58f; color: var(--warning-color); }
+        .el-tag--danger { background-color: #fff1f0; border-color: #ffa39e; color: var(--danger-color); }
+        .el-tag--info { background-color: #f4f4f5; border-color: #d3d3d3; color: var(--info-color); }
+        .el-tag--primary { background-color: #e6f7ff; border-color: #91d5ff; color: var(--primary-color); }
+        
+        /* ==================== 金额样式 ==================== */
+        .amount { color: #f57c00; font-weight: 600; font-family: 'DIN Alternate', 'Microsoft YaHei', monospace; }
+        
+        /* ==================== 操作链接 ==================== */
+        .actions a { color: var(--primary-color); margin-right: 10px; text-decoration: none; cursor: pointer; transition: color .2s; }
+        .actions a:hover { color: var(--primary-light); }
+        
+        /* ==================== Element UI 分页 ==================== */
+        .el-pagination { white-space: nowrap; padding: 16px 20px; text-align: center; user-select: none; background: var(--bg-white); display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .el-pagination__total { color: var(--text-regular); font-size: 13px; }
+        .el-pagination button { background: var(--bg-white); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; min-width: 30px; height: 28px; line-height: 28px; padding: 0 10px; font-size: 13px; color: var(--text-regular); transition: all .2s; }
+        .el-pagination button:hover:not(:disabled) { color: var(--primary-color); border-color: var(--primary-color); }
+        .el-pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -41,10 +104,10 @@
             <option value="completed">已完成</option>
             <option value="cancelled">已取消</option>
         </select>
-        <button class="btn" onclick="loadList(1)">搜索</button>
+        <button class="btn btn-primary" onclick="loadList(1)">搜索</button>
     </div>
-    <table>
-        <thead>
+    <table class="el-table el-table--border el-table--striped">
+        <thead class="el-table__header">
             <tr>
                 <th>订单号</th>
                 <th>用户</th>
@@ -55,11 +118,11 @@
                 <th>操作</th>
             </tr>
         </thead>
-        <tbody id="listBody"><tr><td colspan="7" style="text-align:center;padding:30px;">加载中...</td></tr></tbody>
+        <tbody class="el-table__body" id="listBody"><tr><td colspan="7" class="empty">加载中...</td></tr></tbody>
     </table>
-    <div class="pagination">
+    <div class="el-pagination">
         <button id="prevBtn" onclick="changePage(-1)">上一页</button>
-        <span id="pageInfo">第 1 页</span>
+        <span id="pageInfo" class="el-pagination__total">第 1 页</span>
         <button id="nextBtn" onclick="changePage(1)">下一页</button>
     </div>
 
@@ -68,6 +131,11 @@
         const isdev = new URLSearchParams(location.search).get('isdev') || '0';
         let currentPage = 1;
         let totalPages = 1;
+
+        const PAY_STATUS_MAP = {pending:'待支付',paid:'已支付'};
+        const PAY_STATUS_TAG = {pending:'warning',paid:'success'};
+        const STATUS_MAP = {pending:'待支付',paid:'已支付',processing:'处理中',completed:'已完成',cancelled:'已取消'};
+        const STATUS_TAG = {pending:'warning',paid:'success',processing:'primary',completed:'success',cancelled:'info'};
 
         async function loadList(page) {
             currentPage = page;
@@ -89,16 +157,16 @@
                     document.getElementById('nextBtn').disabled = page >= totalPages;
 
                     if (data.data.items.length === 0) {
-                        document.getElementById('listBody').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;">暂无数据</td></tr>';
+                        document.getElementById('listBody').innerHTML = '<tr><td colspan="7" class="empty">暂无数据</td></tr>';
                         return;
                     }
 
                     document.getElementById('listBody').innerHTML = data.data.items.map(item => 
-                        '<tr><td>' + (item.order_no || '') + '</td><td>' + (item.user_name || '-') + '</td><td class="amount">¥' + (item.total_amount || 0) + '</td><td><span class="status status-' + (item.pay_status || item.status) + '">' + ({pending:'待支付',paid:'已支付'}[item.pay_status] || '-') + '</span></td><td><span class="status status-' + (item.status || 'pending') + '">' + ({pending:'待支付',paid:'已支付',processing:'处理中',completed:'已完成',cancelled:'已取消'}[item.status] || item.status) + '</span></td><td>' + (item.create_time || '') + '</td><td class="actions"><a onclick="viewOrder(' + item.id + ')">查看</a><a onclick="editOrder(' + item.id + ')">编辑</a></td></tr>'
+                        '<tr><td>' + (item.order_no || '') + '</td><td>' + (item.user_name || '-') + '</td><td class="amount">¥' + (item.total_amount || 0) + '</td><td><span class="el-tag el-tag--' + (PAY_STATUS_TAG[item.pay_status] || 'info') + '">' + (PAY_STATUS_MAP[item.pay_status] || '-') + '</span></td><td><span class="el-tag el-tag--' + (STATUS_TAG[item.status] || 'info') + '">' + (STATUS_MAP[item.status] || item.status) + '</span></td><td>' + (item.create_time || '') + '</td><td class="actions"><a onclick="viewOrder(' + item.id + ')">查看</a><a onclick="editOrder(' + item.id + ')">编辑</a></td></tr>'
                     ).join('');
                 }
             } catch(e) {
-                document.getElementById('listBody').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;">加载失败</td></tr>';
+                document.getElementById('listBody').innerHTML = '<tr><td colspan="7" class="empty">加载失败</td></tr>';
             }
         }
 

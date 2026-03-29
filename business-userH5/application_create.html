@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>提交申请</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -12,12 +12,24 @@
         .back { color: white; text-decoration: none; font-size: 14px; }
         .form { padding: 15px; }
         .form-item { background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; }
-        .form-label { font-size: 14px; color: #333; margin-bottom: 8px; display: block; }
-        .form-input { width: 100%; padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; }
+        .form-label { font-size: 14px; color: #333; margin-bottom: 8px; display: block; font-weight: 500; }
+        .form-label.required::after { content: ' *'; color: #f5222d; }
+        .form-input { width: 100%; padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; background: white; }
+        .form-input:focus { border-color: #667eea; outline: none; }
         .form-select { width: 100%; padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; background: white; }
         textarea.form-input { min-height: 100px; resize: vertical; }
+        /* 图片上传 */
+        .img-upload-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+        .img-thumb { width: 72px; height: 72px; border-radius: 8px; object-fit: cover; position: relative; }
+        .img-del { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; background: #f5222d; color: white; border-radius: 50%; font-size: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .img-add { width: 72px; height: 72px; border: 2px dashed #d0d0d0; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; color: #bbb; font-size: 12px; }
+        .img-add:active { background: #f5f5f5; }
+        .img-add-icon { font-size: 24px; margin-bottom: 2px; }
+        .img-wrap { position: relative; width: 72px; height: 72px; flex-shrink: 0; }
+        .char-count { text-align: right; font-size: 11px; color: #bbb; margin-top: 4px; }
         .btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 12px; font-size: 16px; cursor: pointer; }
         .btn:disabled { opacity: 0.6; }
+        .tip { font-size: 12px; color: #999; margin-top: 6px; }
     </style>
 </head>
 <body>
@@ -29,7 +41,7 @@
 
     <div class="form">
         <div class="form-item">
-            <label class="form-label">申请类型</label>
+            <label class="form-label required">申请类型</label>
             <select class="form-select" id="appType">
                 <option value="repair">🔧 报修</option>
                 <option value="booking">📅 预约</option>
@@ -39,12 +51,30 @@
             </select>
         </div>
         <div class="form-item">
-            <label class="form-label">标题</label>
-            <input type="text" class="form-input" id="title" placeholder="请输入申请标题">
+            <label class="form-label required">标题</label>
+            <input type="text" class="form-input" id="title" placeholder="请简短描述问题（如：2楼电梯故障）" maxlength="50" oninput="updateCount('title','titleCount',50)">
+            <div class="char-count"><span id="titleCount">0</span>/50</div>
         </div>
         <div class="form-item">
-            <label class="form-label">详细内容</label>
-            <textarea class="form-input" id="content" placeholder="请详细描述您的问题或需求"></textarea>
+            <label class="form-label">位置/房间号</label>
+            <input type="text" class="form-input" id="location" placeholder="如：A栋2楼201室（选填）" maxlength="50">
+            <div class="tip">填写位置信息便于工作人员快速定位</div>
+        </div>
+        <div class="form-item">
+            <label class="form-label required">详细描述</label>
+            <textarea class="form-input" id="content" placeholder="请详细描述问题或需求，让工作人员更好地为您服务" maxlength="500" oninput="updateCount('content','contentCount',500)"></textarea>
+            <div class="char-count"><span id="contentCount">0</span>/500</div>
+        </div>
+        <div class="form-item">
+            <label class="form-label">图片附件（最多3张）</label>
+            <div class="img-upload-row" id="imgRow">
+                <div class="img-add" onclick="document.getElementById('fileInput').click()">
+                    <span class="img-add-icon">📷</span>
+                    <span>添加图片</span>
+                </div>
+            </div>
+            <input type="file" id="fileInput" accept="image/*" multiple style="display:none" onchange="onFileChange(this)">
+            <div class="tip">支持JPG、PNG，单张不超过2MB</div>
         </div>
         <button class="btn" id="submitBtn" onclick="submit()">提交申请</button>
     </div>
@@ -53,6 +83,7 @@
         var urlParams = new URLSearchParams(location.search);
         var token = urlParams.get('access_token');
         var isdev = urlParams.get('isdev') || '0';
+        var uploadedImages = []; // base64 or URLs
         
         if (token) {
             localStorage.setItem('user_token', token);
@@ -66,27 +97,78 @@
             location.href = 'applications.html?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
         }
 
+        function updateCount(inputId, countId, max) {
+            var val = document.getElementById(inputId).value.length;
+            document.getElementById(countId).textContent = val;
+        }
+
+        function onFileChange(input) {
+            var files = Array.from(input.files);
+            if (uploadedImages.length + files.length > 3) {
+                alert('最多上传3张图片');
+                files = files.slice(0, 3 - uploadedImages.length);
+            }
+            files.forEach(function(file) {
+                if (file.size > 2 * 1024 * 1024) { alert('图片 ' + file.name + ' 超过2MB，请压缩后重新上传'); return; }
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadedImages.push(e.target.result);
+                    renderImages();
+                };
+                reader.readAsDataURL(file);
+            });
+            input.value = '';
+        }
+
+        function renderImages() {
+            var row = document.getElementById('imgRow');
+            var html = uploadedImages.map(function(src, i) {
+                return '<div class="img-wrap"><img class="img-thumb" src="' + src + '"><div class="img-del" onclick="removeImg(' + i + ')">✕</div></div>';
+            }).join('');
+            if (uploadedImages.length < 3) {
+                html += '<div class="img-add" onclick="document.getElementById(\'fileInput\').click()"><span class="img-add-icon">📷</span><span>添加图片</span></div>';
+            }
+            row.innerHTML = html;
+        }
+
+        function removeImg(idx) {
+            uploadedImages.splice(idx, 1);
+            renderImages();
+        }
+
         async function submit() {
             var appType = document.getElementById('appType').value;
             var title = document.getElementById('title').value.trim();
             var content = document.getElementById('content').value.trim();
+            var location = document.getElementById('location').value.trim();
 
             if (!title) { alert('请输入标题'); return; }
-            if (!content) { alert('请输入详细内容'); return; }
+            if (!content) { alert('请输入详细描述'); return; }
 
             var btn = document.getElementById('submitBtn');
             btn.disabled = true;
             btn.textContent = '提交中...';
 
+            // 将位置信息附加到内容
+            var fullContent = content;
+            if (location) {
+                fullContent = '【位置】' + location + '\n' + content;
+            }
+
             try {
                 var res = await fetch('/api/user/applications?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({app_type: appType, title: title, content: content})
+                    body: JSON.stringify({
+                        app_type: appType,
+                        title: title,
+                        content: fullContent,
+                        images: uploadedImages
+                    })
                 });
                 var data = await res.json();
                 if (data.success) {
-                    alert('提交成功');
+                    alert('提交成功！申请单号：' + (data.data && data.data.app_no || ''));
                     location.href = 'applications.html?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
                 } else {
                     alert(data.msg || '提交失败');

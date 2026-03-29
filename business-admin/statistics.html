@@ -4,124 +4,167 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>数据统计 - 管理后台</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        body { background: #f5f7fa; }
-        .sidebar { min-height: 100vh; background: #2c3e50; }
-        .sidebar a { color: #ecf0f1; text-decoration: none; padding: 12px 20px; display: block; }
-        .sidebar a:hover, .sidebar a.active { background: #34495e; border-left: 3px solid #3498db; }
-        .stat-card { border: none; border-radius: 10px; color: white; padding: 20px; margin-bottom: 20px; }
+        /* ==================== 基础样式 ==================== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary-color: #1890ff;
+            --primary-light: #40a9ff;
+            --primary-dark: #096dd9;
+            --success-color: #52c41a;
+            --warning-color: #faad14;
+            --danger-color: #ff4d4f;
+            --info-color: #909399;
+            --text-primary: #303133;
+            --text-regular: #606266;
+            --text-secondary: #909399;
+            --border-color: #ebeef5;
+            --bg-white: #ffffff;
+            --bg-light: #f5f7fa;
+            --bg-striped: #fafafa;
+        }
+
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg-light); font-size: 14px; color: var(--text-regular); min-height: 100vh; }
+
+        /* ==================== 页面布局 ==================== */
+        .layout { display: flex; min-height: 100vh; }
+        
+        /* 侧边栏 */
+        .sidebar { width: 200px; background: #2c3e50; min-height: 100vh; position: fixed; top: 0; left: 0; }
+        .sidebar-header { padding: 16px 20px; border-bottom: 1px solid #3d4f5f; }
+        .sidebar-header h5 { color: white; font-size: 16px; font-weight: 600; }
+        .sidebar a { color: #ecf0f1; text-decoration: none; padding: 12px 20px; display: block; font-size: 14px; transition: all .2s; }
+        .sidebar a:hover { background: #34495e; }
+        .sidebar a.active { background: #34495e; border-left: 3px solid var(--primary-color); }
+        
+        /* 主内容 */
+        .main { flex: 1; margin-left: 200px; padding: 24px; }
+        .page-title { font-size: 18px; font-weight: 600; color: var(--text-primary); margin-bottom: 24px; }
+
+        /* ==================== 统计卡片 ==================== */
+        .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+        .stat-card { border-radius: 4px; color: white; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,.1); }
         .stat-card.blue { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
         .stat-card.green { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
         .stat-card.orange { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
         .stat-card.red { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-        .stat-card i { font-size: 2.5rem; opacity: 0.8; }
-        .stat-card .number { font-size: 2rem; font-weight: bold; }
-        .stat-card .label { opacity: 0.9; font-size: 0.9rem; }
+        .stat-card .stat-icon { font-size: 32px; opacity: 0.8; }
+        .stat-card .stat-num { font-size: 28px; font-weight: 700; }
+        .stat-card .stat-label { opacity: 0.9; font-size: 13px; margin-top: 4px; }
+        .stat-card .stat-content { display: flex; justify-content: space-between; align-items: center; }
+
+        /* ==================== 卡片 ==================== */
+        .card { background: var(--bg-white); border-radius: 4px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,.1); border: 1px solid var(--border-color); }
+        .card-title { font-size: 15px; font-weight: 600; color: var(--text-secondary); margin-bottom: 16px; }
+
+        /* ==================== Element UI 表格 ==================== */
+        .el-table { width: 100%; border: 1px solid var(--border-color); border-radius: 4px; background-color: var(--bg-white); color: var(--text-regular); font-size: 14px; border-collapse: collapse; }
+        
+        /* 表头 */
+        .el-table__header th { padding: 12px 10px; background-color: var(--bg-light); color: var(--text-primary); font-weight: 500; text-align: left; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); }
+        .el-table__header th:last-child { border-right: none; }
+        
+        /* 表体 */
+        .el-table__body td { padding: 12px 10px; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); }
+        .el-table__body td:last-child { border-right: none; }
+        
+        /* 行悬停 */
+        .el-table__body tr:hover > td { background-color: var(--bg-light); }
+        
+        /* 斑马纹 */
+        .el-table--striped .el-table__body tr:nth-child(2n) td { background-color: var(--bg-striped); }
+        .el-table--striped .el-table__body tr:nth-child(2n):hover td { background-color: var(--bg-light); }
+
+        /* ==================== 累计数据列表 ==================== */
+        .stat-list { display: flex; flex-direction: column; gap: 12px; }
+        .stat-list-item { display: flex; justify-content: space-between; font-size: 14px; }
+        .stat-list-item strong { color: var(--text-primary); font-weight: 600; }
     </style>
 </head>
 <body>
-    <div class="container-fluid">
-        <div class="row">
-            <!-- 侧边栏 -->
-            <div class="col-md-2 sidebar p-0">
-                <div class="p-3 text-center border-bottom border-secondary">
-                    <h5 class="text-white">管理后台</h5>
+    <div class="layout">
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h5>管理后台</h5>
+            </div>
+            <a href="index.html">🏠 首页</a>
+            <a href="statistics.html" class="active">📊 数据统计</a>
+            <a href="venues.html">🏟️ 场地管理</a>
+            <a href="applications.html">📋 申请单</a>
+            <a href="orders.html">🧾 订单</a>
+            <a href="shops.html">🏪 门店</a>
+            <a href="points.html">💰 积分管理</a>
+        </div>
+        
+        <!-- 主内容 -->
+        <div class="main">
+            <h4 class="page-title">📊 数据统计</h4>
+            
+            <!-- 统计卡片 -->
+            <div class="stat-grid">
+                <div class="stat-card blue">
+                    <div class="stat-content">
+                        <div>
+                            <div class="stat-num" id="todayOrders">-</div>
+                            <div class="stat-label">今日订单</div>
+                        </div>
+                        <div class="stat-icon">🛒</div>
+                    </div>
                 </div>
-                <a href="index.html"><i class="bi bi-house me-2"></i>首页</a>
-                <a href="statistics.html" class="active"><i class="bi bi-bar-chart me-2"></i>数据统计</a>
-                <a href="venues.html"><i class="bi bi-geo-alt me-2"></i>场地管理</a>
-                <a href="bookings.html"><i class="bi bi-calendar-check me-2"></i>预约管理</a>
-                <a href="applications.html"><i class="bi bi-file-text me-2"></i>申请单</a>
-                <a href="orders.html"><i class="bi bi-receipt me-2"></i>订单</a>
-                <a href="shops.html"><i class="bi bi-shop me-2"></i>门店</a>
-                <a href="users.html"><i class="bi bi-people me-2"></i>用户</a>
+                <div class="stat-card green">
+                    <div class="stat-content">
+                        <div>
+                            <div class="stat-num" id="todayApps">-</div>
+                            <div class="stat-label">今日申请</div>
+                        </div>
+                        <div class="stat-icon">📝</div>
+                    </div>
+                </div>
+                <div class="stat-card orange">
+                    <div class="stat-content">
+                        <div>
+                            <div class="stat-num" id="pendingApps">-</div>
+                            <div class="stat-label">待审申请</div>
+                        </div>
+                        <div class="stat-icon">⏳</div>
+                    </div>
+                </div>
+                <div class="stat-card red">
+                    <div class="stat-content">
+                        <div>
+                            <div class="stat-num" id="totalIncome">-</div>
+                            <div class="stat-label">总收入(元)</div>
+                        </div>
+                        <div class="stat-icon">💰</div>
+                    </div>
+                </div>
             </div>
             
-            <!-- 主内容 -->
-            <div class="col-md-10 p-4">
-                <h4 class="mb-4"><i class="bi bi-bar-chart me-2"></i>数据统计</h4>
-                
-                <!-- 统计卡片 -->
-                <div class="row">
-                    <div class="col-md-3">
-                        <div class="stat-card blue">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <div class="number" id="todayOrders">-</div>
-                                    <div class="label">今日订单</div>
-                                </div>
-                                <i class="bi bi-cart-check"></i>
-                            </div>
+            <!-- 累计数据 -->
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 16px;">
+                <div class="card">
+                    <div class="card-title">累计数据</div>
+                    <div class="stat-list">
+                        <div class="stat-list-item">
+                            <span>总订单</span>
+                            <strong id="totalOrders">-</strong>
                         </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="stat-card green">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <div class="number" id="todayApps">-</div>
-                                    <div class="label">今日申请</div>
-                                </div>
-                                <i class="bi bi-file-earmark-plus"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="stat-card orange">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <div class="number" id="pendingApps">-</div>
-                                    <div class="label">待审申请</div>
-                                </div>
-                                <i class="bi bi-hourglass-split"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="stat-card red">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <div class="number" id="totalIncome">-</div>
-                                    <div class="label">总收入(元)</div>
-                                </div>
-                                <i class="bi bi-currency-dollar"></i>
-                            </div>
+                        <div class="stat-list-item">
+                            <span>总申请</span>
+                            <strong id="totalApps">-</strong>
                         </div>
                     </div>
                 </div>
-                
-                <!-- 累计数据 -->
-                <div class="row mt-3">
-                    <div class="col-md-4">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-body">
-                                <h6 class="text-muted mb-3">累计数据</h6>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span>总订单</span>
-                                    <strong id="totalOrders">-</strong>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span>总申请</span>
-                                    <strong id="totalApps">-</strong>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-8">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-body">
-                                <h6 class="text-muted mb-3">场地预约统计</h6>
-                                <div id="venueStats">加载中...</div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="card">
+                    <div class="card-title">场地预约统计</div>
+                    <div id="venueStats">加载中...</div>
                 </div>
             </div>
         </div>
     </div>
     
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const token = new URLSearchParams(location.search).get('access_token') || '';
         const isDev = new URLSearchParams(location.search).get('isdev') || '0';
@@ -150,11 +193,12 @@
                 const resp = await fetch(`/api/admin/venues?access_token=${token}&isdev=${isDev}`);
                 const data = await resp.json();
                 if (data.success && data.data.items) {
-                    let html = '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>场地</th><th>类型</th><th>价格</th><th>容量</th></tr></thead><tbody>';
+                    const TYPE_MAP = {yumaoqiu:'🏸 羽毛球',lanqiu:'🏀 篮球',pingpang:'🏓 乒乓球',yujia:'🧘 瑜伽',youyong:'🏊 游泳',gym:'💪 健身',other:'📌 其他'};
+                    let html = '<table class="el-table el-table--border el-table--striped"><thead class="el-table__header"><tr><th>场地名称</th><th>场地类型</th><th>价格(元/时)</th><th>容纳人数</th></tr></thead><tbody class="el-table__body">';
                     data.data.items.forEach(v => {
-                        html += `<tr><td>${v.venue_name}</td><td>${v.venue_type}</td><td>¥${v.price}</td><td>${v.capacity}</td></tr>`;
+                        html += `<tr><td>${v.venue_name || '-'}</td><td>${TYPE_MAP[v.venue_type] || v.venue_type || '-'}</td><td style="color:#f57c00;font-weight:600">¥${parseFloat(v.price || 0).toFixed(2)}</td><td>${v.capacity || '-'}人</td></tr>`;
                     });
-                    html += '</tbody></table></div>';
+                    html += '</tbody></table>';
                     document.getElementById('venueStats').innerHTML = html;
                 }
             } catch (e) {

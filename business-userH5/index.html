@@ -79,6 +79,10 @@
                 <div class="stat-num" id="statOrders">-</div>
                 <div class="stat-label">订单数</div>
             </div>
+            <div class="stat-card">
+                <div class="stat-num" id="statBookings">-</div>
+                <div class="stat-label">预约数</div>
+            </div>
         </div>
     </div>
 
@@ -164,6 +168,11 @@
                     document.getElementById('statProcessing').textContent = d.data.processing || 0;
                     document.getElementById('statCompleted').textContent = d.data.completed || 0;
                     document.getElementById('statOrders').textContent = d.data.orders || 0;
+                    document.getElementById('statBookings').textContent = d.data.bookings || 0;
+                    // 尝试显示用户名
+                    if (d.data.user_name) {
+                        document.getElementById('userName').textContent = '你好，' + d.data.user_name;
+                    }
                 }
             })
             .catch(function(e){

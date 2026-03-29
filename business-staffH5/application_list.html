@@ -70,6 +70,23 @@
 
         function getStatusClass(s) { return 'item-status status-' + (s || 'pending'); }
         function getStatusText(s) { return {pending:'待处理',processing:'处理中',completed:'已完成',rejected:'已拒绝'}[s] || s; }
+        
+        // 格式化时间 - 显示年月日时分秒
+        function formatTime(timeStr) {
+            if (!timeStr) return '';
+            let d = new Date(timeStr);
+            if (isNaN(d.getTime())) {
+                d = new Date(timeStr.replace(' ', 'T'));
+            }
+            if (isNaN(d.getTime())) return timeStr;
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const hour = String(d.getHours()).padStart(2, '0');
+            const minute = String(d.getMinutes()).padStart(2, '0');
+            const second = String(d.getSeconds()).padStart(2, '0');
+            return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+        }
 
         async function loadList() {
             const url = '/api/staff/applications?page=1&page_size=20' + (currentStatus ? '&status=' + currentStatus : '') + '&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
@@ -80,7 +97,7 @@
                     document.getElementById('list').innerHTML = data.data.items.map(item => 
                         '<div class="item" onclick="goToDetail(' + item.id + ')">' +
                         '<div class="item-header"><span class="item-title">' + (item.title || '') + '</span><span class="' + getStatusClass(item.status) + '">' + getStatusText(item.status) + '</span></div>' +
-                        '<div class="item-info">申请人: ' + (item.user_name || '') + ' | ' + (item.created_at || '') + (item.priority > 1 ? ' | <span class="priority">优先级' + item.priority + '</span>' : '') + '</div></div>'
+                        '<div class="item-info">申请人: ' + (item.user_name || '') + ' | ' + formatTime(item.created_at) + (item.priority > 1 ? ' | <span class="priority">优先级' + item.priority + '</span>' : '') + '</div></div>'
                     ).join('');
                 } else if (data.msg && data.msg.includes('登录')) {
                     localStorage.removeItem('staff_token');

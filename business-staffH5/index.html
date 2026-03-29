@@ -139,28 +139,33 @@
             .then(function(d){
                 if(d.success && d.data) {
                     document.getElementById('statPending').textContent = d.data.pending_applications || 0;
-                    document.getElementById('statProcessing').textContent = d.data.processing_applications || 0;
-                    document.getElementById('statTodayOrders').textContent = d.data.today_orders || 0;
-                    document.getElementById('statIncome').textContent = '¥' + (d.data.today_income || 0);
+                    document.getElementById('statProcessing').textContent = d.data.processing_applications || d.data.today?.applications || 0;
+                    document.getElementById('statTodayOrders').textContent = d.data.today_orders || d.data.today?.orders || 0;
+                    var income = d.data.today_income || d.data.today?.income || 0;
+                    document.getElementById('statIncome').textContent = '¥' + (parseFloat(income) || 0).toFixed(0);
                     
                     // 申请统计图
                     if(d.data.application_stats && d.data.application_stats.length > 0) {
                         var maxApp = Math.max.apply(null, d.data.application_stats.map(function(s){return s.cnt}));
-                        var statusMap = {pending:'待处理',processing:'处理中',completed:'已完成',rejected:'已拒绝'};
+                        var statusMap = {pending:'待处理',processing:'处理中',completed:'已完成',rejected:'已拒绝',cancelled:'已撤销'};
                         document.getElementById('appChart').innerHTML = d.data.application_stats.map(function(s){
                             var pct = maxApp > 0 ? Math.round(s.cnt/maxApp*100) : 0;
                             return '<div class="chart-bar"><span class="chart-label">' + (statusMap[s.status]||s.status) + '</span><div class="chart-bar-outer"><div class="chart-bar-inner" style="width:' + pct + '%"></div></div><span class="chart-value">' + s.cnt + '</span></div>';
                         }).join('');
+                    } else {
+                        document.getElementById('appChart').innerHTML = '<div class="empty">暂无数据</div>';
                     }
                     
                     // 订单统计图
                     if(d.data.order_stats && d.data.order_stats.length > 0) {
                         var maxOrder = Math.max.apply(null, d.data.order_stats.map(function(s){return s.cnt}));
-                        var statusMap2 = {pending:'待支付',paid:'已支付',completed:'已完成',cancelled:'已取消'};
+                        var statusMap2 = {pending:'待支付',paid:'已支付',completed:'已完成',cancelled:'已取消',total:'全部'};
                         document.getElementById('orderChart').innerHTML = d.data.order_stats.map(function(s){
                             var pct = maxOrder > 0 ? Math.round(s.cnt/maxOrder*100) : 0;
                             return '<div class="chart-bar"><span class="chart-label">' + (statusMap2[s.status]||s.status) + '</span><div class="chart-bar-outer"><div class="chart-bar-inner" style="width:' + pct + '%"></div></div><span class="chart-value">' + s.cnt + '</span></div>';
                         }).join('');
+                    } else {
+                        document.getElementById('orderChart').innerHTML = '<div class="empty">暂无数据</div>';
                     }
                 }
             });

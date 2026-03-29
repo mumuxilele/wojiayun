@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>积分管理 - 管理后台</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary-color: #1890ff;
+            --primary-light: #40a9ff;
+            --success-color: #52c41a;
+            --warning-color: #faad14;
+            --danger-color: #ff4d4f;
+            --info-color: #909399;
+            --text-primary: #303133;
+            --text-regular: #606266;
+            --text-secondary: #909399;
+            --border-color: #ebeef5;
+            --bg-white: #ffffff;
+            --bg-light: #f5f7fa;
+            --bg-striped: #fafafa;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg-light); font-size: 14px; color: var(--text-regular); }
+        .header { background: #001529; color: white; padding: 15px 20px; display: flex; align-items: center; }
+        .header h1 { font-size: 18px; flex: 1; }
+        .back { color: white; text-decoration: none; font-size: 14px; }
+        .toolbar { background: var(--bg-white); padding: 15px 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; border-bottom: 1px solid var(--border-color); }
+        .search-input { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; width: 180px; font-size: 14px; }
+        .search-input:focus { border-color: var(--primary-color); outline: none; }
+        .select { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; background: var(--bg-white); }
+        .btn { padding: 9px 15px; border-radius: 4px; font-size: 14px; cursor: pointer; border: 1px solid var(--border-color); background: var(--bg-white); color: var(--text-regular); transition: all .2s; }
+        .btn:hover { color: var(--primary-color); border-color: var(--primary-color); }
+        .btn-primary { background: var(--primary-color); border-color: var(--primary-color); color: var(--bg-white); }
+        .btn-primary:hover { background: var(--primary-light); border-color: var(--primary-light); }
+        .btn-sm { padding: 5px 10px; font-size: 12px; }
+        .tab-bar { display: flex; border-bottom: 1px solid var(--border-color); background: var(--bg-white); }
+        .tab-item { padding: 12px 24px; cursor: pointer; font-size: 14px; color: var(--text-secondary); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+        .tab-item:hover { color: var(--primary-color); }
+        .tab-item.active { color: var(--primary-color); border-bottom-color: var(--primary-color); font-weight: 600; }
+        .content { padding: 20px; }
+        .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+        .stat-card { background: var(--bg-white); border-radius: 4px; padding: 20px; text-align: center; box-shadow: 0 2px 12px rgba(0,0,0,.1); border: 1px solid var(--border-color); }
+        .stat-card .stat-num { font-size: 28px; font-weight: 600; color: var(--primary-color); }
+        .stat-card .stat-label { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+        .stat-card.warning .stat-num { color: var(--warning-color); }
+        .stat-card.success .stat-num { color: var(--success-color); }
+        .el-table { width: 100%; border: 1px solid var(--border-color); border-radius: 4px; background-color: var(--bg-white); color: var(--text-regular); font-size: 14px; border-collapse: collapse; }
+        .el-table__header th { padding: 12px 10px; background-color: var(--bg-light); color: var(--text-primary); font-weight: 500; text-align: left; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); }
+        .el-table__header th:last-child { border-right: none; }
+        .el-table__body td { padding: 12px 10px; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); }
+        .el-table__body td:last-child { border-right: none; }
+        .el-table__body tr:hover > td { background-color: var(--bg-light); }
+        .el-table--striped .el-table__body tr:nth-child(2n) td { background-color: var(--bg-striped); }
+        .el-table--striped .el-table__body tr:nth-child(2n):hover td { background-color: var(--bg-light); }
+        .empty { text-align: center; padding: 40px; color: var(--info-color); }
+        .el-tag { display: inline-block; padding: 0 8px; height: 22px; line-height: 20px; font-size: 12px; border-radius: 4px; border: 1px solid; white-space: nowrap; }
+        .el-tag--success { background-color: #f6ffed; border-color: #b7eb8f; color: var(--success-color); }
+        .el-tag--warning { background-color: #fffbe6; border-color: #ffe58f; color: var(--warning-color); }
+        .el-tag--danger { background-color: #fff1f0; border-color: #ffa39e; color: var(--danger-color); }
+        .el-tag--info { background-color: #f4f4f5; border-color: #d3d3d3; color: var(--info-color); }
+        .el-tag--primary { background-color: #e6f7ff; border-color: #91d5ff; color: var(--primary-color); }
+        .el-pagination { white-space: nowrap; padding: 16px 0; text-align: right; user-select: none; }
+        .el-pagination__total { margin-right: 16px; color: var(--text-regular); font-size: 13px; }
+        .el-pager li { background: var(--bg-white); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; min-width: 30px; height: 28px; line-height: 28px; padding: 0 6px; display: inline-block; text-align: center; margin: 0 2px; font-size: 13px; color: var(--text-regular); }
+        .el-pager li:hover { color: var(--primary-color); border-color: var(--primary-color); }
+        .el-pager li.active { background-color: var(--primary-color); border-color: var(--primary-color); color: var(--bg-white); }
+        .actions a { color: var(--primary-color); margin-right: 10px; text-decoration: none; cursor: pointer; }
+        .actions a:hover { color: var(--primary-light); }
+        .points-num { font-weight: 600; font-family: 'DIN Alternate', monospace; }
+        .points-add { color: var(--success-color); }
+        .points-reduce { color: var(--danger-color); }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.45); z-index: 200; }
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: var(--bg-white); border-radius: 4px; width: 480px; max-width: 92vw; z-index: 201; box-shadow: 0 2px 12px rgba(0,0,0,.15); }
+        .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .modal-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+        .modal-close { width: 32px; height: 32px; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; color: var(--text-secondary); }
+        .modal-close:hover { background: var(--bg-light); }
+        .modal-body { padding: 20px; }
+        .modal-footer { padding: 12px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px; }
+        .form-item { margin-bottom: 16px; }
+        .form-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; display: block; }
+        .form-input { width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; }
+        .form-input:focus { border-color: var(--primary-color); outline: none; }
+        .form-select { width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; background: var(--bg-white); }
+        /* 嵌入模式 */
+        body.embed-mode .header { display: none; }
+        body.embed-mode .content { padding-top: 0; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="index.html" class="back">← 返回</a>
+        <h1>💎 积分管理</h1>
+        <span></span>
+    </div>
+    
+    <div class="tab-bar">
+        <div class="tab-item active" onclick="switchTab('members', this)">会员积分</div>
+        <div class="tab-item" onclick="switchTab('logs', this)">积分记录</div>
+    </div>
+    
+    <div class="content">
+        <!-- 统计卡片 -->
+        <div class="stat-grid">
+            <div class="stat-card"><div class="stat-num" id="totalMembers">-</div><div class="stat-label">会员总数</div></div>
+            <div class="stat-card"><div class="stat-num" id="totalPoints">-</div><div class="stat-label">积分发放总量</div></div>
+            <div class="stat-card warning"><div class="stat-num" id="todayPoints">-</div><div class="stat-label">今日发放</div></div>
+            <div class="stat-card success"><div class="stat-num" id="monthPoints">-</div><div class="stat-label">本月发放</div></div>
+        </div>
+        
+        <!-- 会员积分 -->
+        <div id="membersPanel">
+            <div class="toolbar">
+                <input type="text" class="search-input" id="memberKeyword" placeholder="搜索用户名/手机号">
+                <select class="select" id="memberLevel">
+                    <option value="">全部等级</option>
+                    <option value="bronze">青铜会员</option>
+                    <option value="silver">白银会员</option>
+                    <option value="gold">黄金会员</option>
+                    <option value="platinum">铂金会员</option>
+                </select>
+                <button class="btn btn-primary" onclick="loadMembers(1)">搜索</button>
+                <button class="btn" onclick="resetMemberSearch()">重置</button>
+            </div>
+            <table class="el-table el-table--border el-table--striped">
+                <thead class="el-table__header">
+                    <tr><th>ID</th><th>用户名</th><th>手机号</th><th>会员等级</th><th>当前积分</th><th>累计积分</th><th>余额</th><th>注册时间</th><th>操作</th></tr>
+                </thead>
+                <tbody class="el-table__body" id="memberTable"><tr><td colspan="9" class="empty">加载中...</td></tr></tbody>
+            </table>
+            <div class="el-pagination" id="memberPager"></div>
+        </div>
+        
+        <!-- 积分记录 -->
+        <div id="logsPanel" style="display:none;">
+            <div class="toolbar">
+                <input type="text" class="search-input" id="logKeyword" placeholder="搜索用户名/手机号">
+                <select class="select" id="logType">
+                    <option value="">全部类型</option>
+                    <option value="earn">获得</option>
+                    <option value="consume">消费</option>
+                    <option value="expire">过期</option>
+                    <option value="admin">管理员调整</option>
+                </select>
+                <input type="date" class="search-input" id="logDateFrom" style="width:140px;">
+                <input type="date" class="search-input" id="logDateTo" style="width:140px;">
+                <button class="btn btn-primary" onclick="loadLogs(1)">搜索</button>
+                <button class="btn" onclick="resetLogSearch()">重置</button>
+            </div>
+            <table class="el-table el-table--border el-table--striped">
+                <thead class="el-table__header">
+                    <tr><th>ID</th><th>用户</th><th>类型</th><th>积分变动</th><th>变动后余额</th><th>说明</th><th>时间</th></tr>
+                </thead>
+                <tbody class="el-table__body" id="logTable"><tr><td colspan="7" class="empty">加载中...</td></tr></tbody>
+            </table>
+            <div class="el-pagination" id="logPager"></div>
+        </div>
+    </div>
+    
+    <!-- 调整积分弹窗 -->
+    <div class="modal-overlay" id="adjustOverlay" onclick="if(event.target===this)closeAdjustModal()"></div>
+    <div class="modal" id="adjustModal">
+        <div class="modal-header">
+            <span class="modal-title">调整积分</span>
+            <span class="modal-close" onclick="closeAdjustModal()">✕</span>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="adjustMemberId">
+            <div class="form-item">
+                <label class="form-label">用户名</label>
+                <input type="text" class="form-input" id="adjustUserName" readonly>
+            </div>
+            <div class="form-item">
+                <label class="form-label">当前积分</label>
+                <input type="text" class="form-input" id="adjustCurrentPoints" readonly>
+            </div>
+            <div class="form-item">
+                <label class="form-label">调整类型</label>
+                <select class="form-select" id="adjustType">
+                    <option value="add">增加积分</option>
+                    <option value="reduce">扣减积分</option>
+                </select>
+            </div>
+            <div class="form-item">
+                <label class="form-label">积分数值</label>
+                <input type="number" class="form-input" id="adjustAmount" placeholder="请输入正整数" min="1">
+            </div>
+            <div class="form-item">
+                <label class="form-label">调整原因</label>
+                <input type="text" class="form-input" id="adjustReason" placeholder="请输入调整原因">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn" onclick="closeAdjustModal()">取消</button>
+            <button class="btn btn-primary" onclick="submitAdjust()">确认调整</button>
+        </div>
+    </div>
+    
+    <script>
+        const token = new URLSearchParams(location.search).get('access_token') || '';
+        const isdev = new URLSearchParams(location.search).get('isdev') || '0';
+        const embed = new URLSearchParams(location.search).get('embed') || '0';
+        if (embed === '1') { document.body.classList.add('embed-mode'); }
+        let memberPage = 1, logPage = 1;
+        
+        const LEVEL_MAP = {bronze:'青铜会员',silver:'白银会员',gold:'黄金会员',platinum:'铂金会员'};
+        const LEVEL_TAG = {bronze:'info',silver:'primary',gold:'warning',platinum:'danger'};
+        const LOG_TYPE_MAP = {earn:'获得',consume:'消费',expire:'过期',admin:'管理员调整'};
+        const LOG_TYPE_TAG = {earn:'success',consume:'warning',expire:'info',admin:'primary'};
+        
+        function switchTab(tab, el) {
+            document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            document.getElementById('membersPanel').style.display = tab === 'members' ? 'block' : 'none';
+            document.getElementById('logsPanel').style.display = tab === 'logs' ? 'block' : 'none';
+            if (tab === 'members') loadMembers(1);
+            if (tab === 'logs') loadLogs(1);
+        }
+        
+        async function loadMembers(page) {
+            memberPage = page || 1;
+            const keyword = document.getElementById('memberKeyword').value;
+            const level = document.getElementById('memberLevel').value;
+            let url = `/api/admin/points/members?page=${memberPage}&page_size=10`;
+            if (keyword) url += '&keyword=' + encodeURIComponent(keyword);
+            if (level) url += '&level=' + level;
+            url += '&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+            
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.success && data.data) {
+                    const items = data.data.items || [];
+                    if (items.length === 0) {
+                        document.getElementById('memberTable').innerHTML = '<tr><td colspan="9" class="empty">暂无数据</td></tr>';
+                    } else {
+                        document.getElementById('memberTable').innerHTML = items.map(m => 
+                            `<tr><td>${m.id}</td><td>${m.user_name || '-'}</td><td>${m.phone || '-'}</td><td><span class="el-tag el-tag--${LEVEL_TAG[m.member_level] || 'info'}">${LEVEL_MAP[m.member_level] || m.member_level}</span></td><td class="points-num" style="color:var(--primary-color)">${m.points || 0}</td><td class="points-num">${m.total_points || 0}</td><td style="color:#f57c00">¥${parseFloat(m.balance||0).toFixed(2)}</td><td>${m.created_at || '-'}</td><td class="actions"><a onclick="openAdjustModal(${m.id},'${m.user_name||''}',${m.points||0})">调整积分</a><a onclick="viewMemberLogs(${m.id})">查看记录</a></td></tr>`
+                        ).join('');
+                    }
+                    renderPager('memberPager', data.data.pages || 1, memberPage, loadMembers);
+                }
+            } catch(e) {
+                document.getElementById('memberTable').innerHTML = '<tr><td colspan="9" class="empty">加载失败</td></tr>';
+            }
+        }
+        
+        async function loadLogs(page) {
+            logPage = page || 1;
+            const keyword = document.getElementById('logKeyword').value;
+            const logType = document.getElementById('logType').value;
+            const dateFrom = document.getElementById('logDateFrom').value;
+            const dateTo = document.getElementById('logDateTo').value;
+            let url = `/api/admin/points/logs?page=${logPage}&page_size=10`;
+            if (keyword) url += '&keyword=' + encodeURIComponent(keyword);
+            if (logType) url += '&type=' + logType;
+            if (dateFrom) url += '&date_from=' + dateFrom;
+            if (dateTo) url += '&date_to=' + dateTo;
+            url += '&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+            
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.success && data.data) {
+                    const items = data.data.items || [];
+                    if (items.length === 0) {
+                        document.getElementById('logTable').innerHTML = '<tr><td colspan="7" class="empty">暂无数据</td></tr>';
+                    } else {
+                        document.getElementById('logTable').innerHTML = items.map(log => {
+                            const pointsClass = log.points > 0 ? 'points-add' : 'points-reduce';
+                            const pointsText = log.points > 0 ? '+' + log.points : log.points;
+                            return `<tr><td>${log.id}</td><td>${log.user_name || '-'}<br><span style="color:var(--text-secondary);font-size:11px">${log.phone||''}</span></td><td><span class="el-tag el-tag--${LOG_TYPE_TAG[log.type]||'info'}">${LOG_TYPE_MAP[log.type]||log.type}</span></td><td class="points-num ${pointsClass}">${pointsText}</td><td class="points-num">${log.balance_after||0}</td><td>${log.description||'-'}</td><td>${log.created_at||'-'}</td></tr>`;
+                        }).join('');
+                    }
+                    renderPager('logPager', data.data.pages || 1, logPage, loadLogs);
+                }
+            } catch(e) {
+                document.getElementById('logTable').innerHTML = '<tr><td colspan="7" class="empty">加载失败</td></tr>';
+            }
+        }
+        
+        function renderPager(elId, total, current, fn) {
+            const el = document.getElementById(elId);
+            if (!el || total <= 1) { if(el) el.innerHTML = ''; return; }
+            let html = '<span class="el-pagination__total">共 ' + total + ' 页</span>';
+            for (let i = 1; i <= total; i++) {
+                if (i === 1 || i === total || Math.abs(i - current) <= 2) {
+                    html += '<li class="el-pager' + (i === current ? ' active' : '') + '" onclick="' + fn.name + '(' + i + ')">' + i + '</li>';
+                } else if (Math.abs(i - current) === 3) {
+                    html += '<span style="color:var(--text-secondary);padding:0 4px">...</span>';
+                }
+            }
+            el.innerHTML = html;
+        }
+        
+        function resetMemberSearch() { document.getElementById('memberKeyword').value = ''; document.getElementById('memberLevel').value = ''; loadMembers(1); }
+        function resetLogSearch() { document.getElementById('logKeyword').value = ''; document.getElementById('logType').value = ''; document.getElementById('logDateFrom').value = ''; document.getElementById('logDateTo').value = ''; loadLogs(1); }
+        
+        function openAdjustModal(memberId, userName, currentPoints) {
+            document.getElementById('adjustMemberId').value = memberId;
+            document.getElementById('adjustUserName').value = userName;
+            document.getElementById('adjustCurrentPoints').value = currentPoints;
+            document.getElementById('adjustType').value = 'add';
+            document.getElementById('adjustAmount').value = '';
+            document.getElementById('adjustReason').value = '';
+            document.getElementById('adjustOverlay').style.display = 'block';
+            document.getElementById('adjustModal').style.display = 'block';
+        }
+        
+        function closeAdjustModal() {
+            document.getElementById('adjustOverlay').style.display = 'none';
+            document.getElementById('adjustModal').style.display = 'none';
+        }
+        
+        async function submitAdjust() {
+            const memberId = document.getElementById('adjustMemberId').value;
+            const adjustType = document.getElementById('adjustType').value;
+            const amount = parseInt(document.getElementById('adjustAmount').value);
+            const reason = document.getElementById('adjustReason').value.trim();
+            if (!amount || amount <= 0) { alert('请输入有效的积分数值'); return; }
+            if (!reason) { alert('请输入调整原因'); return; }
+            const points = adjustType === 'add' ? amount : -amount;
+            try {
+                const res = await fetch(`/api/admin/points/adjust?access_token=${encodeURIComponent(token)}&isdev=${isdev}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ member_id: parseInt(memberId), points: points, reason: reason })
+                });
+                const data = await res.json();
+                if (data.success) { alert('调整成功'); closeAdjustModal(); loadMembers(memberPage); }
+                else { alert(data.msg || '调整失败'); }
+            } catch(e) { alert('调整失败'); }
+        }
+        
+        function viewMemberLogs(memberId) {
+            switchTab('logs', document.querySelectorAll('.tab-item')[1]);
+            setTimeout(() => loadLogs(1), 100);
+        }
+        
+        loadMembers(1);
+    </script>
+</body>
+</html>

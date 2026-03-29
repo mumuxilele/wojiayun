@@ -105,6 +105,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f5;
 .bk-code{background:#f0f0f0;padding:8px;border-radius:6px;text-align:center;margin-top:8px}
 .bk-code span{font-size:11px;color:#999}
 .bk-code strong{font-size:16px;color:#333;letter-spacing:2px;margin-left:6px}
+.bk-img-placeholder{width:70px;height:70px;border-radius:8px;background:linear-gradient(135deg,#f0f0f5,#e8e8f0);display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0}
+.bk-created{font-size:11px;color:#bbb;margin-top:4px}
 
 /* 账单确认弹窗 */
 .bill-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:200}
@@ -520,6 +522,7 @@ function loadMyBookings(){
   api('/user/bookings?page=1&page_size=50'+(status?'&status='+status:'')).then(function(d){
     if(d.success&&d.data&&d.data.items&&d.data.items.length>0){
       var SM={pending:'待确认',confirmed:'已确认',completed:'已完成',cancelled:'已取消'};
+      var TM={yumaoqiu:'🏸',lanqiu:'🏀',pingpang:'🏓',yujia:'🧘',youyong:'🏊',gym:'💪',other:'🏟️'};
       document.getElementById('myBookingList').innerHTML=d.data.items.map(function(b){
         var t1=(b.start_time||'').substr(0,5);
         var t2=(b.end_time||'').substr(0,5);
@@ -535,17 +538,28 @@ function loadMyBookings(){
                 }
             } catch(e) {}
         }
+        // 无图片时显示类型 emoji 占位
+        if(!imgHtml){
+          var emoji = TM[b.venue_type] || '🏟️';
+          imgHtml = '<div class="bk-img-placeholder">'+emoji+'</div>';
+        }
+        // 状态标签
+        var statusLabel = SM[b.status] || b.status;
+        // 格式化时间
+        var hours = parseFloat(b.total_hours)||0;
+        var price = parseFloat(b.total_price||0);
         return '<div class="booking-item">'+
           '<div class="bk-main">'+
             imgHtml +
             '<div class="bk-details">'+
               '<div class="bk-top">'+
                 '<span class="bk-venue">'+(b.venue_name||'场馆预约')+'</span>'+
-                '<span class="bk-status '+b.status+'">'+SM[b.status]||b.status+'</span>'+
+                '<span class="bk-status '+b.status+'">'+statusLabel+'</span>'+
               '</div>'+
               '<div class="bk-info">'+
-                '<div>📅 '+bookDate+' | ⏰ '+t1+' ~ '+t2+'</div>'+
-                '<div>⏱️ 时长 <strong>'+(b.total_hours||'-')+'</strong> 小时 | 💰 总价 <strong>¥'+(parseFloat(b.total_price||0)).toFixed(2)+'</strong></div>'+
+                '<div>📅 '+bookDate+'  ⏰ '+t1+' ~ '+t2+'</div>'+
+                '<div>⏱️ 时长 <strong>'+hours+'</strong> 小时  💰 总价 <strong>¥'+price.toFixed(2)+'</strong></div>'+
+                '<div class="bk-created">下单时间：'+(b.created_at||'-')+'</div>'+
               '</div>'+
             '</div>'+
           '</div>'+

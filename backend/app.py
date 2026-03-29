@@ -180,7 +180,7 @@ def get_visits():
     # 分页查询
     offset = (page - 1) * page_size
     cursor.execute(
-        f"{where} ORDER BY visit_date DESC, id DESC LIMIT %s OFFSET %s",
+        f"SELECT * FROM visit_records {where} ORDER BY visit_date DESC, id DESC LIMIT %s OFFSET %s",
         params + [page_size, offset]
     )
     

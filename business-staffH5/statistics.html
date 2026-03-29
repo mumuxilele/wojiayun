@@ -114,9 +114,14 @@
                 } else if (data.msg && data.msg.includes('登录')) {
                     localStorage.removeItem('staff_token');
                     location.reload();
+                } else {
+                    document.getElementById('appChart').innerHTML = '<div style="text-align:center;color:#999;padding:20px;">加载失败</div>';
+                    document.getElementById('orderChart').innerHTML = '<div style="text-align:center;color:#999;padding:20px;">加载失败</div>';
                 }
             } catch(e) {
                 console.error(e);
+                document.getElementById('appChart').innerHTML = '<div style="text-align:center;color:#f5222d;padding:20px;">网络错误</div>';
+                document.getElementById('orderChart').innerHTML = '<div style="text-align:center;color:#f5222d;padding:20px;">网络错误</div>';
             }
         }
 

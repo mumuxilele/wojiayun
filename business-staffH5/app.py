@@ -5,9 +5,20 @@ from flask_cors import CORS
 import sys
 import os
 import time
+import json
+import base64
+import uuid
+import logging
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from business_common import config, db, auth, utils
+
+# 图片上传目录
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), 'uploads')
+if not os.path.exists(UPLOAD_DIR):
+    os.makedirs(UPLOAD_DIR)
 
 app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
@@ -46,25 +57,48 @@ def get_staff_stats(user):
 def get_staff_statistics(user):
     today_apps = db.get_total("SELECT COUNT(*) FROM business_applications WHERE deleted=0 AND DATE(created_at)=CURDATE()", [])
     pending_apps = db.get_total("SELECT COUNT(*) FROM business_applications WHERE deleted=0 AND status='pending'", [])
-    
+    processing_apps = db.get_total("SELECT COUNT(*) FROM business_applications WHERE deleted=0 AND status='processing'", [])
+
+    # 今日订单数和收入
+    today_orders = 0
+    today_income = 0
+    try:
+        today_orders = db.get_total("SELECT COUNT(*) FROM business_orders WHERE deleted=0 AND DATE(created_at)=CURDATE()", [])
+        income_row = db.get_one("SELECT COALESCE(SUM(actual_amount),0) as income FROM business_orders WHERE deleted=0 AND order_status IN ('paid','completed') AND DATE(created_at)=CURDATE()", [])
+        if income_row:
+            today_income = float(income_row.get('income') or 0)
+    except Exception as e:
+        print('Error getting today orders/income:', e)
+
     app_stats = []
     try:
-        app_stats = db.get_all("SELECT status, COUNT(*) as cnt FROM business_applications WHERE deleted=0 GROUP BY status", [])
+        app_stats = db.get_all("SELECT status, COUNT(*) as cnt FROM business_applications WHERE deleted=0 GROUP BY status ORDER BY cnt DESC", [])
     except Exception as e:
         print('Error getting app_stats:', e)
-    
+
     order_stats = []
     try:
-        total_orders = db.get_total("SELECT COUNT(*) FROM business_orders WHERE deleted=0", [])
-        order_stats = [{'status': 'total', 'cnt': total_orders}]
+        order_stats = db.get_all("SELECT order_status as status, COUNT(*) as cnt FROM business_orders WHERE deleted=0 GROUP BY order_status ORDER BY cnt DESC", [])
     except Exception as e:
         print('Error getting order_stats:', e)
-    
+        try:
+            total_orders = db.get_total("SELECT COUNT(*) FROM business_orders WHERE deleted=0", [])
+            order_stats = [{'status': 'total', 'cnt': total_orders}]
+        except:
+            pass
+
     return jsonify({
-        'success': True, 
+        'success': True,
         'data': {
-            'today': {'applications': today_apps, 'orders': 0, 'income': 0},
+            'today': {
+                'applications': today_apps,
+                'orders': today_orders,
+                'income': round(today_income, 2)
+            },
             'pending_applications': pending_apps,
+            'processing_applications': processing_apps,
+            'today_orders': today_orders,
+            'today_income': round(today_income, 2),
             'application_stats': app_stats,
             'order_stats': order_stats
         }
@@ -109,11 +143,28 @@ def get_application_detail(user, app_id):
     if not app:
         return jsonify({'success': False, 'msg': '申请不存在'})
     if app.get('images'):
-        import json
         try:
             app['images_list'] = json.loads(app['images'])
         except:
             app['images_list'] = []
+    
+    # 获取处理记录 - 按时间降序，最新的在前
+    logs = db.get_all(
+        "SELECT id, action, handler_id, handler_name, remark, images, created_at "
+        "FROM business_application_logs WHERE application_id=%s ORDER BY created_at DESC",
+        [app_id]
+    )
+    for log in logs or []:
+        if log.get('images'):
+            try:
+                log['images_list'] = json.loads(log['images'])
+            except:
+                log['images_list'] = []
+        else:
+            log['images_list'] = []
+    
+    app['process_logs'] = logs or []
+    
     return jsonify({'success': True, 'data': app})
 
 @app.route('/api/staff/applications/<app_id>/process', methods=['POST'])
@@ -122,6 +173,7 @@ def process_application(user, app_id):
     data = request.get_json() or {}
     action = data.get('action')
     result = data.get('result', '')
+    images = data.get('images', [])  # 处理时上传的图片
     
     sql = "SELECT * FROM business_applications WHERE id=%s AND deleted=0"
     app = db.get_one(sql, [app_id])
@@ -135,11 +187,27 @@ def process_application(user, app_id):
         new_status = 'rejected'
     elif action == 'complete':
         new_status = 'completed'
+    elif action == 'comment':
+        # 仅添加备注，不改变状态
+        new_status = None
     else:
         return jsonify({'success': False, 'msg': '无效操作'})
     
-    sql = "UPDATE business_applications SET status=%s, result=%s, assignee_id=%s, assignee_name=%s, updated_at=NOW(), completed_at=NOW() WHERE id=%s"
-    db.execute(sql, [new_status, result, user['user_id'], user['user_name'], app_id])
+    # 保存处理记录
+    log_images = json.dumps(images) if images else None
+    db.execute(
+        "INSERT INTO business_application_logs (application_id, action, handler_id, handler_name, remark, images) "
+        "VALUES (%s, %s, %s, %s, %s, %s)",
+        [app_id, action, user['user_id'], user['user_name'], result, log_images]
+    )
+    
+    # 更新申请状态
+    if new_status:
+        if new_status == 'completed':
+            sql = "UPDATE business_applications SET status=%s, result=%s, assignee_id=%s, assignee_name=%s, updated_at=NOW(), completed_at=NOW() WHERE id=%s"
+        else:
+            sql = "UPDATE business_applications SET status=%s, result=%s, assignee_id=%s, assignee_name=%s, updated_at=NOW() WHERE id=%s"
+        db.execute(sql, [new_status, result, user['user_id'], user['user_name'], app_id])
     
     return jsonify({'success': True, 'msg': '处理成功'})
 
@@ -154,12 +222,12 @@ def get_all_orders(user):
     params = []
     
     if status:
-        where += " AND status=%s"
+        where += " AND order_status=%s"
         params.append(status)
     
     total = db.get_total("SELECT COUNT(*) FROM business_orders WHERE " + where, params)
     offset = (page - 1) * page_size
-    sql = "SELECT id, order_no, order_status, user_name, user_phone, created_at FROM business_orders WHERE " + where + " ORDER BY created_at DESC LIMIT %s OFFSET %s"
+    sql = "SELECT id, order_no, order_status, user_name, user_phone, total_amount, actual_amount, created_at FROM business_orders WHERE " + where + " ORDER BY created_at DESC LIMIT %s OFFSET %s"
     params.extend([page_size, offset])
     orders = db.get_all(sql, params)
     
@@ -183,10 +251,44 @@ def update_order_status(user, order_id):
     if not status:
         return jsonify({'success': False, 'msg': '请提供状态'})
     
-    sql = "UPDATE business_orders SET status=%s, updated_at=NOW() WHERE id=%s"
+    sql = "UPDATE business_orders SET order_status=%s, updated_at=NOW() WHERE id=%s"
     db.execute(sql, [status, order_id])
     
     return jsonify({'success': True, 'msg': '更新成功'})
+
+@app.route('/api/staff/upload', methods=['POST'])
+@require_staff
+def upload_image(user):
+    """上传图片"""
+    try:
+        data = request.get_json() or {}
+        file_data = data.get('file')
+        if not file_data:
+            return jsonify({'success': False, 'msg': '没有图片数据'})
+        
+        # 解析base64数据
+        if ',' in file_data:
+            file_data = file_data.split(',')[1]
+        
+        # 生成文件名
+        ext = data.get('ext', 'jpg')
+        filename = f"{uuid.uuid4().hex}.{ext}"
+        filepath = os.path.join(UPLOAD_DIR, filename)
+        
+        # 保存文件
+        with open(filepath, 'wb') as f:
+            f.write(base64.b64decode(file_data))
+        
+        # 返回可访问的URL
+        url = f"/uploads/{filename}"
+        return jsonify({'success': True, 'data': {'url': url, 'filename': filename}})
+    except Exception as e:
+        return jsonify({'success': False, 'msg': str(e)})
+
+@app.route('/uploads/<filename>')
+def serve_upload(filename):
+    """访问上传的图片"""
+    return send_from_directory(UPLOAD_DIR, filename)
 
 @app.route('/health')
 def health():

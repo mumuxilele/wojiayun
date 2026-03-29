@@ -6,26 +6,73 @@
     <title>处理申请 - 员工端</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; min-height: 100vh; }
-        .header { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; padding: 15px; display: flex; align-items: center; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; min-height: 100vh; padding-bottom: 20px; }
+        .header { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; padding: 15px; display: flex; align-items: center; position: sticky; top: 0; z-index: 100; }
         .header h1 { font-size: 18px; flex: 1; }
         .back { color: white; text-decoration: none; font-size: 14px; }
         .detail { padding: 15px; }
         .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; }
         .card-title { font-size: 12px; color: #999; margin-bottom: 6px; }
-        .card-value { font-size: 14px; color: #333; }
+        .card-value { font-size: 14px; color: #333; line-height: 1.6; }
         .status { display: inline-block; padding: 4px 12px; border-radius: 10px; font-size: 12px; }
         .status-pending { background: #fff3e0; color: #f57c00; }
         .status-processing { background: #e3f2fd; color: #1976d2; }
         .status-completed { background: #e8f5e9; color: #388e3c; }
         .status-rejected { background: #ffebee; color: #d32f2f; }
-        .btns { display: flex; gap: 10px; padding: 15px; }
-        .btn { flex: 1; padding: 14px; border: none; border-radius: 12px; font-size: 15px; cursor: pointer; }
-        .btn-process { background: #11998e; color: white; }
-        .btn-complete { background: #38ef7d; color: white; }
-        .btn-reject { background: #f5f5f5; color: #666; }
-        textarea { width: 100%; min-height: 80px; padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; margin-top: 10px; }
+        .status-cancelled { background: #f5f5f5; color: #999; }
+        /* 操作区 */
+        .action-card { background: white; border-radius: 12px; padding: 15px; margin: 0 15px 15px; }
+        .action-title { font-size: 14px; font-weight: 600; color: #333; margin-bottom: 10px; }
+        textarea { width: 100%; min-height: 80px; padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; margin-bottom: 10px; resize: vertical; }
+        .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn { flex: 1; min-width: 80px; padding: 12px 6px; border: none; border-radius: 10px; font-size: 14px; cursor: pointer; }
+        .btn-process { background: #1890ff; color: white; }
+        .btn-complete { background: #52c41a; color: white; }
+        .btn-reject { background: #f5f5f5; color: #666; border: 1px solid #e0e0e0; }
+        .btn-comment { background: #722ed1; color: white; }
+        /* 图片 */
+        .img-list { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+        .img-thumb { width: 72px; height: 72px; border-radius: 8px; object-fit: cover; cursor: pointer; border: 1px solid #e8e8e8; }
+        .img-upload { width: 72px; height: 72px; border: 2px dashed #d9d9d9; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #999; font-size: 24px; }
+        .img-upload:hover { border-color: #1890ff; color: #1890ff; }
+        .img-remove { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; background: #ff4d4f; color: white; border-radius: 50%; font-size: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .img-wrap { position: relative; display: inline-block; }
+        /* 时间轴 - 纵向，从下往上，最早在下 */
+        .timeline-section { margin-top: 10px; }
+        .timeline-title { font-size: 14px; font-weight: 600; color: #333; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+        .timeline { padding: 0; }
+        .tl-item { display: flex; gap: 12px; padding-bottom: 16px; position: relative; }
+        .tl-item:last-child { padding-bottom: 0; }
+        .tl-line { width: 2px; background: #e0e0e0; position: absolute; left: 9px; top: 20px; bottom: 0; }
+        .tl-item:last-child .tl-line { display: none; }
+        .tl-dot { width: 20px; height: 20px; border-radius: 50%; background: #11998e; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; z-index: 1; }
+        .tl-dot.pending { background: #faad14; }
+        .tl-dot.process { background: #1890ff; }
+        .tl-dot.complete { background: #52c41a; }
+        .tl-dot.reject { background: #ff4d4f; }
+        .tl-dot.comment { background: #722ed1; }
+        .tl-content { flex: 1; padding-top: 1px; }
+        .tl-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+        .tl-action { font-size: 14px; font-weight: 500; color: #333; }
+        .tl-time { font-size: 12px; color: #999; }
+        .tl-handler { font-size: 12px; color: #666; margin-bottom: 4px; }
+        .tl-remark { font-size: 13px; color: #666; line-height: 1.5; background: #f9f9f9; padding: 8px 10px; border-radius: 6px; margin-top: 6px; }
+        .tl-images { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+        .tl-images img { width: 60px; height: 60px; border-radius: 6px; object-fit: cover; cursor: pointer; }
+        /* 图片预览 */
+        .img-overlay { display: none; position: fixed; top:0;left:0;right:0;bottom:0; background: rgba(0,0,0,.85); z-index: 200; align-items: center; justify-content: center; }
+        .img-overlay.show { display: flex; }
+        .img-overlay img { max-width: 95vw; max-height: 85vh; border-radius: 8px; }
+        .img-close { position:absolute;top:16px;right:16px;color:#fff;font-size:28px;cursor:pointer; }
         .login-tip { text-align: center; padding: 40px; color: #999; }
+        .info-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; border-bottom: 1px solid #f5f5f5; }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { color: #999; }
+        .info-value { color: #333; font-weight: 500; }
+        .section-label { font-size: 12px; color: #999; margin: 15px 0 8px 0; padding-left: 2px; }
+        /* 提交记录 */
+        .submit-record { background: #f0f9ff; border-left: 3px solid #1890ff; padding: 10px 12px; border-radius: 0 8px 8px 0; margin-bottom: 10px; }
+        .submit-record .tl-action { color: #1890ff; }
     </style>
 </head>
 <body>
@@ -36,15 +83,22 @@
     </div>
     <div class="detail" id="detail"><div style="text-align: center; padding: 40px;">加载中...</div></div>
     <div id="actionArea" style="display:none;">
-        <div class="card">
-            <div class="card-title">处理意见</div>
-            <textarea id="result" placeholder="请输入处理意见或结果"></textarea>
+        <div class="action-card">
+            <div class="action-title">处理操作</div>
+            <textarea id="result" placeholder="请输入处理意见或备注"></textarea>
+            <div class="img-list" id="uploadImgs"></div>
+            <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFileSelect(event)">
+            <div style="margin-bottom: 10px;">
+                <button class="btn" style="background:#f5f5f5;color:#666;border:1px solid #e0e0e0;flex:none;width:auto;padding:8px 12px;font-size:13px;" onclick="document.getElementById('fileInput').click()">📷 添加图片</button>
+            </div>
+            <div class="btns" id="actionBtns"></div>
         </div>
-        <div class="btns">
-            <button class="btn btn-reject" onclick="process('reject')">拒绝</button>
-            <button class="btn btn-process" onclick="process('process')">开始处理</button>
-            <button class="btn btn-complete" onclick="process('complete')">完成</button>
-        </div>
+    </div>
+
+    <!-- 图片预览 -->
+    <div class="img-overlay" id="imgOverlay" onclick="closeImg()">
+        <span class="img-close">✕</span>
+        <img id="imgFull" src="">
     </div>
 
     <script>
@@ -53,6 +107,7 @@
         let isdev = urlParams.get('isdev') || '0';
         const id = urlParams.get('id');
         let currentStatus = 'pending';
+        let uploadedImages = []; // 已上传的图片列表
         
         if (token) {
             localStorage.setItem('staff_token', token);
@@ -72,6 +127,123 @@
             return false;
         }
 
+        function previewImg(src) {
+            document.getElementById('imgFull').src = src;
+            document.getElementById('imgOverlay').classList.add('show');
+        }
+        function closeImg() { document.getElementById('imgOverlay').classList.remove('show'); }
+
+        // 上传图片
+        async function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // 压缩图片
+            const maxSize = 1024 * 1024; // 1MB
+            let quality = 0.8;
+            
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const img = new Image();
+                img.onload = async function() {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    // 限制最大尺寸
+                    if (width > 1200 || height > 1200) {
+                        if (width > height) {
+                            height = Math.round(height * 1200 / width);
+                            width = 1200;
+                        } else {
+                            width = Math.round(width * 1200 / height);
+                            height = 1200;
+                        }
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    let dataUrl = canvas.toDataURL('image/jpeg', quality);
+                    
+                    // 如果还是太大，继续压缩
+                    while (dataUrl.length > maxSize * 1.37 && quality > 0.1) {
+                        quality -= 0.1;
+                        dataUrl = canvas.toDataURL('image/jpeg', quality);
+                    }
+                    
+                    try {
+                        const res = await fetch('/api/staff/upload?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({file: dataUrl, ext: 'jpg'})
+                        });
+                        const data = await res.json();
+                        if (data.success && data.data) {
+                            uploadedImages.push(data.data.url);
+                            renderUploadImages();
+                        } else {
+                            alert(data.msg || '上传失败');
+                        }
+                    } catch(e) {
+                        alert('上传失败');
+                    }
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            event.target.value = ''; // 清空以便重复选择同一文件
+        }
+
+        function renderUploadImages() {
+            const container = document.getElementById('uploadImgs');
+            let html = uploadedImages.map((url, idx) => 
+                '<div class="img-wrap"><img class="img-thumb" src="' + url + '" onclick="previewImg(\'' + url + '\')"><span class="img-remove" onclick="removeImage(' + idx + ')">×</span></div>'
+            ).join('');
+            html += '<div class="img-upload" onclick="document.getElementById(\'fileInput\').click()">+</div>';
+            container.innerHTML = html;
+        }
+
+        function removeImage(idx) {
+            uploadedImages.splice(idx, 1);
+            renderUploadImages();
+        }
+
+        // 格式化时间 - 显示年月日时分秒
+        function formatTime(timeStr) {
+            if (!timeStr) return '';
+            // 处理各种时间格式
+            let d = new Date(timeStr);
+            if (isNaN(d.getTime())) {
+                // 尝试解析 MySQL 格式
+                d = new Date(timeStr.replace(' ', 'T'));
+            }
+            if (isNaN(d.getTime())) return timeStr;
+            
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const hour = String(d.getHours()).padStart(2, '0');
+            const minute = String(d.getMinutes()).padStart(2, '0');
+            const second = String(d.getSeconds()).padStart(2, '0');
+            
+            return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+        }
+
+        // 获取操作类型文字
+        function getActionText(action) {
+            const map = {
+                'submit': '提交申请',
+                'process': '开始受理',
+                'complete': '处理完成',
+                'reject': '已拒绝',
+                'comment': '添加备注'
+            };
+            return map[action] || action;
+        }
+
         async function load() {
             try {
                 const res = await fetch('/api/staff/applications/' + id + '?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev);
@@ -80,18 +252,84 @@
                     const app = data.data;
                     currentStatus = app.status;
                     const statusClass = 'status-' + (app.status || 'pending');
-                    const statusText = {pending:'待处理',processing:'处理中',completed:'已完成',rejected:'已拒绝'}[app.status] || app.status;
-                    document.getElementById('detail').innerHTML = 
-                        '<div class="card"><div class="card-title">申请单号</div><div class="card-value">' + (app.app_no || '') + '</div></div>' +
-                        '<div class="card"><div class="card-title">标题</div><div class="card-value">' + (app.title || '') + '</div></div>' +
-                        '<div class="card"><div class="card-title">申请人</div><div class="card-value">' + (app.user_name || '') + ' (' + (app.user_phone || '') + ')</div></div>' +
-                        '<div class="card"><div class="card-title">详细内容</div><div class="card-value">' + (app.content || '') + '</div></div>' +
-                        '<div class="card"><div class="card-title">状态</div><div class="card-value"><span class="status ' + statusClass + '">' + statusText + '</span></div></div>' +
-                        (app.result ? '<div class="card"><div class="card-title">处理结果</div><div class="card-value">' + app.result + '</div></div>' : '') +
-                        '<div class="card"><div class="card-title">提交时间</div><div class="card-value">' + (app.created_at || '') + '</div></div>';
+                    const statusText = {pending:'待处理',processing:'处理中',completed:'已完成',rejected:'已拒绝',cancelled:'已撤销'}[app.status] || app.status;
+                    const typeText = {repair:'🔧 报修',booking:'📅 预约',complaint:'📝 投诉',consult:'💬 咨询',other:'📋 其他'}[app.app_type] || app.app_type;
+
+                    // 图片
+                    let imgsHtml = '';
+                    if (app.images_list && app.images_list.length > 0) {
+                        imgsHtml = '<div class="card"><div class="card-title">附件图片</div><div class="img-list">' +
+                            app.images_list.map(src => '<img class="img-thumb" src="' + src + '" onclick="previewImg(\'' + src + '\')" onerror="this.style.display=\'none\'">').join('') +
+                            '</div></div>';
+                    }
+
+                    // 处理记录时间线 - 最新的在上面，最早的在下面
+                    let timelineHtml = '<div class="card"><div class="timeline-title">📋 处理进度</div><div class="timeline">';
                     
-                    if (app.status !== 'completed' && app.status !== 'rejected') {
+                    // 处理记录（按时间降序，最新的在前）
+                    const logs = app.process_logs || [];
+                    logs.forEach(log => {
+                        const dotClass = log.action;
+                        const dotIcon = {'process':'🔄','complete':'✅','reject':'❌','comment':'💬'}[log.action] || '📌';
+                        
+                        timelineHtml += '<div class="tl-item">' +
+                            '<div class="tl-dot ' + dotClass + '">' + dotIcon + '</div>' +
+                            '<div class="tl-line"></div>' +
+                            '<div class="tl-content">' +
+                            '<div class="tl-header"><span class="tl-action">' + getActionText(log.action) + '</span><span class="tl-time">' + formatTime(log.created_at) + '</span></div>' +
+                            '<div class="tl-handler">处理人：' + (log.handler_name || '') + '</div>';
+                        
+                        if (log.remark) {
+                            timelineHtml += '<div class="tl-remark">' + log.remark + '</div>';
+                        }
+                        
+                        if (log.images_list && log.images_list.length > 0) {
+                            timelineHtml += '<div class="tl-images">' +
+                                log.images_list.map(src => '<img src="' + src + '" onclick="previewImg(\'' + src + '\')">').join('') +
+                                '</div>';
+                        }
+                        
+                        timelineHtml += '</div></div>';
+                    });
+                    
+                    // 提交申请作为最后一条（最早，在最下面）
+                    timelineHtml += '<div class="tl-item">' +
+                        '<div class="tl-dot pending">📝</div>' +
+                        '<div class="tl-content">' +
+                        '<div class="tl-header"><span class="tl-action">提交申请</span><span class="tl-time">' + formatTime(app.created_at) + '</span></div>' +
+                        '<div class="tl-handler">申请人：' + (app.user_name || '') + (app.user_phone ? ' (' + app.user_phone + ')' : '') + '</div>' +
+                        '</div></div>';
+                    
+                    timelineHtml += '</div></div>';
+
+                    // 基础信息
+                    document.getElementById('detail').innerHTML =
+                        '<div class="card">' +
+                        '<div class="info-row"><span class="info-label">申请单号</span><span class="info-value">' + (app.app_no || '') + '</span></div>' +
+                        '<div class="info-row"><span class="info-label">申请类型</span><span class="info-value">' + typeText + '</span></div>' +
+                        '<div class="info-row"><span class="info-label">申请人</span><span class="info-value">' + (app.user_name || '') + ' ' + (app.user_phone ? '(' + app.user_phone + ')' : '') + '</span></div>' +
+                        (app.assignee_name ? '<div class="info-row"><span class="info-label">处理人</span><span class="info-value">' + app.assignee_name + '</span></div>' : '') +
+                        '<div class="info-row"><span class="info-label">当前状态</span><span class="info-value"><span class="status ' + statusClass + '">' + statusText + '</span></span></div>' +
+                        '</div>' +
+                        '<div class="card"><div class="card-title">标题</div><div class="card-value">' + (app.title || '') + '</div></div>' +
+                        '<div class="card"><div class="card-title">详细内容</div><div class="card-value">' + (app.content || '') + '</div></div>' +
+                        imgsHtml +
+                        timelineHtml;
+
+                    // 操作按钮：根据状态显示不同操作
+                    if (app.status !== 'completed' && app.status !== 'rejected' && app.status !== 'cancelled') {
+                        let btns = '';
+                        if (app.status === 'pending') {
+                            btns += '<button class="btn btn-process" onclick="process(\'process\')">受理</button>';
+                        }
+                        btns += '<button class="btn btn-complete" onclick="process(\'complete\')">完成</button>';
+                        btns += '<button class="btn btn-reject" onclick="process(\'reject\')">拒绝</button>';
+                        btns += '<button class="btn btn-comment" onclick="process(\'comment\')">备注</button>';
+                        document.getElementById('actionBtns').innerHTML = btns;
                         document.getElementById('actionArea').style.display = 'block';
+                    } else {
+                        // 已完成/已拒绝/已撤销的单据不显示操作按钮
+                        document.getElementById('actionArea').style.display = 'none';
                     }
                 } else if (data.msg && data.msg.includes('登录')) {
                     localStorage.removeItem('staff_token');
@@ -103,29 +341,33 @@
         }
 
         async function process(action) {
-            const result = document.getElementById('result').value;
-            if (action !== 'process' && !result) {
+            const result = document.getElementById('result').value.trim();
+            if ((action === 'complete' || action === 'reject') && !result) {
                 alert('请输入处理意见');
                 return;
             }
+            const btnMap = {process: '受理', complete: '完成', reject: '拒绝', comment: '添加备注'};
+            if (!confirm('确认' + (btnMap[action] || '') + '？')) return;
+            
             try {
                 const res = await fetch('/api/staff/applications/' + id + '/process?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({action, result})
+                    body: JSON.stringify({action, result, images: uploadedImages})
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert('处理成功');
-                    location.href = 'application_list.html?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+                    alert('操作成功');
+                    uploadedImages = [];
+                    load(); // 重新加载页面
                 } else {
-                    alert(data.msg || '处理失败');
+                    alert(data.msg || '操作失败');
                     if (data.msg && data.msg.includes('登录')) {
                         localStorage.removeItem('staff_token');
                     }
                 }
             } catch(e) {
-                alert('处理失败');
+                alert('操作失败');
             }
         }
 

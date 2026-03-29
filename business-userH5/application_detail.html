@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>申请详情</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -13,12 +13,34 @@
         .detail { padding: 15px; }
         .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; }
         .card-title { font-size: 12px; color: #999; margin-bottom: 6px; }
-        .card-value { font-size: 14px; color: #333; }
+        .card-value { font-size: 14px; color: #333; line-height: 1.6; }
         .status { display: inline-block; padding: 4px 12px; border-radius: 10px; font-size: 12px; }
         .status-pending { background: #fff3e0; color: #f57c00; }
         .status-processing { background: #e3f2fd; color: #1976d2; }
         .status-completed { background: #e8f5e9; color: #388e3c; }
         .status-rejected { background: #ffebee; color: #d32f2f; }
+        .status-cancelled { background: #f5f5f5; color: #999; }
+        /* 时间轴 */
+        .timeline { padding: 10px 0; }
+        .tl-item { display: flex; gap: 12px; margin-bottom: 12px; }
+        .tl-dot { width: 10px; height: 10px; border-radius: 50%; background: #667eea; margin-top: 4px; flex-shrink: 0; position: relative; }
+        .tl-dot::after { content:''; position:absolute; left:4px; top:10px; width:2px; height:calc(100% + 14px); background:#e0e0e0; }
+        .tl-item:last-child .tl-dot::after { display: none; }
+        .tl-text { flex: 1; }
+        .tl-title { font-size: 13px; color: #333; }
+        .tl-time { font-size: 11px; color: #bbb; margin-top: 2px; }
+        /* 图片 */
+        .img-list { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+        .img-thumb { width: 72px; height: 72px; border-radius: 8px; object-fit: cover; cursor: pointer; border: 1px solid #e8e8e8; }
+        /* 操作按钮 */
+        .action-bar { padding: 15px; }
+        .btn-cancel { width: 100%; padding: 14px; background: #fff; border: 1px solid #ff4d4f; color: #ff4d4f; border-radius: 12px; font-size: 15px; cursor: pointer; }
+        .btn-cancel:active { background: #fff1f0; }
+        /* 图片预览蒙层 */
+        .img-overlay { display: none; position: fixed; top:0;left:0;right:0;bottom:0; background: rgba(0,0,0,.85); z-index: 200; align-items: center; justify-content: center; }
+        .img-overlay.show { display: flex; }
+        .img-overlay img { max-width: 95vw; max-height: 85vh; border-radius: 8px; }
+        .img-overlay-close { position: absolute; top:16px; right:16px; color:#fff; font-size:28px; cursor:pointer; width:36px; height:36px; display:flex; align-items:center; justify-content:center; }
     </style>
 </head>
 <body>
@@ -28,12 +50,22 @@
         <span></span>
     </div>
     <div class="detail" id="detail"><div style="text-align: center; padding: 40px;">加载中...</div></div>
+    <div class="action-bar" id="actionBar" style="display:none;">
+        <button class="btn-cancel" onclick="cancelApp()">撤销申请</button>
+    </div>
+
+    <!-- 图片预览 -->
+    <div class="img-overlay" id="imgOverlay" onclick="closeImg()">
+        <span class="img-overlay-close">✕</span>
+        <img id="imgFull" src="">
+    </div>
 
     <script>
         var urlParams = new URLSearchParams(location.search);
         var token = urlParams.get('access_token');
         var isdev = urlParams.get('isdev') || '0';
         var id = urlParams.get('id');
+        var appData = null;
         
         if (token) {
             localStorage.setItem('user_token', token);
@@ -47,23 +79,93 @@
             location.href = 'applications.html?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
         }
 
+        function previewImg(src) {
+            document.getElementById('imgFull').src = src;
+            document.getElementById('imgOverlay').classList.add('show');
+        }
+        function closeImg() {
+            document.getElementById('imgOverlay').classList.remove('show');
+        }
+
+        async function cancelApp() {
+            if (!appData || appData.status !== 'pending') {
+                alert('只有待处理的申请才可撤销');
+                return;
+            }
+            if (!confirm('确认撤销该申请？撤销后不可恢复。')) return;
+            try {
+                var res = await fetch('/api/user/applications/' + id + '/cancel?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({})
+                });
+                var data = await res.json();
+                if (data.success) {
+                    alert('申请已撤销');
+                    goBack();
+                } else {
+                    alert(data.msg || '撤销失败');
+                }
+            } catch(e) {
+                alert('操作失败: ' + e.message);
+            }
+        }
+
         async function load() {
             try {
                 var res = await fetch('/api/user/applications/' + id + '?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev);
                 var data = await res.json();
                 if (data.success && data.data) {
                     var app = data.data;
+                    appData = app;
                     var statusClass = 'status-' + (app.status || 'pending');
-                    var statusText = {pending:'待处理',processing:'处理中',completed:'已完成',rejected:'已拒绝'}[app.status] || app.status;
-                    var typeText = {repair:'报修',booking:'预约',complaint:'投诉',consult:'咨询',other:'其他'}[app.app_type] || app.app_type;
+                    var statusText = {pending:'待处理',processing:'处理中',completed:'已完成',rejected:'已拒绝',cancelled:'已撤销'}[app.status] || app.status;
+                    var typeText = {repair:'🔧 报修',booking:'📅 预约',complaint:'📝 投诉',consult:'💬 咨询',other:'📋 其他'}[app.app_type] || app.app_type;
+                    
+                    // 图片
+                    var imgsHtml = '';
+                    if (app.images) {
+                        try {
+                            var imgs = JSON.parse(app.images);
+                            if (imgs && imgs.length > 0) {
+                                imgsHtml = '<div class="card"><div class="card-title">附件图片</div><div class="img-list">' +
+                                    imgs.map(function(src) { return '<img class="img-thumb" src="' + src + '" onclick="previewImg(\'' + src + '\')" onerror="this.style.display=\'none\'">'; }).join('') +
+                                    '</div></div>';
+                            }
+                        } catch(e) {}
+                    }
+
+                    // 时间轴
+                    var tlHtml = '<div class="card"><div class="card-title">处理进度</div><div class="timeline">';
+                    tlHtml += '<div class="tl-item"><div class="tl-dot"></div><div class="tl-text"><div class="tl-title">提交申请</div><div class="tl-time">' + (app.created_at || '') + '</div></div></div>';
+                    if (app.status === 'processing' || app.status === 'completed') {
+                        tlHtml += '<div class="tl-item"><div class="tl-dot"></div><div class="tl-text"><div class="tl-title">受理中</div><div class="tl-time">' + (app.assignee_name ? '处理人：' + app.assignee_name : '') + '</div></div></div>';
+                    }
+                    if (app.status === 'completed') {
+                        tlHtml += '<div class="tl-item"><div class="tl-dot" style="background:#52c41a"></div><div class="tl-text"><div class="tl-title">处理完成</div><div class="tl-time">' + (app.completed_at || app.updated_at || '') + '</div></div></div>';
+                    }
+                    if (app.status === 'rejected') {
+                        tlHtml += '<div class="tl-item"><div class="tl-dot" style="background:#f5222d"></div><div class="tl-text"><div class="tl-title">已拒绝</div><div class="tl-time">' + (app.updated_at || '') + '</div></div></div>';
+                    }
+                    if (app.status === 'cancelled') {
+                        tlHtml += '<div class="tl-item"><div class="tl-dot" style="background:#bbb"></div><div class="tl-text"><div class="tl-title">已撤销</div><div class="tl-time">' + (app.updated_at || '') + '</div></div></div>';
+                    }
+                    tlHtml += '</div></div>';
+
                     document.getElementById('detail').innerHTML = 
                         '<div class="card"><div class="card-title">申请单号</div><div class="card-value">' + (app.app_no || '') + '</div></div>' +
                         '<div class="card"><div class="card-title">申请类型</div><div class="card-value">' + typeText + '</div></div>' +
                         '<div class="card"><div class="card-title">标题</div><div class="card-value">' + (app.title || '') + '</div></div>' +
                         '<div class="card"><div class="card-title">详细内容</div><div class="card-value">' + (app.content || '') + '</div></div>' +
-                        '<div class="card"><div class="card-title">状态</div><div class="card-value"><span class="status ' + statusClass + '">' + statusText + '</span></div></div>' +
+                        imgsHtml +
+                        '<div class="card"><div class="card-title">当前状态</div><div class="card-value"><span class="status ' + statusClass + '">' + statusText + '</span></div></div>' +
                         (app.result ? '<div class="card"><div class="card-title">处理结果</div><div class="card-value">' + app.result + '</div></div>' : '') +
-                        '<div class="card"><div class="card-title">提交时间</div><div class="card-value">' + (app.created_at || '') + '</div></div>';
+                        tlHtml;
+
+                    // 只有待处理状态可撤销
+                    if (app.status === 'pending') {
+                        document.getElementById('actionBar').style.display = 'block';
+                    }
                 } else {
                     document.getElementById('detail').innerHTML = '<div style="text-align:center;padding:40px;">' + (data.msg || '加载失败') + '</div>';
                 }

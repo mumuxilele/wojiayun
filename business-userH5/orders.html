@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>我的订单</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -10,19 +10,25 @@
         .header { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 15px; display: flex; align-items: center; }
         .header h1 { font-size: 18px; flex: 1; }
         .back { color: white; text-decoration: none; font-size: 14px; }
-        .filter { display: flex; gap: 8px; padding: 10px 15px; background: white; overflow-x: auto; }
-        .filter-item { padding: 6px 12px; border-radius: 15px; font-size: 12px; white-space: nowrap; background: #f0f0f0; color: #666; }
+        .filter { display: flex; gap: 8px; padding: 10px 15px; background: white; overflow-x: auto; border-bottom: 1px solid #f0f0f0; }
+        .filter-item { padding: 6px 12px; border-radius: 15px; font-size: 12px; white-space: nowrap; background: #f0f0f0; color: #666; cursor: pointer; }
         .filter-item.active { background: #667eea; color: white; }
         .list { padding: 10px; }
         .item { background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; }
-        .item-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
-        .item-title { font-size: 14px; color: #333; }
-        .item-status { font-size: 12px; padding: 4px 10px; border-radius: 10px; }
+        .item-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+        .item-no { font-size: 13px; color: #333; font-weight: 500; }
+        .item-status { font-size: 12px; padding: 3px 8px; border-radius: 8px; }
         .status-pending { background: #fff3e0; color: #f57c00; }
         .status-paid { background: #e3f2fd; color: #1976d2; }
         .status-completed { background: #e8f5e9; color: #388e3c; }
-        .item-amount { font-size: 18px; font-weight: 600; color: #f57c00; }
-        .item-info { font-size: 12px; color: #999; margin-top: 8px; }
+        .status-cancelled { background: #f5f5f5; color: #999; }
+        .item-amount { font-size: 20px; font-weight: 700; color: #f57c00; margin: 6px 0; }
+        .item-amount span { font-size: 12px; font-weight: normal; color: #999; margin-left: 4px; }
+        .item-info { font-size: 12px; color: #999; }
+        .item-footer { display: flex; justify-content: flex-end; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f5f5f5; gap: 8px; }
+        .btn-sm { padding: 6px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; border: none; }
+        .btn-cancel { background: #f5f5f5; color: #666; border: 1px solid #e0e0e0; }
+        .btn-pay { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
         .empty { text-align: center; padding: 60px 20px; color: #999; }
     </style>
 </head>
@@ -37,6 +43,7 @@
         <div class="filter-item" data-status="pending">待支付</div>
         <div class="filter-item" data-status="paid">已支付</div>
         <div class="filter-item" data-status="completed">已完成</div>
+        <div class="filter-item" data-status="cancelled">已取消</div>
     </div>
     <div class="list" id="list"><div class="empty">加载中...</div></div>
 
@@ -60,19 +67,54 @@
         var currentStatus = '';
 
         function getStatusClass(s) { return 'item-status status-' + (s || 'pending'); }
-        function getStatusText(s) { return {pending:'待支付',paid:'已支付',completed:'已完成'}[s] || s; }
+        function getStatusText(s) { return {pending:'待支付',paid:'已支付',completed:'已完成',cancelled:'已取消'}[s] || s; }
+
+        async function cancelOrder(orderId) {
+            if (!confirm('确认取消该订单？')) return;
+            try {
+                var res = await fetch('/api/user/orders/' + orderId + '/cancel?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({})
+                });
+                var data = await res.json();
+                if (data.success) {
+                    alert('订单已取消');
+                    loadList();
+                } else {
+                    alert(data.msg || '取消失败');
+                }
+            } catch(e) {
+                alert('操作失败');
+            }
+        }
 
         async function loadList() {
             var url = '/api/user/orders?page=1&page_size=20' + (currentStatus ? '&status=' + currentStatus : '') + '&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+            document.getElementById('list').innerHTML = '<div class="empty">加载中...</div>';
             try {
                 var res = await fetch(url);
                 var data = await res.json();
                 if (data.success && data.data && data.data.items && data.data.items.length > 0) {
                     document.getElementById('list').innerHTML = data.data.items.map(function(o) {
-                        return '<div class="item"><div class="item-header"><span class="item-title">' + (o.order_no || '') + '</span><span class="' + getStatusClass(o.status) + '">' + getStatusText(o.status) + '</span></div><div class="item-amount">¥' + (o.total_amount || 0) + '</div><div class="item-info">创建时间: ' + (o.create_time || '') + '</div></div>';
+                        // 修复字段名：优先使用 order_status
+                        var status = o.order_status || o.status || 'pending';
+                        var amount = parseFloat(o.actual_amount || o.total_amount || 0).toFixed(2);
+                        var footer = '';
+                        if (status === 'pending') {
+                            footer = '<div class="item-footer">' +
+                                '<button class="btn-sm btn-cancel" onclick="cancelOrder(' + o.id + ')">取消订单</button>' +
+                                '</div>';
+                        }
+                        return '<div class="item">' +
+                            '<div class="item-top"><span class="item-no">📦 ' + (o.order_no || '') + '</span><span class="' + getStatusClass(status) + '">' + getStatusText(status) + '</span></div>' +
+                            '<div class="item-amount">¥' + amount + '<span>' + (o.order_type ? '  ' + o.order_type : '') + '</span></div>' +
+                            '<div class="item-info">下单时间：' + (o.created_at || o.create_time || '') + '</div>' +
+                            footer +
+                            '</div>';
                     }).join('');
                 } else {
-                    document.getElementById('list').innerHTML = '<div class="empty">暂无订单</div>';
+                    document.getElementById('list').innerHTML = '<div class="empty">暂无订单记录</div>';
                 }
             } catch(e) {
                 document.getElementById('list').innerHTML = '<div class="empty">加载失败</div>';

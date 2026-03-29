@@ -10,22 +10,33 @@
         .header { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; padding: 15px; display: flex; align-items: center; }
         .header h1 { font-size: 18px; flex: 1; }
         .back { color: white; text-decoration: none; font-size: 14px; }
-        .filter { display: flex; gap: 8px; padding: 10px 15px; background: white; overflow-x: auto; }
-        .filter-item { padding: 6px 12px; border-radius: 15px; font-size: 12px; white-space: nowrap; background: #f0f0f0; color: #666; }
+        /* 搜索栏 */
+        .search-bar { background: white; padding: 10px 15px; border-bottom: 1px solid #f0f0f0; }
+        .search-input { width: 100%; padding: 8px 12px; border: 1px solid #e0e0e0; border-radius: 20px; font-size: 13px; background: #f9f9f9; }
+        /* 筛选 */
+        .filter { display: flex; gap: 8px; padding: 10px 15px; background: white; overflow-x: auto; border-bottom: 1px solid #f0f0f0; }
+        .filter-item { padding: 6px 12px; border-radius: 15px; font-size: 12px; white-space: nowrap; background: #f0f0f0; color: #666; cursor: pointer; }
         .filter-item.active { background: #11998e; color: white; }
         .list { padding: 10px; }
-        .item { background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; }
+        .item { background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; cursor: pointer; }
+        .item:active { background: #f9f9f9; }
         .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .order-no { font-size: 14px; color: #333; font-weight: 500; }
+        .order-no { font-size: 13px; color: #333; font-weight: 500; }
         .order-amount { font-size: 16px; color: #f57c00; font-weight: 600; }
         .order-status { font-size: 12px; padding: 4px 10px; border-radius: 10px; }
         .status-pending { background: #fff3e0; color: #f57c00; }
         .status-paid { background: #e3f2fd; color: #1976d2; }
         .status-completed { background: #e8f5e9; color: #388e3c; }
         .status-cancelled { background: #f5f5f5; color: #999; }
-        .order-info { font-size: 12px; color: #999; margin-top: 8px; }
+        .order-info { font-size: 12px; color: #999; margin-top: 6px; display: flex; gap: 12px; }
         .empty { text-align: center; padding: 60px 20px; color: #999; }
         .login-tip { text-align: center; padding: 40px; color: #999; }
+        /* 分页 */
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 12px; padding: 15px; }
+        .page-btn { padding: 6px 16px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 13px; background: white; cursor: pointer; color: #333; }
+        .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .page-btn.active { background: #11998e; color: white; border-color: #11998e; }
+        .page-info { font-size: 13px; color: #999; }
     </style>
 </head>
 <body>
@@ -34,13 +45,22 @@
         <h1>订单管理</h1>
         <span></span>
     </div>
+    <div class="search-bar">
+        <input class="search-input" id="searchInput" type="text" placeholder="搜索订单号、用户名..." oninput="onSearch()">
+    </div>
     <div class="filter">
         <div class="filter-item active" data-status="">全部</div>
         <div class="filter-item" data-status="pending">待支付</div>
         <div class="filter-item" data-status="paid">已支付</div>
         <div class="filter-item" data-status="completed">已完成</div>
+        <div class="filter-item" data-status="cancelled">已取消</div>
     </div>
     <div class="list" id="list"><div class="empty">加载中...</div></div>
+    <div class="pagination" id="pagination" style="display:none">
+        <button class="page-btn" id="btnPrev" onclick="changePage(-1)">← 上一页</button>
+        <span class="page-info" id="pageInfo"></span>
+        <button class="page-btn" id="btnNext" onclick="changePage(1)">下一页 →</button>
+    </div>
 
     <script>
         const urlParams = new URLSearchParams(location.search);
@@ -66,24 +86,62 @@
         }
 
         let currentStatus = '';
+        let currentPage = 1;
+        let totalPages = 1;
+        let searchTimer = null;
 
         function getStatusClass(s) { return 'order-status status-' + (s || 'pending'); }
         function getStatusText(s) { return {pending:'待支付',paid:'已支付',processing:'处理中',completed:'已完成',cancelled:'已取消'}[s] || s; }
 
+        function onSearch() {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => { currentPage = 1; loadList(); }, 400);
+        }
+
+        function changePage(delta) {
+            const np = currentPage + delta;
+            if (np < 1 || np > totalPages) return;
+            currentPage = np;
+            loadList();
+        }
+
         async function loadList() {
-            const url = '/api/staff/orders?page=1&page_size=20' + (currentStatus ? '&status=' + currentStatus : '') + '&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+            const keyword = document.getElementById('searchInput').value.trim();
+            let url = '/api/staff/orders?page=' + currentPage + '&page_size=15' +
+                (currentStatus ? '&status=' + currentStatus : '') +
+                (keyword ? '&keyword=' + encodeURIComponent(keyword) : '') +
+                '&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+            document.getElementById('list').innerHTML = '<div class="empty">加载中...</div>';
             try {
                 const res = await fetch(url);
                 const data = await res.json();
                 if (data.success && data.data && data.data.items && data.data.items.length > 0) {
-                    document.getElementById('list').innerHTML = data.data.items.map(o => 
-                        '<div class="item"><div class="item-header"><span class="order-no">' + (o.order_no || '') + '</span><span class="' + getStatusClass(o.status) + '">' + getStatusText(o.status) + '</span></div><div class="order-amount">¥' + (o.total_amount || 0) + '</div><div class="order-info">用户: ' + (o.user_name || '-') + ' | ' + (o.create_time || '') + '</div></div>'
-                    ).join('');
+                    document.getElementById('list').innerHTML = data.data.items.map(o => {
+                        // 修复字段名：order_status / created_at
+                        const status = o.order_status || o.status || 'pending';
+                        const amount = parseFloat(o.actual_amount || o.total_amount || 0).toFixed(2);
+                        return '<div class="item">' +
+                            '<div class="item-header"><span class="order-no">📦 ' + (o.order_no || '') + '</span><span class="' + getStatusClass(status) + '">' + getStatusText(status) + '</span></div>' +
+                            '<div class="order-amount">¥' + amount + '</div>' +
+                            '<div class="order-info"><span>用户: ' + (o.user_name || '-') + '</span><span>' + (o.created_at || o.create_time || '') + '</span></div>' +
+                            '</div>';
+                    }).join('');
+
+                    totalPages = data.data.pages || 1;
+                    if (totalPages > 1) {
+                        document.getElementById('pagination').style.display = 'flex';
+                        document.getElementById('pageInfo').textContent = currentPage + ' / ' + totalPages + ' 页，共 ' + data.data.total + ' 条';
+                        document.getElementById('btnPrev').disabled = currentPage <= 1;
+                        document.getElementById('btnNext').disabled = currentPage >= totalPages;
+                    } else {
+                        document.getElementById('pagination').style.display = 'none';
+                    }
                 } else if (data.msg && data.msg.includes('登录')) {
                     localStorage.removeItem('staff_token');
                     location.reload();
                 } else {
                     document.getElementById('list').innerHTML = '<div class="empty">暂无订单</div>';
+                    document.getElementById('pagination').style.display = 'none';
                 }
             } catch(e) {
                 document.getElementById('list').innerHTML = '<div class="empty">加载失败</div>';
@@ -95,6 +153,7 @@
                 document.querySelectorAll('.filter-item').forEach(e => e.classList.remove('active'));
                 el.classList.add('active');
                 currentStatus = el.dataset.status;
+                currentPage = 1;
                 loadList();
             });
         });

@@ -5,7 +5,9 @@
 """
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-import sys, os, time, json
+import sys, os, time, json, logging
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from business_common import config, db, auth, utils
@@ -45,6 +47,7 @@ def get_user_stats(user):
     orders     = db.get_total("SELECT COUNT(*) FROM business_orders WHERE user_id=%s AND deleted=0", [uid])
     bookings   = db.get_total("SELECT COUNT(*) FROM business_venue_bookings WHERE user_id=%s AND deleted=0", [uid])
     return jsonify({'success': True, 'data': {
+        'user_name': user.get('user_name', ''),
         'pending': pending, 'processing': processing,
         'completed': completed, 'orders': orders, 'bookings': bookings
     }})
@@ -105,7 +108,31 @@ def get_application_detail(user, app_id):
     )
     if not app:
         return jsonify({'success': False, 'msg': '申请不存在'})
+    # 解析图片列表
+    if app.get('images'):
+        try:
+            app['images_list'] = json.loads(app['images'])
+        except:
+            app['images_list'] = []
     return jsonify({'success': True, 'data': app})
+
+@app.route('/api/user/applications/<app_id>/cancel', methods=['POST'])
+@require_login
+def cancel_application(user, app_id):
+    """用户撤销申请（仅pending状态可撤销）"""
+    app = db.get_one(
+        "SELECT * FROM business_applications WHERE id=%s AND user_id=%s AND deleted=0",
+        [app_id, user['user_id']]
+    )
+    if not app:
+        return jsonify({'success': False, 'msg': '申请不存在'})
+    if app.get('status') != 'pending':
+        return jsonify({'success': False, 'msg': '只有待处理的申请才可撤销'})
+    db.execute(
+        "UPDATE business_applications SET status='cancelled', updated_at=NOW() WHERE id=%s",
+        [app_id]
+    )
+    return jsonify({'success': True, 'msg': '申请已撤销'})
 
 # ============ 订单 ============
 
@@ -138,6 +165,25 @@ def get_order_detail(user, order_id):
     if not order:
         return jsonify({'success': False, 'msg': '订单不存在'})
     return jsonify({'success': True, 'data': order})
+
+@app.route('/api/user/orders/<order_id>/cancel', methods=['POST'])
+@require_login
+def cancel_order(user, order_id):
+    """用户取消订单（仅pending状态可取消）"""
+    order = db.get_one(
+        "SELECT * FROM business_orders WHERE id=%s AND user_id=%s AND deleted=0",
+        [order_id, user['user_id']]
+    )
+    if not order:
+        return jsonify({'success': False, 'msg': '订单不存在'})
+    status = order.get('order_status') or order.get('status', '')
+    if status not in ('pending', ''):
+        return jsonify({'success': False, 'msg': '只有待支付的订单才可取消'})
+    db.execute(
+        "UPDATE business_orders SET order_status='cancelled', updated_at=NOW() WHERE id=%s",
+        [order_id]
+    )
+    return jsonify({'success': True, 'msg': '订单已取消'})
 
 # ============ 场馆预约 ============
 
@@ -250,10 +296,11 @@ def book_venue(user, venue_id):
     verify_code = utils.generate_no('VBK')[-6:]
     db.execute(
         "INSERT INTO business_venue_bookings "
-        "(venue_id,user_id,user_name,user_phone,book_date,start_time,end_time,total_hours,total_price,status,verify_code) "
-        "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,'pending',%s)",
+        "(venue_id,user_id,user_name,user_phone,book_date,start_time,end_time,total_hours,total_price,status,verify_code,ec_id,project_id) "
+        "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,'pending',%s,%s,%s)",
         [venue_id, user['user_id'], user['user_name'], user.get('phone'),
-         book_date, start_time, end_time, hours, total_price, verify_code]
+         book_date, start_time, end_time, hours, total_price, verify_code,
+         user.get('ec_id'), user.get('project_id')]
     )
     return jsonify({'success': True, 'msg': '预约成功', 'data': {'verify_code': verify_code}})
 
@@ -281,29 +328,13 @@ def get_products():
     if shop_id:
         where += " AND shop_id=%s"; params.append(shop_id)
     products = db.get_all(
-        "SELECT id,shop_id,product_name,product_name,category,price,description,images FROM business_products WHERE "
+        "SELECT id,shop_id,product_name,category,price,description,images FROM business_products WHERE "
         + where + " ORDER BY id ASC",
         params
     )
     return jsonify({'success': True, 'data': products})
 
-# ============ 健康检查 ============
-
-@app.route('/health')
-def health():
-    return jsonify({'status': 'ok', 'service': 'user-h5', 'time': time.strftime('%Y-%m-%d %H:%M:%S')})
-
-@app.route('/')
-def index():
-    return send_from_directory('.', 'index.html')
-
-@app.route('/<path:filename>')
-def static_files(filename):
-    return send_from_directory('.', filename)
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=22311, debug=False)
-
+# ============ 场馆预约支付 ============
 
 @app.route('/api/user/bookings/<booking_id>/pay', methods=['POST'])
 @require_login
@@ -322,4 +353,21 @@ def pay_booking(user, booking_id):
         [booking_id]
     )
     return jsonify({'success': True, 'msg': '支付成功'})
+
+# ============ 健康检查 ============
+
+@app.route('/health')
+def health():
+    return jsonify({'status': 'ok', 'service': 'user-h5', 'time': time.strftime('%Y-%m-%d %H:%M:%S')})
+
+@app.route('/')
+def index():
+    return send_from_directory('.', 'index.html')
+
+@app.route('/<path:filename>')
+def static_files(filename):
+    return send_from_directory('.', filename)
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=22311, debug=False)
 
