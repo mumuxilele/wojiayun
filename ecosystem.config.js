@@ -126,6 +126,26 @@ module.exports = {
       out_file: '/var/log/pm2/wojiayun-admin-out.log',
       error_file: '/var/log/pm2/wojiayun-admin-error.log',
       time: true
+    },
+    // 客户认证服务 - 端口 22320
+    {
+      name: 'wojiayun-auth',
+      script: '/www/wwwroot/wojiayun/auth/app.py',
+      interpreter: '/www/wwwroot/wojiayun/venv/bin/python',
+      cwd: '/www/wwwroot/wojiayun/auth',
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '300M',
+      env: {
+        NODE_ENV: 'production',
+        PYTHONUNBUFFERED: '1',
+        CUSTOMER_ACCOUNT_SECRET_KEY: 'wojiacloud_secret_key_2026'
+      },
+      log_file: '/var/log/pm2/wojiayun-auth.log',
+      out_file: '/var/log/pm2/wojiayun-auth-out.log',
+      error_file: '/var/log/pm2/wojiayun-auth-error.log',
+      time: true
     }
   ]
 };

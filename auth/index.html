@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客户认证 - URL生成器</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .card { background: #fff; border-radius: 16px; padding: 30px; margin-bottom: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
+        h1 { color: #333; margin-bottom: 10px; font-size: 24px; }
+        h2 { color: #555; margin-bottom: 20px; font-size: 18px; }
+        .subtitle { color: #888; margin-bottom: 30px; }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; color: #555; margin-bottom: 8px; font-weight: 500; }
+        .form-group input, .form-group textarea { width: 100%; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 14px; transition: border-color 0.3s; }
+        .form-group input:focus, .form-group textarea:focus { outline: none; border-color: #667eea; }
+        .form-group textarea { min-height: 80px; resize: vertical; }
+        .form-group .hint { color: #999; font-size: 12px; margin-top: 5px; }
+        
+        .btn { display: inline-block; padding: 14px 28px; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; border: none; border-radius: 10px; font-size: 16px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4); }
+        .btn:active { transform: translateY(0); }
+        .btn-secondary { background: #52c41a; }
+        
+        .result { margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 10px; }
+        .result h3 { color: #333; margin-bottom: 15px; font-size: 16px; }
+        .result pre { background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 13px; line-height: 1.5; }
+        .result .url-box { background: #e8f4ff; padding: 15px; border-radius: 8px; word-break: break-all; font-size: 14px; color: #1890ff; margin-bottom: 15px; }
+        
+        .info-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .info-table th, .info-table td { padding: 10px; border: 1px solid #e0e0e0; text-align: left; }
+        .info-table th { background: #f5f5f5; width: 140px; }
+        
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab { padding: 10px 20px; background: #f0f0f0; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.3s; }
+        .tab.active { background: #667eea; color: #fff; }
+        
+        .api-result { margin-top: 20px; }
+        .api-result.success { background: #f6ffed; border: 1px solid #b7eb8f; }
+        .api-result.error { background: #fff2f0; border: 1px solid #ffccc7; }
+        
+        .copy-btn { padding: 8px 16px; background: #667eea; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; margin-left: 10px; }
+        .copy-btn:hover { background: #5a6fd6; }
+        
+        .section { display: none; }
+        .section.active { display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>🔐 客户认证 URL 生成器</h1>
+            <p class="subtitle">生成带有 HMAC-SHA256 签名的认证 URL</p>
+            
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('generate')">生成 URL</button>
+                <button class="tab" onclick="showTab('test')">测试接口</button>
+                <button class="tab" onclick="showTab('docs')">接口文档</button>
+            </div>
+            
+            <!-- 生成 URL -->
+            <div id="generate" class="section active">
+                <h2>填写参数</h2>
+                <div class="form-group">
+                    <label>Customer ID (用户ID) *</label>
+                    <input type="text" id="customerId" placeholder="输入用户唯一标识" value="user_001">
+                    <div class="hint">您现有账户体系的用户唯一标识</div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Name (用户名)</label>
+                    <input type="text" id="userName" placeholder="输入用户名（可选）" value="测试用户">
+                    <div class="hint">用户显示名称，可选</div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Extra Info (额外信息)</label>
+                    <textarea id="extraInfo" placeholder="JSON 格式的额外信息（可选）">{"phone": "13800138000", "email": "test@example.com"}</textarea>
+                    <div class="hint">可选的用户额外信息，JSON 格式</div>
+                </div>
+                
+                <div class="form-group">
+                    <label>服务地址</label>
+                    <input type="text" id="serviceUrl" placeholder="认证服务地址" value="http://47.98.238.209:22320">
+                    <div class="hint">认证服务的完整地址</div>
+                </div>
+                
+                <button class="btn" onclick="generateUrl()">🚀 生成认证 URL</button>
+                
+                <div id="generateResult" class="result" style="display: none;">
+                    <h3>生成的 URL</h3>
+                    <div class="url-box" id="generatedUrl"></div>
+                    <button class="copy-btn" onclick="copyUrl()">📋 复制 URL</button>
+                    <button class="copy-btn btn-secondary" onclick="openUrl()">🌐 打开链接</button>
+                    
+                    <table class="info-table">
+                        <tr><th>Customer ID</th><td id="infoCustomerId"></td></tr>
+                        <tr><th>Name</th><td id="infoName"></td></tr>
+                        <tr><th>Timestamp</th><td id="infoTimestamp"></td></tr>
+                        <tr><th>Extra Info</th><td id="infoExtraInfo"></td></tr>
+                        <tr><th>Code (签名)</th><td id="infoCode" style="font-family: monospace; font-size: 12px;"></td></tr>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- 测试接口 -->
+            <div id="test" class="section">
+                <h2>直接测试接口</h2>
+                <div class="form-group">
+                    <label>Customer ID *</label>
+                    <input type="text" id="testCustomerId" placeholder="用户ID" value="user_001">
+                </div>
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="testUserName" placeholder="用户名" value="测试用户">
+                </div>
+                <div class="form-group">
+                    <label>Extra Info</label>
+                    <textarea id="testExtraInfo" placeholder="额外信息"></textarea>
+                </div>
+                
+                <button class="btn" onclick="testApi()">🧪 测试接口</button>
+                
+                <div id="testResult" class="api-result" style="display: none; margin-top: 20px; padding: 20px; border-radius: 10px;">
+                    <h3>响应结果</h3>
+                    <pre id="testResponse"></pre>
+                </div>
+            </div>
+            
+            <!-- 接口文档 -->
+            <div id="docs" class="section">
+                <h2>接口文档</h2>
+                <div class="result">
+                    <h3>GET /account/customer</h3>
+                    <p style="margin: 10px 0; color: #666;">客户认证接口，验证签名后返回用户信息</p>
+                    
+                    <h4 style="margin-top: 20px; color: #333;">请求参数</h4>
+                    <table class="info-table">
+                        <tr><th>参数名</th><th>类型</th><th>必需</th><th>说明</th></tr>
+                        <tr><td>CustomerId</td><td>string</td><td>是</td><td>用户唯一标识</td></tr>
+                        <tr><td>Name</td><td>string</td><td>否</td><td>用户名</td></tr>
+                        <tr><td>Timestamp</td><td>int</td><td>是</td><td>当前时间戳（秒）</td></tr>
+                        <tr><td>ExtraInfo</td><td>string</td><td>否</td><td>额外用户信息</td></tr>
+                        <tr><td>Code</td><td>string</td><td>是</td><td>HMAC-SHA256 签名</td></tr>
+                    </table>
+                    
+                    <h4 style="margin-top: 20px; color: #333;">签名算法</h4>
+                    <pre style="background: #f5f5f5; color: #333;">
+msg = CustomerId + Name + ExtraInfo + Timestamp
+Code = SHA256(HMAC(SECRET_KEY, msg))</pre>
+                    
+                    <h4 style="margin-top: 20px; color: #333;">响应示例</h4>
+                    <pre>{
+  "success": true,
+  "data": {
+    "id": 1,
+    "customer_id": "user_001",
+    "name": "测试用户",
+    "extra_info": "...",
+    "token": "...",
+    "provider": "customer"
+  }
+}</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 密钥（需要与服务端一致）
+        const SECRET_KEY = 'wojiacloud_secret_key_2026';
+        
+        function showTab(tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+        
+        async function generateHmacSha256(message, secret) {
+            const encoder = new TextEncoder();
+            const keyData = encoder.encode(secret);
+            const msgData = encoder.encode(message);
+            
+            const key = await crypto.subtle.importKey(
+                'raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+            );
+            
+            const signature = await crypto.subtle.sign('HMAC', key, msgData);
+            return Array.from(new Uint8Array(signature))
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join('');
+        }
+        
+        async function generateUrl() {
+            const customerId = document.getElementById('customerId').value.trim();
+            const userName = document.getElementById('userName').value.trim();
+            const extraInfo = document.getElementById('extraInfo').value.trim();
+            const serviceUrl = document.getElementById('serviceUrl').value.trim();
+            
+            if (!customerId) {
+                alert('请输入 Customer ID');
+                return;
+            }
+            
+            const timestamp = Math.floor(Date.now() / 1000);
+            const msg = customerId + userName + extraInfo + timestamp;
+            const code = await generateHmacSha256(msg, SECRET_KEY);
+            
+            // URL 编码参数
+            const params = new URLSearchParams({
+                CustomerId: customerId,
+                Name: userName,
+                Timestamp: timestamp,
+                ExtraInfo: extraInfo,
+                Code: code
+            });
+            
+            const fullUrl = `${serviceUrl}/account/customer?${params.toString()}`;
+            
+            // 显示结果
+            document.getElementById('generateResult').style.display = 'block';
+            document.getElementById('generatedUrl').textContent = fullUrl;
+            document.getElementById('infoCustomerId').textContent = customerId;
+            document.getElementById('infoName').textContent = userName || '(空)';
+            document.getElementById('infoTimestamp').textContent = timestamp + ' (' + new Date(timestamp * 1000).toLocaleString() + ')';
+            document.getElementById('infoExtraInfo').textContent = extraInfo || '(空)';
+            document.getElementById('infoCode').textContent = code;
+        }
+        
+        function copyUrl() {
+            const url = document.getElementById('generatedUrl').textContent;
+            navigator.clipboard.writeText(url).then(() => {
+                alert('URL 已复制到剪贴板');
+            });
+        }
+        
+        function openUrl() {
+            const url = document.getElementById('generatedUrl').textContent;
+            window.open(url, '_blank');
+        }
+        
+        async function testApi() {
+            const customerId = document.getElementById('testCustomerId').value.trim();
+            const userName = document.getElementById('testUserName').value.trim();
+            const extraInfo = document.getElementById('testExtraInfo').value.trim();
+            const serviceUrl = document.getElementById('serviceUrl').value.trim();
+            
+            if (!customerId) {
+                alert('请输入 Customer ID');
+                return;
+            }
+            
+            const timestamp = Math.floor(Date.now() / 1000);
+            const msg = customerId + userName + extraInfo + timestamp;
+            const code = await generateHmacSha256(msg, SECRET_KEY);
+            
+            const params = new URLSearchParams({
+                CustomerId: customerId,
+                Name: userName,
+                Timestamp: timestamp,
+                ExtraInfo: extraInfo,
+                Code: code
+            });
+            
+            const fullUrl = `${serviceUrl}/account/customer?${params.toString()}`;
+            
+            try {
+                const response = await fetch(fullUrl);
+                const data = await response.json();
+                
+                const resultDiv = document.getElementById('testResult');
+                resultDiv.style.display = 'block';
+                resultDiv.className = 'api-result ' + (data.success ? 'success' : 'error');
+                document.getElementById('testResponse').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                const resultDiv = document.getElementById('testResult');
+                resultDiv.style.display = 'block';
+                resultDiv.className = 'api-result error';
+                document.getElementById('testResponse').textContent = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
