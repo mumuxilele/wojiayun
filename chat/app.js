@@ -125,17 +125,33 @@ app.get('/api/online-users', async (req, res) => {
 // ============ WebSocket 处理 ============
 
 function sendToUser(ws, type, data) {
-    if (ws && ws.readyState === ws.OPEN) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type, data }));
     }
 }
 
-function broadcast(type, data, excludeWs = null) {
-    for (const [, info] of onlineUsers) {
-        if (info.ws !== excludeWs && info.ws.readyState === info.ws.OPEN) {
+function broadcast(type, data, excludeWs = null, targetUserType = null) {
+    // targetUserType: 如果指定，只发送给该类型的用户
+    for (const [key, info] of onlineUsers) {
+        if (info.ws !== excludeWs && info.ws.readyState === WebSocket.OPEN) {
+            // 如果指定了目标用户类型，只发送给该类型
+            if (targetUserType && info.userInfo?.type !== targetUserType) {
+                continue;
+            }
             info.ws.send(JSON.stringify({ type, data }));
         }
     }
+}
+
+// 发送给特定用户
+function sendToUserType(userId, type, msgType, data) {
+    const key = userId + '_' + type;
+    const info = onlineUsers.get(key);
+    if (info && info.ws && info.ws.readyState === info.ws.OPEN) {
+        info.ws.send(JSON.stringify({ type: msgType, data }));
+        return true;
+    }
+    return false;
 }
 
 // 消息处理
@@ -155,11 +171,23 @@ async function handleChatMessage(msg, userId, userInfo, senderType, ws) {
     const msgId = await chatDao.saveMessage(msgData);
     msgData.id = msgId;
 
-    // 发送给自己
+    console.log('Message saved:', msgId, 'from:', userId, 'type:', senderType, 'to:', msg.receiverId);
+
+    // 发送给自己（确认已发送）
     sendToUser(ws, 'message', msgData);
 
-    // 广播给其他人
-    broadcast('message', msgData, ws);
+    // 根据发送者类型路由消息
+    if (senderType === 'user') {
+        // 用户发送的消息，广播给所有员工端
+        broadcast('message', msgData, ws, 'staff');
+        console.log('Broadcasted to all staff');
+    } else if (senderType === 'staff') {
+        // 员工发送的消息，发送给指定的用户
+        if (msg.receiverId) {
+            const sent = sendToUserType(msg.receiverId, 'user', 'message', msgData);
+            console.log('Sent to user:', msg.receiverId, 'result:', sent);
+        }
+    }
 }
 
 // WebSocket 连接
@@ -173,6 +201,7 @@ wss.on('connection', async (ws, req) => {
     let isVerified = false;
     let userId = null;
     let userInfo = null;
+    let connectionKey = null; // 使用 userId_type 作为唯一标识
 
     ws.on('message', (data) => {
         if (!isVerified) {
@@ -183,9 +212,9 @@ wss.on('connection', async (ws, req) => {
     });
 
     ws.on('close', () => {
-        if (userId) {
-            onlineUsers.delete(userId);
-            console.log('Offline: ' + userId);
+        if (connectionKey) {
+            onlineUsers.delete(connectionKey);
+            console.log('Offline: ' + connectionKey);
         }
     });
 
@@ -197,6 +226,7 @@ wss.on('connection', async (ws, req) => {
         }
         userId = userInfo.userId;
         userInfo.type = type;
+        connectionKey = userId + '_' + type; // 组合 key，区分用户端和员工端
     }
 
     if (!userId) {
@@ -206,10 +236,10 @@ wss.on('connection', async (ws, req) => {
 
     isVerified = true;
 
-    onlineUsers.set(userId, { ws, userInfo, connectedAt: new Date() });
-    console.log('Online: ' + userId + ' (' + type + ')');
+    onlineUsers.set(connectionKey, { ws, userInfo, userId, connectedAt: new Date() });
+    console.log('Online: ' + connectionKey);
 
-    ws.send(JSON.stringify({ type: 'welcome', userId, timestamp: new Date().toISOString() }));
+    ws.send(JSON.stringify({ type: 'welcome', userId, userType: type, timestamp: new Date().toISOString() }));
 
     while (messageQueue.length > 0) {
         processMessage(messageQueue.shift());

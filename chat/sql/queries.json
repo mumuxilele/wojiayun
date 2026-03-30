@@ -6,7 +6,7 @@
             "description": "保存聊天消息"
         },
         "getMessages": {
-            "sql": "SELECT msg_id as id, msg_id, msg_type, content, sender_id as senderId, sender_name as senderName, sender_type, receiver_id as receiverId, timestamp FROM chat_messages WHERE sender_type = #{senderType} AND deleted = 0 #{whereClause} ORDER BY timestamp DESC LIMIT #{limit} OFFSET #{offset}",
+            "sql": "SELECT msg_id as id, msg_id, msg_type, content, sender_id as senderId, sender_name as senderName, sender_type, receiver_id as receiverId, timestamp FROM chat_messages WHERE sender_type = #{senderType} AND deleted = 0 ORDER BY timestamp DESC LIMIT #{limit} OFFSET #{offset}",
             "description": "获取消息列表，支持分页"
         },
         "getMessagesByTime": {

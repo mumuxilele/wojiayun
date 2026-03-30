@@ -120,7 +120,6 @@ class ChatDao {
                 const sqlTemplate = sqlLoader.getSql('chat.getMessages');
                 const parsed = sqlLoader.parseSql(sqlTemplate, {
                     senderType,
-                    whereClause: '',
                     limit: parseInt(limit),
                     offset: parseInt(offset)
                 });
