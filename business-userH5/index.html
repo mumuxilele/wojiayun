@@ -54,6 +54,33 @@
         .footer { text-align: center; padding: 15px; color: #bbb; font-size: 11px; }
         .loading { display: flex; align-items: center; justify-content: center; padding: 20px; }
         .loading::after { content: '加载中...'; color: #999; }
+        
+        /* 通知提示条 */
+        .notice-bar { background: linear-gradient(90deg, #ff7f50, #ff4500); color: white; padding: 10px 15px; font-size: 13px; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+        .notice-bar:active { opacity: .9; }
+        .notice-dot { width: 8px; height: 8px; background: white; border-radius: 50%; flex-shrink: 0; animation: blink 1.2s infinite; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+        /* 待支付预约提示 */
+        .pay-alert { background: #fff7e6; border: 1px solid #ffd591; border-radius: 12px; margin: 0 15px 12px; padding: 12px 15px; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+        .pay-alert:active { background: #fff0d0; }
+        .pay-alert-icon { font-size: 22px; flex-shrink: 0; }
+        .pay-alert-text { flex: 1; }
+        .pay-alert-title { font-size: 14px; font-weight: 600; color: #d46b08; }
+        .pay-alert-sub { font-size: 12px; color: #fa8c16; margin-top: 2px; }
+        .pay-alert-arrow { color: #fa8c16; font-size: 18px; }
+        .points-card { background: white; margin: 0 15px 15px; border-radius: 12px; padding: 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .points-left { display: flex; align-items: center; gap: 12px; }
+        .points-icon { width: 44px; height: 44px; background: linear-gradient(135deg, #f093fb, #f5576c); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+        .points-info .label { font-size: 12px; color: #999; margin-bottom: 2px; }
+        .points-info .value { font-size: 20px; font-weight: 700; color: #333; }
+        .points-right { text-align: right; }
+        .points-right .balance-label { font-size: 12px; color: #999; }
+        .points-right .balance-value { font-size: 16px; font-weight: 600; color: #f5576c; }
+        .member-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-top: 3px; }
+        .badge-bronze { background: #cd7f32; color: white; }
+        .badge-silver { background: #c0c0c0; color: white; }
+        .badge-gold { background: #ffd700; color: #333; }
+        .badge-platinum { background: #e5e4e2; color: #333; }
     </style>
 </head>
 <body>
@@ -86,6 +113,13 @@
         </div>
     </div>
 
+    <!-- 通知提示条（有状态变更时才显示） -->
+    <div class="notice-bar" id="noticeBar" style="display:none" onclick="goTo('applications.html')">
+        <div class="notice-dot"></div>
+        <span id="noticeText">您有申请状态已更新，点击查看</span>
+        <span style="margin-left:auto">›</span>
+    </div>
+
     <div class="menu-grid">
         <div class="menu-item" onclick="goTo('applications.html')">
             <span class="menu-icon">📋</span>
@@ -102,6 +136,33 @@
         <div class="menu-item" onclick="goTo('bookings.html')">
             <span class="menu-icon">📅</span>
             <div class="menu-text">场馆预约</div>
+        </div>
+    </div>
+
+    <!-- 待支付预约提示（有待支付预约时才显示） -->
+    <div class="pay-alert" id="payAlert" style="display:none" onclick="goTo('bookings.html')">
+        <div class="pay-alert-icon">💰</div>
+        <div class="pay-alert-text">
+            <div class="pay-alert-title">您有待支付的预约</div>
+            <div class="pay-alert-sub" id="payAlertSub">点击前往完成支付</div>
+        </div>
+        <div class="pay-alert-arrow">›</div>
+    </div>
+
+    <!-- 积分/余额卡片 -->
+    <div class="points-card" id="pointsCard" style="display:none">
+        <div class="points-left">
+            <div class="points-icon">💎</div>
+            <div class="points-info">
+                <div class="label">我的积分</div>
+                <div class="value" id="myPoints">0</div>
+                <div id="memberBadge"></div>
+            </div>
+        </div>
+        <div class="points-right">
+            <div class="balance-label">账户余额</div>
+            <div class="balance-value" id="myBalance">¥0.00</div>
+            <div style="font-size:11px;color:#999;margin-top:2px">累计 <span id="totalPoints">0</span> 积分</div>
         </div>
     </div>
 
@@ -211,8 +272,17 @@
                     var html = '';
                     for(var i=0; i<data.data.items.length; i++) {
                         var o = data.data.items[i];
-                        var statusMap = {pending:'待支付',paid:'已支付',completed:'已完成'};
-                        html += '<div class="record-item"><div class="record-icon">🛒</div><div class="record-info"><div class="record-title">' + (o.order_no||'') + '</div><div class="record-desc">¥' + (o.total_amount||0) + '</div></div><span class="record-status status-' + (o.status||'pending') + '">' + (statusMap[o.status]||o.status) + '</span></div>';
+                        // 使用正确的字段名 order_status
+                        var os = o.order_status || o.status || 'pending';
+                        var statusMap = {pending:'待支付',paid:'已支付',completed:'已完成',cancelled:'已取消'};
+                        var statusClass = {pending:'status-pending',paid:'status-processing',completed:'status-completed',cancelled:'status-rejected'};
+                        html += '<div class="record-item" onclick="goTo(\'orders.html\')">'
+                            + '<div class="record-icon">🛒</div>'
+                            + '<div class="record-info">'
+                            + '<div class="record-title">' + (o.order_no || '') + '</div>'
+                            + '<div class="record-desc">¥' + parseFloat(o.actual_amount || o.total_amount || 0).toFixed(2) + ' · ' + (o.created_at || '').substring(0,10) + '</div>'
+                            + '</div>'
+                            + '<span class="record-status ' + (statusClass[os] || 'status-pending') + '">' + (statusMap[os] || os) + '</span></div>';
                     }
                     document.getElementById('recentOrders').innerHTML = html;
                 } else {
@@ -221,6 +291,26 @@
             }).catch(function(){
                 document.getElementById('recentOrders').innerHTML = '<div class="empty">加载失败</div>';
             });
+        }
+
+        // 加载会员积分信息
+        function loadMemberInfo() {
+            fetch('/api/user/member?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev)
+            .then(function(r){return r.json()})
+            .then(function(data){
+                if(data.success && data.data) {
+                    var d = data.data;
+                    document.getElementById('myPoints').textContent = d.points || 0;
+                    document.getElementById('myBalance').textContent = '¥' + parseFloat(d.balance || 0).toFixed(2);
+                    document.getElementById('totalPoints').textContent = d.total_points || 0;
+                    var levelMap = {bronze:'青铜会员',silver:'白银会员',gold:'黄金会员',platinum:'铂金会员'};
+                    var levelBadge = {bronze:'badge-bronze',silver:'badge-silver',gold:'badge-gold',platinum:'badge-platinum'};
+                    var lv = d.member_level || 'bronze';
+                    document.getElementById('memberBadge').innerHTML = '<span class="member-badge ' + (levelBadge[lv]||'badge-bronze') + '">' + (levelMap[lv]||lv) + '</span>';
+                    document.getElementById('pointsCard').style.display = 'flex';
+                }
+            })
+            .catch(function(e){ console.warn('loadMemberInfo error:', e); });
         }
 
         document.querySelectorAll('.filter-tag').forEach(function(el){
@@ -232,10 +322,56 @@
             });
         });
 
+        // 检测申请状态变更（与上次缓存对比）
+        function checkNotifications() {
+            var url = '/api/user/applications?page=1&page_size=20&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+            fetch(url).then(function(r){return r.json()}).then(function(data){
+                if (!data.success || !data.data || !data.data.items) return;
+                var items = data.data.items;
+                var cacheKey = 'app_status_cache_' + token.substr(-8);
+                var cached = {};
+                try { cached = JSON.parse(localStorage.getItem(cacheKey) || '{}'); } catch(e) {}
+                var changed = [];
+                var newCache = {};
+                var statusText = {pending:'待处理', processing:'处理中', completed:'已完成', rejected:'已拒绝', cancelled:'已撤销'};
+                items.forEach(function(item) {
+                    newCache[item.id] = item.status;
+                    if (cached[item.id] && cached[item.id] !== item.status) {
+                        changed.push('"' + (item.title||'').substr(0,10) + '" → ' + (statusText[item.status]||item.status));
+                    }
+                });
+                // 保存新缓存
+                localStorage.setItem(cacheKey, JSON.stringify(newCache));
+                // 如果有变化，显示通知条
+                if (changed.length > 0) {
+                    var text = changed.length === 1 ? changed[0] : changed.length + '条申请状态已更新';
+                    document.getElementById('noticeText').textContent = '📢 ' + text + '，点击查看';
+                    document.getElementById('noticeBar').style.display = 'flex';
+                }
+            }).catch(function(){});
+        }
+
+        // 检测待支付预约
+        function checkUnpaidBookings() {
+            fetch('/api/user/bookings?page=1&page_size=20&status=pending&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev)
+            .then(function(r){return r.json()})
+            .then(function(data){
+                if (!data.success || !data.data) return;
+                var items = (data.data.items || []).filter(function(b){ return b.pay_status !== 'paid'; });
+                if (items.length > 0) {
+                    document.getElementById('payAlertSub').textContent = '共 ' + items.length + ' 个预约待支付，点击前往处理';
+                    document.getElementById('payAlert').style.display = 'flex';
+                }
+            }).catch(function(){});
+        }
+
         document.getElementById('userName').textContent = '欢迎您';
         loadStats();
+        loadMemberInfo();
         loadRecentApps();
         loadRecentOrders();
+        checkNotifications();
+        checkUnpaidBookings();
     </script>
 </body>
 </html>

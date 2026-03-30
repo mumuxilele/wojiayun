@@ -4,111 +4,96 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>数据统计 - 管理后台</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <style>
-        /* ==================== 基础样式 ==================== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         :root {
             --primary-color: #1890ff;
-            --primary-light: #40a9ff;
-            --primary-dark: #096dd9;
             --success-color: #52c41a;
             --warning-color: #faad14;
             --danger-color: #ff4d4f;
-            --info-color: #909399;
             --text-primary: #303133;
             --text-regular: #606266;
             --text-secondary: #909399;
             --border-color: #ebeef5;
             --bg-white: #ffffff;
             --bg-light: #f5f7fa;
-            --bg-striped: #fafafa;
         }
-
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg-light); font-size: 14px; color: var(--text-regular); min-height: 100vh; }
-
-        /* ==================== 页面布局 ==================== */
         .layout { display: flex; min-height: 100vh; }
-        
-        /* 侧边栏 */
-        .sidebar { width: 200px; background: #2c3e50; min-height: 100vh; position: fixed; top: 0; left: 0; }
+        .sidebar { width: 200px; background: #2c3e50; min-height: 100vh; position: fixed; top: 0; left: 0; z-index: 100; }
         .sidebar-header { padding: 16px 20px; border-bottom: 1px solid #3d4f5f; }
         .sidebar-header h5 { color: white; font-size: 16px; font-weight: 600; }
         .sidebar a { color: #ecf0f1; text-decoration: none; padding: 12px 20px; display: block; font-size: 14px; transition: all .2s; }
         .sidebar a:hover { background: #34495e; }
         .sidebar a.active { background: #34495e; border-left: 3px solid var(--primary-color); }
-        
-        /* 主内容 */
         .main { flex: 1; margin-left: 200px; padding: 24px; }
         .page-title { font-size: 18px; font-weight: 600; color: var(--text-primary); margin-bottom: 24px; }
-
-        /* ==================== 统计卡片 ==================== */
         .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-        .stat-card { border-radius: 4px; color: white; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,.1); }
+        .stat-card { border-radius: 8px; color: white; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,.1); }
         .stat-card.blue { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
         .stat-card.green { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
         .stat-card.orange { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-        .stat-card.red { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .stat-card.cyan { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .stat-card .stat-content { display: flex; justify-content: space-between; align-items: center; }
         .stat-card .stat-icon { font-size: 32px; opacity: 0.8; }
         .stat-card .stat-num { font-size: 28px; font-weight: 700; }
         .stat-card .stat-label { opacity: 0.9; font-size: 13px; margin-top: 4px; }
-        .stat-card .stat-content { display: flex; justify-content: space-between; align-items: center; }
-
-        /* ==================== 卡片 ==================== */
-        .card { background: var(--bg-white); border-radius: 4px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,.1); border: 1px solid var(--border-color); }
-        .card-title { font-size: 15px; font-weight: 600; color: var(--text-secondary); margin-bottom: 16px; }
-
-        /* ==================== Element UI 表格 ==================== */
-        .el-table { width: 100%; border: 1px solid var(--border-color); border-radius: 4px; background-color: var(--bg-white); color: var(--text-regular); font-size: 14px; border-collapse: collapse; }
-        
-        /* 表头 */
-        .el-table__header th { padding: 12px 10px; background-color: var(--bg-light); color: var(--text-primary); font-weight: 500; text-align: left; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); }
-        .el-table__header th:last-child { border-right: none; }
-        
-        /* 表体 */
-        .el-table__body td { padding: 12px 10px; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); }
-        .el-table__body td:last-child { border-right: none; }
-        
-        /* 行悬停 */
-        .el-table__body tr:hover > td { background-color: var(--bg-light); }
-        
-        /* 斑马纹 */
-        .el-table--striped .el-table__body tr:nth-child(2n) td { background-color: var(--bg-striped); }
-        .el-table--striped .el-table__body tr:nth-child(2n):hover td { background-color: var(--bg-light); }
-
-        /* ==================== 累计数据列表 ==================== */
+        .stat-card .stat-sub { opacity: 0.75; font-size: 12px; margin-top: 6px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .grid-full { margin-bottom: 16px; }
+        .card { background: var(--bg-white); border-radius: 8px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,.06); border: 1px solid var(--border-color); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .card-title { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+        .chart-box { width: 100%; }
+        .el-table { width: 100%; border: 1px solid var(--border-color); background-color: var(--bg-white); font-size: 13px; border-collapse: collapse; }
+        .el-table th { padding: 10px 12px; background-color: var(--bg-light); color: var(--text-primary); font-weight: 500; text-align: left; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); }
+        .el-table th:last-child { border-right: none; }
+        .el-table td { padding: 10px 12px; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); }
+        .el-table td:last-child { border-right: none; }
+        .el-table tr:hover > td { background-color: var(--bg-light); }
         .stat-list { display: flex; flex-direction: column; gap: 12px; }
-        .stat-list-item { display: flex; justify-content: space-between; font-size: 14px; }
-        .stat-list-item strong { color: var(--text-primary); font-weight: 600; }
+        .stat-list-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-color); }
+        .stat-list-item:last-child { border-bottom: none; }
+        .stat-list-item strong { font-weight: 600; color: var(--primary-color); font-size: 16px; }
+        .loading { text-align: center; padding: 30px; color: var(--text-secondary); }
+        .refresh-btn { background: none; border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 12px; cursor: pointer; font-size: 12px; color: var(--text-secondary); transition: all .2s; }
+        .refresh-btn:hover { color: var(--primary-color); border-color: var(--primary-color); }
+        .days-btn-group { display: flex; gap: 4px; }
+        .days-btn { background: none; border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 10px; cursor: pointer; font-size: 12px; color: var(--text-secondary); }
+        .days-btn.active { background: var(--primary-color); border-color: var(--primary-color); color: white; }
+        @media (max-width: 1200px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } .grid-3 { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 768px) { .sidebar { display: none; } .main { margin-left: 0; } .grid-2, .grid-3 { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
     <div class="layout">
-        <!-- 侧边栏 -->
         <div class="sidebar">
-            <div class="sidebar-header">
-                <h5>管理后台</h5>
-            </div>
+            <div class="sidebar-header"><h5>管理后台</h5></div>
             <a href="index.html">🏠 首页</a>
             <a href="statistics.html" class="active">📊 数据统计</a>
             <a href="venues.html">🏟️ 场地管理</a>
             <a href="applications.html">📋 申请单</a>
             <a href="orders.html">🧾 订单</a>
             <a href="shops.html">🏪 门店</a>
-            <a href="points.html">💰 积分管理</a>
+            <a href="points.html">💎 积分管理</a>
+            <a href="users.html">👥 用户管理</a>
         </div>
-        
-        <!-- 主内容 -->
         <div class="main">
-            <h4 class="page-title">📊 数据统计</h4>
-            
-            <!-- 统计卡片 -->
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+                <h4 class="page-title" style="margin-bottom:0">📊 数据统计</h4>
+                <button class="refresh-btn" onclick="refreshAll()">🔄 刷新数据</button>
+            </div>
+
+            <!-- 核心指标卡 -->
             <div class="stat-grid">
                 <div class="stat-card blue">
                     <div class="stat-content">
                         <div>
                             <div class="stat-num" id="todayOrders">-</div>
                             <div class="stat-label">今日订单</div>
+                            <div class="stat-sub">累计 <span id="totalOrders">-</span> 笔</div>
                         </div>
                         <div class="stat-icon">🛒</div>
                     </div>
@@ -118,6 +103,7 @@
                         <div>
                             <div class="stat-num" id="todayApps">-</div>
                             <div class="stat-label">今日申请</div>
+                            <div class="stat-sub">待处理 <span id="pendingApps">-</span> 条</div>
                         </div>
                         <div class="stat-icon">📝</div>
                     </div>
@@ -125,89 +111,377 @@
                 <div class="stat-card orange">
                     <div class="stat-content">
                         <div>
-                            <div class="stat-num" id="pendingApps">-</div>
-                            <div class="stat-label">待审申请</div>
-                        </div>
-                        <div class="stat-icon">⏳</div>
-                    </div>
-                </div>
-                <div class="stat-card red">
-                    <div class="stat-content">
-                        <div>
-                            <div class="stat-num" id="totalIncome">-</div>
-                            <div class="stat-label">总收入(元)</div>
+                            <div class="stat-num" id="todayIncome">-</div>
+                            <div class="stat-label">今日收入(元)</div>
+                            <div class="stat-sub">总收入 <span id="totalIncome">-</span> 元</div>
                         </div>
                         <div class="stat-icon">💰</div>
                     </div>
                 </div>
+                <div class="stat-card cyan">
+                    <div class="stat-content">
+                        <div>
+                            <div class="stat-num" id="venueBookings">-</div>
+                            <div class="stat-label">场地预约(总)</div>
+                            <div class="stat-sub">待确认 <span id="pendingBookings">-</span> 笔</div>
+                        </div>
+                        <div class="stat-icon">🏟️</div>
+                    </div>
+                </div>
             </div>
-            
-            <!-- 累计数据 -->
-            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 16px;">
+
+            <!-- 趋势折线图（全宽） -->
+            <div class="grid-full">
                 <div class="card">
-                    <div class="card-title">累计数据</div>
-                    <div class="stat-list">
-                        <div class="stat-list-item">
-                            <span>总订单</span>
-                            <strong id="totalOrders">-</strong>
+                    <div class="card-header">
+                        <span class="card-title">📈 近期趋势</span>
+                        <div class="days-btn-group">
+                            <button class="days-btn active" id="btn7" onclick="switchTrend(7)">近7天</button>
+                            <button class="days-btn" id="btn14" onclick="switchTrend(14)">近14天</button>
+                            <button class="days-btn" id="btn30" onclick="switchTrend(30)">近30天</button>
                         </div>
-                        <div class="stat-list-item">
-                            <span>总申请</span>
-                            <strong id="totalApps">-</strong>
-                        </div>
+                    </div>
+                    <div class="chart-box" id="trendChart" style="height:280px"></div>
+                </div>
+            </div>
+
+            <!-- 饼图区域 -->
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">申请单状态分布</span>
+                    </div>
+                    <div class="chart-box" id="appStatusChart" style="height:260px"></div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">申请单类型分布</span>
+                    </div>
+                    <div class="chart-box" id="appTypeChart" style="height:260px"></div>
+                </div>
+            </div>
+
+            <!-- 预约状态 + 积分概览 -->
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">🏟️ 预约状态分布</span>
+                    </div>
+                    <div class="chart-box" id="bookingStatusChart" style="height:260px"></div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">👑 会员等级分布</span>
+                    </div>
+                    <div class="chart-box" id="memberLevelChart" style="height:260px"></div>
+                </div>
+            </div>
+
+            <!-- 积分概览 + 场地热度排行 -->
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">💎 积分概览</span>
+                    </div>
+                    <div class="stat-list" id="pointsStats">
+                        <div class="loading">加载中...</div>
                     </div>
                 </div>
                 <div class="card">
-                    <div class="card-title">场地预约统计</div>
-                    <div id="venueStats">加载中...</div>
+                    <div class="card-header">
+                        <span class="card-title">🔥 场地热度排行</span>
+                    </div>
+                    <div id="venueHotList" class="loading">加载中...</div>
                 </div>
+            </div>
+
+            <!-- 场地列表 -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">🏟️ 场地列表</span>
+                </div>
+                <div id="venueStats" class="loading">加载中...</div>
             </div>
         </div>
     </div>
-    
+
     <script>
-        const token = new URLSearchParams(location.search).get('access_token') || '';
+        const token = new URLSearchParams(location.search).get('access_token') || localStorage.getItem('admin_token') || '';
         const isDev = new URLSearchParams(location.search).get('isdev') || '0';
-        
-        // 获取统计数据
+
+        function authUrl(url) {
+            return url + (url.includes('?') ? '&' : '?') + 'access_token=' + encodeURIComponent(token) + '&isdev=' + isDev;
+        }
+
+        // ========== 核心统计 ==========
         async function loadStats() {
             try {
-                const resp = await fetch(`/api/admin/statistics?access_token=${token}&isdev=${isDev}`);
+                const resp = await fetch(authUrl('/api/admin/statistics'));
                 const data = await resp.json();
-                if (data.success) {
-                    document.getElementById('todayOrders').textContent = data.data.today_orders || 0;
-                    document.getElementById('todayApps').textContent = data.data.today_applications || 0;
-                    document.getElementById('pendingApps').textContent = data.data.pending_applications || 0;
-                    document.getElementById('totalIncome').textContent = (data.data.total_income || 0).toFixed(2);
-                    document.getElementById('totalOrders').textContent = data.data.total_orders || 0;
-                    document.getElementById('totalApps').textContent = data.data.total_applications || 0;
+                if (data.success && data.data) {
+                    const d = data.data;
+                    document.getElementById('todayOrders').textContent = d.today_orders ?? 0;
+                    document.getElementById('totalOrders').textContent = d.total_orders ?? 0;
+                    document.getElementById('todayApps').textContent = d.today_applications ?? 0;
+                    document.getElementById('pendingApps').textContent = d.pending_applications ?? 0;
+                    document.getElementById('todayIncome').textContent = parseFloat(d.today_income || 0).toFixed(2);
+                    document.getElementById('totalIncome').textContent = parseFloat(d.total_income || 0).toFixed(2);
                 }
-            } catch (e) {
-                console.error(e);
-            }
+            } catch (e) { console.error('loadStats', e); }
         }
-        
-        // 获取场地统计
+
+        // ========== 趋势折线图（新接口，一次请求） ==========
+        let trendChart = null;
+        let currentDays = 7;
+
+        async function loadTrend(days) {
+            currentDays = days;
+            try {
+                const [orderResp, appResp] = await Promise.all([
+                    fetch(authUrl('/api/admin/orders/trend?days=' + days)),
+                    fetch(authUrl('/api/admin/applications/trend?days=' + days))
+                ]);
+                const orderData = await orderResp.json();
+                const appData = await appResp.json();
+
+                const orders = (orderData.success && orderData.data) ? orderData.data : [];
+                const apps = (appData.success && appData.data) ? appData.data : [];
+
+                const dates = orders.map(r => r.date.substring(5)); // MM-DD
+                const orderCnts = orders.map(r => r.order_cnt);
+                const incomes = orders.map(r => parseFloat(r.income || 0).toFixed(2));
+                const appCnts = apps.map(r => r.app_cnt);
+
+                if (!trendChart) {
+                    trendChart = echarts.init(document.getElementById('trendChart'));
+                    window.addEventListener('resize', () => trendChart.resize());
+                }
+                trendChart.setOption({
+                    tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
+                    legend: { data: ['订单数', '申请数', '收入(元)'], bottom: 0, itemWidth: 12 },
+                    grid: { left: '3%', right: '4%', bottom: '40px', top: '20px', containLabel: true },
+                    xAxis: { type: 'category', data: dates, axisLabel: { fontSize: 11 } },
+                    yAxis: [
+                        { type: 'value', name: '数量', nameTextStyle: { fontSize: 11 }, axisLabel: { fontSize: 11 } },
+                        { type: 'value', name: '收入', nameTextStyle: { fontSize: 11 }, axisLabel: { fontSize: 11, formatter: '¥{value}' } }
+                    ],
+                    color: ['#667eea', '#11998e', '#f5576c'],
+                    series: [
+                        { name: '订单数', type: 'line', smooth: true, data: orderCnts, yAxisIndex: 0, lineStyle: { width: 2 }, areaStyle: { opacity: 0.1 } },
+                        { name: '申请数', type: 'line', smooth: true, data: appCnts, yAxisIndex: 0, lineStyle: { width: 2 }, areaStyle: { opacity: 0.1 } },
+                        { name: '收入(元)', type: 'bar', data: incomes, yAxisIndex: 1, barMaxWidth: 30, itemStyle: { color: '#f5576c', opacity: 0.7 } }
+                    ]
+                });
+            } catch (e) { console.error('loadTrend', e); }
+        }
+
+        function switchTrend(days) {
+            [7, 14, 30].forEach(d => {
+                const btn = document.getElementById('btn' + d);
+                if (btn) btn.classList.toggle('active', d === days);
+            });
+            loadTrend(days);
+        }
+
+        // ========== 申请单状态饼图（新接口，一次请求） ==========
+        async function loadAppChart() {
+            try {
+                const resp = await fetch(authUrl('/api/admin/applications/stats/by-status'));
+                const data = await resp.json();
+                const STATUS_MAP = { pending: '待处理', processing: '处理中', completed: '已完成', rejected: '已拒绝', cancelled: '已撤销' };
+                const COLOR_MAP = { pending: '#faad14', processing: '#1890ff', completed: '#52c41a', rejected: '#ff4d4f', cancelled: '#909399' };
+
+                const pieData = Object.entries(data.success ? (data.data || {}) : {})
+                    .map(([k, v]) => ({ name: STATUS_MAP[k] || k, value: v, itemStyle: { color: COLOR_MAP[k] } }))
+                    .filter(d => d.value > 0);
+
+                const chart = echarts.init(document.getElementById('appStatusChart'));
+                chart.setOption({
+                    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+                    legend: { bottom: 0, itemWidth: 12, itemHeight: 12, textStyle: { fontSize: 12 } },
+                    series: [{
+                        type: 'pie', radius: ['40%', '70%'], center: ['50%', '45%'],
+                        label: { show: true, fontSize: 12 },
+                        data: pieData.length ? pieData : [{ name: '暂无数据', value: 1, itemStyle: { color: '#e0e0e0' } }]
+                    }]
+                });
+                window.addEventListener('resize', () => chart.resize());
+            } catch (e) { console.error('loadAppChart', e); }
+        }
+
+        // ========== 申请单类型饼图（新接口） ==========
+        async function loadAppTypeChart() {
+            try {
+                const resp = await fetch(authUrl('/api/admin/applications/stats/by-type'));
+                const data = await resp.json();
+                const TYPE_MAP = { repair: '报修', booking: '预约', complaint: '投诉', consult: '咨询', other: '其他' };
+
+                const pieData = Object.entries(data.success ? (data.data || {}) : {})
+                    .map(([k, v]) => ({ name: TYPE_MAP[k] || k, value: v }))
+                    .filter(d => d.value > 0);
+
+                const chart = echarts.init(document.getElementById('appTypeChart'));
+                chart.setOption({
+                    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+                    legend: { bottom: 0, itemWidth: 12, itemHeight: 12, textStyle: { fontSize: 12 } },
+                    color: ['#667eea', '#11998e', '#f5576c', '#f093fb', '#4facfe'],
+                    series: [{
+                        type: 'pie', radius: ['40%', '70%'], center: ['50%', '45%'],
+                        label: { show: true, fontSize: 12 },
+                        data: pieData.length ? pieData : [{ name: '暂无数据', value: 1, itemStyle: { color: '#e0e0e0' } }]
+                    }]
+                });
+                window.addEventListener('resize', () => chart.resize());
+            } catch (e) { console.error('loadAppTypeChart', e); }
+        }
+
+        // ========== 预约状态图 ==========
+        async function loadBookingChart() {
+            try {
+                const resp = await fetch(authUrl('/api/admin/venue-statistics'));
+                const data = await resp.json();
+                let total = 0, pending = 0, confirmed = 0, completed = 0;
+                if (data.success && data.data) {
+                    total = data.data.total_bookings || 0;
+                    pending = data.data.pending_bookings || 0;
+                    completed = data.data.completed_bookings || 0;
+                    confirmed = Math.max(0, total - pending - completed);
+                    document.getElementById('venueBookings').textContent = total;
+                    document.getElementById('pendingBookings').textContent = pending;
+                }
+                const chart = echarts.init(document.getElementById('bookingStatusChart'));
+                const pieData = [
+                    { name: '待确认', value: pending },
+                    { name: '已确认', value: confirmed },
+                    { name: '已完成', value: completed }
+                ].filter(d => d.value > 0);
+                chart.setOption({
+                    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+                    legend: { bottom: 0, itemWidth: 12, itemHeight: 12, textStyle: { fontSize: 12 } },
+                    color: ['#faad14', '#1890ff', '#52c41a'],
+                    series: [{
+                        type: 'pie', radius: ['40%', '70%'], center: ['50%', '45%'],
+                        label: { show: true, fontSize: 12 },
+                        data: pieData.length ? pieData : [{ name: '暂无数据', value: 1, itemStyle: { color: '#e0e0e0' } }]
+                    }]
+                });
+                window.addEventListener('resize', () => chart.resize());
+            } catch (e) { console.error('loadBookingChart', e); }
+        }
+
+        // ========== 场地列表 ==========
         async function loadVenueStats() {
             try {
-                const resp = await fetch(`/api/admin/venues?access_token=${token}&isdev=${isDev}`);
+                const resp = await fetch(authUrl('/api/admin/venues?page=1&page_size=50'));
                 const data = await resp.json();
-                if (data.success && data.data.items) {
-                    const TYPE_MAP = {yumaoqiu:'🏸 羽毛球',lanqiu:'🏀 篮球',pingpang:'🏓 乒乓球',yujia:'🧘 瑜伽',youyong:'🏊 游泳',gym:'💪 健身',other:'📌 其他'};
-                    let html = '<table class="el-table el-table--border el-table--striped"><thead class="el-table__header"><tr><th>场地名称</th><th>场地类型</th><th>价格(元/时)</th><th>容纳人数</th></tr></thead><tbody class="el-table__body">';
-                    data.data.items.forEach(v => {
-                        html += `<tr><td>${v.venue_name || '-'}</td><td>${TYPE_MAP[v.venue_type] || v.venue_type || '-'}</td><td style="color:#f57c00;font-weight:600">¥${parseFloat(v.price || 0).toFixed(2)}</td><td>${v.capacity || '-'}人</td></tr>`;
-                    });
-                    html += '</tbody></table>';
-                    document.getElementById('venueStats').innerHTML = html;
+                const el = document.getElementById('venueStats');
+                if (data.success && data.data && data.data.items && data.data.items.length) {
+                    const TYPE_MAP = { yumaoqiu: '🏸 羽毛球', lanqiu: '🏀 篮球', pingpang: '🏓 乒乓球', yujia: '🧘 瑜伽', youyong: '🏊 游泳', gym: '💪 健身', other: '📌 其他' };
+                    el.innerHTML = `<table class="el-table">
+                        <thead><tr><th>场地名称</th><th>类型</th><th>价格(元/时)</th><th>容量</th><th>状态</th></tr></thead>
+                        <tbody>${data.data.items.map(v => `<tr>
+                            <td>${v.venue_name || '-'}</td>
+                            <td>${TYPE_MAP[v.venue_type] || v.venue_type || '-'}</td>
+                            <td style="color:#f57c00;font-weight:600">¥${parseFloat(v.price || 0).toFixed(2)}</td>
+                            <td>${v.capacity || '-'}人</td>
+                            <td><span style="color:${v.status==='open'?'#52c41a':'#999'}">${v.status==='open'?'开放':'关闭'}</span></td>
+                        </tr>`).join('')}</tbody>
+                    </table>`;
+                } else {
+                    el.innerHTML = '<div class="loading">暂无场地数据</div>';
                 }
-            } catch (e) {
-                document.getElementById('venueStats').textContent = '加载失败';
-            }
+            } catch (e) { document.getElementById('venueStats').innerHTML = '<div class="loading">加载失败</div>'; }
         }
-        
-        loadStats();
-        loadVenueStats();
+
+        // ========== 积分概览 ==========
+        async function loadPointsStats() {
+            try {
+                const resp = await fetch(authUrl('/api/admin/points/stats'));
+                const data = await resp.json();
+                const el = document.getElementById('pointsStats');
+                if (data.success && data.data) {
+                    const d = data.data;
+                    el.innerHTML = `
+                        <div class="stat-list-item"><span>注册会员数</span><strong>${d.total_members ?? '-'}</strong></div>
+                        <div class="stat-list-item"><span>流通积分总量</span><strong style="color:#f57c00">${d.total_points ?? '-'}</strong></div>
+                        <div class="stat-list-item"><span>今日积分变动</span><strong style="color:#52c41a">+${d.today_points ?? 0}</strong></div>
+                        <div class="stat-list-item"><span>本月积分变动</span><strong style="color:#1890ff">${d.month_points ?? 0}</strong></div>`;
+                } else {
+                    el.innerHTML = '<div class="loading">加载失败</div>';
+                }
+            } catch (e) { document.getElementById('pointsStats').innerHTML = '<div class="loading">加载失败</div>'; }
+        }
+
+        // ========== 会员等级分布图 ==========
+        async function loadMemberLevelChart() {
+            try {
+                const resp = await fetch(authUrl('/api/admin/members/stats/by-level'));
+                const data = await resp.json();
+                const LEVEL_MAP = { bronze: '青铜', silver: '白银', gold: '黄金', platinum: '铂金' };
+                const LEVEL_COLOR = { bronze: '#cd7f32', silver: '#c0c0c0', gold: '#ffd700', platinum: '#b8a9c9' };
+                const pieData = Object.entries(data.success ? (data.data || {}) : {})
+                    .map(([k, v]) => ({ name: LEVEL_MAP[k] || k, value: v, itemStyle: { color: LEVEL_COLOR[k] || '#ccc' } }))
+                    .filter(d => d.value > 0);
+                const chart = echarts.init(document.getElementById('memberLevelChart'));
+                chart.setOption({
+                    tooltip: { trigger: 'item', formatter: '{b}: {c}人 ({d}%)' },
+                    legend: { bottom: 0, itemWidth: 12, itemHeight: 12, textStyle: { fontSize: 12 } },
+                    series: [{
+                        type: 'pie', radius: ['40%', '70%'], center: ['50%', '45%'],
+                        label: { show: true, fontSize: 12, formatter: '{b}\n{c}人' },
+                        data: pieData.length ? pieData : [{ name: '暂无数据', value: 1, itemStyle: { color: '#e0e0e0' } }]
+                    }]
+                });
+                window.addEventListener('resize', () => chart.resize());
+            } catch (e) { console.error('loadMemberLevelChart', e); }
+        }
+
+        // ========== 场地热度排行榜 ==========
+        async function loadVenueHot() {
+            try {
+                const resp = await fetch(authUrl('/api/admin/venues/stats/hot'));
+                const data = await resp.json();
+                const el = document.getElementById('venueHotList');
+                if (data.success && data.data && data.data.length) {
+                    const TYPE_MAP = { yumaoqiu: '🏸', lanqiu: '🏀', pingpang: '🏓', yujia: '🧘', youyong: '🏊', gym: '💪', other: '🏟️' };
+                    const maxCnt = Math.max(...data.data.map(v => v.book_cnt || 0)) || 1;
+                    el.innerHTML = data.data.map((v, i) => {
+                        const pct = Math.round((v.book_cnt || 0) / maxCnt * 100);
+                        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `<span style="color:#999;font-size:13px">${i+1}</span>`;
+                        return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f0f0">
+                            <span style="width:28px;text-align:center;font-size:18px">${medal}</span>
+                            <span style="font-size:16px">${TYPE_MAP[v.venue_type]||'🏟️'}</span>
+                            <div style="flex:1;min-width:0">
+                                <div style="font-size:13px;font-weight:500;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${v.venue_name||'-'}</div>
+                                <div style="height:6px;background:#f5f5f5;border-radius:3px;margin-top:4px">
+                                    <div style="height:6px;background:linear-gradient(90deg,#667eea,#764ba2);border-radius:3px;width:${pct}%;transition:width .6s"></div>
+                                </div>
+                            </div>
+                            <div style="text-align:right;flex-shrink:0">
+                                <div style="font-size:15px;font-weight:700;color:#667eea">${v.book_cnt||0}<span style="font-size:11px;font-weight:normal;color:#999">次</span></div>
+                                <div style="font-size:11px;color:#f57c00">¥${parseFloat(v.total_income||0).toFixed(0)}</div>
+                            </div>
+                        </div>`;
+                    }).join('');
+                } else {
+                    el.innerHTML = '<div class="loading">暂无场地预约数据</div>';
+                }
+            } catch (e) { document.getElementById('venueHotList').innerHTML = '<div class="loading">加载失败</div>'; }
+        }
+
+        function refreshAll() {
+            loadStats();
+            loadTrend(currentDays);
+            loadAppChart();
+            loadAppTypeChart();
+            loadBookingChart();
+            loadMemberLevelChart();
+            loadVenueStats();
+            loadPointsStats();
+            loadVenueHot();
+        }
+
+        refreshAll();
     </script>
 </body>
 </html>

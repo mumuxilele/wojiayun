@@ -46,55 +46,63 @@ def require_staff(f):
 @app.route('/api/staff/stats', methods=['GET'])
 @require_staff
 def get_staff_stats(user):
-    pending = db.get_total("SELECT COUNT(*) FROM business_applications WHERE deleted=0 AND status='pending'", [])
-    processing = db.get_total("SELECT COUNT(*) FROM business_applications WHERE deleted=0 AND status='processing'", [])
-    completed_today = db.get_total("SELECT COUNT(*) FROM business_applications WHERE deleted=0 AND status='completed' AND DATE(completed_at)=CURDATE()", [])
-    total_orders = db.get_total("SELECT COUNT(*) FROM business_orders WHERE deleted=0", [])
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    scope = "deleted=0"
+    p = []
+    if ec_id:
+        scope += " AND ec_id=%s"; p.append(ec_id)
+    if project_id:
+        scope += " AND project_id=%s"; p.append(project_id)
+
+    pending = db.get_total(f"SELECT COUNT(*) FROM business_applications WHERE {scope} AND status='pending'", p.copy())
+    processing = db.get_total(f"SELECT COUNT(*) FROM business_applications WHERE {scope} AND status='processing'", p.copy())
+    completed_today = db.get_total(f"SELECT COUNT(*) FROM business_applications WHERE {scope} AND status='completed' AND DATE(completed_at)=CURDATE()", p.copy())
+    total_orders = db.get_total(f"SELECT COUNT(*) FROM business_orders WHERE {scope}", p.copy())
     return jsonify({'success': True, 'data': {'pending': pending, 'processing': processing, 'completed_today': completed_today, 'total_orders': total_orders, 'total_apps': pending+processing}})
 
 @app.route('/api/staff/statistics', methods=['GET'])
 @require_staff
 def get_staff_statistics(user):
-    today_apps = db.get_total("SELECT COUNT(*) FROM business_applications WHERE deleted=0 AND DATE(created_at)=CURDATE()", [])
-    pending_apps = db.get_total("SELECT COUNT(*) FROM business_applications WHERE deleted=0 AND status='pending'", [])
-    processing_apps = db.get_total("SELECT COUNT(*) FROM business_applications WHERE deleted=0 AND status='processing'", [])
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    scope = "deleted=0"
+    p = []
+    if ec_id:
+        scope += " AND ec_id=%s"; p.append(ec_id)
+    if project_id:
+        scope += " AND project_id=%s"; p.append(project_id)
 
-    # 今日订单数和收入
+    today_apps = db.get_total(f"SELECT COUNT(*) FROM business_applications WHERE {scope} AND DATE(created_at)=CURDATE()", p.copy())
+    pending_apps = db.get_total(f"SELECT COUNT(*) FROM business_applications WHERE {scope} AND status='pending'", p.copy())
+    processing_apps = db.get_total(f"SELECT COUNT(*) FROM business_applications WHERE {scope} AND status='processing'", p.copy())
+
     today_orders = 0
     today_income = 0
     try:
-        today_orders = db.get_total("SELECT COUNT(*) FROM business_orders WHERE deleted=0 AND DATE(created_at)=CURDATE()", [])
-        income_row = db.get_one("SELECT COALESCE(SUM(actual_amount),0) as income FROM business_orders WHERE deleted=0 AND order_status IN ('paid','completed') AND DATE(created_at)=CURDATE()", [])
+        today_orders = db.get_total(f"SELECT COUNT(*) FROM business_orders WHERE {scope} AND DATE(created_at)=CURDATE()", p.copy())
+        income_row = db.get_one(f"SELECT COALESCE(SUM(actual_amount),0) as income FROM business_orders WHERE {scope} AND order_status IN ('paid','completed') AND DATE(created_at)=CURDATE()", p.copy())
         if income_row:
             today_income = float(income_row.get('income') or 0)
     except Exception as e:
-        print('Error getting today orders/income:', e)
+        logging.error('Error getting today orders/income: %s', e)
 
     app_stats = []
     try:
-        app_stats = db.get_all("SELECT status, COUNT(*) as cnt FROM business_applications WHERE deleted=0 GROUP BY status ORDER BY cnt DESC", [])
+        app_stats = db.get_all(f"SELECT status, COUNT(*) as cnt FROM business_applications WHERE {scope} GROUP BY status ORDER BY cnt DESC", p.copy())
     except Exception as e:
-        print('Error getting app_stats:', e)
+        logging.error('Error getting app_stats: %s', e)
 
     order_stats = []
     try:
-        order_stats = db.get_all("SELECT order_status as status, COUNT(*) as cnt FROM business_orders WHERE deleted=0 GROUP BY order_status ORDER BY cnt DESC", [])
+        order_stats = db.get_all(f"SELECT order_status as status, COUNT(*) as cnt FROM business_orders WHERE {scope} GROUP BY order_status ORDER BY cnt DESC", p.copy())
     except Exception as e:
-        print('Error getting order_stats:', e)
-        try:
-            total_orders = db.get_total("SELECT COUNT(*) FROM business_orders WHERE deleted=0", [])
-            order_stats = [{'status': 'total', 'cnt': total_orders}]
-        except:
-            pass
+        logging.error('Error getting order_stats: %s', e)
 
     return jsonify({
         'success': True,
         'data': {
-            'today': {
-                'applications': today_apps,
-                'orders': today_orders,
-                'income': round(today_income, 2)
-            },
+            'today': {'applications': today_apps, 'orders': today_orders, 'income': round(today_income, 2)},
             'pending_applications': pending_apps,
             'processing_applications': processing_apps,
             'today_orders': today_orders,
@@ -112,16 +120,19 @@ def get_all_applications(user):
     status = request.args.get('status')
     app_type = request.args.get('app_type')
     keyword = request.args.get('keyword', '')
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
     
     where = "deleted=0"
     params = []
-    
+    if ec_id:
+        where += " AND ec_id=%s"; params.append(ec_id)
+    if project_id:
+        where += " AND project_id=%s"; params.append(project_id)
     if status:
-        where += " AND status=%s"
-        params.append(status)
+        where += " AND status=%s"; params.append(status)
     if app_type:
-        where += " AND app_type=%s"
-        params.append(app_type)
+        where += " AND app_type=%s"; params.append(app_type)
     if keyword:
         where += " AND (title LIKE %s OR content LIKE %s OR user_name LIKE %s)"
         kw = "%" + keyword + "%"
@@ -217,13 +228,17 @@ def get_all_orders(user):
     page = int(request.args.get('page', 1))
     page_size = min(int(request.args.get('page_size', 20)), 50)
     status = request.args.get('status')
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
     
     where = "deleted=0"
     params = []
-    
+    if ec_id:
+        where += " AND ec_id=%s"; params.append(ec_id)
+    if project_id:
+        where += " AND project_id=%s"; params.append(project_id)
     if status:
-        where += " AND order_status=%s"
-        params.append(status)
+        where += " AND order_status=%s"; params.append(status)
     
     total = db.get_total("SELECT COUNT(*) FROM business_orders WHERE " + where, params)
     offset = (page - 1) * page_size
@@ -256,34 +271,64 @@ def update_order_status(user, order_id):
     
     return jsonify({'success': True, 'msg': '更新成功'})
 
+ALLOWED_IMAGE_EXTS = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
+MAX_UPLOAD_SIZE_MB = 5  # 限制5MB
+
 @app.route('/api/staff/upload', methods=['POST'])
 @require_staff
 def upload_image(user):
-    """上传图片"""
+    """上传图片（安全版：文件类型白名单 + 大小限制）"""
     try:
         data = request.get_json() or {}
         file_data = data.get('file')
         if not file_data:
             return jsonify({'success': False, 'msg': '没有图片数据'})
         
-        # 解析base64数据
+        # 解析base64数据并校验大小
+        raw = file_data
         if ',' in file_data:
-            file_data = file_data.split(',')[1]
+            header, raw = file_data.split(',', 1)
         
-        # 生成文件名
-        ext = data.get('ext', 'jpg')
+        # 检查文件大小（base64约比原始大33%）
+        estimated_bytes = len(raw) * 3 // 4
+        if estimated_bytes > MAX_UPLOAD_SIZE_MB * 1024 * 1024:
+            return jsonify({'success': False, 'msg': f'文件超过{MAX_UPLOAD_SIZE_MB}MB限制'})
+        
+        # 校验扩展名
+        ext = (data.get('ext', 'jpg') or 'jpg').lower().lstrip('.')
+        if ext not in ALLOWED_IMAGE_EXTS:
+            return jsonify({'success': False, 'msg': f'不支持的文件类型，仅允许：{", ".join(ALLOWED_IMAGE_EXTS)}'})
+        
+        # 生成安全文件名（不使用用户提供的文件名）
         filename = f"{uuid.uuid4().hex}.{ext}"
         filepath = os.path.join(UPLOAD_DIR, filename)
         
-        # 保存文件
-        with open(filepath, 'wb') as f:
-            f.write(base64.b64decode(file_data))
+        import base64 as b64
+        decoded = b64.b64decode(raw)
         
-        # 返回可访问的URL
+        # 二次校验：检查文件头魔数（防止伪造扩展名）
+        magic_map = {
+            b'\xff\xd8\xff': ['jpg', 'jpeg'],
+            b'\x89PNG': ['png'],
+            b'GIF8': ['gif'],
+            b'RIFF': ['webp'],
+        }
+        valid_magic = False
+        for magic, exts in magic_map.items():
+            if decoded[:len(magic)] == magic and ext in exts:
+                valid_magic = True
+                break
+        if not valid_magic:
+            return jsonify({'success': False, 'msg': '文件内容与扩展名不匹配'})
+        
+        with open(filepath, 'wb') as f:
+            f.write(decoded)
+        
         url = f"/uploads/{filename}"
         return jsonify({'success': True, 'data': {'url': url, 'filename': filename}})
     except Exception as e:
-        return jsonify({'success': False, 'msg': str(e)})
+        logging.error('Upload error: %s', e)
+        return jsonify({'success': False, 'msg': '上传失败，请重试'})
 
 @app.route('/uploads/<filename>')
 def serve_upload(filename):

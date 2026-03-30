@@ -236,7 +236,7 @@
                         document.getElementById('memberTable').innerHTML = '<tr><td colspan="9" class="empty">暂无数据</td></tr>';
                     } else {
                         document.getElementById('memberTable').innerHTML = items.map(m => 
-                            `<tr><td>${m.id}</td><td>${m.user_name || '-'}</td><td>${m.phone || '-'}</td><td><span class="el-tag el-tag--${LEVEL_TAG[m.member_level] || 'info'}">${LEVEL_MAP[m.member_level] || m.member_level}</span></td><td class="points-num" style="color:var(--primary-color)">${m.points || 0}</td><td class="points-num">${m.total_points || 0}</td><td style="color:#f57c00">¥${parseFloat(m.balance||0).toFixed(2)}</td><td>${m.created_at || '-'}</td><td class="actions"><a onclick="openAdjustModal(${m.id},'${m.user_name||''}',${m.points||0})">调整积分</a><a onclick="viewMemberLogs(${m.id})">查看记录</a></td></tr>`
+                            `<tr><td>${m.id}</td><td>${m.user_name || '-'}</td><td>${m.phone || '-'}</td><td><span class="el-tag el-tag--${LEVEL_TAG[m.member_level] || 'info'}">${LEVEL_MAP[m.member_level] || m.member_level}</span></td><td class="points-num" style="color:var(--primary-color)">${m.points || 0}</td><td class="points-num">${m.total_points || 0}</td><td style="color:#f57c00">¥${parseFloat(m.balance||0).toFixed(2)}</td><td>${m.created_at || '-'}</td><td class="actions"><a onclick="openAdjustModal(${m.user_id},'${m.user_name||''}',${m.points||0})">调整积分</a><a onclick="viewMemberLogs(${m.user_id})">查看记录</a></td></tr>`
                         ).join('');
                     }
                     renderPager('memberPager', data.data.pages || 1, memberPage, loadMembers);
@@ -246,7 +246,7 @@
             }
         }
         
-        async function loadLogs(page) {
+        async function loadLogs(page, filterUserId) {
             logPage = page || 1;
             const keyword = document.getElementById('logKeyword').value;
             const logType = document.getElementById('logType').value;
@@ -257,6 +257,7 @@
             if (logType) url += '&type=' + logType;
             if (dateFrom) url += '&date_from=' + dateFrom;
             if (dateTo) url += '&date_to=' + dateTo;
+            if (filterUserId) url += '&user_id=' + filterUserId;
             url += '&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
             
             try {
@@ -314,18 +315,22 @@
         }
         
         async function submitAdjust() {
-            const memberId = document.getElementById('adjustMemberId').value;
+            const userId = document.getElementById('adjustMemberId').value;
             const adjustType = document.getElementById('adjustType').value;
             const amount = parseInt(document.getElementById('adjustAmount').value);
             const reason = document.getElementById('adjustReason').value.trim();
             if (!amount || amount <= 0) { alert('请输入有效的积分数值'); return; }
             if (!reason) { alert('请输入调整原因'); return; }
-            const points = adjustType === 'add' ? amount : -amount;
             try {
                 const res = await fetch(`/api/admin/points/adjust?access_token=${encodeURIComponent(token)}&isdev=${isdev}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ member_id: parseInt(memberId), points: points, reason: reason })
+                    body: JSON.stringify({
+                        user_id: parseInt(userId),
+                        points: amount,
+                        type: adjustType,
+                        description: reason
+                    })
                 });
                 const data = await res.json();
                 if (data.success) { alert('调整成功'); closeAdjustModal(); loadMembers(memberPage); }
@@ -333,11 +338,32 @@
             } catch(e) { alert('调整失败'); }
         }
         
-        function viewMemberLogs(memberId) {
+        function viewMemberLogs(userId) {
             switchTab('logs', document.querySelectorAll('.tab-item')[1]);
-            setTimeout(() => loadLogs(1), 100);
+            // 传入 user_id 以过滤该用户的积分记录
+            setTimeout(() => {
+                document.getElementById('logKeyword').value = '';
+                loadLogs(1, userId);
+            }, 100);
         }
         
+        // 加载积分统计
+        async function loadPointsStats() {
+            let url = `/api/admin/points/stats?access_token=${encodeURIComponent(token)}&isdev=${isdev}`;
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.success && data.data) {
+                    document.getElementById('totalMembers').textContent = data.data.total_members ?? '-';
+                    document.getElementById('totalPoints').textContent = data.data.total_points ?? '-';
+                    document.getElementById('todayPoints').textContent = data.data.today_points ?? '-';
+                    document.getElementById('monthPoints').textContent = data.data.month_points ?? '-';
+                }
+            } catch(e) { console.warn('loadPointsStats error', e); }
+        }
+        
+        // 初始化：同时加载统计数据和会员列表
+        loadPointsStats();
         loadMembers(1);
     </script>
 </body>

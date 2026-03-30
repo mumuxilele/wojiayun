@@ -145,12 +145,21 @@ def admin_list_applications():
     page = int(request.args.get('page', 1))
     page_size = min(int(request.args.get('page_size', 20)), 50)
     status = request.args.get('status')
+    keyword = request.args.get('keyword', '')
+    app_type = request.args.get('app_type', '')
     
     where = "deleted=0"
     params = []
     if status:
         where += " AND status=%s"
         params.append(status)
+    if app_type:
+        where += " AND app_type=%s"
+        params.append(app_type)
+    if keyword:
+        where += " AND (title LIKE %s OR user_name LIKE %s OR app_no LIKE %s)"
+        kw = '%' + keyword + '%'
+        params.extend([kw, kw, kw])
     where, params = add_scope_filter(where, params)
     
     total = db.get_total("SELECT COUNT(*) FROM business_applications WHERE " + where, params)
@@ -160,7 +169,24 @@ def admin_list_applications():
         "FROM business_applications WHERE " + where + " ORDER BY created_at DESC LIMIT %s OFFSET %s",
         params + [page_size, offset]
     )
-    return jsonify({'success': True, 'data': {'items': items, 'total': total, 'page': page, 'page_size': page_size}})
+    return jsonify({'success': True, 'data': {
+        'items': items, 'total': total, 'page': page, 'page_size': page_size,
+        'pages': (total + page_size - 1) // page_size if total else 0
+    }})
+
+@app.route('/api/admin/applications/<app_id>', methods=['GET'])
+def admin_get_application(app_id):
+    """获取申请单详情"""
+    user = get_current_admin()
+    if not user:
+        return jsonify({'success': False, 'msg': '请先登录'})
+    where = "id=%s AND deleted=0"
+    params = [app_id]
+    where, params = add_scope_filter(where, params)
+    item = db.get_one("SELECT * FROM business_applications WHERE " + where, params)
+    if not item:
+        return jsonify({'success': False, 'msg': '申请单不存在'})
+    return jsonify({'success': True, 'data': item})
 
 @app.route('/api/admin/applications/<app_id>', methods=['PUT'])
 def admin_update_application(app_id):
@@ -175,6 +201,15 @@ def admin_update_application(app_id):
                    [new_status, result, app_id])
     return jsonify({'success': True, 'msg': '更新成功'})
 
+@app.route('/api/admin/applications/<app_id>', methods=['DELETE'])
+def admin_delete_application(app_id):
+    """软删除申请单"""
+    user = get_current_admin()
+    if not user:
+        return jsonify({'success': False, 'msg': '请先登录'})
+    db.execute("UPDATE business_applications SET deleted=1 WHERE id=%s", [app_id])
+    return jsonify({'success': True, 'msg': '删除成功'})
+
 # ============ 订单管理 ============
 
 @app.route('/api/admin/orders', methods=['GET'])
@@ -186,12 +221,21 @@ def admin_list_orders():
     page = int(request.args.get('page', 1))
     page_size = min(int(request.args.get('page_size', 20)), 50)
     status = request.args.get('status')
+    pay_status = request.args.get('pay_status')
+    keyword = request.args.get('keyword', '')
     
     where = "deleted=0"
     params = []
     if status:
         where += " AND order_status=%s"
         params.append(status)
+    if pay_status:
+        where += " AND pay_status=%s"
+        params.append(pay_status)
+    if keyword:
+        where += " AND (order_no LIKE %s OR user_name LIKE %s OR user_phone LIKE %s)"
+        kw = '%' + keyword + '%'
+        params.extend([kw, kw, kw])
     where, params = add_scope_filter(where, params)
     
     total = db.get_total("SELECT COUNT(*) FROM business_orders WHERE " + where, params)
@@ -201,7 +245,24 @@ def admin_list_orders():
         "FROM business_orders WHERE " + where + " ORDER BY created_at DESC LIMIT %s OFFSET %s",
         params + [page_size, offset]
     )
-    return jsonify({'success': True, 'data': {'items': items, 'total': total, 'page': page, 'page_size': page_size}})
+    return jsonify({'success': True, 'data': {
+        'items': items, 'total': total, 'page': page, 'page_size': page_size,
+        'pages': (total + page_size - 1) // page_size if total else 0
+    }})
+
+@app.route('/api/admin/orders/<order_id>', methods=['GET'])
+def admin_get_order(order_id):
+    """获取订单详情"""
+    user = get_current_admin()
+    if not user:
+        return jsonify({'success': False, 'msg': '请先登录'})
+    where = "id=%s AND deleted=0"
+    params = [order_id]
+    where, params = add_scope_filter(where, params)
+    item = db.get_one("SELECT * FROM business_orders WHERE " + where, params)
+    if not item:
+        return jsonify({'success': False, 'msg': '订单不存在'})
+    return jsonify({'success': True, 'data': item})
 
 @app.route('/api/admin/orders/<order_id>', methods=['PUT'])
 def admin_update_order(order_id):
@@ -211,7 +272,7 @@ def admin_update_order(order_id):
     data = request.get_json() or {}
     status = data.get('order_status')
     if status:
-        db.execute("UPDATE business_orders SET order_status=%s WHERE id=%s", [status, order_id])
+        db.execute("UPDATE business_orders SET order_status=%s, updated_at=NOW() WHERE id=%s", [status, order_id])
     return jsonify({'success': True, 'msg': '更新成功'})
 
 # ============ 门店管理 ============
@@ -223,20 +284,46 @@ def admin_list_shops():
         return jsonify({'success': False, 'msg': '请先登录'})
     
     page = int(request.args.get('page', 1))
-    page_size = min(int(request.args.get('page_size', 20)), 50)
+    page_size = min(int(request.args.get('page_size', 200)), 200)
+    keyword = request.args.get('keyword', '')
+    status = request.args.get('status', '')
     
     where = "deleted=0"
     params = []
+    if keyword:
+        where += " AND (shop_name LIKE %s OR address LIKE %s OR shop_code LIKE %s)"
+        kw = '%' + keyword + '%'
+        params.extend([kw, kw, kw])
+    if status:
+        where += " AND status=%s"
+        params.append(status)
     where, params = add_scope_filter(where, params)
     
     total = db.get_total("SELECT COUNT(*) FROM business_shops WHERE " + where, params)
     offset = (page - 1) * page_size
     items = db.get_all(
-        "SELECT id,shop_name,shop_type,shop_code,address,phone,description,status,created_at "
+        "SELECT id,shop_name,shop_type,shop_code,address,phone,description,business_hours,status,created_at "
         "FROM business_shops WHERE " + where + " ORDER BY id DESC LIMIT %s OFFSET %s",
         params + [page_size, offset]
     )
-    return jsonify({'success': True, 'data': {'items': items, 'total': total, 'page': page, 'page_size': page_size}})
+    return jsonify({'success': True, 'data': {
+        'items': items, 'total': total, 'page': page, 'page_size': page_size,
+        'pages': (total + page_size - 1) // page_size if total else 0
+    }})
+
+@app.route('/api/admin/shops/<shop_id>', methods=['GET'])
+def admin_get_shop(shop_id):
+    """获取单个门店详情"""
+    user = get_current_admin()
+    if not user:
+        return jsonify({'success': False, 'msg': '请先登录'})
+    where = "id=%s AND deleted=0"
+    params = [shop_id]
+    where, params = add_scope_filter(where, params)
+    shop = db.get_one("SELECT * FROM business_shops WHERE " + where, params)
+    if not shop:
+        return jsonify({'success': False, 'msg': '门店不存在'})
+    return jsonify({'success': True, 'data': shop})
 
 @app.route('/api/admin/shops', methods=['POST'])
 @require_admin
@@ -259,9 +346,18 @@ def admin_update_shop(shop_id):
     if not user:
         return jsonify({'success': False, 'msg': '请先登录'})
     data = request.get_json() or {}
-    for f in ('shop_name','shop_type','shop_code','address','phone','description','status'):
+    allowed_fields = ('shop_name', 'shop_type', 'shop_code', 'address', 'phone', 'description', 'status', 'business_hours')
+    updates = []
+    params = []
+    for f in allowed_fields:
         if f in data:
-            db.execute("UPDATE business_shops SET "+f+"=%s WHERE id=%s", [data[f], shop_id])
+            updates.append(f + "=%s")
+            params.append(data[f])
+    if not updates:
+        return jsonify({'success': False, 'msg': '没有要更新的字段'})
+    updates.append("updated_at=NOW()")
+    params.append(shop_id)
+    db.execute("UPDATE business_shops SET " + ", ".join(updates) + " WHERE id=%s", params)
     return jsonify({'success': True, 'msg': '更新成功'})
 
 @app.route('/api/admin/shops/<shop_id>', methods=['DELETE'])
@@ -276,6 +372,7 @@ def admin_delete_shop(shop_id):
 
 @app.route('/api/admin/users', methods=['GET'])
 def admin_list_users():
+    """用户/会员列表 - 从 business_members 表查询"""
     user = get_current_admin()
     if not user:
         return jsonify({'success': False, 'msg': '请先登录'})
@@ -283,23 +380,30 @@ def admin_list_users():
     page = int(request.args.get('page', 1))
     page_size = min(int(request.args.get('page_size', 20)), 50)
     keyword = request.args.get('keyword', '')
+    level = request.args.get('level', '')
     
-    where = "deleted=0"
+    where = "1=1"
     params = []
     if keyword:
-        where += " AND (user_name LIKE %s OR user_phone LIKE %s)"
-        params.extend(['%' + keyword + '%', '%' + keyword + '%'])
+        where += " AND (user_name LIKE %s OR phone LIKE %s)"
+        kw = '%' + keyword + '%'
+        params.extend([kw, kw])
+    if level:
+        where += " AND member_level=%s"
+        params.append(level)
     where, params = add_scope_filter(where, params)
     
-    total = db.get_total("SELECT COUNT(*) FROM business_applications WHERE " + where, params)
+    total = db.get_total("SELECT COUNT(*) FROM business_members WHERE " + where, params)
     offset = (page - 1) * page_size
     items = db.get_all(
-        "SELECT user_id, user_name, user_phone, COUNT(*) as app_count "
-        "FROM business_applications WHERE " + where + " GROUP BY user_id, user_name, user_phone "
-        "ORDER BY app_count DESC LIMIT %s OFFSET %s",
+        "SELECT id, user_id, user_name, phone, member_level, points, total_points, balance, created_at "
+        "FROM business_members WHERE " + where + " ORDER BY id DESC LIMIT %s OFFSET %s",
         params + [page_size, offset]
     )
-    return jsonify({'success': True, 'data': {'items': items, 'total': total, 'page': page, 'page_size': page_size}})
+    return jsonify({'success': True, 'data': {
+        'items': items, 'total': total, 'page': page, 'page_size': page_size,
+        'pages': (total + page_size - 1) // page_size if total else 0
+    }})
 
 # ============ 场地管理 API ============
 
@@ -492,6 +596,55 @@ def confirm_booking_pay(booking_id):
     )
     return jsonify({'success': True, 'msg': '缴费确认成功'})
 
+@app.route('/api/admin/venue-bookings/<booking_id>/complete', methods=['POST'])
+def complete_booking(booking_id):
+    """完成预约（confirmed → completed）"""
+    user = get_current_admin()
+    if not user:
+        return jsonify({'success': False, 'msg': '请先登录'})
+    booking = db.get_one("SELECT id, status FROM business_venue_bookings WHERE id=%s AND deleted=0", [booking_id])
+    if not booking:
+        return jsonify({'success': False, 'msg': '预约不存在'})
+    if booking.get('status') != 'confirmed':
+        return jsonify({'success': False, 'msg': '只有已确认的预约才能标记完成'})
+    db.execute("UPDATE business_venue_bookings SET status='completed', updated_at=NOW() WHERE id=%s", [booking_id])
+    return jsonify({'success': True, 'msg': '预约已完成'})
+
+@app.route('/api/admin/venue-bookings/verify', methods=['POST'])
+def verify_booking_code():
+    """核销码验证 - 根据核销码查找预约并完成核销"""
+    user = get_current_admin()
+    if not user:
+        return jsonify({'success': False, 'msg': '请先登录'})
+    data = request.get_json() or {}
+    verify_code = (data.get('verify_code') or '').strip().upper()
+    if not verify_code:
+        return jsonify({'success': False, 'msg': '请输入核销码'})
+    where = "verify_code=%s AND deleted=0"
+    params = [verify_code]
+    where, params = add_scope_filter(where, params, '')
+    booking = db.get_one(
+        "SELECT vb.*, v.venue_name FROM business_venue_bookings vb "
+        "LEFT JOIN business_venues v ON vb.venue_id=v.id "
+        "WHERE vb." + where,
+        params
+    )
+    if not booking:
+        return jsonify({'success': False, 'msg': '核销码无效或不属于本项目'})
+    if booking.get('status') == 'completed':
+        return jsonify({'success': False, 'msg': '该预约已核销', 'data': booking})
+    if booking.get('status') == 'cancelled':
+        return jsonify({'success': False, 'msg': '该预约已取消', 'data': booking})
+    if booking.get('status') == 'pending':
+        return jsonify({'success': False, 'msg': '该预约尚未确认，无法核销', 'data': booking})
+    # confirmed 状态可以核销
+    db.execute(
+        "UPDATE business_venue_bookings SET status='completed', updated_at=NOW() WHERE id=%s",
+        [booking['id']]
+    )
+    booking['status'] = 'completed'
+    return jsonify({'success': True, 'msg': '核销成功', 'data': booking})
+
 # ============ 场地统计 ============
 
 @app.route('/api/admin/venue-statistics', methods=['GET'])
@@ -581,6 +734,9 @@ def admin_points_logs():
     page_size = min(int(request.args.get('page_size', 20)), 50)
     user_id = request.args.get('user_id')
     log_type = request.args.get('type')
+    keyword = request.args.get('keyword', '')
+    date_from = request.args.get('date_from', '')
+    date_to = request.args.get('date_to', '')
     
     where = "1=1"
     params = []
@@ -590,16 +746,29 @@ def admin_points_logs():
     if log_type:
         where += " AND log_type=%s"
         params.append(log_type)
+    if keyword:
+        where += " AND (user_name LIKE %s OR phone LIKE %s)"
+        kw = '%' + keyword + '%'
+        params.extend([kw, kw])
+    if date_from:
+        where += " AND DATE(created_at)>=%s"
+        params.append(date_from)
+    if date_to:
+        where += " AND DATE(created_at)<=%s"
+        params.append(date_to)
     where, params = add_scope_filter(where, params)
     
     total = db.get_total("SELECT COUNT(*) FROM business_points_log WHERE " + where, params)
     offset = (page - 1) * page_size
     items = db.get_all(
-        "SELECT id, user_id, user_name, log_type, points, balance_after, description, created_at "
+        "SELECT id, user_id, user_name, log_type as type, points, balance_after, description, created_at "
         "FROM business_points_log WHERE " + where + " ORDER BY id DESC LIMIT %s OFFSET %s",
         params + [page_size, offset]
     )
-    return jsonify({'success': True, 'data': {'items': items, 'total': total, 'page': page, 'page_size': page_size}})
+    return jsonify({'success': True, 'data': {
+        'items': items, 'total': total, 'page': page, 'page_size': page_size,
+        'pages': (total + page_size - 1) // page_size if total else 0
+    }})
 
 @app.route('/api/admin/points/adjust', methods=['POST'])
 @require_admin
@@ -608,7 +777,7 @@ def admin_points_adjust(user):
     data = request.get_json() or {}
     target_user_id = data.get('user_id')
     points = int(data.get('points', 0))
-    adjust_type = data.get('type', 'add')
+    adjust_type = data.get('type', 'add')  # add / reduce
     description = data.get('description', '管理员调整')
     
     ec_id = user.get('ec_id')
@@ -628,25 +797,25 @@ def admin_points_adjust(user):
     if not member:
         return jsonify({'success': False, 'msg': '会员不存在或无权限'})
     
-    # 计算积分变动
-    if adjust_type == 'reduce':
-        points = -points
+    # 计算积分变动（points 字段存当前余额）
+    current = member.get('points', 0) or 0
+    delta = points if adjust_type != 'reduce' else -points
     
-    new_balance = member['current_points'] + points
+    new_balance = current + delta
     if new_balance < 0:
-        return jsonify({'success': False, 'msg': '积分余额不足'})
+        return jsonify({'success': False, 'msg': '积分余额不足，当前余额：' + str(current)})
     
     # 更新会员积分
     db.execute(
-        "UPDATE business_members SET current_points=%s, total_points=total_points+%s WHERE user_id=%s",
-        [new_balance, points if points > 0 else 0, target_user_id]
+        "UPDATE business_members SET points=%s, total_points=total_points+%s WHERE user_id=%s",
+        [new_balance, delta if delta > 0 else 0, target_user_id]
     )
     
     # 记录日志（带 ec_id 和 project_id）
     db.execute(
         "INSERT INTO business_points_log (user_id, user_name, log_type, points, balance_after, description, ec_id, project_id) "
         "VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
-        [target_user_id, member['user_name'], 'admin', points, new_balance, description, ec_id, project_id]
+        [target_user_id, member['user_name'], 'admin', delta, new_balance, description, ec_id, project_id]
     )
     
     return jsonify({'success': True, 'msg': '积分调整成功', 'data': {'new_balance': new_balance}})
@@ -664,8 +833,8 @@ def admin_points_stats():
     
     # 总会员数
     total_members = db.get_total("SELECT COUNT(*) FROM business_members WHERE " + where, params)
-    # 总积分
-    total_points = db.get_one("SELECT COALESCE(SUM(current_points),0) as total FROM business_members WHERE " + where, params)
+    # 总积分（字段名为 points，不是 current_points）
+    total_points = db.get_one("SELECT COALESCE(SUM(points),0) as total FROM business_members WHERE " + where, params)
     # 今日积分变动
     today_where = where + " AND DATE(created_at)=CURDATE()"
     today_points = db.get_one(
@@ -683,6 +852,278 @@ def admin_points_stats():
         'today_points': int(today_points['total']) if today_points else 0,
         'month_points': int(month_points['total']) if month_points else 0
     }})
+
+# ============ 申请单状态聚合统计 ============
+
+@app.route('/api/admin/applications/stats/by-status', methods=['GET'])
+def admin_applications_stats():
+    """申请单各状态数量统计（一次性返回，避免前端4次请求）"""
+    user = get_current_admin()
+    if not user:
+        return jsonify({'success': False, 'msg': '请先登录'})
+    where = "deleted=0"
+    params = []
+    where, params = add_scope_filter(where, params)
+    rows = db.get_all(
+        "SELECT status, COUNT(*) as cnt FROM business_applications WHERE " + where + " GROUP BY status",
+        params
+    )
+    result = {r['status']: r['cnt'] for r in (rows or [])}
+    return jsonify({'success': True, 'data': result})
+
+@app.route('/api/admin/applications/stats/by-type', methods=['GET'])
+def admin_applications_by_type():
+    """申请单各类型数量统计"""
+    user = get_current_admin()
+    if not user:
+        return jsonify({'success': False, 'msg': '请先登录'})
+    where = "deleted=0"
+    params = []
+    where, params = add_scope_filter(where, params)
+    rows = db.get_all(
+        "SELECT app_type, COUNT(*) as cnt FROM business_applications WHERE " + where + " GROUP BY app_type",
+        params
+    )
+    result = {r['app_type']: r['cnt'] for r in (rows or [])}
+    return jsonify({'success': True, 'data': result})
+
+# ============ 订单趋势接口（近N日） ============
+
+@app.route('/api/admin/orders/trend', methods=['GET'])
+def admin_orders_trend():
+    """近N天订单趋势（订单数+收入）"""
+    user = get_current_admin()
+    if not user:
+        return jsonify({'success': False, 'msg': '请先登录'})
+    days = min(int(request.args.get('days', 7)), 30)
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    scope = "deleted=0"
+    params = []
+    if ec_id:
+        scope += " AND ec_id=%s"; params.append(ec_id)
+    if project_id:
+        scope += " AND project_id=%s"; params.append(project_id)
+    rows = db.get_all(
+        f"SELECT DATE(created_at) as d, COUNT(*) as order_cnt, "
+        f"COALESCE(SUM(CASE WHEN pay_status='paid' THEN actual_amount ELSE 0 END),0) as income "
+        f"FROM business_orders WHERE {scope} AND created_at >= DATE_SUB(CURDATE(), INTERVAL %s DAY) "
+        f"GROUP BY DATE(created_at) ORDER BY d ASC",
+        params + [days]
+    )
+    # 填充缺失日期
+    from datetime import date, timedelta
+    date_map = {}
+    for r in (rows or []):
+        k = str(r['d']) if r.get('d') else ''
+        if k:
+            date_map[k] = {'order_cnt': r['order_cnt'], 'income': float(r['income'] or 0)}
+    result = []
+    for i in range(days - 1, -1, -1):
+        d = (date.today() - timedelta(days=i)).strftime('%Y-%m-%d')
+        result.append({'date': d, 'order_cnt': date_map.get(d, {}).get('order_cnt', 0), 'income': date_map.get(d, {}).get('income', 0)})
+    return jsonify({'success': True, 'data': result})
+
+# ============ 申请单趋势接口（近N日） ============
+
+@app.route('/api/admin/applications/trend', methods=['GET'])
+def admin_applications_trend():
+    """近N天申请单趋势"""
+    user = get_current_admin()
+    if not user:
+        return jsonify({'success': False, 'msg': '请先登录'})
+    days = min(int(request.args.get('days', 7)), 30)
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    scope = "deleted=0"
+    params = []
+    if ec_id:
+        scope += " AND ec_id=%s"; params.append(ec_id)
+    if project_id:
+        scope += " AND project_id=%s"; params.append(project_id)
+    rows = db.get_all(
+        f"SELECT DATE(created_at) as d, COUNT(*) as app_cnt "
+        f"FROM business_applications WHERE {scope} AND created_at >= DATE_SUB(CURDATE(), INTERVAL %s DAY) "
+        f"GROUP BY DATE(created_at) ORDER BY d ASC",
+        params + [days]
+    )
+    from datetime import date, timedelta
+    date_map = {str(r['d']): r['app_cnt'] for r in (rows or []) if r.get('d')}
+    result = []
+    for i in range(days - 1, -1, -1):
+        d = (date.today() - timedelta(days=i)).strftime('%Y-%m-%d')
+        result.append({'date': d, 'app_cnt': date_map.get(d, 0)})
+    return jsonify({'success': True, 'data': result})
+
+# ============ 批量处理申请单 ============
+
+@app.route('/api/admin/applications/batch', methods=['POST'])
+def admin_batch_applications():
+    """批量操作申请单（批量改状态/批量删除）"""
+    user = get_current_admin()
+    if not user:
+        return jsonify({'success': False, 'msg': '请先登录'})
+    data = request.get_json() or {}
+    action = data.get('action')  # 'delete' or 'status'
+    ids = data.get('ids', [])
+    if not ids or not isinstance(ids, list):
+        return jsonify({'success': False, 'msg': '请选择要操作的申请单'})
+    if len(ids) > 50:
+        return jsonify({'success': False, 'msg': '单次批量操作不超过50条'})
+    placeholders = ','.join(['%s'] * len(ids))
+    if action == 'delete':
+        db.execute(f"UPDATE business_applications SET deleted=1 WHERE id IN ({placeholders})", ids)
+        return jsonify({'success': True, 'msg': f'已删除 {len(ids)} 条申请单'})
+    elif action == 'status':
+        new_status = data.get('status')
+        if new_status not in ('processing', 'completed', 'rejected', 'pending'):
+            return jsonify({'success': False, 'msg': '状态值无效'})
+        db.execute(f"UPDATE business_applications SET status=%s, updated_at=NOW() WHERE id IN ({placeholders})", [new_status] + ids)
+        return jsonify({'success': True, 'msg': f'已更新 {len(ids)} 条申请单状态'})
+    return jsonify({'success': False, 'msg': '不支持的操作类型'})
+
+# ============ 用户积分详情（管理端查询某用户） ============
+
+@app.route('/api/admin/users/<user_id>/points', methods=['GET'])
+def admin_user_points(user_id):
+    """查询某用户积分详情"""
+    user = get_current_admin()
+    if not user:
+        return jsonify({'success': False, 'msg': '请先登录'})
+    member = db.get_one("SELECT user_id, user_name, phone, points, total_points, balance, member_level FROM business_members WHERE user_id=%s", [user_id])
+    if not member:
+        return jsonify({'success': False, 'msg': '用户不存在'})
+    logs = db.get_all(
+        "SELECT log_type as type, points, balance_after, description, created_at "
+        "FROM business_points_log WHERE user_id=%s ORDER BY id DESC LIMIT 20",
+        [user_id]
+    )
+    return jsonify({'success': True, 'data': {'member': member, 'recent_logs': logs or []}})
+
+# ============ CSV导出 ============
+
+@app.route('/api/admin/export/applications', methods=['GET'])
+def export_applications():
+    """导出申请单CSV"""
+    user = get_current_admin()
+    if not user:
+        return jsonify({'success': False, 'msg': '请先登录'})
+    where = "deleted=0"
+    params = []
+    status = request.args.get('status')
+    app_type = request.args.get('app_type')
+    if status:
+        where += " AND status=%s"; params.append(status)
+    if app_type:
+        where += " AND app_type=%s"; params.append(app_type)
+    where, params = add_scope_filter(where, params)
+    items = db.get_all(
+        "SELECT app_no,app_type,title,user_name,user_phone,status,priority,created_at,updated_at "
+        "FROM business_applications WHERE " + where + " ORDER BY created_at DESC LIMIT 1000",
+        params
+    )
+    import io, csv
+    from flask import Response
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['申请单号', '类型', '标题', '申请人', '联系电话', '状态', '优先级', '提交时间', '更新时间'])
+    type_map = {'repair': '报修', 'booking': '预约', 'complaint': '投诉', 'consult': '咨询', 'other': '其他'}
+    status_map = {'pending': '待处理', 'processing': '处理中', 'completed': '已完成', 'rejected': '已拒绝', 'cancelled': '已撤销'}
+    for item in (items or []):
+        writer.writerow([
+            item.get('app_no', ''), type_map.get(item.get('app_type', ''), item.get('app_type', '')),
+            item.get('title', ''), item.get('user_name', ''), item.get('user_phone', ''),
+            status_map.get(item.get('status', ''), item.get('status', '')),
+            item.get('priority', 0), item.get('created_at', ''), item.get('updated_at', '')
+        ])
+    output.seek(0)
+    return Response(
+        '\ufeff' + output.getvalue(),  # BOM for Excel
+        mimetype='text/csv; charset=utf-8',
+        headers={'Content-Disposition': 'attachment; filename=applications.csv'}
+    )
+
+@app.route('/api/admin/export/orders', methods=['GET'])
+def export_orders():
+    """导出订单CSV"""
+    user = get_current_admin()
+    if not user:
+        return jsonify({'success': False, 'msg': '请先登录'})
+    where = "deleted=0"
+    params = []
+    where, params = add_scope_filter(where, params)
+    items = db.get_all(
+        "SELECT order_no,order_type,user_name,user_phone,total_amount,actual_amount,order_status,pay_status,created_at "
+        "FROM business_orders WHERE " + where + " ORDER BY created_at DESC LIMIT 1000",
+        params
+    )
+    import io, csv
+    from flask import Response
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['订单号', '类型', '用户', '电话', '总金额', '实付金额', '订单状态', '支付状态', '创建时间'])
+    for item in (items or []):
+        writer.writerow([
+            item.get('order_no', ''), item.get('order_type', ''), item.get('user_name', ''),
+            item.get('user_phone', ''), item.get('total_amount', 0), item.get('actual_amount', 0),
+            item.get('order_status', ''), item.get('pay_status', ''), item.get('created_at', '')
+        ])
+    output.seek(0)
+    return Response(
+        '\ufeff' + output.getvalue(),
+        mimetype='text/csv; charset=utf-8',
+        headers={'Content-Disposition': 'attachment; filename=orders.csv'}
+    )
+
+# ============ 会员等级分布统计 ============
+
+@app.route('/api/admin/members/stats/by-level', methods=['GET'])
+def admin_members_by_level():
+    """会员等级分布统计"""
+    user = get_current_admin()
+    if not user:
+        return jsonify({'success': False, 'msg': '请先登录'})
+    where = "1=1"
+    params = []
+    where, params = add_scope_filter(where, params)
+    rows = db.get_all(
+        "SELECT member_level, COUNT(*) as cnt FROM business_members WHERE " + where + " GROUP BY member_level",
+        params
+    )
+    result = {r['member_level']: r['cnt'] for r in (rows or [])}
+    return jsonify({'success': True, 'data': result})
+
+# ============ 场地热度排行榜 ============
+
+@app.route('/api/admin/venues/stats/hot', methods=['GET'])
+def admin_venues_hot():
+    """场地热度排行：按预约次数和收入排序"""
+    user = get_current_admin()
+    if not user:
+        return jsonify({'success': False, 'msg': '请先登录'})
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    scope = "vb.deleted=0"
+    params = []
+    if ec_id:
+        scope += " AND vb.ec_id=%s"
+        params.append(ec_id)
+    if project_id:
+        scope += " AND vb.project_id=%s"
+        params.append(project_id)
+    rows = db.get_all(
+        "SELECT v.id, v.venue_name, v.venue_type, "
+        "COUNT(vb.id) as book_cnt, "
+        "COALESCE(SUM(CASE WHEN vb.pay_status='paid' THEN vb.total_price ELSE 0 END), 0) as total_income, "
+        "COUNT(CASE WHEN vb.status='completed' THEN 1 END) as completed_cnt "
+        "FROM business_venues v "
+        "LEFT JOIN business_venue_bookings vb ON v.id=vb.venue_id AND " + scope + " "
+        "WHERE v.deleted=0 "
+        "GROUP BY v.id, v.venue_name, v.venue_type "
+        "ORDER BY book_cnt DESC LIMIT 10",
+        params
+    )
+    return jsonify({'success': True, 'data': rows or []})
 
 # ============ 健康检查 ============
 

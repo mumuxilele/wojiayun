@@ -186,6 +186,15 @@ body.embed-mode .main{margin-left:0}
     </div>
     <!-- 预约管理 -->
     <div id="pageBookings" style="display:none">
+      <!-- 核销码验证区 -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><span class="card-title">🔍 核销码验证</span></div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <input type="text" class="search-input" id="verifyInput" placeholder="输入6位核销码" maxlength="10" style="width:200px;text-transform:uppercase;letter-spacing:3px;font-size:16px;font-weight:600" onkeyup="if(event.key==='Enter')verifyCode()">
+          <button class="btn btn-primary" onclick="verifyCode()">✅ 立即核销</button>
+          <span id="verifyResult" style="font-size:13px"></span>
+        </div>
+      </div>
       <div class="card">
         <div class="card-header"><span class="card-title">📅 场地预约管理</span></div>
         <div class="search-bar">
@@ -194,7 +203,9 @@ body.embed-mode .main{margin-left:0}
           <select class="search-input" id="bkStatus" style="width:120px" onchange="loadBookings()">
             <option value="">全部状态</option><option value="pending">待确认</option><option value="confirmed">已确认</option><option value="completed">已完成</option><option value="cancelled">已取消</option>
           </select>
+          <input type="text" class="search-input" id="bkKeyword" placeholder="预约人/核销码" style="width:140px">
           <button class="btn btn-default" onclick="loadBookings()">🔍 筛选</button>
+          <button class="btn btn-default" onclick="resetBookingFilter()">重置</button>
         </div>
         <table class="el-table el-table--border el-table--striped">
           <thead class="el-table__header"><tr><th>核销码</th><th>场地</th><th>预约人</th><th>日期</th><th>时段</th><th>时长</th><th>金额</th><th>预约状态</th><th>支付</th><th>操作</th></tr></thead>
@@ -426,12 +437,21 @@ function delVenue(id){if(!confirm('确定删除该场地？'))return;A('/venues/
 // ===== 预约管理 =====
 function loadVenueOpts(){A('/venues?page=1&page_size=100').then(function(d){if(d.success&&d.data&&d.data.items){var h='<option value="">全部场地</option>';d.data.items.forEach(function(v){h+='<option value="'+v.id+'">'+(v.venue_name||'')+'</option>';});document.getElementById('bkVenue').innerHTML=h;}});}
 
+function resetBookingFilter(){
+  document.getElementById('bkVenue').value='';
+  document.getElementById('bkDate').value='';
+  document.getElementById('bkStatus').value='';
+  document.getElementById('bkKeyword').value='';
+  loadBookings(1);
+}
+
 function loadBookings(p){
   if(p)CP.bookings=p;
   var venue=document.getElementById('bkVenue').value;
   var status=document.getElementById('bkStatus').value;
   var date=document.getElementById('bkDate').value;
-  var url='/venue-bookings?page='+CP.bookings+'&page_size=10'+(venue?'&venue_id='+venue:'')+(status?'&status='+status:'')+(date?'&date='+date:'');
+  var keyword=(document.getElementById('bkKeyword')||{}).value||'';
+  var url='/venue-bookings?page='+CP.bookings+'&page_size=10'+(venue?'&venue_id='+venue:'')+(status?'&status='+status:'')+(date?'&date='+date:'')+(keyword?'&keyword='+encodeURIComponent(keyword):'');
   A(url).then(function(d){
     if(d.success&&d.data&&d.data.items){
       var SM={pending:'待确认',confirmed:'已确认',completed:'已完成',cancelled:'已取消'};
@@ -443,10 +463,11 @@ function loadBookings(p){
         var t2=(b.end_time||'00:00:00').substr(0,5);
         var btns='<div class="action-btns">';
         if(b.status==='pending')btns+='<button class="btn btn-success btn-sm" onclick="confirmB('+b.id+')">确认</button>';
+        if(b.status==='confirmed')btns+='<button class="btn btn-primary btn-sm" onclick="completeB('+b.id+')">完成</button>';
         if(b.status!=='completed'&&b.status!=='cancelled')btns+='<button class="btn btn-danger btn-sm" onclick="cancelB('+b.id+')">取消</button>';
         btns+='</div>';
         return '<tr>'+
-          '<td><strong style="color:var(--primary-color)">'+ (b.verify_code||'') +'</strong></td>'+
+          '<td><strong style="color:var(--primary-color);font-size:15px;letter-spacing:1px">'+ (b.verify_code||'') +'</strong></td>'+
           '<td>'+(b.venue_name||'-')+'</td>'+
           '<td>'+(b.user_name||'')+'<br><span style="color:var(--text-secondary);font-size:11px">'+(b.user_phone||'')+'</span></td>'+
           '<td>'+(b.book_date||'')+'</td>'+
@@ -463,7 +484,29 @@ function loadBookings(p){
 }
 
 function confirmB(id){if(!confirm('确认该预约并标记已付款？'))return;A('/venue-bookings/'+id+'/pay','POST',{pay_status:'paid'}).then(function(d){if(d.success){alert('确认成功');loadBookings();loadStats();}else alert(d.msg||'操作失败');});}
+function completeB(id){if(!confirm('确认该预约已使用完成（核销）？'))return;A('/venue-bookings/'+id+'/complete','POST',{}).then(function(d){if(d.success){alert('已标记完成');loadBookings();}else alert(d.msg||'操作失败');});}
 function cancelB(id){if(!confirm('确定取消该预约？'))return;A('/venue-bookings/'+id,'PUT',{status:'cancelled'}).then(function(d){if(d.success){alert('已取消');loadBookings();}else alert(d.msg||'操作失败');});}
+
+// 核销码验证
+function verifyCode(){
+  var code=(document.getElementById('verifyInput').value||'').trim().toUpperCase();
+  var resultEl=document.getElementById('verifyResult');
+  if(!code||code.length<4){resultEl.innerHTML='<span style="color:#f5222d">请输入有效核销码</span>';return;}
+  resultEl.innerHTML='<span style="color:#909399">验证中...</span>';
+  A('/venue-bookings/verify','POST',{verify_code:code}).then(function(d){
+    if(d.success){
+      var b=d.data||{};
+      resultEl.innerHTML='<span style="color:#52c41a;font-weight:600">✅ 核销成功！</span>'
+        +' <span style="color:#333">'+(b.venue_name||'')+'</span>'
+        +' <span style="color:#666">'+(b.book_date||'')+' '+(b.start_time||'').substr(0,5)+'~'+(b.end_time||'').substr(0,5)+'</span>'
+        +' <span style="color:#1890ff">'+(b.user_name||'')+'</span>';
+      document.getElementById('verifyInput').value='';
+      loadBookings();
+    }else{
+      resultEl.innerHTML='<span style="color:#f5222d">❌ '+( d.msg||'核销失败')+'</span>';
+    }
+  }).catch(function(){resultEl.innerHTML='<span style="color:#f5222d">网络错误，请重试</span>';});
+}
 
 // ===== 统计 =====
 function loadStats(){

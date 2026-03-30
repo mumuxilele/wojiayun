@@ -2,12 +2,12 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>我家云客服</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; background: #f5f5f5; height: 100vh; display: flex; flex-direction: column; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; background: #f5f5f5; height: 100vh; height: 100dvh; display: flex; flex-direction: column; }
         
         .header { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; padding: 15px; text-align: center; flex-shrink: 0; }
         .header h1 { font-size: 18px; font-weight: 500; }
@@ -37,7 +37,7 @@
         
         .message-img { max-width: 200px; max-height: 200px; border-radius: 8px; cursor: pointer; }
         
-        .input-area { background: #fff; border-top: 1px solid #e0e0e0; padding: 12px; flex-shrink: 0; }
+        .input-area { background: #fff; border-top: 1px solid #e0e0e0; padding: 12px; padding-bottom: max(12px, env(safe-area-inset-bottom)); flex-shrink: 0; }
         .input-tools { display: flex; gap: 15px; margin-bottom: 10px; }
         .tool-btn { font-size: 24px; cursor: pointer; color: #666; }
         .tool-btn:hover { color: #667eea; }
@@ -53,20 +53,56 @@
         .waiting { text-align: center; padding: 40px; color: #999; }
         .waiting-icon { font-size: 48px; margin-bottom: 15px; }
         
+        /* 会话结束样式 */
+        .session-ended-tip {
+            background: #fff7e6;
+            border-top: 1px solid #ffd591;
+            padding: 15px;
+            padding-bottom: max(15px, env(safe-area-inset-bottom));
+            text-align: center;
+            display: none;
+        }
+        .session-ended-tip.show { display: block; }
+        .session-ended-tip p { color: #fa8c16; font-size: 14px; margin-bottom: 10px; }
+        .restart-btn {
+            background: #fa8c16;
+            color: white;
+            border: none;
+            padding: 10px 30px;
+            border-radius: 20px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+        .input-area.hidden { display: none; }
+        
+        /* 系统消息样式 */
+        .system-message {
+            text-align: center;
+            margin: 15px 0;
+        }
+        .system-message span {
+            background: rgba(0,0,0,0.1);
+            color: #666;
+            font-size: 12px;
+            padding: 4px 12px;
+            border-radius: 12px;
+        }
+        
         /* 语音录制样式 */
         .voice-btn { padding: 8px 20px; background: #52c41a; color: #fff; border: none; border-radius: 20px; cursor: pointer; font-size: 14px; }
         .voice-btn.recording { background: #f5222d; }
         
         /* 移动端H5适配 */
         @media screen and (max-width: 768px) {
-            body { height: 100dvh; height: 100vh; }
-            .header { padding: 10px 12px; }
+            body { height: 100dvh; }
+            .header { padding: 10px 12px; padding-top: max(10px, env(safe-area-inset-top)); }
             .header h1 { font-size: 16px; }
             .chat-area { padding: 10px; }
             .message-avatar { width: 32px; height: 32px; font-size: 12px; margin: 0 8px; }
             .message-bubble { padding: 10px 14px; font-size: 14px; }
             .message-img { max-width: 150px; max-height: 150px; }
-            .input-area { padding: 10px 8px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+            .input-area { padding: 10px 8px; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+            .session-ended-tip { padding-bottom: max(15px, env(safe-area-inset-bottom)); }
             .input-tools { margin-bottom: 8px; }
             .tool-btn { font-size: 22px; }
             .message-input { height: 36px; font-size: 14px; padding: 8px 12px; }
@@ -89,7 +125,12 @@
         </div>
     </div>
     
-    <div class="input-area">
+    <div class="session-ended-tip" id="sessionEndedTip">
+        <p>会话已结束</p>
+        <button class="restart-btn" onclick="restartSession()">重新对话</button>
+    </div>
+    
+    <div class="input-area" id="inputArea">
         <div class="input-tools">
             <span class="tool-btn" onclick="document.getElementById('imageInput').click()">🖼️</span>
             <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="handleImageUpload(this)">
@@ -117,6 +158,9 @@
         let hasMore = true;
         let isLoadingMore = false;
         let lastTimestamp = null;
+        let sessionEnded = false; // 会话是否已结束
+        let heartbeatInterval = null; // 心跳定时器
+        const HEARTBEAT_INTERVAL = 30000; // 心跳间隔30秒
         
         function getToken() {
             return new URLSearchParams(window.location.search).get('access_token') || 
@@ -173,6 +217,13 @@
             }
             
             renderMessages();
+            
+            // 确保滚动到底部（延迟确保DOM已渲染）
+            setTimeout(() => {
+                const container = document.getElementById('chatArea');
+                container.scrollTop = container.scrollHeight;
+            }, 100);
+            
             connectWebSocket();
             
             // 监听滚动事件实现无限滚动
@@ -211,6 +262,8 @@
             ws.onopen = () => {
                 console.log('用户端连接成功');
                 document.getElementById('status').textContent = '已连接';
+                // 启动心跳检测
+                startHeartbeat();
             };
             
             ws.onmessage = (event) => {
@@ -221,12 +274,33 @@
             ws.onclose = () => {
                 console.log('连接断开，3秒后重连');
                 document.getElementById('status').textContent = '连接断开，正在重连...';
+                // 停止心跳
+                stopHeartbeat();
                 setTimeout(connectWebSocket, 3000);
             };
             
             ws.onerror = (err) => {
                 console.error('WebSocket错误:', err);
             };
+        }
+        
+        // 启动心跳检测
+        function startHeartbeat() {
+            stopHeartbeat(); // 先清除旧的定时器
+            heartbeatInterval = setInterval(() => {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'heartbeat' }));
+                    console.log('发送心跳');
+                }
+            }, HEARTBEAT_INTERVAL);
+        }
+        
+        // 停止心跳检测
+        function stopHeartbeat() {
+            if (heartbeatInterval) {
+                clearInterval(heartbeatInterval);
+                heartbeatInterval = null;
+            }
         }
         
         function handleMessage(data) {
@@ -257,6 +331,7 @@
                         senderId: msg.sender_id || msg.senderId,
                         receiverId: msg.receiver_id || msg.receiverId,
                         senderName: msg.sender_name || msg.senderName,
+                        senderType: msg.sender_type || msg.senderType,
                         timestamp: msg.timestamp
                     };
                     messages.push(normalizedMsg);
@@ -268,7 +343,53 @@
                     assignedStaffId = null;
                     document.getElementById('status').textContent = '等待接入...';
                     break;
+                    
+                case 'session_ended':
+                    // 会话已结束
+                    sessionEnded = true;
+                    showSessionEnded();
+                    break;
+                    
+                case 'session_restarted':
+                    // 会话重新开始
+                    sessionEnded = false;
+                    hideSessionEnded();
+                    break;
+                    
+                case 'session_transferred':
+                    // 会话已转接
+                    document.getElementById('status').textContent = '客服已变更';
+                    break;
             }
+        }
+        
+        // 显示会话结束状态
+        function showSessionEnded() {
+            document.getElementById('sessionEndedTip').classList.add('show');
+            document.getElementById('inputArea').classList.add('hidden');
+            document.getElementById('status').textContent = '会话已结束';
+        }
+        
+        // 隐藏会话结束状态
+        function hideSessionEnded() {
+            document.getElementById('sessionEndedTip').classList.remove('show');
+            document.getElementById('inputArea').classList.remove('hidden');
+            document.getElementById('status').textContent = '已连接';
+        }
+        
+        // 重新开始会话
+        function restartSession() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                alert('连接断开，请刷新页面');
+                return;
+            }
+            
+            ws.send(JSON.stringify({
+                type: 'restart_session'
+            }));
+            
+            sessionEnded = false;
+            hideSessionEnded();
         }
         
         function renderMessages() {
@@ -330,6 +451,9 @@
                     contentHtml = `<img class="message-img" src="${m.content}" onclick="previewImage('${m.content}')">`;
                 } else if (m.type === 'voice') {
                     contentHtml = `<div class="message-bubble">🎤 语音消息</div>`;
+                } else if (m.type === 'system') {
+                    // 系统消息单独处理
+                    return `<div class="system-message"><span>${escapeHtml(m.content || '')}</span></div>`;
                 }
                 
                 // 添加明确的左右对齐类

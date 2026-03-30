@@ -32,6 +32,7 @@ class ChatDao {
     async initTable() {
         const conn = await this.getConnection();
         try {
+            // 消息表
             await conn.execute(`
                 CREATE TABLE IF NOT EXISTS chat_messages (
                     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -56,6 +57,30 @@ class ChatDao {
                     INDEX idx_session (session_id)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             `);
+            
+            // 会话表
+            await conn.execute(`
+                CREATE TABLE IF NOT EXISTS chat_sessions (
+                    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                    session_id VARCHAR(64) UNIQUE NOT NULL,
+                    user_id VARCHAR(64) NOT NULL,
+                    user_name VARCHAR(128),
+                    staff_id VARCHAR(64),
+                    staff_name VARCHAR(128),
+                    status VARCHAR(32) DEFAULT 'pending',
+                    last_message TEXT,
+                    last_message_time DATETIME,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    ended_at DATETIME,
+                    ended_by VARCHAR(64),
+                    INDEX idx_user (user_id),
+                    INDEX idx_staff (staff_id),
+                    INDEX idx_status (status),
+                    INDEX idx_updated (updated_at)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            `);
+            
             console.log('DB tables ready');
         } finally {
             conn.release();
@@ -70,18 +95,19 @@ class ChatDao {
         try {
             const msgId = msg.id || this.generateId();
             
-            // 使用 SQL 配置
-            const sqlTemplate = sqlLoader.getSql('chat.saveMessage');
-            const { sql, params } = sqlLoader.parseSql(sqlTemplate, {
+            // 直接执行SQL，支持sessionId
+            const sql = `INSERT INTO chat_messages (msg_id, msg_type, content, sender_id, sender_name, sender_type, receiver_id, session_id, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            const params = [
                 msgId,
-                msgType: msg.msgType || 'text',
-                content: msg.content || '',
-                senderId: msg.senderId,
-                senderName: msg.senderName || 'Unknown',
-                senderType: msg.senderType || 'user',
-                receiverId: msg.receiverId || null,
-                timestamp: new Date()
-            });
+                msg.msgType || 'text',
+                msg.content || '',
+                msg.senderId,
+                msg.senderName || 'Unknown',
+                msg.senderType || 'user',
+                msg.receiverId || null,
+                msg.sessionId || null,
+                new Date()
+            ];
             
             await conn.execute(sql, params);
             return msgId;
@@ -100,18 +126,25 @@ class ChatDao {
                 senderType,
                 limit = 50,
                 offset = 0,
-                beforeTimestamp = null
+                beforeTimestamp = null,
+                userId = null
             } = options;
 
             let sql, params = [];
 
             // 构建基础查询
-            let baseSql = `SELECT msg_id as id, msg_id, msg_type, content, sender_id as senderId, sender_name as senderName, sender_type, receiver_id as receiverId, timestamp FROM chat_messages WHERE deleted = 0`;
+            let baseSql = `SELECT msg_id as id, msg_id, msg_type, content, sender_id as senderId, sender_name as senderName, sender_type, receiver_id as receiverId, session_id as sessionId, timestamp FROM chat_messages WHERE deleted = 0`;
             
             // 根据 senderType 添加过滤条件
             if (senderType && senderType !== 'all') {
                 baseSql += ` AND sender_type = ?`;
                 params.push(senderType);
+            }
+            
+            // 按用户筛选（发送者或接收者）
+            if (userId) {
+                baseSql += ` AND (sender_id = ? OR receiver_id = ?)`;
+                params.push(userId, userId);
             }
             
             // 添加时间戳过滤
@@ -158,6 +191,209 @@ class ChatDao {
             const { sql, params } = sqlLoader.parseSql(sqlTemplate, { msgId });
             await conn.execute(sql, params);
             return true;
+        } finally {
+            conn.release();
+        }
+    }
+
+    // ============ 会话管理 ============
+
+    /**
+     * 生成会话 ID
+     */
+    generateSessionId() {
+        const ts = Date.now().toString();
+        const rnd = Math.random().toString();
+        return crypto.createHash('md5').update(ts + rnd).digest('hex');
+    }
+
+    /**
+     * 获取或创建会话
+     */
+    async getOrCreateSession(userId, userName) {
+        const conn = await this.getConnection();
+        try {
+            // 查找用户最近的活跃会话
+            const [rows] = await conn.execute(
+                `SELECT * FROM chat_sessions WHERE user_id = ? AND status IN ('pending', 'processing') ORDER BY updated_at DESC LIMIT 1`,
+                [userId]
+            );
+            
+            if (rows.length > 0) {
+                return rows[0];
+            }
+            
+            // 创建新会话
+            const sessionId = this.generateSessionId();
+            await conn.execute(
+                `INSERT INTO chat_sessions (session_id, user_id, user_name, status) VALUES (?, ?, ?, 'pending')`,
+                [sessionId, userId, userName || '用户']
+            );
+            
+            const [newRows] = await conn.execute(
+                `SELECT * FROM chat_sessions WHERE session_id = ?`,
+                [sessionId]
+            );
+            return newRows[0];
+        } finally {
+            conn.release();
+        }
+    }
+
+    /**
+     * 更新会话状态
+     */
+    async updateSessionStatus(sessionId, status, staffId = null, staffName = null) {
+        const conn = await this.getConnection();
+        try {
+            if (status === 'ended') {
+                await conn.execute(
+                    `UPDATE chat_sessions SET status = ?, staff_id = ?, staff_name = ?, ended_at = NOW(), updated_at = NOW() WHERE session_id = ?`,
+                    [status, staffId, staffName, sessionId]
+                );
+            } else {
+                await conn.execute(
+                    `UPDATE chat_sessions SET status = ?, staff_id = COALESCE(?, staff_id), staff_name = COALESCE(?, staff_name), updated_at = NOW() WHERE session_id = ?`,
+                    [status, staffId, staffName, sessionId]
+                );
+            }
+            return true;
+        } finally {
+            conn.release();
+        }
+    }
+
+    /**
+     * 分配客服
+     */
+    async assignStaff(sessionId, staffId, staffName) {
+        const conn = await this.getConnection();
+        try {
+            await conn.execute(
+                `UPDATE chat_sessions SET staff_id = ?, staff_name = ?, status = 'processing', updated_at = NOW() WHERE session_id = ?`,
+                [staffId, staffName, sessionId]
+            );
+            return true;
+        } finally {
+            conn.release();
+        }
+    }
+
+    /**
+     * 更新会话最后消息
+     */
+    async updateSessionLastMessage(sessionId, message, messageTime) {
+        const conn = await this.getConnection();
+        try {
+            await conn.execute(
+                `UPDATE chat_sessions SET last_message = ?, last_message_time = ?, updated_at = NOW() WHERE session_id = ?`,
+                [message, messageTime, sessionId]
+            );
+            return true;
+        } finally {
+            conn.release();
+        }
+    }
+
+    /**
+     * 获取会话列表
+     * @param {Object} options - 查询选项
+     * @param {string} options.filter - 筛选类型: 'mine'(我处理的), 'all'(全部)
+     * @param {string} options.staffId - 当前客服ID
+     * @param {string} options.status - 状态筛选: 'pending', 'processing', 'ended'
+     * @param {number} options.limit - 分页限制
+     * @param {number} options.offset - 分页偏移
+     */
+    async getSessions(options = {}) {
+        const conn = await this.getConnection();
+        try {
+            const { filter = 'all', staffId, status, limit = 50, offset = 0 } = options;
+            
+            let sql = `SELECT * FROM chat_sessions WHERE 1=1`;
+            const params = [];
+            
+            // 按客服筛选
+            if (filter === 'mine' && staffId) {
+                sql += ` AND (staff_id = ? OR status = 'pending')`;
+                params.push(staffId);
+            }
+            
+            // 按状态筛选
+            if (status) {
+                sql += ` AND status = ?`;
+                params.push(status);
+            }
+            
+            sql += ` ORDER BY updated_at DESC LIMIT ? OFFSET ?`;
+            params.push(parseInt(limit), parseInt(offset));
+            
+            const [rows] = await conn.query(sql, params);
+            return rows;
+        } finally {
+            conn.release();
+        }
+    }
+
+    /**
+     * 根据用户ID获取会话
+     */
+    async getSessionByUserId(userId) {
+        const conn = await this.getConnection();
+        try {
+            const [rows] = await conn.execute(
+                `SELECT * FROM chat_sessions WHERE user_id = ? ORDER BY updated_at DESC LIMIT 1`,
+                [userId]
+            );
+            return rows[0] || null;
+        } finally {
+            conn.release();
+        }
+    }
+
+    /**
+     * 获取会话统计
+     */
+    async getSessionStats(staffId = null) {
+        const conn = await this.getConnection();
+        try {
+            const stats = {
+                pending: 0,
+                processing: 0,
+                ended: 0,
+                myPending: 0,
+                myProcessing: 0,
+                myEnded: 0
+            };
+            
+            // 全部统计
+            const [allRows] = await conn.execute(
+                `SELECT status, COUNT(*) as cnt FROM chat_sessions GROUP BY status`
+            );
+            allRows.forEach(row => {
+                if (row.status === 'pending') stats.pending = row.cnt;
+                else if (row.status === 'processing') stats.processing = row.cnt;
+                else if (row.status === 'ended') stats.ended = row.cnt;
+            });
+            
+            // 我的统计
+            if (staffId) {
+                const [myRows] = await conn.execute(
+                    `SELECT status, COUNT(*) as cnt FROM chat_sessions WHERE staff_id = ? GROUP BY status`,
+                    [staffId]
+                );
+                myRows.forEach(row => {
+                    if (row.status === 'processing') stats.myProcessing = row.cnt;
+                    else if (row.status === 'ended') stats.myEnded = row.cnt;
+                });
+                
+                // 待处理的（未分配客服的）
+                const [pendingRows] = await conn.execute(
+                    `SELECT COUNT(*) as cnt FROM chat_sessions WHERE status = 'pending'`
+                );
+                stats.myPending = pendingRows[0]?.cnt || 0;
+            }
+            
+            return stats;
         } finally {
             conn.release();
         }

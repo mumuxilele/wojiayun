@@ -91,22 +91,22 @@
             <div id="panel-points" class="page-panel">
                 <iframe id="iframe-points" src="about:blank"></iframe>
             </div>
-            <!-- 数据统计 -->
+            <!-- 数据统计 (iframe) -->
             <div id="panel-statistics" class="page-panel">
-                <div class="inner-content" id="statisticsContent"></div>
+                <iframe id="iframe-statistics" src="about:blank"></iframe>
             </div>
-            <!-- 申请单/订单/门店/用户 (动态加载) -->
+            <!-- 申请单/订单/门店/用户 (iframe 模式，功能完整) -->
             <div id="panel-applications" class="page-panel">
-                <div class="inner-content" id="applicationsContent"></div>
+                <iframe id="iframe-applications" src="about:blank"></iframe>
             </div>
             <div id="panel-orders" class="page-panel">
-                <div class="inner-content" id="ordersContent"></div>
+                <iframe id="iframe-orders" src="about:blank"></iframe>
             </div>
             <div id="panel-shops" class="page-panel">
-                <div class="inner-content" id="shopsContent"></div>
+                <iframe id="iframe-shops" src="about:blank"></iframe>
             </div>
             <div id="panel-users" class="page-panel">
-                <div class="inner-content" id="usersContent"></div>
+                <iframe id="iframe-users" src="about:blank"></iframe>
             </div>
         </div>
     </div>
@@ -165,12 +165,8 @@
             // 根据页面类型加载内容
             if (page === 'dashboard') {
                 loadDashboard();
-            } else if (page === 'venues' || page === 'points') {
-                loadIframe(page);
-            } else if (page === 'statistics') {
-                loadStatistics();
             } else {
-                loadList(page);
+                loadIframe(page);
             }
             
             currentPage = page;

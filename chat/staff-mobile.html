@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>客服工作台</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            height: 100dvh; /* 动态视口高度，更好支持移动端 */
+            overflow: hidden;
+        }
+        
+        /* 主容器 */
+        .app-container {
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        /* 页面切换 */
+        .page {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #f5f5f5;
+            display: none;
+            flex-direction: column;
+        }
+        
+        .page.active {
+            display: flex;
+        }
+        
+        /* 顶部导航 */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 16px;
+            padding-top: max(12px, env(safe-area-inset-top));
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            z-index: 100;
+        }
+        
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .header-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .back-btn {
+            background: transparent;
+            padding: 8px;
+            margin-right: 8px;
+        }
+        
+        /* 会话列表页 */
+        .session-list {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 70px;
+        }
+        
+        .session-item {
+            background: white;
+            padding: 14px 16px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .session-item:active {
+            background: #f0f0f0;
+        }
+        
+        .session-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 500;
+            flex-shrink: 0;
+            position: relative;
+        }
+        
+        .session-avatar.ended {
+            background: #ccc;
+        }
+        
+        .online-dot {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 12px;
+            height: 12px;
+            background: #52c41a;
+            border: 2px solid white;
+            border-radius: 50%;
+        }
+        
+        .session-info {
+            flex: 1;
+            margin-left: 12px;
+            overflow: hidden;
+        }
+        
+        .session-name {
+            font-size: 16px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .session-status {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            background: #e6f7ff;
+            color: #1890ff;
+        }
+        
+        .session-status.ended {
+            background: #fff1f0;
+            color: #ff4d4f;
+        }
+        
+        .session-preview {
+            font-size: 14px;
+            color: #999;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .session-meta {
+            text-align: right;
+            flex-shrink: 0;
+        }
+        
+        .session-time {
+            font-size: 12px;
+            color: #bbb;
+            margin-bottom: 4px;
+        }
+        
+        .unread-badge {
+            background: #ff4d4f;
+            color: white;
+            font-size: 12px;
+            min-width: 20px;
+            height: 20px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 6px;
+        }
+        
+        /* 聊天页面 */
+        .chat-page .header {
+            background: white;
+            color: #333;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .chat-header-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .chat-header-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+        
+        .chat-header-name {
+            font-size: 16px;
+            font-weight: 500;
+        }
+        
+        .chat-header-status {
+            font-size: 12px;
+            color: #52c41a;
+        }
+        
+        .chat-header-status.ended {
+            color: #ff4d4f;
+        }
+        
+        .more-btn {
+            background: transparent;
+            border: none;
+            font-size: 24px;
+            color: #666;
+            cursor: pointer;
+            padding: 8px;
+        }
+        
+        /* 消息区域 */
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            background: #f5f5f5;
+        }
+        
+        .message {
+            margin-bottom: 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        
+        .message.self {
+            flex-direction: row-reverse;
+        }
+        
+        .msg-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #667eea;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        
+        .message.self .msg-avatar {
+            background: #52c41a;
+        }
+        
+        .msg-content {
+            max-width: 70%;
+        }
+        
+        .msg-bubble {
+            padding: 10px 14px;
+            border-radius: 16px;
+            background: white;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            word-wrap: break-word;
+            font-size: 15px;
+            line-height: 1.4;
+        }
+        
+        .message.self .msg-bubble {
+            background: #95ec69;
+        }
+        
+        .msg-time {
+            font-size: 11px;
+            color: #bbb;
+            margin-top: 4px;
+            text-align: right;
+        }
+        
+        .message.self .msg-time {
+            text-align: left;
+        }
+        
+        /* 系统消息 */
+        .system-message {
+            text-align: center;
+            margin: 16px 0;
+        }
+        
+        .system-message span {
+            background: rgba(0,0,0,0.1);
+            color: #666;
+            font-size: 12px;
+            padding: 4px 12px;
+            border-radius: 12px;
+        }
+        
+        /* 输入区域 */
+        .input-area {
+            background: white;
+            border-top: 1px solid #eee;
+            padding: 10px 12px;
+            padding-bottom: max(10px, env(safe-area-inset-bottom));
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+        }
+        
+        .input-area.ended {
+            display: none;
+        }
+        
+        .input-wrapper {
+            flex: 1;
+            background: #f5f5f5;
+            border-radius: 20px;
+            padding: 8px 14px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .msg-input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-size: 15px;
+            outline: none;
+            resize: none;
+            max-height: 80px;
+            line-height: 1.4;
+        }
+        
+        .send-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 20px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        
+        .send-btn:disabled {
+            opacity: 0.5;
+        }
+        
+        /* 会话已结束提示 */
+        .session-ended-tip {
+            background: #fff7e6;
+            border-top: 1px solid #ffd591;
+            padding: 12px 16px;
+            padding-bottom: max(12px, env(safe-area-inset-bottom));
+            text-align: center;
+            display: none;
+        }
+        
+        .session-ended-tip.show {
+            display: block;
+        }
+        
+        .session-ended-tip p {
+            color: #fa8c16;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .restart-btn {
+            background: #fa8c16;
+            color: white;
+            border: none;
+            padding: 8px 24px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        /* 底部操作菜单 */
+        .action-sheet {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            display: none;
+            align-items: flex-end;
+        }
+        
+        .action-sheet.show {
+            display: flex;
+        }
+        
+        .action-sheet-content {
+            background: white;
+            width: 100%;
+            border-radius: 16px 16px 0 0;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        .action-sheet-title {
+            text-align: center;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 500;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .action-item {
+            padding: 16px;
+            font-size: 16px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+        
+        .action-item:active {
+            background: #f5f5f5;
+        }
+        
+        .action-item.danger {
+            color: #ff4d4f;
+        }
+        
+        .action-item.success {
+            color: #52c41a;
+        }
+        
+        .action-cancel {
+            padding: 16px;
+            font-size: 16px;
+            text-align: center;
+            color: #999;
+            cursor: pointer;
+            background: #f5f5f5;
+            margin-top: 8px;
+        }
+        
+        /* 转接页面 */
+        .transfer-page .header {
+            background: white;
+            color: #333;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .staff-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .staff-item {
+            background: white;
+            padding: 14px 16px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        
+        .staff-item:active {
+            background: #f5f5f5;
+        }
+        
+        .staff-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #1890ff;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            margin-right: 12px;
+        }
+        
+        .staff-info {
+            flex: 1;
+        }
+        
+        .staff-name {
+            font-size: 16px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .staff-role {
+            font-size: 13px;
+            color: #999;
+            margin-top: 2px;
+        }
+        
+        .staff-status {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: #e6f7ff;
+            color: #1890ff;
+        }
+        
+        .staff-status.offline {
+            background: #f5f5f5;
+            color: #999;
+        }
+        
+        /* 空状态 */
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        
+        .empty-state p {
+            font-size: 15px;
+        }
+        
+        /* Toast 提示 */
+        .toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 2000;
+            display: none;
+        }
+        
+        .toast.show {
+            display: block;
+        }
+        
+        /* 加载状态 */
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1500;
+        }
+        
+        .loading.show {
+            display: flex;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 页签样式 */
+        .tabs {
+            display: flex;
+            background: white;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 12px 16px;
+            text-align: center;
+            font-size: 15px;
+            color: #666;
+            cursor: pointer;
+            position: relative;
+            transition: color 0.2s;
+        }
+        
+        .tab.active {
+            color: #667eea;
+            font-weight: 500;
+        }
+        
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 20%;
+            right: 20%;
+            height: 2px;
+            background: #667eea;
+            border-radius: 1px;
+        }
+        
+        .tab-badge {
+            display: inline-block;
+            min-width: 18px;
+            height: 18px;
+            line-height: 18px;
+            padding: 0 5px;
+            background: #ff4d4f;
+            color: white;
+            font-size: 11px;
+            border-radius: 9px;
+            margin-left: 4px;
+            vertical-align: middle;
+        }
+        
+        .tab-badge.zero {
+            display: none;
+        }
+        
+        /* 状态筛选标签 */
+        .status-filter {
+            display: flex;
+            padding: 10px 16px;
+            background: #f9f9f9;
+            gap: 8px;
+            overflow-x: auto;
+        }
+        
+        .status-tag {
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 13px;
+            white-space: nowrap;
+            cursor: pointer;
+            background: white;
+            color: #666;
+            border: 1px solid #eee;
+        }
+        
+        .status-tag.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .status-tag.pending {
+            border-color: #faad14;
+            color: #faad14;
+        }
+        
+        .status-tag.pending.active {
+            background: #faad14;
+            color: white;
+        }
+        
+        .status-tag.processing {
+            border-color: #52c41a;
+            color: #52c41a;
+        }
+        
+        .status-tag.processing.active {
+            background: #52c41a;
+            color: white;
+        }
+        
+        .status-tag.ended {
+            border-color: #999;
+            color: #999;
+        }
+        
+        .status-tag.ended.active {
+            background: #999;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 会话列表页 -->
+        <div class="page active" id="sessionListPage">
+            <div class="header">
+                <div class="header-title">客服工作台</div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span id="onlineStatus" style="font-size: 13px; opacity: 0.9;">● 在线</span>
+                </div>
+            </div>
+            
+            <!-- 页签 -->
+            <div class="tabs">
+                <div class="tab active" id="tabMine" onclick="switchTab('mine')">
+                    我处理的
+                    <span class="tab-badge zero" id="mineBadge">0</span>
+                </div>
+                <div class="tab" id="tabAll" onclick="switchTab('all')">
+                    全部
+                    <span class="tab-badge zero" id="allBadge">0</span>
+                </div>
+            </div>
+            
+            <!-- 状态筛选 -->
+            <div class="status-filter" id="statusFilter">
+                <div class="status-tag active" data-status="" onclick="filterStatus('')">全部</div>
+                <div class="status-tag pending" data-status="pending" onclick="filterStatus('pending')">待处理</div>
+                <div class="status-tag processing" data-status="processing" onclick="filterStatus('processing')">处理中</div>
+                <div class="status-tag ended" data-status="ended" onclick="filterStatus('ended')">已结束</div>
+            </div>
+            
+            <div class="session-list" id="sessionList">
+                <!-- 会话列表动态生成 -->
+            </div>
+        </div>
+        
+        <!-- 聊天页面 -->
+        <div class="page chat-page" id="chatPage">
+            <div class="header">
+                <div class="chat-header-info">
+                    <button class="back-btn" onclick="showPage('sessionListPage')">←</button>
+                    <div class="chat-header-avatar" id="chatAvatar">用</div>
+                    <div>
+                        <div class="chat-header-name" id="chatName">用户名</div>
+                        <div class="chat-header-status" id="chatStatus">会话中</div>
+                    </div>
+                </div>
+                <button class="more-btn" id="moreBtn" onclick="showActionSheet()">⋮</button>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <!-- 消息动态生成 -->
+            </div>
+            <div class="session-ended-tip" id="sessionEndedTip">
+                <p>会话已结束</p>
+                <button class="restart-btn" onclick="restartSession()">重新对话</button>
+            </div>
+            <div class="input-area" id="inputArea">
+                <div class="input-wrapper">
+                    <textarea class="msg-input" id="msgInput" placeholder="输入消息..." rows="1" onkeydown="handleKeyDown(event)"></textarea>
+                </div>
+                <button class="send-btn" onclick="sendMessage()">发送</button>
+            </div>
+        </div>
+        
+        <!-- 转接页面 -->
+        <div class="page transfer-page" id="transferPage">
+            <div class="header">
+                <div class="chat-header-info">
+                    <button class="back-btn" onclick="showPage('chatPage')">←</button>
+                    <div class="header-title">选择客服</div>
+                </div>
+            </div>
+            <div class="staff-list" id="staffList">
+                <!-- 客服列表动态生成 -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- 操作菜单 -->
+    <div class="action-sheet" id="actionSheet" onclick="hideActionSheet()">
+        <div class="action-sheet-content" onclick="event.stopPropagation()">
+            <div class="action-sheet-title">会话操作</div>
+            <div class="action-item" onclick="transferSession()">
+                <span style="margin-right: 8px;">🔄</span>转接给其他客服
+            </div>
+            <div class="action-item danger" onclick="endSession()">
+                <span style="margin-right: 8px;">⏹️</span>结束会话
+            </div>
+            <div class="action-cancel" onclick="hideActionSheet()">取消</div>
+        </div>
+    </div>
+    
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+    
+    <!-- Loading -->
+    <div class="loading" id="loading">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <script>
+        // 全局状态
+        let ws = null;
+        let token = null;
+        let staffId = null;
+        let staffName = '';
+        let currentSession = null;  // 当前会话用户ID
+        let sessions = {};  // 会话列表 { userId: { name, messages, unread, status, lastMessage, lastTime } }
+        let messageIds = new Set();
+        let isDev = '0';
+        let currentTab = 'mine'; // 当前页签: 'mine' 或 'all'
+        let currentStatus = '';  // 当前状态筛选: '', 'pending', 'processing', 'ended'
+        let sessionStats = { pending: 0, processing: 0, ended: 0, myPending: 0, myProcessing: 0, myEnded: 0 };
+        
+        // 初始化
+        async function init() {
+            // 获取URL参数
+            const urlParams = new URLSearchParams(window.location.search);
+            token = urlParams.get('access_token');
+            isDev = urlParams.get('isdev') || '0';
+            
+            if (!token) {
+                showToast('缺少访问令牌');
+                return;
+            }
+            
+            showLoading();
+            
+            // 连接WebSocket
+            connectWebSocket();
+            
+            // 加载会话列表
+            await loadSessions();
+            
+            // 加载客服列表
+            await loadStaffList();
+            
+            hideLoading();
+        }
+        
+        // 切换页签
+        async function switchTab(tab) {
+            currentTab = tab;
+            
+            // 更新页签样式
+            document.getElementById('tabMine').classList.toggle('active', tab === 'mine');
+            document.getElementById('tabAll').classList.toggle('active', tab === 'all');
+            
+            // 重置状态筛选
+            currentStatus = '';
+            document.querySelectorAll('.status-tag').forEach(tag => {
+                tag.classList.toggle('active', tag.dataset.status === '');
+            });
+            
+            // 重新加载会话列表
+            await loadSessions();
+        }
+        
+        // 状态筛选
+        async function filterStatus(status) {
+            currentStatus = status;
+            
+            // 更新筛选样式
+            document.querySelectorAll('.status-tag').forEach(tag => {
+                tag.classList.toggle('active', tag.dataset.status === status);
+            });
+            
+            // 重新加载会话列表
+            await loadSessions();
+        }
+            
+            // 加载客服列表
+            await loadStaffList();
+            
+            hideLoading();
+        }
+        
+        // WebSocket连接
+        function connectWebSocket() {
+            const wsUrl = `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}?access_token=${encodeURIComponent(token)}&type=staff&isdev=${isDev}`;
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleWsMessage(data);
+            };
+            
+            ws.onclose = () => {
+                console.log('WebSocket closed');
+                showToast('连接断开，正在重连...');
+                setTimeout(connectWebSocket, 3000);
+            };
+            
+            ws.onerror = (err) => {
+                console.error('WebSocket error:', err);
+            };
+        }
+        
+        // 处理WebSocket消息
+        function handleWsMessage(data) {
+            console.log('WS message:', data);
+            
+            if (data.type === 'welcome') {
+                staffId = data.userId;
+                staffName = data.userName || '客服';
+                console.log('Staff ID:', staffId);
+            } else if (data.type === 'message') {
+                const msg = data.data;
+                const senderType = msg.senderType || 'user';
+                
+                // 确定会话ID：员工发送的消息用 receiverId，用户发送的消息用 senderId
+                const sessionUserId = senderType === 'staff' ? msg.receiverId : msg.senderId;
+                
+                // 创建或更新会话
+                if (!sessions[sessionUserId]) {
+                    sessions[sessionUserId] = {
+                        name: senderType === 'staff' ? (msg.receiverName || '用户') : (msg.senderName || '用户'),
+                        messages: [],
+                        unread: 0,
+                        status: 'active'
+                    };
+                }
+                
+                // 去重
+                const msgId = msg.id || msg.msg_id;
+                if (!messageIds.has(msgId)) {
+                    messageIds.add(msgId);
+                    sessions[sessionUserId].messages.push({
+                        id: msgId,
+                        type: msg.msgType || 'text',
+                        content: msg.content,
+                        senderId: msg.senderId,
+                        senderName: msg.senderName,
+                        senderType: senderType,
+                        timestamp: msg.timestamp
+                    });
+                    sessions[sessionUserId].lastMessage = msg.content;
+                    sessions[sessionUserId].lastTime = msg.timestamp;
+                    
+                    // 如果不是当前会话，增加未读（只对用户发来的消息计数）
+                    if (currentSession !== sessionUserId && senderType === 'user') {
+                        sessions[sessionUserId].unread++;
+                    }
+                }
+                
+                renderSessionList();
+                
+                // 如果在聊天页面，刷新消息
+                if (currentSession === sessionUserId) {
+                    renderMessages();
+                }
+            } else if (data.type === 'session_ended') {
+                // 会话被结束
+                const userId = data.userId;
+                if (sessions[userId]) {
+                    sessions[userId].status = 'ended';
+                    renderSessionList();
+                    if (currentSession === userId) {
+                        showSessionEnded();
+                    }
+                }
+            } else if (data.type === 'session_restarted') {
+                // 会话重新开始
+                const userId = data.userId;
+                if (sessions[userId]) {
+                    sessions[userId].status = 'active';
+                    renderSessionList();
+                    if (currentSession === userId) {
+                        hideSessionEnded();
+                    }
+                }
+            } else if (data.type === 'session_transferred') {
+                // 会话被转接
+                const { fromStaffId, toStaffId, userId } = data;
+                if (toStaffId === staffId) {
+                    showToast('有新会话转入');
+                    loadSessions();
+                }
+            }
+        }
+        
+        // 加载会话列表
+        async function loadSessions() {
+            try {
+                // 构建API URL
+                let url = `/api/sessions?access_token=${encodeURIComponent(token)}&type=staff&isdev=${isDev}&filter=${currentTab}`;
+                if (currentStatus) {
+                    url += `&status=${currentStatus}`;
+                }
+                
+                const res = await fetch(url);
+                const json = await res.json();
+                
+                if (json.success) {
+                    // 更新统计
+                    if (json.stats) {
+                        sessionStats = json.stats;
+                        updateBadges();
+                    }
+                    
+                    // 转换会话数据格式
+                    sessions = {};
+                    json.data.forEach(session => {
+                        sessions[session.user_id] = {
+                            id: session.session_id,
+                            name: session.user_name || '用户',
+                            staffId: session.staff_id,
+                            staffName: session.staff_name,
+                            status: session.status,
+                            lastMessage: session.last_message || '',
+                            lastTime: session.last_message_time || session.updated_at,
+                            messages: [],
+                            unread: 0
+                        };
+                    });
+                    
+                    renderSessionList();
+                }
+            } catch (err) {
+                console.error('Load sessions error:', err);
+            }
+        }
+        
+        // 更新页签徽章
+        function updateBadges() {
+            const mineBadge = document.getElementById('mineBadge');
+            const allBadge = document.getElementById('allBadge');
+            
+            // 我的待处理 + 处理中
+            const mineCount = sessionStats.myPending + sessionStats.myProcessing;
+            mineBadge.textContent = mineCount;
+            mineBadge.classList.toggle('zero', mineCount === 0);
+            
+            // 全部待处理 + 处理中
+            const allCount = sessionStats.pending + sessionStats.processing;
+            allBadge.textContent = allCount;
+            allBadge.classList.toggle('zero', allCount === 0);
+        }
+        
+        // 渲染会话列表
+        function renderSessionList() {
+            const container = document.getElementById('sessionList');
+            const sessionArray = Object.entries(sessions).sort((a, b) => {
+                return new Date(b[1].lastTime) - new Date(a[1].lastTime);
+            });
+            
+            if (sessionArray.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        <p>暂无会话</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = sessionArray.map(([userId, session]) => {
+                const status = session.status || 'pending';
+                const avatarText = session.name ? session.name[0] : '用';
+                const time = session.lastTime ? formatTime(session.lastTime) : '';
+                
+                // 状态显示
+                let statusText = '待处理';
+                let statusClass = 'pending';
+                if (status === 'processing') {
+                    statusText = '处理中';
+                    statusClass = 'processing';
+                } else if (status === 'ended') {
+                    statusText = '已结束';
+                    statusClass = 'ended';
+                }
+                
+                return `
+                    <div class="session-item" onclick="openSession('${userId}')">
+                        <div class="session-avatar ${status === 'ended' ? 'ended' : ''}">
+                            ${avatarText}
+                            ${status !== 'ended' ? '<div class="online-dot"></div>' : ''}
+                        </div>
+                        <div class="session-info">
+                            <div class="session-name">
+                                ${session.name}
+                                <span class="session-status ${statusClass}">${statusText}</span>
+                            </div>
+                            <div class="session-preview">${session.lastMessage || '暂无消息'}</div>
+                        </div>
+                        <div class="session-meta">
+                            <div class="session-time">${time}</div>
+                            ${session.unread > 0 ? `<div class="unread-badge">${session.unread}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // 打开会话
+        async function openSession(userId) {
+            currentSession = userId;
+            const session = sessions[userId];
+            
+            // 清除未读
+            session.unread = 0;
+            renderSessionList();
+            
+            // 更新聊天头部
+            document.getElementById('chatAvatar').textContent = session.name ? session.name[0] : '用';
+            document.getElementById('chatName').textContent = session.name;
+            
+            // 显示会话状态
+            const statusEl = document.getElementById('chatStatus');
+            const status = session.status || 'pending';
+            if (status === 'ended') {
+                statusEl.textContent = '已结束';
+                statusEl.className = 'chat-header-status ended';
+                showSessionEnded();
+            } else if (status === 'pending') {
+                statusEl.textContent = '待处理';
+                statusEl.className = 'chat-header-status pending';
+                hideSessionEnded();
+            } else {
+                statusEl.textContent = '处理中';
+                statusEl.className = 'chat-header-status';
+                hideSessionEnded();
+            }
+            
+            // 加载消息记录
+            await loadMessages(userId);
+            
+            // 切换到聊天页面
+            showPage('chatPage');
+            
+            // 页面切换后滚动到底部（延迟确保DOM已渲染）
+            setTimeout(() => {
+                const container = document.getElementById('chatMessages');
+                container.scrollTop = container.scrollHeight;
+            }, 50);
+        }
+        
+        // 加载消息记录
+        async function loadMessages(userId) {
+            try {
+                const res = await fetch(`/api/messages?access_token=${encodeURIComponent(token)}&type=staff&isdev=${isDev}&userId=${userId}&limit=100`);
+                const json = await res.json();
+                
+                if (json.success && json.data) {
+                    const session = sessions[userId];
+                    if (!session.messages) {
+                        session.messages = [];
+                    }
+                    
+                    // 添加消息到会话
+                    json.data.forEach(msg => {
+                        const msgId = msg.id || msg.msg_id;
+                        if (!messageIds.has(msgId)) {
+                            messageIds.add(msgId);
+                            session.messages.push({
+                                id: msgId,
+                                type: msg.msg_type || 'text',
+                                content: msg.content,
+                                senderId: msg.senderId,
+                                senderName: msg.senderName,
+                                senderType: msg.sender_type,
+                                timestamp: msg.timestamp
+                            });
+                        }
+                    });
+                }
+                
+                renderMessages();
+            } catch (err) {
+                console.error('Load messages error:', err);
+                renderMessages();
+            }
+        }
+        
+        // 渲染消息
+        function renderMessages() {
+            const container = document.getElementById('chatMessages');
+            const session = sessions[currentSession];
+            
+            if (!session || !session.messages.length) {
+                container.innerHTML = `
+                    <div class="system-message">
+                        <span>会话开始</span>
+                    </div>
+                `;
+                return;
+            }
+            
+            const sortedMessages = session.messages.sort((a, b) => 
+                new Date(a.timestamp) - new Date(b.timestamp)
+            );
+            
+            container.innerHTML = sortedMessages.map(msg => {
+                const isSelf = msg.senderType === 'staff';
+                const avatarText = isSelf ? (staffName[0] || '我') : (msg.senderName ? msg.senderName[0] : '用');
+                const time = formatTime(msg.timestamp);
+                
+                return `
+                    <div class="message ${isSelf ? 'self' : ''}">
+                        <div class="msg-avatar">${avatarText}</div>
+                        <div class="msg-content">
+                            <div class="msg-bubble">${escapeHtml(msg.content)}</div>
+                            <div class="msg-time">${time}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // 滚动到底部
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        // 发送消息
+        function sendMessage() {
+            const input = document.getElementById('msgInput');
+            const content = input.value.trim();
+            
+            if (!content || !currentSession || !ws) return;
+            
+            ws.send(JSON.stringify({
+                type: 'chat',
+                msgType: 'text',
+                content: content,
+                receiverId: currentSession
+            }));
+            
+            input.value = '';
+            input.style.height = 'auto';
+        }
+        
+        // 键盘事件
+        function handleKeyDown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+        
+        // 显示操作菜单
+        function showActionSheet() {
+            document.getElementById('actionSheet').classList.add('show');
+        }
+        
+        // 隐藏操作菜单
+        function hideActionSheet() {
+            document.getElementById('actionSheet').classList.remove('show');
+        }
+        
+        // 转接会话
+        function transferSession() {
+            hideActionSheet();
+            showPage('transferPage');
+        }
+        
+        // 加载客服列表
+        async function loadStaffList() {
+            try {
+                const res = await fetch(`/api/online-users?access_token=${encodeURIComponent(token)}&type=staff&isdev=${isDev}`);
+                const json = await res.json();
+                
+                if (json.success && json.data) {
+                    renderStaffList(json.data);
+                }
+            } catch (err) {
+                console.error('Load staff list error:', err);
+            }
+        }
+        
+        // 渲染客服列表
+        function renderStaffList(staffData) {
+            const container = document.getElementById('staffList');
+            
+            // 过滤掉自己
+            const otherStaff = staffData.filter(s => s.userId !== staffId);
+            
+            if (otherStaff.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        <p>暂无其他在线客服</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = otherStaff.map(staff => {
+                const avatarText = staff.userName ? staff.userName[0] : '客';
+                return `
+                    <div class="staff-item" onclick="doTransfer('${staff.userId}', '${staff.userName || '客服'}')">
+                        <div class="staff-avatar">${avatarText}</div>
+                        <div class="staff-info">
+                            <div class="staff-name">${staff.userName || '客服'}</div>
+                            <div class="staff-role">客服人员</div>
+                        </div>
+                        <div class="staff-status">在线</div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // 执行转接
+        function doTransfer(toStaffId, toStaffName) {
+            if (!currentSession || !ws) return;
+            
+            showLoading();
+            
+            ws.send(JSON.stringify({
+                type: 'transfer',
+                userId: currentSession,
+                toStaffId: toStaffId
+            }));
+            
+            // 更新本地状态
+            delete sessions[currentSession];
+            currentSession = null;
+            
+            hideLoading();
+            showToast(`已转接给 ${toStaffName}`);
+            showPage('sessionListPage');
+            renderSessionList();
+        }
+        
+        // 结束会话
+        function endSession() {
+            hideActionSheet();
+            
+            if (!currentSession || !ws) return;
+            
+            ws.send(JSON.stringify({
+                type: 'end_session',
+                userId: currentSession
+            }));
+            
+            // 更新本地状态
+            sessions[currentSession].status = 'ended';
+            showSessionEnded();
+            renderSessionList();
+            
+            showToast('会话已结束');
+        }
+        
+        // 重新开始会话
+        function restartSession() {
+            if (!currentSession || !ws) return;
+            
+            ws.send(JSON.stringify({
+                type: 'restart_session',
+                userId: currentSession
+            }));
+            
+            sessions[currentSession].status = 'active';
+            hideSessionEnded();
+            renderSessionList();
+            
+            showToast('会话已重新开始');
+        }
+        
+        // 显示会话结束状态
+        function showSessionEnded() {
+            document.getElementById('sessionEndedTip').classList.add('show');
+            document.getElementById('inputArea').classList.add('ended');
+            document.getElementById('chatStatus').textContent = '已结束';
+            document.getElementById('chatStatus').classList.add('ended');
+        }
+        
+        // 隐藏会话结束状态
+        function hideSessionEnded() {
+            document.getElementById('sessionEndedTip').classList.remove('show');
+            document.getElementById('inputArea').classList.remove('ended');
+            document.getElementById('chatStatus').textContent = '会话中';
+            document.getElementById('chatStatus').classList.remove('ended');
+        }
+        
+        // 页面切换
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+        }
+        
+        // 工具函数
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const isToday = date.toDateString() === now.toDateString();
+            
+            if (isToday) {
+                return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+            } else {
+                return date.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
+            }
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+        
+        function showLoading() {
+            document.getElementById('loading').classList.add('show');
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('show');
+        }
+        
+        // 启动
+        init();
+    </script>
+</body>
+</html>

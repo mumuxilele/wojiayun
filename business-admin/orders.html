@@ -5,13 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>订单管理</title>
     <style>
-        /* ==================== 基础样式 ==================== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         :root {
             --primary-color: #1890ff;
             --primary-light: #40a9ff;
-            --primary-dark: #096dd9;
             --success-color: #52c41a;
             --warning-color: #faad14;
             --danger-color: #ff4d4f;
@@ -24,155 +21,297 @@
             --bg-light: #f5f7fa;
             --bg-striped: #fafafa;
         }
-
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg-light); font-size: 14px; color: var(--text-regular); }
-        
-        /* ==================== 页面布局 ==================== */
         .header { background: #001529; color: white; padding: 15px 20px; display: flex; align-items: center; }
         .header h1 { font-size: 18px; flex: 1; }
         .back { color: white; text-decoration: none; font-size: 14px; }
-        
-        /* ==================== 工具栏 ==================== */
         .toolbar { background: var(--bg-white); padding: 15px 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; border-bottom: 1px solid var(--border-color); }
-        .search-input { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; width: 200px; font-size: 14px; transition: border-color .2s; }
-        .search-input:hover { border-color: #c0c4cc; }
+        .search-input { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; width: 200px; font-size: 14px; }
         .search-input:focus { border-color: var(--primary-color); outline: none; }
-        .select { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; background: var(--bg-white); cursor: pointer; }
-        
-        /* ==================== 按钮 ==================== */
+        .select { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; background: var(--bg-white); }
         .btn { padding: 9px 15px; border-radius: 4px; font-size: 14px; cursor: pointer; border: 1px solid var(--border-color); background: var(--bg-white); color: var(--text-regular); transition: all .2s; }
         .btn:hover { color: var(--primary-color); border-color: var(--primary-color); }
         .btn-primary { background: var(--primary-color); border-color: var(--primary-color); color: var(--bg-white); }
         .btn-primary:hover { background: var(--primary-light); border-color: var(--primary-light); }
-        
-        /* ==================== Element UI 表格 ==================== */
-        .el-table { width: 100%; border: 1px solid var(--border-color); border-radius: 4px; background-color: var(--bg-white); color: var(--text-regular); font-size: 14px; border-collapse: collapse; }
-        
-        /* 表头 */
+        .el-table { width: 100%; border: 1px solid var(--border-color); border-radius: 4px; background-color: var(--bg-white); font-size: 14px; border-collapse: collapse; }
         .el-table__header th { padding: 12px 10px; background-color: var(--bg-light); color: var(--text-primary); font-weight: 500; text-align: left; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); }
         .el-table__header th:last-child { border-right: none; }
-        
-        /* 表体 */
         .el-table__body td { padding: 12px 10px; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); }
         .el-table__body td:last-child { border-right: none; }
-        
-        /* 行悬停 */
         .el-table__body tr:hover > td { background-color: var(--bg-light); }
-        
-        /* 斑马纹 */
         .el-table--striped .el-table__body tr:nth-child(2n) td { background-color: var(--bg-striped); }
         .el-table--striped .el-table__body tr:nth-child(2n):hover td { background-color: var(--bg-light); }
-        
-        /* 空状态 */
         .empty { text-align: center; padding: 40px; color: var(--info-color); }
-        
-        /* ==================== Element UI 标签 ==================== */
         .el-tag { display: inline-block; padding: 0 8px; height: 22px; line-height: 20px; font-size: 12px; border-radius: 4px; border: 1px solid; white-space: nowrap; }
         .el-tag--success { background-color: #f6ffed; border-color: #b7eb8f; color: var(--success-color); }
         .el-tag--warning { background-color: #fffbe6; border-color: #ffe58f; color: var(--warning-color); }
         .el-tag--danger { background-color: #fff1f0; border-color: #ffa39e; color: var(--danger-color); }
         .el-tag--info { background-color: #f4f4f5; border-color: #d3d3d3; color: var(--info-color); }
         .el-tag--primary { background-color: #e6f7ff; border-color: #91d5ff; color: var(--primary-color); }
-        
-        /* ==================== 金额样式 ==================== */
-        .amount { color: #f57c00; font-weight: 600; font-family: 'DIN Alternate', 'Microsoft YaHei', monospace; }
-        
-        /* ==================== 操作链接 ==================== */
-        .actions a { color: var(--primary-color); margin-right: 10px; text-decoration: none; cursor: pointer; transition: color .2s; }
-        .actions a:hover { color: var(--primary-light); }
-        
-        /* ==================== Element UI 分页 ==================== */
+        .amount { color: #f57c00; font-weight: 600; }
         .el-pagination { white-space: nowrap; padding: 16px 20px; text-align: center; user-select: none; background: var(--bg-white); display: flex; justify-content: center; align-items: center; gap: 8px; }
         .el-pagination__total { color: var(--text-regular); font-size: 13px; }
-        .el-pagination button { background: var(--bg-white); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; min-width: 30px; height: 28px; line-height: 28px; padding: 0 10px; font-size: 13px; color: var(--text-regular); transition: all .2s; }
+        .el-pagination button { background: var(--bg-white); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; min-width: 30px; height: 28px; padding: 0 10px; font-size: 13px; color: var(--text-regular); transition: all .2s; }
         .el-pagination button:hover:not(:disabled) { color: var(--primary-color); border-color: var(--primary-color); }
         .el-pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .actions a { color: var(--primary-color); margin-right: 10px; text-decoration: none; cursor: pointer; }
+        .actions a:hover { color: var(--primary-light); }
+        /* 弹窗 */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.45); z-index: 200; }
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: var(--bg-white); border-radius: 4px; width: 580px; max-width: 95vw; max-height: 85vh; flex-direction: column; z-index: 201; box-shadow: 0 4px 20px rgba(0,0,0,.18); }
+        .modal.show { display: flex; }
+        .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        .modal-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+        .modal-close { background: none; border: none; width: 32px; height: 32px; border-radius: 4px; cursor: pointer; font-size: 16px; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; }
+        .modal-close:hover { background: var(--bg-light); }
+        .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+        .modal-footer { padding: 12px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px; flex-shrink: 0; }
+        .detail-row { display: flex; margin-bottom: 12px; line-height: 1.6; }
+        .detail-label { color: var(--text-secondary); min-width: 90px; flex-shrink: 0; }
+        .detail-value { color: var(--text-primary); flex: 1; }
+        .form-item { margin-bottom: 16px; }
+        .form-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; display: block; }
+        .form-select { width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; }
+        .form-select:focus { border-color: var(--primary-color); outline: none; }
     </style>
 </head>
 <body>
     <div class="header">
         <a href="index.html" class="back">← 返回</a>
-        <h1>订单管理</h1>
+        <h1>🧾 订单管理</h1>
         <span></span>
     </div>
     <div class="toolbar">
-        <input type="text" class="search-input" id="keyword" placeholder="搜索订单号/用户名">
+        <input type="text" class="search-input" id="keyword" placeholder="搜索订单号/用户名/手机">
         <select class="select" id="statusFilter">
-            <option value="">全部状态</option>
+            <option value="">全部订单状态</option>
             <option value="pending">待支付</option>
             <option value="paid">已支付</option>
+            <option value="processing">处理中</option>
             <option value="completed">已完成</option>
             <option value="cancelled">已取消</option>
         </select>
+        <select class="select" id="payStatusFilter">
+            <option value="">全部支付状态</option>
+            <option value="unpaid">未支付</option>
+            <option value="paid">已支付</option>
+            <option value="refunded">已退款</option>
+        </select>
         <button class="btn btn-primary" onclick="loadList(1)">搜索</button>
+        <button class="btn" onclick="resetSearch()">重置</button>
+        <button class="btn" onclick="exportOrders()" style="margin-left:auto">📥 导出CSV</button>
     </div>
     <table class="el-table el-table--border el-table--striped">
         <thead class="el-table__header">
             <tr>
                 <th>订单号</th>
+                <th>类型</th>
                 <th>用户</th>
-                <th>金额</th>
+                <th>总金额</th>
+                <th>实付金额</th>
                 <th>支付状态</th>
                 <th>订单状态</th>
                 <th>创建时间</th>
                 <th>操作</th>
             </tr>
         </thead>
-        <tbody class="el-table__body" id="listBody"><tr><td colspan="7" class="empty">加载中...</td></tr></tbody>
+        <tbody class="el-table__body" id="listBody"><tr><td colspan="9" class="empty">加载中...</td></tr></tbody>
     </table>
     <div class="el-pagination">
-        <button id="prevBtn" onclick="changePage(-1)">上一页</button>
+        <button id="prevBtn" onclick="changePage(-1)" disabled>上一页</button>
         <span id="pageInfo" class="el-pagination__total">第 1 页</span>
-        <button id="nextBtn" onclick="changePage(1)">下一页</button>
+        <button id="nextBtn" onclick="changePage(1)" disabled>下一页</button>
+    </div>
+
+    <!-- 查看详情弹窗 -->
+    <div class="modal-overlay" id="viewOverlay" onclick="if(event.target===this)closeView()"></div>
+    <div class="modal" id="viewModal">
+        <div class="modal-header">
+            <span class="modal-title">订单详情</span>
+            <button class="modal-close" onclick="closeView()">✕</button>
+        </div>
+        <div class="modal-body" id="viewBody">加载中...</div>
+        <div class="modal-footer">
+            <button class="btn" onclick="closeView()">关闭</button>
+            <button class="btn btn-primary" id="viewEditBtn" onclick="openEditFromView()">修改状态</button>
+        </div>
+    </div>
+
+    <!-- 编辑订单状态弹窗 -->
+    <div class="modal-overlay" id="editOverlay" onclick="if(event.target===this)closeEdit()"></div>
+    <div class="modal" id="editModal">
+        <div class="modal-header">
+            <span class="modal-title" id="editModalTitle">修改订单状态</span>
+            <button class="modal-close" onclick="closeEdit()">✕</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="editOrderId">
+            <div class="form-item">
+                <label class="form-label">订单状态</label>
+                <select class="form-select" id="editStatus">
+                    <option value="pending">待支付</option>
+                    <option value="paid">已支付</option>
+                    <option value="processing">处理中</option>
+                    <option value="completed">已完成</option>
+                    <option value="cancelled">已取消</option>
+                </select>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn" onclick="closeEdit()">取消</button>
+            <button class="btn btn-primary" onclick="submitEdit()">确认保存</button>
+        </div>
     </div>
 
     <script>
-        const token = localStorage.getItem('admin_token') || new URLSearchParams(location.search).get('access_token');
+        const token = localStorage.getItem('admin_token') || new URLSearchParams(location.search).get('access_token') || '';
         const isdev = new URLSearchParams(location.search).get('isdev') || '0';
         let currentPage = 1;
         let totalPages = 1;
+        let currentViewId = null;
 
-        const PAY_STATUS_MAP = {pending:'待支付',paid:'已支付'};
-        const PAY_STATUS_TAG = {pending:'warning',paid:'success'};
-        const STATUS_MAP = {pending:'待支付',paid:'已支付',processing:'处理中',completed:'已完成',cancelled:'已取消'};
-        const STATUS_TAG = {pending:'warning',paid:'success',processing:'primary',completed:'success',cancelled:'info'};
+        const PAY_STATUS_MAP = { pending: '待支付', paid: '已支付', refunded: '已退款' };
+        const PAY_STATUS_TAG = { pending: 'warning', paid: 'success', refunded: 'info' };
+        const STATUS_MAP = { pending: '待支付', paid: '已支付', processing: '处理中', completed: '已完成', cancelled: '已取消' };
+        const STATUS_TAG = { pending: 'warning', paid: 'success', processing: 'primary', completed: 'success', cancelled: 'info' };
+        const ORDER_TYPE_MAP = { venue: '场地预约', service: '服务', product: '商品', other: '其他' };
+
+        function authUrl(url) {
+            const sep = url.includes('?') ? '&' : '?';
+            return url + sep + 'access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+        }
 
         async function loadList(page) {
-            currentPage = page;
+            currentPage = page || 1;
             const keyword = document.getElementById('keyword').value;
             const status = document.getElementById('statusFilter').value;
-            
-            let url = '/api/admin/orders?page=' + page + '&page_size=20';
+            let url = '/api/admin/orders?page=' + currentPage + '&page_size=20';
             if (keyword) url += '&keyword=' + encodeURIComponent(keyword);
             if (status) url += '&status=' + status;
-            url += '&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
-
             try {
-                const res = await fetch(url);
+                const res = await fetch(authUrl(url));
                 const data = await res.json();
                 if (data.success && data.data) {
-                    totalPages = Math.ceil(data.data.total / 20);
-                    document.getElementById('pageInfo').textContent = '第 ' + page + ' 页';
-                    document.getElementById('prevBtn').disabled = page <= 1;
-                    document.getElementById('nextBtn').disabled = page >= totalPages;
+                    const total = data.data.total || 0;
+                    totalPages = Math.ceil(total / 20) || 1;
+                    document.getElementById('pageInfo').textContent = `第 ${currentPage} 页，共 ${totalPages} 页（${total} 条）`;
+                    document.getElementById('prevBtn').disabled = currentPage <= 1;
+                    document.getElementById('nextBtn').disabled = currentPage >= totalPages;
 
-                    if (data.data.items.length === 0) {
-                        document.getElementById('listBody').innerHTML = '<tr><td colspan="7" class="empty">暂无数据</td></tr>';
+                    const items = data.data.items || [];
+                    if (items.length === 0) {
+                        document.getElementById('listBody').innerHTML = '<tr><td colspan="9" class="empty">暂无数据</td></tr>';
                         return;
                     }
-
-                    document.getElementById('listBody').innerHTML = data.data.items.map(item => 
-                        '<tr><td>' + (item.order_no || '') + '</td><td>' + (item.user_name || '-') + '</td><td class="amount">¥' + (item.total_amount || 0) + '</td><td><span class="el-tag el-tag--' + (PAY_STATUS_TAG[item.pay_status] || 'info') + '">' + (PAY_STATUS_MAP[item.pay_status] || '-') + '</span></td><td><span class="el-tag el-tag--' + (STATUS_TAG[item.status] || 'info') + '">' + (STATUS_MAP[item.status] || item.status) + '</span></td><td>' + (item.create_time || '') + '</td><td class="actions"><a onclick="viewOrder(' + item.id + ')">查看</a><a onclick="editOrder(' + item.id + ')">编辑</a></td></tr>'
+                    document.getElementById('listBody').innerHTML = items.map(item =>
+                        `<tr>
+                            <td style="font-family:monospace;font-size:12px">${item.order_no || '-'}</td>
+                            <td>${ORDER_TYPE_MAP[item.order_type] || item.order_type || '-'}</td>
+                            <td>${item.user_name || '-'}<br><span style="color:var(--text-secondary);font-size:12px">${item.user_phone || ''}</span></td>
+                            <td class="amount">¥${parseFloat(item.total_amount || 0).toFixed(2)}</td>
+                            <td class="amount">¥${parseFloat(item.actual_amount || 0).toFixed(2)}</td>
+                            <td><span class="el-tag el-tag--${PAY_STATUS_TAG[item.pay_status] || 'info'}">${PAY_STATUS_MAP[item.pay_status] || item.pay_status || '-'}</span></td>
+                            <td><span class="el-tag el-tag--${STATUS_TAG[item.order_status] || 'info'}">${STATUS_MAP[item.order_status] || item.order_status || '-'}</span></td>
+                            <td>${(item.created_at || '').substring(0, 16) || '-'}</td>
+                            <td class="actions">
+                                <a onclick="viewOrder(${item.id})">查看</a>
+                                <a onclick="openEdit(${item.id}, '${item.order_no || ''}', '${item.order_status || ''}')">修改状态</a>
+                            </td>
+                        </tr>`
                     ).join('');
                 }
-            } catch(e) {
-                document.getElementById('listBody').innerHTML = '<tr><td colspan="7" class="empty">加载失败</td></tr>';
+            } catch (e) {
+                document.getElementById('listBody').innerHTML = '<tr><td colspan="9" class="empty">加载失败</td></tr>';
             }
         }
 
         function changePage(delta) { loadList(currentPage + delta); }
-        function viewOrder(id) { alert('查看订单 ' + id); }
-        function editOrder(id) { alert('编辑订单 ' + id); }
+        function resetSearch() {
+            document.getElementById('keyword').value = '';
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('payStatusFilter').value = '';
+            loadList(1);
+        }
+
+        function exportOrders() {
+            const status = document.getElementById('statusFilter').value;
+            let url = authUrl('/api/admin/export/orders');
+            if (status) url += '&status=' + status;
+            window.open(url, '_blank');
+        }
+
+        // ========== 查看详情 ==========
+        async function viewOrder(id) {
+            currentViewId = id;
+            document.getElementById('viewBody').innerHTML = '<div style="text-align:center;padding:30px;color:#909399">加载中...</div>';
+            document.getElementById('viewOverlay').style.display = 'block';
+            document.getElementById('viewModal').classList.add('show');
+            try {
+                const res = await fetch(authUrl('/api/admin/orders/' + id));
+                const data = await res.json();
+                if (!data.success || !data.data) {
+                    document.getElementById('viewBody').innerHTML = '<div style="text-align:center;padding:30px;color:#f00">获取详情失败</div>';
+                    return;
+                }
+                const item = data.data;
+                document.getElementById('viewBody').innerHTML = `
+                    <div class="detail-row"><span class="detail-label">订单号</span><span class="detail-value" style="font-family:monospace">${item.order_no || '-'}</span></div>
+                    <div class="detail-row"><span class="detail-label">订单类型</span><span class="detail-value">${ORDER_TYPE_MAP[item.order_type] || item.order_type || '-'}</span></div>
+                    <div class="detail-row"><span class="detail-label">用户</span><span class="detail-value">${item.user_name || '-'}</span></div>
+                    <div class="detail-row"><span class="detail-label">手机号</span><span class="detail-value">${item.user_phone || '-'}</span></div>
+                    <div class="detail-row"><span class="detail-label">总金额</span><span class="detail-value amount">¥${parseFloat(item.total_amount || 0).toFixed(2)}</span></div>
+                    <div class="detail-row"><span class="detail-label">实付金额</span><span class="detail-value amount">¥${parseFloat(item.actual_amount || 0).toFixed(2)}</span></div>
+                    <div class="detail-row"><span class="detail-label">支付状态</span><span class="detail-value"><span class="el-tag el-tag--${PAY_STATUS_TAG[item.pay_status]||'info'}">${PAY_STATUS_MAP[item.pay_status]||item.pay_status||'-'}</span></span></div>
+                    <div class="detail-row"><span class="detail-label">订单状态</span><span class="detail-value"><span class="el-tag el-tag--${STATUS_TAG[item.order_status]||'info'}">${STATUS_MAP[item.order_status]||item.order_status||'-'}</span></span></div>
+                    <div class="detail-row"><span class="detail-label">备注</span><span class="detail-value">${item.remark || '-'}</span></div>
+                    <div class="detail-row"><span class="detail-label">创建时间</span><span class="detail-value">${item.created_at || '-'}</span></div>
+                    <div class="detail-row"><span class="detail-label">更新时间</span><span class="detail-value">${item.updated_at || '-'}</span></div>`;
+            } catch (e) {
+                document.getElementById('viewBody').innerHTML = '<div style="text-align:center;padding:30px;color:#f00">加载失败</div>';
+            }
+        }
+
+        function closeView() {
+            document.getElementById('viewOverlay').style.display = 'none';
+            document.getElementById('viewModal').classList.remove('show');
+        }
+
+        function openEditFromView() {
+            closeView();
+            openEdit(currentViewId, '', '');
+        }
+
+        // ========== 修改订单状态 ==========
+        function openEdit(id, orderNo, currentStatus) {
+            document.getElementById('editOrderId').value = id;
+            document.getElementById('editModalTitle').textContent = '修改订单状态' + (orderNo ? ' - ' + orderNo : '');
+            document.getElementById('editStatus').value = currentStatus || 'pending';
+            document.getElementById('editOverlay').style.display = 'block';
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        function closeEdit() {
+            document.getElementById('editOverlay').style.display = 'none';
+            document.getElementById('editModal').classList.remove('show');
+        }
+
+        async function submitEdit() {
+            const id = document.getElementById('editOrderId').value;
+            const status = document.getElementById('editStatus').value;
+            try {
+                const res = await fetch(authUrl('/api/admin/orders/' + id), {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ order_status: status })
+                });
+                const data = await res.json();
+                if (data.success) { alert('更新成功'); closeEdit(); loadList(currentPage); }
+                else { alert(data.msg || '操作失败'); }
+            } catch (e) { alert('操作失败'); }
+        }
+
+        // Enter 搜索
+        document.getElementById('keyword').addEventListener('keydown', e => { if (e.key === 'Enter') loadList(1); });
 
         loadList(1);
     </script>

@@ -5,13 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>申请单管理</title>
     <style>
-        /* ==================== 基础样式 ==================== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         :root {
             --primary-color: #1890ff;
             --primary-light: #40a9ff;
-            --primary-dark: #096dd9;
             --success-color: #52c41a;
             --warning-color: #faad14;
             --danger-color: #ff4d4f;
@@ -24,72 +21,72 @@
             --bg-light: #f5f7fa;
             --bg-striped: #fafafa;
         }
-
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg-light); font-size: 14px; color: var(--text-regular); }
-        
-        /* ==================== 页面布局 ==================== */
         .header { background: #001529; color: white; padding: 15px 20px; display: flex; align-items: center; }
         .header h1 { font-size: 18px; flex: 1; }
         .back { color: white; text-decoration: none; font-size: 14px; }
-        
-        /* ==================== 工具栏 ==================== */
         .toolbar { background: var(--bg-white); padding: 15px 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; border-bottom: 1px solid var(--border-color); }
-        .search-input { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; width: 200px; font-size: 14px; transition: border-color .2s; }
-        .search-input:hover { border-color: #c0c4cc; }
+        .search-input { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; width: 200px; font-size: 14px; }
         .search-input:focus { border-color: var(--primary-color); outline: none; }
-        .select { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; background: var(--bg-white); cursor: pointer; }
-        
-        /* ==================== 按钮 ==================== */
+        .select { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; background: var(--bg-white); }
         .btn { padding: 9px 15px; border-radius: 4px; font-size: 14px; cursor: pointer; border: 1px solid var(--border-color); background: var(--bg-white); color: var(--text-regular); transition: all .2s; }
         .btn:hover { color: var(--primary-color); border-color: var(--primary-color); }
         .btn-primary { background: var(--primary-color); border-color: var(--primary-color); color: var(--bg-white); }
         .btn-primary:hover { background: var(--primary-light); border-color: var(--primary-light); }
-        
-        /* ==================== Element UI 表格 ==================== */
-        .el-table { width: 100%; border: 1px solid var(--border-color); border-radius: 4px; background-color: var(--bg-white); color: var(--text-regular); font-size: 14px; border-collapse: collapse; }
-        
-        /* 表头 */
+        .btn-success { background: var(--success-color); border-color: var(--success-color); color: var(--bg-white); }
+        .btn-warning { background: var(--warning-color); border-color: var(--warning-color); color: var(--bg-white); }
+        .btn-danger { background: var(--danger-color); border-color: var(--danger-color); color: var(--bg-white); }
+        .el-table { width: 100%; border: 1px solid var(--border-color); border-radius: 4px; background-color: var(--bg-white); font-size: 14px; border-collapse: collapse; }
         .el-table__header th { padding: 12px 10px; background-color: var(--bg-light); color: var(--text-primary); font-weight: 500; text-align: left; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); }
         .el-table__header th:last-child { border-right: none; }
-        
-        /* 表体 */
         .el-table__body td { padding: 12px 10px; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); }
         .el-table__body td:last-child { border-right: none; }
-        
-        /* 行悬停 */
         .el-table__body tr:hover > td { background-color: var(--bg-light); }
-        
-        /* 斑马纹 */
         .el-table--striped .el-table__body tr:nth-child(2n) td { background-color: var(--bg-striped); }
         .el-table--striped .el-table__body tr:nth-child(2n):hover td { background-color: var(--bg-light); }
-        
-        /* 空状态 */
         .empty { text-align: center; padding: 40px; color: var(--info-color); }
-        
-        /* ==================== Element UI 标签 ==================== */
         .el-tag { display: inline-block; padding: 0 8px; height: 22px; line-height: 20px; font-size: 12px; border-radius: 4px; border: 1px solid; white-space: nowrap; }
         .el-tag--success { background-color: #f6ffed; border-color: #b7eb8f; color: var(--success-color); }
         .el-tag--warning { background-color: #fffbe6; border-color: #ffe58f; color: var(--warning-color); }
         .el-tag--danger { background-color: #fff1f0; border-color: #ffa39e; color: var(--danger-color); }
         .el-tag--info { background-color: #f4f4f5; border-color: #d3d3d3; color: var(--info-color); }
         .el-tag--primary { background-color: #e6f7ff; border-color: #91d5ff; color: var(--primary-color); }
-        
-        /* ==================== 操作链接 ==================== */
-        .actions a { color: var(--primary-color); margin-right: 10px; text-decoration: none; cursor: pointer; transition: color .2s; }
-        .actions a:hover { color: var(--primary-light); }
-        
-        /* ==================== Element UI 分页 ==================== */
         .el-pagination { white-space: nowrap; padding: 16px 20px; text-align: center; user-select: none; background: var(--bg-white); display: flex; justify-content: center; align-items: center; gap: 8px; }
         .el-pagination__total { color: var(--text-regular); font-size: 13px; }
-        .el-pagination button { background: var(--bg-white); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; min-width: 30px; height: 28px; line-height: 28px; padding: 0 10px; font-size: 13px; color: var(--text-regular); transition: all .2s; }
+        .el-pagination button { background: var(--bg-white); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; min-width: 30px; height: 28px; padding: 0 10px; font-size: 13px; color: var(--text-regular); transition: all .2s; }
         .el-pagination button:hover:not(:disabled) { color: var(--primary-color); border-color: var(--primary-color); }
         .el-pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .actions a { color: var(--primary-color); margin-right: 10px; text-decoration: none; cursor: pointer; }
+        .actions a:hover { color: var(--primary-light); }
+        .actions a.danger { color: var(--danger-color); }
+        /* 弹窗 */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.45); z-index: 200; }
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: var(--bg-white); border-radius: 4px; width: 640px; max-width: 95vw; max-height: 85vh; display: none; flex-direction: column; z-index: 201; box-shadow: 0 4px 20px rgba(0,0,0,.18); }
+        .modal.show { display: flex; }
+        .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        .modal-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+        .modal-close { background: none; border: none; width: 32px; height: 32px; border-radius: 4px; cursor: pointer; font-size: 16px; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; }
+        .modal-close:hover { background: var(--bg-light); }
+        .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+        .modal-footer { padding: 12px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px; flex-shrink: 0; }
+        .detail-row { display: flex; margin-bottom: 12px; line-height: 1.6; }
+        .detail-label { color: var(--text-secondary); min-width: 90px; flex-shrink: 0; }
+        .detail-value { color: var(--text-primary); flex: 1; word-break: break-all; }
+        .detail-section { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color); }
+        .detail-section-title { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 12px; }
+        .form-item { margin-bottom: 16px; }
+        .form-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; display: block; }
+        .form-label.required::before { content: '* '; color: var(--danger-color); }
+        .form-input, .form-select, .form-textarea { width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; font-family: inherit; }
+        .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--primary-color); outline: none; }
+        .form-textarea { resize: vertical; min-height: 80px; }
+        .priority-star { color: #faad14; }
     </style>
 </head>
 <body>
     <div class="header">
         <a href="index.html" class="back">← 返回</a>
-        <h1>申请单管理</h1>
+        <h1>📋 申请单管理</h1>
         <span></span>
     </div>
     <div class="toolbar">
@@ -100,6 +97,7 @@
             <option value="processing">处理中</option>
             <option value="completed">已完成</option>
             <option value="rejected">已拒绝</option>
+            <option value="cancelled">已撤销</option>
         </select>
         <select class="select" id="typeFilter">
             <option value="">全部类型</option>
@@ -110,88 +108,333 @@
             <option value="other">其他</option>
         </select>
         <button class="btn btn-primary" onclick="loadList(1)">搜索</button>
+        <button class="btn" onclick="resetSearch()">重置</button>
+        <span id="batchBar" style="display:none;margin-left:10px;display:none;align-items:center;gap:8px">
+            <span id="selectedCount" style="color:var(--primary-color);font-size:13px">已选 0 条</span>
+            <select class="select" id="batchStatus" style="width:120px">
+                <option value="processing">改为处理中</option>
+                <option value="completed">改为已完成</option>
+                <option value="rejected">改为已拒绝</option>
+            </select>
+            <button class="btn btn-warning" onclick="batchUpdateStatus()" style="background:var(--warning-color);border-color:var(--warning-color);color:white">批量修改状态</button>
+            <button class="btn btn-danger" onclick="batchDelete()" style="background:var(--danger-color);border-color:var(--danger-color);color:white">批量删除</button>
+        </span>
+        <button class="btn" onclick="exportApps()" style="margin-left:auto">📥 导出CSV</button>
     </div>
     <table class="el-table el-table--border el-table--striped">
         <thead class="el-table__header">
             <tr>
+                <th style="width:40px"><input type="checkbox" id="checkAll" onchange="toggleCheckAll(this)"></th>
                 <th>申请单号</th>
                 <th>类型</th>
                 <th>标题</th>
                 <th>申请人</th>
+                <th>联系电话</th>
                 <th>状态</th>
                 <th>优先级</th>
                 <th>提交时间</th>
                 <th>操作</th>
             </tr>
         </thead>
-        <tbody class="el-table__body" id="listBody"><tr><td colspan="8" class="empty">加载中...</td></tr></tbody>
+        <tbody class="el-table__body" id="listBody"><tr><td colspan="10" class="empty">加载中...</td></tr></tbody>
     </table>
     <div class="el-pagination">
-        <button id="prevBtn" onclick="changePage(-1)">上一页</button>
+        <button id="prevBtn" onclick="changePage(-1)" disabled>上一页</button>
         <span id="pageInfo" class="el-pagination__total">第 1 页</span>
-        <button id="nextBtn" onclick="changePage(1)">下一页</button>
+        <button id="nextBtn" onclick="changePage(1)" disabled>下一页</button>
+    </div>
+
+    <!-- 查看详情弹窗 -->
+    <div class="modal-overlay" id="viewOverlay" onclick="if(event.target===this)closeView()"></div>
+    <div class="modal" id="viewModal">
+        <div class="modal-header">
+            <span class="modal-title">申请单详情</span>
+            <button class="modal-close" onclick="closeView()">✕</button>
+        </div>
+        <div class="modal-body" id="viewBody">加载中...</div>
+        <div class="modal-footer">
+            <button class="btn" onclick="closeView()">关闭</button>
+            <button class="btn btn-primary" id="viewEditBtn" onclick="openEditFromView()">去处理</button>
+        </div>
+    </div>
+
+    <!-- 处理申请弹窗 -->
+    <div class="modal-overlay" id="editOverlay" onclick="if(event.target===this)closeEdit()"></div>
+    <div class="modal" id="editModal">
+        <div class="modal-header">
+            <span class="modal-title" id="editModalTitle">处理申请</span>
+            <button class="modal-close" onclick="closeEdit()">✕</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="editAppId">
+            <div class="form-item">
+                <label class="form-label required">处理状态</label>
+                <select class="form-select" id="editStatus">
+                    <option value="processing">处理中</option>
+                    <option value="completed">已完成</option>
+                    <option value="rejected">已拒绝</option>
+                </select>
+            </div>
+            <div class="form-item">
+                <label class="form-label">处理结果/备注</label>
+                <textarea class="form-textarea" id="editResult" placeholder="请输入处理结果或备注说明" rows="4"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn" onclick="closeEdit()">取消</button>
+            <button class="btn btn-primary" onclick="submitEdit()">确认提交</button>
+        </div>
     </div>
 
     <script>
-        const token = localStorage.getItem('admin_token') || new URLSearchParams(location.search).get('access_token');
+        const token = localStorage.getItem('admin_token') || new URLSearchParams(location.search).get('access_token') || '';
         const isdev = new URLSearchParams(location.search).get('isdev') || '0';
         let currentPage = 1;
         let totalPages = 1;
 
-        const TYPE_MAP = {repair:'报修',booking:'预约',complaint:'投诉',consult:'咨询',other:'其他'};
-        const STATUS_MAP = {pending:'待处理',processing:'处理中',completed:'已完成',rejected:'已拒绝'};
-        const STATUS_TAG = {pending:'warning',processing:'primary',completed:'success',rejected:'danger'};
+        const TYPE_MAP = { repair: '报修', booking: '预约', complaint: '投诉', consult: '咨询', other: '其他' };
+        const STATUS_MAP = { pending: '待处理', processing: '处理中', completed: '已完成', rejected: '已拒绝', cancelled: '已撤销' };
+        const STATUS_TAG = { pending: 'warning', processing: 'primary', completed: 'success', rejected: 'danger', cancelled: 'info' };
+
+        function authUrl(url) {
+            const sep = url.includes('?') ? '&' : '?';
+            return url + sep + 'access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+        }
 
         async function loadList(page) {
-            currentPage = page;
+            currentPage = page || 1;
             const keyword = document.getElementById('keyword').value;
             const status = document.getElementById('statusFilter').value;
             const appType = document.getElementById('typeFilter').value;
-            
-            let url = '/api/admin/applications?page=' + page + '&page_size=20';
+
+            let url = '/api/admin/applications?page=' + currentPage + '&page_size=20';
             if (keyword) url += '&keyword=' + encodeURIComponent(keyword);
             if (status) url += '&status=' + status;
             if (appType) url += '&app_type=' + appType;
-            url += '&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
 
             try {
-                const res = await fetch(url);
+                const res = await fetch(authUrl(url));
                 const data = await res.json();
                 if (data.success && data.data) {
-                    totalPages = Math.ceil(data.data.total / 20);
-                    document.getElementById('pageInfo').textContent = '第 ' + page + ' 页，共 ' + totalPages + ' 页';
-                    document.getElementById('prevBtn').disabled = page <= 1;
-                    document.getElementById('nextBtn').disabled = page >= totalPages;
+                    const total = data.data.total || 0;
+                    totalPages = Math.ceil(total / 20) || 1;
+                    document.getElementById('pageInfo').textContent = `第 ${currentPage} 页，共 ${totalPages} 页（${total} 条）`;
+                    document.getElementById('prevBtn').disabled = currentPage <= 1;
+                    document.getElementById('nextBtn').disabled = currentPage >= totalPages;
 
-                    if (data.data.items.length === 0) {
-                        document.getElementById('listBody').innerHTML = '<tr><td colspan="8" class="empty">暂无数据</td></tr>';
+                    const items = data.data.items || [];
+                    if (items.length === 0) {
+                        document.getElementById('listBody').innerHTML = '<tr><td colspan="10" class="empty">暂无数据</td></tr>';
                         return;
                     }
-
-                    document.getElementById('listBody').innerHTML = data.data.items.map(item => 
-                        '<tr><td>' + (item.app_no || '') + '</td><td>' + (TYPE_MAP[item.app_type] || item.app_type) + '</td><td>' + (item.title || '') + '</td><td>' + (item.user_name || '-') + '</td><td><span class="el-tag el-tag--' + (STATUS_TAG[item.status] || 'info') + '">' + (STATUS_MAP[item.status] || item.status) + '</span></td><td>' + (item.priority > 1 ? '⭐' + item.priority : '-') + '</td><td>' + (item.created_at || '') + '</td><td class="actions"><a onclick="viewApp(' + item.id + ')">查看</a><a onclick="editApp(' + item.id + ')">编辑</a><a onclick="deleteApp(' + item.id + ')">删除</a></td></tr>'
-                    ).join('');
+                    document.getElementById('listBody').innerHTML = items.map(item => {
+                        const stars = item.priority > 1 ? '<span class="priority-star">' + '★'.repeat(item.priority) + '</span>' : '-';
+                        return `<tr>
+                            <td><input type="checkbox" class="row-check" value="${item.id}" onchange="updateBatchBar()"></td>
+                            <td style="font-family:monospace;font-size:12px">${item.app_no || ''}</td>
+                            <td>${TYPE_MAP[item.app_type] || item.app_type || '-'}</td>
+                            <td>${item.title || '-'}</td>
+                            <td>${item.user_name || '-'}</td>
+                            <td>${item.user_phone || '-'}</td>
+                            <td><span class="el-tag el-tag--${STATUS_TAG[item.status] || 'info'}">${STATUS_MAP[item.status] || item.status}</span></td>
+                            <td>${stars}</td>
+                            <td>${(item.created_at || '').substring(0, 16) || '-'}</td>
+                            <td class="actions">
+                                <a onclick="viewApp(${item.id})">查看</a>
+                                <a onclick="openEdit(${item.id}, '${item.app_no || ''}')">处理</a>
+                                <a class="danger" onclick="deleteApp(${item.id})">删除</a>
+                            </td>
+                        </tr>`;
+                    }).join('');
                 }
-            } catch(e) {
-                document.getElementById('listBody').innerHTML = '<tr><td colspan="8" class="empty">加载失败</td></tr>';
+            } catch (e) {
+                document.getElementById('listBody').innerHTML = '<tr><td colspan="9" class="empty">加载失败</td></tr>';
             }
         }
 
-        function changePage(delta) {
-            loadList(currentPage + delta);
+        function changePage(delta) { loadList(currentPage + delta); }
+        function resetSearch() {
+            document.getElementById('keyword').value = '';
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('typeFilter').value = '';
+            loadList(1);
         }
 
-        function viewApp(id) { alert('查看申请 ' + id); }
-        function editApp(id) { alert('编辑申请 ' + id); }
-        async function deleteApp(id) {
-            if (!confirm('确定要删除吗？')) return;
+        // ========== 查看详情 ==========
+        let currentViewId = null;
+        async function viewApp(id) {
+            currentViewId = id;
+            document.getElementById('viewBody').innerHTML = '<div style="text-align:center;padding:30px;color:#909399">加载中...</div>';
+            document.getElementById('viewOverlay').style.display = 'block';
+            document.getElementById('viewModal').classList.add('show');
+
             try {
-                const res = await fetch('/api/admin/applications/' + id + '?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev, {method: 'DELETE'});
+                const res = await fetch(authUrl('/api/admin/applications/' + id));
+                const data = await res.json();
+                if (!data.success || !data.data) {
+                    document.getElementById('viewBody').innerHTML = '<div style="text-align:center;padding:30px;color:#f00">获取详情失败</div>';
+                    return;
+                }
+                const item = data.data;
+                const status = item.status || 'pending';
+                const canProcess = ['pending', 'processing'].includes(status);
+                document.getElementById('viewEditBtn').style.display = canProcess ? '' : 'none';
+
+                let html = `
+                    <div class="detail-row"><span class="detail-label">申请单号</span><span class="detail-value" style="font-family:monospace">${item.app_no || '-'}</span></div>
+                    <div class="detail-row"><span class="detail-label">类型</span><span class="detail-value">${TYPE_MAP[item.app_type] || item.app_type || '-'}</span></div>
+                    <div class="detail-row"><span class="detail-label">标题</span><span class="detail-value"><strong>${item.title || '-'}</strong></span></div>
+                    <div class="detail-row"><span class="detail-label">状态</span><span class="detail-value"><span class="el-tag el-tag--${STATUS_TAG[status] || 'info'}">${STATUS_MAP[status] || status}</span></span></div>
+                    <div class="detail-row"><span class="detail-label">申请人</span><span class="detail-value">${item.user_name || '-'}</span></div>
+                    <div class="detail-row"><span class="detail-label">联系电话</span><span class="detail-value">${item.user_phone || '-'}</span></div>
+                    <div class="detail-row"><span class="detail-label">提交时间</span><span class="detail-value">${item.created_at || '-'}</span></div>
+                    <div class="detail-row"><span class="detail-label">更新时间</span><span class="detail-value">${item.updated_at || '-'}</span></div>`;
+
+                if (item.content) {
+                    html += `<div class="detail-section"><div class="detail-section-title">申请内容</div><div style="line-height:1.8;color:var(--text-primary)">${item.content.replace(/\n/g, '<br>')}</div></div>`;
+                }
+                if (item.result) {
+                    html += `<div class="detail-section"><div class="detail-section-title">处理结果</div><div style="line-height:1.8;color:var(--text-primary)">${item.result.replace(/\n/g, '<br>')}</div></div>`;
+                }
+                document.getElementById('viewBody').innerHTML = html;
+            } catch (e) {
+                document.getElementById('viewBody').innerHTML = '<div style="text-align:center;padding:30px;color:#f00">加载失败</div>';
+            }
+        }
+
+        function closeView() {
+            document.getElementById('viewOverlay').style.display = 'none';
+            document.getElementById('viewModal').classList.remove('show');
+        }
+
+        function openEditFromView() {
+            closeView();
+            openEdit(currentViewId, '');
+        }
+
+        // ========== 处理申请 ==========
+        function openEdit(id, appNo) {
+            document.getElementById('editAppId').value = id;
+            document.getElementById('editModalTitle').textContent = '处理申请' + (appNo ? ' - ' + appNo : '');
+            document.getElementById('editStatus').value = 'processing';
+            document.getElementById('editResult').value = '';
+            document.getElementById('editOverlay').style.display = 'block';
+            document.getElementById('editModal').classList.add('show');
+            setTimeout(() => document.getElementById('editResult').focus(), 100);
+        }
+
+        function closeEdit() {
+            document.getElementById('editOverlay').style.display = 'none';
+            document.getElementById('editModal').classList.remove('show');
+        }
+
+        async function submitEdit() {
+            const id = document.getElementById('editAppId').value;
+            const status = document.getElementById('editStatus').value;
+            const result = document.getElementById('editResult').value.trim();
+            try {
+                const res = await fetch(authUrl('/api/admin/applications/' + id), {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status, result })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('处理成功');
+                    closeEdit();
+                    loadList(currentPage);
+                } else {
+                    alert(data.msg || '操作失败');
+                }
+            } catch (e) { alert('操作失败，请重试'); }
+        }
+
+        // ========== 批量操作 ==========
+        function getCheckedIds() {
+            return Array.from(document.querySelectorAll('.row-check:checked')).map(el => parseInt(el.value));
+        }
+
+        function toggleCheckAll(checkbox) {
+            document.querySelectorAll('.row-check').forEach(c => c.checked = checkbox.checked);
+            updateBatchBar();
+        }
+
+        function updateBatchBar() {
+            const ids = getCheckedIds();
+            const bar = document.getElementById('batchBar');
+            const countEl = document.getElementById('selectedCount');
+            if (ids.length > 0) {
+                bar.style.display = 'inline-flex';
+                countEl.textContent = '已选 ' + ids.length + ' 条';
+            } else {
+                bar.style.display = 'none';
+            }
+            // 更新全选框状态
+            const all = document.querySelectorAll('.row-check');
+            const checked = document.querySelectorAll('.row-check:checked');
+            const allCheck = document.getElementById('checkAll');
+            if (allCheck) {
+                allCheck.indeterminate = checked.length > 0 && checked.length < all.length;
+                allCheck.checked = all.length > 0 && checked.length === all.length;
+            }
+        }
+
+        async function batchUpdateStatus() {
+            const ids = getCheckedIds();
+            if (!ids.length) { alert('请先选择要操作的申请单'); return; }
+            const newStatus = document.getElementById('batchStatus').value;
+            const statusLabel = {processing:'处理中',completed:'已完成',rejected:'已拒绝'}[newStatus];
+            if (!confirm(`确定将选中的 ${ids.length} 条申请单状态改为"${statusLabel}"吗？`)) return;
+            try {
+                const res = await fetch(authUrl('/api/admin/applications/batch'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'status', ids, status: newStatus })
+                });
+                const data = await res.json();
+                if (data.success) { alert(data.msg || '批量操作成功'); loadList(currentPage); }
+                else { alert(data.msg || '操作失败'); }
+            } catch(e) { alert('操作失败'); }
+        }
+
+        async function batchDelete() {
+            const ids = getCheckedIds();
+            if (!ids.length) { alert('请先选择要删除的申请单'); return; }
+            if (!confirm(`确定要删除选中的 ${ids.length} 条申请单吗？此操作不可恢复！`)) return;
+            try {
+                const res = await fetch(authUrl('/api/admin/applications/batch'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'delete', ids })
+                });
+                const data = await res.json();
+                if (data.success) { alert(data.msg || '批量删除成功'); loadList(currentPage); }
+                else { alert(data.msg || '操作失败'); }
+            } catch(e) { alert('操作失败'); }
+        }
+
+        function exportApps() {
+            const status = document.getElementById('statusFilter').value;
+            const appType = document.getElementById('typeFilter').value;
+            let url = authUrl('/api/admin/export/applications');
+            if (status) url += '&status=' + status;
+            if (appType) url += '&app_type=' + appType;
+            window.open(url, '_blank');
+        }
+
+        // ========== 删除 ==========
+        async function deleteApp(id) {
+            if (!confirm('确定要删除这条申请单吗？')) return;
+            try {
+                const res = await fetch(authUrl('/api/admin/applications/' + id), { method: 'DELETE' });
                 const data = await res.json();
                 if (data.success) { alert('删除成功'); loadList(currentPage); }
                 else { alert(data.msg || '删除失败'); }
-            } catch(e) { alert('删除失败'); }
+            } catch (e) { alert('删除失败'); }
         }
+
+        // Enter 搜索
+        document.getElementById('keyword').addEventListener('keydown', e => { if (e.key === 'Enter') loadList(1); });
 
         loadList(1);
     </script>

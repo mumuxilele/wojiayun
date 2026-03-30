@@ -86,10 +86,37 @@ def create_application(user):
     app_type = data.get('app_type')
     title    = data.get('title', '').strip()
     content  = data.get('content', '')
-    images   = json.dumps(data.get('images', []))
+    images_raw = data.get('images', [])
     priority = int(data.get('priority', 0))
+
     if not app_type or not title:
         return jsonify({'success': False, 'msg': '请填写必要信息'})
+    if len(title) > 100:
+        return jsonify({'success': False, 'msg': '标题不能超过100个字符'})
+    if len(content) > 2000:
+        return jsonify({'success': False, 'msg': '内容不能超过2000个字符'})
+
+    # XSS基础防护：转义HTML特殊字符
+    import html as html_mod
+    title = html_mod.escape(title)
+    content = html_mod.escape(str(content))
+
+    # 图片校验：限制数量和base64大小（防止超大请求）
+    MAX_IMAGES = 5
+    MAX_BASE64_SIZE = 1.5 * 1024 * 1024  # 约1.5MB per image (base64)
+    if not isinstance(images_raw, list):
+        images_raw = []
+    if len(images_raw) > MAX_IMAGES:
+        return jsonify({'success': False, 'msg': f'最多上传{MAX_IMAGES}张图片'})
+    valid_images = []
+    for img in images_raw:
+        if isinstance(img, str):
+            if img.startswith('data:image/') and len(img) > MAX_BASE64_SIZE:
+                return jsonify({'success': False, 'msg': '单张图片不能超过1MB，请压缩后上传'})
+            if img.startswith('data:image/') or img.startswith('http'):
+                valid_images.append(img)
+    images = json.dumps(valid_images)
+
     app_no = utils.generate_no('APP')
     db.execute(
         "INSERT INTO business_applications (app_no,app_type,title,content,user_id,user_name,user_phone,ec_id,project_id,status,images,priority) "
@@ -289,20 +316,106 @@ def book_venue(user, venue_id):
         from datetime import datetime
         s = datetime.strptime(start_time, '%H:%M')
         e = datetime.strptime(end_time, '%H:%M')
+        if e <= s:
+            return jsonify({'success': False, 'msg': '结束时间必须晚于开始时间'})
         hours = max((e - s).seconds / 3600, 0.5)
         total_price = float(venue.get('price') or 0) * hours
     except:
         hours = 1; total_price = float(venue.get('price') or 0)
-    verify_code = utils.generate_no('VBK')[-6:]
-    db.execute(
-        "INSERT INTO business_venue_bookings "
-        "(venue_id,user_id,user_name,user_phone,book_date,start_time,end_time,total_hours,total_price,status,verify_code,ec_id,project_id) "
-        "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,'pending',%s,%s,%s)",
-        [venue_id, user['user_id'], user['user_name'], user.get('phone'),
-         book_date, start_time, end_time, hours, total_price, verify_code,
-         user.get('ec_id'), user.get('project_id')]
+    
+    # 并发安全：使用数据库事务锁防止重复预约
+    conn = db.get_db()
+    try:
+        cursor = conn.cursor()
+        conn.begin()
+        
+        # FOR UPDATE 锁定相关行，防止并发重复预约
+        cursor.execute(
+            "SELECT id FROM business_venue_bookings "
+            "WHERE venue_id=%s AND book_date=%s AND deleted=0 "
+            "AND status IN ('pending','confirmed') "
+            "AND NOT (end_time<=%s OR start_time>=%s) "
+            "FOR UPDATE",
+            [venue_id, book_date, start_time, end_time]
+        )
+        conflicts = cursor.fetchall()
+        if conflicts:
+            conn.rollback()
+            return jsonify({'success': False, 'msg': '该时段已被预约，请选择其他时间'})
+        
+        verify_code = utils.generate_no('VBK')[-6:]
+        cursor.execute(
+            "INSERT INTO business_venue_bookings "
+            "(venue_id,user_id,user_name,user_phone,book_date,start_time,end_time,total_hours,total_price,status,pay_status,verify_code,ec_id,project_id) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,'pending','unpaid',%s,%s,%s)",
+            [venue_id, user['user_id'], user['user_name'], user.get('phone'),
+             book_date, start_time, end_time, hours, total_price, verify_code,
+             user.get('ec_id'), user.get('project_id')]
+        )
+        conn.commit()
+        return jsonify({'success': True, 'msg': '预约成功', 'data': {'verify_code': verify_code}})
+    except Exception as e:
+        conn.rollback()
+        logging.error('book_venue error: %s', e)
+        return jsonify({'success': False, 'msg': '预约失败，请稍后重试'})
+    finally:
+        try:
+            cursor.close()
+            conn.close()
+        except:
+            pass
+
+# ============ 积分与会员信息 ============
+
+@app.route('/api/user/member', methods=['GET'])
+@require_login
+def get_user_member(user):
+    """获取当前用户的会员积分信息"""
+    uid = user['user_id']
+    member = db.get_one(
+        "SELECT user_id, user_name, phone, member_level, points, total_points, balance FROM business_members WHERE user_id=%s",
+        [uid]
     )
-    return jsonify({'success': True, 'msg': '预约成功', 'data': {'verify_code': verify_code}})
+    # 若会员不存在则自动初始化
+    if not member:
+        ec_id = user.get('ec_id')
+        project_id = user.get('project_id')
+        try:
+            db.execute(
+                "INSERT IGNORE INTO business_members (user_id, user_name, phone, points, total_points, balance, member_level, ec_id, project_id) "
+                "VALUES (%s,%s,%s,0,0,0,'bronze',%s,%s)",
+                [uid, user.get('user_name', ''), user.get('phone', ''), ec_id, project_id]
+            )
+            member = {'user_id': uid, 'user_name': user.get('user_name', ''), 'phone': user.get('phone', ''),
+                      'member_level': 'bronze', 'points': 0, 'total_points': 0, 'balance': 0}
+        except Exception as e:
+            logging.warning('auto create member failed: %s', e)
+            member = {'user_id': uid, 'points': 0, 'total_points': 0, 'balance': 0, 'member_level': 'bronze'}
+    return jsonify({'success': True, 'data': member})
+
+@app.route('/api/user/points/logs', methods=['GET'])
+@require_login
+def get_user_points_logs(user):
+    """获取当前用户的积分记录"""
+    uid = user['user_id']
+    page = int(request.args.get('page', 1))
+    page_size = min(int(request.args.get('page_size', 20)), 50)
+    log_type = request.args.get('type')
+    where = "user_id=%s"
+    params = [uid]
+    if log_type:
+        where += " AND log_type=%s"; params.append(log_type)
+    total = db.get_total("SELECT COUNT(*) FROM business_points_log WHERE " + where, params)
+    offset = (page - 1) * page_size
+    items = db.get_all(
+        "SELECT id, log_type as type, points, balance_after, description, created_at "
+        "FROM business_points_log WHERE " + where + " ORDER BY id DESC LIMIT %s OFFSET %s",
+        params + [page_size, offset]
+    )
+    return jsonify({'success': True, 'data': {
+        'items': items, 'total': total, 'page': page, 'page_size': page_size,
+        'pages': (total + page_size - 1) // page_size if total else 0
+    }})
 
 # ============ 门店 ============
 
@@ -333,6 +446,26 @@ def get_products():
         params
     )
     return jsonify({'success': True, 'data': products})
+
+@app.route('/api/user/bookings/<booking_id>/cancel', methods=['POST'])
+@require_login
+def cancel_booking(user, booking_id):
+    """用户取消预约（仅pending且未付款可取消）"""
+    booking = db.get_one(
+        "SELECT * FROM business_venue_bookings WHERE id=%s AND user_id=%s AND deleted=0",
+        [booking_id, user['user_id']]
+    )
+    if not booking:
+        return jsonify({'success': False, 'msg': '预约不存在'})
+    if booking.get('status') not in ('pending',):
+        return jsonify({'success': False, 'msg': '只有待确认的预约才可取消'})
+    if booking.get('pay_status') == 'paid':
+        return jsonify({'success': False, 'msg': '已付款的预约无法自行取消，请联系管理员'})
+    db.execute(
+        "UPDATE business_venue_bookings SET status='cancelled', updated_at=NOW() WHERE id=%s",
+        [booking_id]
+    )
+    return jsonify({'success': True, 'msg': '预约已取消'})
 
 # ============ 场馆预约支付 ============
 

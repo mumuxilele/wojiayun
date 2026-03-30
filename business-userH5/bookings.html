@@ -501,7 +501,8 @@ function submitBooking(){
     if(d.success){
       closeBill();
       closePanel();
-      alert('预约成功！核销码：'+(d.data&&d.data.verify_code||''));
+      // 展示成功引导弹窗，引导用户完成支付
+      showBookingSuccess(d.data&&d.data.verify_code||'', UP.startTime, UP.endTime, date, venue);
       switchTab('my');
       UP.bLoaded=false;
       loadMyBookings();
@@ -513,6 +514,32 @@ function submitBooking(){
     alert('预约失败：'+e.message);
     btn.disabled=false;btn.textContent='✅ 确认预约';
   });
+}
+
+// 预约成功引导弹窗
+function showBookingSuccess(code, startTime, endTime, date, venue){
+  var price = parseFloat(venue&&venue.price||0);
+  var hours = UP.endHour&&UP.startHour?UP.endHour-UP.startHour:0;
+  var total = (price * hours).toFixed(2);
+  var overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:300;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML=
+    '<div style="background:white;border-radius:16px;width:320px;padding:28px 24px;text-align:center;position:relative">'
+    +'<div style="font-size:48px;margin-bottom:12px">🎉</div>'
+    +'<div style="font-size:18px;font-weight:700;color:#333;margin-bottom:8px">预约成功！</div>'
+    +'<div style="font-size:13px;color:#999;margin-bottom:18px">'+date+' &nbsp;'+startTime+'~'+endTime+'</div>'
+    +'<div style="background:#f9f5ff;border-radius:12px;padding:14px;margin-bottom:18px">'
+    +'<div style="font-size:12px;color:#909399;margin-bottom:4px">核销码</div>'
+    +'<div style="font-size:28px;font-weight:700;color:#667eea;letter-spacing:4px">'+code+'</div>'
+    +'<div style="font-size:11px;color:#bbb;margin-top:4px">到场时出示此核销码</div>'
+    +'</div>'
+    +'<div style="background:#fff7e6;border-radius:8px;padding:10px;margin-bottom:18px;text-align:left">'
+    +'<div style="font-size:13px;color:#f57c00;font-weight:600">💰 待支付：¥'+total+'</div>'
+    +'<div style="font-size:12px;color:#999;margin-top:3px">请前往"我的预约"页面完成支付</div>'
+    +'</div>'
+    +'<button onclick="this.closest(\'div[style]\').remove()" style="width:100%;padding:12px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;border-radius:12px;font-size:15px;cursor:pointer">我知道了</button>'
+    +'</div>';
+  document.body.appendChild(overlay);
 }
 
 // 加载我的预约
@@ -564,18 +591,47 @@ function loadMyBookings(){
             '</div>'+
           '</div>'+
           (b.verify_code?'<div class="bk-code"><span>核销码</span><strong>'+b.verify_code+'</strong></div>':'')+
+          '<div style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end">'+
+          (b.status==='pending'&&b.pay_status!=='paid'?'<button onclick="payBooking('+b.id+')" style="padding:6px 14px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;border-radius:15px;font-size:12px;cursor:pointer">去支付</button>':'')+
+          (b.status==='pending'?'<button onclick="cancelBooking('+b.id+')" style="padding:6px 14px;background:none;border:1px solid #ff4d4f;color:#ff4d4f;border-radius:15px;font-size:12px;cursor:pointer">取消预约</button>':'')+
+          '</div>'+
         '</div>';
       }).join('');
     }else document.getElementById('myBookingList').innerHTML='<div class="empty">暂无预约记录<br><br><button onclick="switchTab(\'venues\')" style="padding:8px 20px;background:#667eea;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer">去预约场馆</button></div>';
   }).catch(function(){document.getElementById('myBookingList').innerHTML='<div class="empty">加载失败</div>';});
 }
 
+// 取消预约
+function cancelBooking(id){
+  if(!confirm('确定要取消这个预约吗？'))return;
+  api('/user/bookings/'+id+'/cancel','POST',{}).then(function(d){
+    if(d.success){alert('预约已取消');UP.bLoaded=false;loadMyBookings();}
+    else alert(d.msg||'取消失败，请联系管理员');
+  }).catch(function(){alert('取消失败，请稍后重试');});
+}
+
+// 支付预约
+function payBooking(id){
+  if(!confirm('确认支付该预约金额？'))return;
+  api('/user/bookings/'+id+'/pay','POST',{}).then(function(d){
+    if(d.success){
+      alert('支付成功！管理员确认后将为您完成预约确认。');
+      UP.bLoaded=false;
+      loadMyBookings();
+    }else alert(d.msg||'支付失败，请联系管理员');
+  }).catch(function(){alert('支付失败，请稍后重试');});
+}
+
 // 初始化
 var today=new Date();
-var dd=String(today.getDate()).padStart(2,'0');
-var mm=String(today.getMonth()+1).padStart(2,'0');
+// 使用本地时区格式化日期（避免UTC偏移导致日期少一天）
 var yyyy=today.getFullYear();
-document.getElementById('bookDate').min=yyyy+'-'+mm+'-'+dd;
+var mm=String(today.getMonth()+1).padStart(2,'0');
+var dd=String(today.getDate()).padStart(2,'0');
+var todayStr=yyyy+'-'+mm+'-'+dd;
+document.getElementById('bookDate').min=todayStr;
+// 默认设置为今天（方便用户快速操作）
+// document.getElementById('bookDate').value=todayStr;
 loadVenues();
 </script>
 
