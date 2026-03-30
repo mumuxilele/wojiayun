@@ -103,29 +103,28 @@ class ChatDao {
                 beforeTimestamp = null
             } = options;
 
-            let sql, params;
+            let sql, params = [];
 
-            if (beforeTimestamp) {
-                // 使用时间戳分页
-                const sqlTemplate = sqlLoader.getSql('chat.getMessagesByTime');
-                const parsed = sqlLoader.parseSql(sqlTemplate, {
-                    senderType,
-                    beforeTimestamp,
-                    limit: parseInt(limit)
-                });
-                sql = parsed.sql;
-                params = parsed.params;
-            } else {
-                // 普通分页
-                const sqlTemplate = sqlLoader.getSql('chat.getMessages');
-                const parsed = sqlLoader.parseSql(sqlTemplate, {
-                    senderType,
-                    limit: parseInt(limit),
-                    offset: parseInt(offset)
-                });
-                sql = parsed.sql;
-                params = parsed.params;
+            // 构建基础查询
+            let baseSql = `SELECT msg_id as id, msg_id, msg_type, content, sender_id as senderId, sender_name as senderName, sender_type, receiver_id as receiverId, timestamp FROM chat_messages WHERE deleted = 0`;
+            
+            // 根据 senderType 添加过滤条件
+            if (senderType && senderType !== 'all') {
+                baseSql += ` AND sender_type = ?`;
+                params.push(senderType);
             }
+            
+            // 添加时间戳过滤
+            if (beforeTimestamp) {
+                baseSql += ` AND timestamp < ?`;
+                params.push(beforeTimestamp);
+            }
+            
+            // 添加排序和分页
+            baseSql += ` ORDER BY timestamp DESC LIMIT ? OFFSET ?`;
+            params.push(parseInt(limit), parseInt(offset));
+            
+            sql = baseSql;
             
             const [rows] = await conn.query(sql, params);
             return rows;

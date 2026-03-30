@@ -98,7 +98,8 @@ app.get('/api/messages', async (req, res) => {
     const userInfo = await verifyUser(token, isdev, userType);
     if (!userInfo) return res.json({ success: false, msg: 'auth failed' });
     
-    const senderType = req.query.type === 'staff' ? 'staff' : 'user';
+    // 员工端获取所有消息，用户端只获取用户消息
+    const senderType = userType === 'staff' ? 'all' : 'user';
     const messages = await chatDao.getMessages({
         senderType,
         limit,

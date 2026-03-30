@@ -503,18 +503,22 @@
             const sortedMessages = uniqueMessages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
             
             container.innerHTML = sortedMessages.map(m => {
-                // 关键修复：比较 senderId 和当前客服 ID
+                // 关键修复：比较 senderId 和当前客服 ID，或者通过 sender_type 判断
                 const msgSenderId = String(m.senderId || '');
                 const currentStaffId = String(staffId || '');
-                const isSelf = msgSenderId === currentStaffId;
+                const msgSenderType = m.sender_type || '';
+                // 员工端：sender_type 为 'staff' 的是自己发的，'user' 是用户发的
+                const isSelf = msgSenderType === 'staff' || msgSenderId === currentStaffId;
                 
                 console.log('Staff消息显示检查:', {
                     senderId: msgSenderId,
                     staffId: currentStaffId,
+                    senderType: msgSenderType,
                     isSelf: isSelf,
                     content: m.content?.substring(0, 20)
                 });
                 
+                const senderName = isSelf ? '我' : (m.senderName || '用户');
                 const avatarText = isSelf ? (currentUser?.userName?.[0] || '我') : (m.senderName?.[0] || '用');
                 const time = new Date(m.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
                 
@@ -527,12 +531,13 @@
                     contentHtml = `<div class="message-bubble">🎤 语音消息</div>`;
                 }
                 
-                // 添加明确的左右对齐类
-                const alignClass = isSelf ? 'self right-align' : 'other left-align';
+                // 添加明确的左右对齐类和发送者名称
+                const alignClass = isSelf ? 'self' : 'other';
                 
                 return `<div class="message ${alignClass}">
                     <div class="message-avatar">${avatarText}</div>
                     <div class="message-content">
+                        <div class="message-sender">${senderName}</div>
                         ${contentHtml}
                         <div class="message-time">${time}</div>
                     </div>
