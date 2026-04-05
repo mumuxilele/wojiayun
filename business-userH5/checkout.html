@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>确认订单</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f5;min-height:100vh;padding-bottom:90px}
+.header{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:15px;display:flex;align-items:center;position:sticky;top:0;z-index:50}
+.header h1{font-size:18px;flex:1;text-align:center}
+.back{color:white;font-size:20px;text-decoration:none;padding:4px 8px}
+
+/* ---- 收货地址 ---- */
+.section{background:white;margin:10px 0;padding:14px 15px}
+.section-title{font-size:13px;color:#999;margin-bottom:10px;font-weight:500}
+.addr-card{display:flex;align-items:center;gap:10px;cursor:pointer;padding:4px 0}
+.addr-icon{font-size:24px;color:#667eea;flex-shrink:0}
+.addr-info{flex:1;min-width:0}
+.addr-main{font-size:15px;color:#333;font-weight:600}
+.addr-sub{font-size:12px;color:#999;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.addr-arrow{font-size:18px;color:#ccc}
+.addr-empty{display:flex;align-items:center;gap:10px;cursor:pointer;color:#667eea;font-size:14px;padding:4px 0}
+
+/* ---- 商品列表 ---- */
+.product-list{}
+.product-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f5f5f5}
+.product-item:last-child{border-bottom:none}
+.prod-img{width:64px;height:64px;border-radius:8px;background:#f5f5f5;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:24px}
+.prod-img img{width:100%;height:100%;object-fit:cover}
+.prod-info{flex:1;min-width:0}
+.prod-name{font-size:14px;color:#333;font-weight:500;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prod-spec{font-size:12px;color:#999;margin-bottom:4px}
+.prod-price{font-size:14px;color:#f57c00;font-weight:600}
+.prod-qty{font-size:13px;color:#999;flex-shrink:0}
+
+/* ---- 优惠券 ---- */
+.coupon-row{display:flex;align-items:center;gap:10px;cursor:pointer;padding:4px 0}
+.coupon-label{font-size:14px;color:#333;flex:1}
+.coupon-value{font-size:13px;color:#f57c00;font-weight:500}
+.coupon-arrow{font-size:18px;color:#ccc}
+
+/* ---- 备注 ---- */
+.remark-input{width:100%;border:none;outline:none;font-size:14px;color:#333;resize:none;height:40px;background:transparent}
+.remark-input::placeholder{color:#bbb}
+
+/* ---- 费用明细 ---- */
+.fee-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:14px}
+.fee-label{color:#666}
+.fee-value{color:#333}
+.fee-discount{color:#52c41a}
+.fee-total-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0 0;border-top:1px dashed #eee;margin-top:6px}
+.fee-total-label{font-size:14px;color:#333;font-weight:600}
+.fee-total-value{font-size:20px;color:#f57c00;font-weight:700}
+.fee-total-value::before{content:'¥';font-size:14px;vertical-align:top;margin-top:4px;display:inline-block;font-weight:400}
+
+/* ---- 底部结算栏 ---- */
+.bottom-bar{position:fixed;bottom:0;left:0;right:0;background:white;padding:12px 15px;display:flex;align-items:center;gap:12px;box-shadow:0 -2px 8px rgba(0,0,0,.08);z-index:50}
+.bottom-total{flex:1}
+.bottom-total-label{font-size:12px;color:#999}
+.bottom-total-price{font-size:22px;color:#f57c00;font-weight:700}
+.bottom-total-price::before{content:'¥';font-size:14px;font-weight:400}
+.submit-btn{background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;border-radius:25px;padding:13px 32px;font-size:16px;font-weight:700;cursor:pointer;letter-spacing:1px;flex-shrink:0}
+.submit-btn:disabled{background:#ccc;cursor:not-allowed}
+.submit-btn:active:not(:disabled){transform:scale(.96)}
+
+/* ---- 优惠券弹窗 ---- */
+.mask{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:none}
+.mask.show{display:block}
+.coupon-sheet{position:fixed;bottom:0;left:0;right:0;background:white;border-radius:16px 16px 0 0;z-index:101;transform:translateY(100%);transition:transform .3s;max-height:70vh;overflow-y:auto}
+.coupon-sheet.show{transform:translateY(0)}
+.sheet-header{padding:16px 15px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f0f0f0;position:sticky;top:0;background:white}
+.sheet-header h3{font-size:16px;font-weight:600;color:#333}
+.sheet-close{font-size:22px;color:#999;cursor:pointer;padding:0 4px}
+.coupon-option{padding:14px 15px;border-bottom:1px solid #f5f5f5;cursor:pointer;display:flex;align-items:flex-start;gap:10px}
+.coupon-option:active{background:#f9f9f9}
+.coupon-tag{background:linear-gradient(135deg,#ff7043,#f44336);color:white;border-radius:6px;padding:4px 8px;flex-shrink:0}
+.coupon-tag-amount{font-size:18px;font-weight:700}
+.coupon-tag-unit{font-size:11px}
+.coupon-opt-info{flex:1}
+.coupon-opt-name{font-size:14px;color:#333;font-weight:500;margin-bottom:2px}
+.coupon-opt-desc{font-size:12px;color:#999}
+.coupon-opt-expire{font-size:11px;color:#bbb;margin-top:3px}
+.coupon-opt-radio{width:20px;height:20px;border:2px solid #ddd;border-radius:50%;flex-shrink:0;margin-top:4px;transition:all .2s}
+.coupon-opt-radio.selected{background:#667eea;border-color:#667eea}
+.no-coupon-option{padding:14px 15px;display:flex;align-items:center;gap:10px;cursor:pointer;border-bottom:1px solid #f5f5f5}
+.no-coupon-option:active{background:#f9f9f9}
+
+/* ---- 地址选择弹窗 ---- */
+.addr-sheet{position:fixed;bottom:0;left:0;right:0;background:white;border-radius:16px 16px 0 0;z-index:101;transform:translateY(100%);transition:transform .3s;max-height:75vh;overflow-y:auto}
+.addr-sheet.show{transform:translateY(0)}
+.addr-item{padding:14px 15px;border-bottom:1px solid #f5f5f5;cursor:pointer;display:flex;align-items:flex-start;gap:10px}
+.addr-item:active{background:#f9f9f9}
+.addr-item-info{flex:1}
+.addr-item-name{font-size:14px;color:#333;font-weight:600;margin-bottom:3px}
+.addr-item-text{font-size:13px;color:#666}
+.addr-item-default{font-size:11px;color:#667eea;margin-top:2px}
+.addr-item-radio{width:20px;height:20px;border:2px solid #ddd;border-radius:50%;flex-shrink:0;margin-top:4px;transition:all .2s}
+.addr-item-radio.selected{background:#667eea;border-color:#667eea}
+.add-addr-btn{padding:14px 15px;display:flex;align-items:center;gap:8px;color:#667eea;font-size:14px;cursor:pointer}
+.add-addr-btn:active{background:#f9f9f9}
+
+/* ---- toast ---- */
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.9);background:rgba(0,0,0,.75);color:white;padding:10px 20px;border-radius:8px;font-size:14px;z-index:999;opacity:0;transition:all .2s;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+
+.loading{text-align:center;padding:40px;color:#bbb;font-size:14px}
+</style>
+</head>
+<body>
+<div class="header">
+  <a class="back" onclick="history.back()">&#8592;</a>
+  <h1>确认订单</h1>
+</div>
+
+<!-- 收货地址 -->
+<div class="section" id="addrSection">
+  <div class="section-title">收货信息</div>
+  <div id="addrContent" onclick="openAddrSheet()">
+    <div class="addr-empty"><span>📍</span><span>+ 添加收货地址</span></div>
+  </div>
+</div>
+
+<!-- 商品列表 -->
+<div class="section">
+  <div class="section-title">商品清单</div>
+  <div id="productList" class="product-list"><div class="loading">加载中...</div></div>
+</div>
+
+<!-- 优惠券 -->
+<div class="section">
+  <div class="section-title">优惠券</div>
+  <div class="coupon-row" onclick="openCouponSheet()">
+    <span class="coupon-label" id="couponLabel">选择优惠券</span>
+    <span class="coupon-value" id="couponValue"></span>
+    <span class="coupon-arrow">›</span>
+  </div>
+</div>
+
+<!-- 备注 -->
+<div class="section">
+  <div class="section-title">买家备注</div>
+  <textarea class="remark-input" id="remarkInput" placeholder="选填，对商品或服务有什么特殊要求可以写在这里" maxlength="200"></textarea>
+</div>
+
+<!-- 费用明细 -->
+<div class="section">
+  <div class="section-title">费用明细</div>
+  <div class="fee-row"><span class="fee-label">商品金额</span><span class="fee-value" id="feeProductAmt">¥0.00</span></div>
+  <div class="fee-row" id="feeDiscountRow" style="display:none"><span class="fee-label">优惠券减免</span><span class="fee-value fee-discount" id="feeCouponDiscount"></span></div>
+  <div class="fee-row"><span class="fee-label">运费</span><span class="fee-value">免运费</span></div>
+  <div class="fee-total-row">
+    <span class="fee-total-label">实付款</span>
+    <span class="fee-total-value" id="feeTotalAmt">0.00</span>
+  </div>
+</div>
+
+<!-- 底部结算栏 -->
+<div class="bottom-bar">
+  <div class="bottom-total">
+    <div class="bottom-total-label">实付</div>
+    <div class="bottom-total-price" id="bottomTotal">0.00</div>
+  </div>
+  <button class="submit-btn" id="submitBtn" onclick="submitOrder()">提交订单</button>
+</div>
+
+<!-- 地址弹窗 -->
+<div class="mask" id="addrMask" onclick="closeAddrSheet()"></div>
+<div class="addr-sheet" id="addrSheet">
+  <div class="sheet-header">
+    <h3>选择收货地址</h3>
+    <span class="sheet-close" onclick="closeAddrSheet()">✕</span>
+  </div>
+  <div id="addrList"><div class="loading">加载中...</div></div>
+  <div class="add-addr-btn" onclick="goAddAddr()"><span>➕</span><span>新增收货地址</span></div>
+</div>
+
+<!-- 优惠券弹窗 -->
+<div class="mask" id="couponMask" onclick="closeCouponSheet()"></div>
+<div class="coupon-sheet" id="couponSheet">
+  <div class="sheet-header">
+    <h3>选择优惠券</h3>
+    <span class="sheet-close" onclick="closeCouponSheet()">✕</span>
+  </div>
+  <div class="no-coupon-option" onclick="selectCoupon(null)" id="noCouponOpt">
+    <div style="flex:1;font-size:14px;color:#666">不使用优惠券</div>
+    <div class="coupon-opt-radio" id="noCouponRadio"></div>
+  </div>
+  <div id="couponList"><div class="loading">加载中...</div></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+const TOKEN = new URLSearchParams(location.search).get('access_token') || '';
+const API = (p) => p + (p.includes('?') ? '&' : '?') + 'access_token=' + TOKEN;
+
+// 从 URL 解析参数
+const params = new URLSearchParams(location.search);
+const cartIds   = (params.get('cart_ids') || '').split(',').filter(Boolean);
+const directProductId = params.get('product_id');
+const directQty = parseInt(params.get('quantity') || '1');
+const directSkuId = params.get('sku_id') || '';
+
+let state = {
+  items: [],        // [{product_id, product_name, price, quantity, sku_id, sku_name, image}]
+  addresses: [],
+  selectedAddrId: null,
+  coupons: [],
+  selectedCoupon: null,  // {user_coupon_id, coupon_name, coupon_type, discount_value, min_amount, max_discount, coupon_code}
+  totalAmount: 0,
+  actualAmount: 0,
+  loading: false,
+};
+
+function showToast(msg, duration=2000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ---- 初始化 ----
+async function init() {
+  await Promise.all([loadOrderItems(), loadAddresses(), loadCoupons()]);
+  recalcAmount();
+}
+
+async function loadOrderItems() {
+  if (cartIds.length > 0) {
+    // 从购物车下单：批量获取购物车信息
+    const res = await fetch(API('/api/user/cart')).then(r=>r.json()).catch(()=>({}));
+    const all = (res.data || []);
+    const selectedIds = new Set(cartIds.map(Number));
+    state.items = all
+      .filter(c => selectedIds.has(Number(c.id)))
+      .map(c => ({
+        cart_id: c.id,
+        product_id: c.product_id,
+        product_name: c.product_name || c.name,
+        price: parseFloat(c.price || 0),
+        quantity: parseInt(c.quantity || 1),
+        sku_id: c.sku_id || '',
+        sku_name: c.sku_name || '',
+        image: c.image || c.product_image || '',
+      }));
+  } else if (directProductId) {
+    // 直接购买
+    const res = await fetch(API('/api/user/products/' + directProductId)).then(r=>r.json()).catch(()=>({}));
+    const p = res.data || {};
+    state.items = [{
+      product_id: p.id || directProductId,
+      product_name: p.product_name || p.name || '商品',
+      price: parseFloat(p.price || 0),
+      quantity: directQty,
+      sku_id: directSkuId,
+      sku_name: '',
+      image: p.image || '',
+    }];
+  }
+  renderProductList();
+}
+
+function renderProductList() {
+  const el = document.getElementById('productList');
+  if (!state.items.length) {
+    el.innerHTML = '<div class="loading">暂无商品</div>';
+    return;
+  }
+  el.innerHTML = state.items.map(item => `
+    <div class="product-item">
+      <div class="prod-img">${item.image ? `<img src="${item.image}" onerror="this.parentNode.textContent='🛍️'">` : '🛍️'}</div>
+      <div class="prod-info">
+        <div class="prod-name">${item.product_name}</div>
+        ${item.sku_name ? `<div class="prod-spec">${item.sku_name}</div>` : ''}
+        <div class="prod-price">¥${(item.price).toFixed(2)}</div>
+      </div>
+      <div class="prod-qty">×${item.quantity}</div>
+    </div>
+  `).join('');
+}
+
+async function loadAddresses() {
+  const res = await fetch(API('/api/user/addresses')).then(r=>r.json()).catch(()=>({}));
+  state.addresses = res.data || [];
+  const def = state.addresses.find(a => a.is_default) || state.addresses[0];
+  if (def) selectAddress(def.id, false);
+  renderSelectedAddress();
+}
+
+function renderSelectedAddress() {
+  const el = document.getElementById('addrContent');
+  const addr = state.addresses.find(a => a.id == state.selectedAddrId);
+  if (addr) {
+    const full = [addr.province, addr.city, addr.district, addr.address].filter(Boolean).join('');
+    el.innerHTML = `
+      <div class="addr-card" onclick="openAddrSheet()">
+        <div class="addr-icon">📍</div>
+        <div class="addr-info">
+          <div class="addr-main">${addr.contact_name || addr.user_name || ''} ${addr.contact_phone || addr.phone || ''}</div>
+          <div class="addr-sub">${full}</div>
+        </div>
+        <div class="addr-arrow">›</div>
+      </div>`;
+  } else {
+    el.innerHTML = `<div class="addr-empty" onclick="openAddrSheet()"><span>📍</span><span>+ 添加收货地址</span></div>`;
+  }
+}
+
+async function loadCoupons() {
+  const res = await fetch(API('/api/user/coupons?status=unused&page=1&per_page=20')).then(r=>r.json()).catch(()=>({}));
+  state.coupons = (res.data?.list || res.data || []).filter(c => {
+    const min = parseFloat(c.min_amount || 0);
+    return state.totalAmount >= min || min === 0;
+  });
+}
+
+function recalcAmount() {
+  state.totalAmount = state.items.reduce((s, i) => s + i.price * i.quantity, 0);
+  
+  let discount = 0;
+  const c = state.selectedCoupon;
+  if (c) {
+    const min = parseFloat(c.min_amount || 0);
+    if (state.totalAmount >= min) {
+      if (c.coupon_type === 'cash') {
+        discount = parseFloat(c.discount_value || 0);
+      } else if (c.coupon_type === 'discount') {
+        discount = state.totalAmount * (1 - parseFloat(c.discount_value || 1));
+        const maxD = parseFloat(c.max_discount || 0);
+        if (maxD > 0) discount = Math.min(discount, maxD);
+      }
+    }
+  }
+  discount = Math.min(discount, state.totalAmount);
+  state.actualAmount = Math.max(0, state.totalAmount - discount);
+
+  document.getElementById('feeProductAmt').textContent = '¥' + state.totalAmount.toFixed(2);
+  document.getElementById('feeTotalAmt').textContent = state.actualAmount.toFixed(2);
+  document.getElementById('bottomTotal').textContent = state.actualAmount.toFixed(2);
+
+  const discRow = document.getElementById('feeDiscountRow');
+  if (discount > 0) {
+    discRow.style.display = 'flex';
+    document.getElementById('feeCouponDiscount').textContent = '-¥' + discount.toFixed(2);
+  } else {
+    discRow.style.display = 'none';
+  }
+}
+
+// ---- 地址弹窗 ----
+function openAddrSheet() {
+  const el = document.getElementById('addrList');
+  if (!state.addresses.length) {
+    el.innerHTML = '<div style="padding:20px;text-align:center;color:#bbb;font-size:14px">暂无收货地址</div>';
+  } else {
+    el.innerHTML = state.addresses.map(a => {
+      const full = [a.province, a.city, a.district, a.address].filter(Boolean).join('');
+      const sel = a.id == state.selectedAddrId;
+      return `<div class="addr-item" onclick="selectAddress(${a.id})">
+        <div class="addr-item-info">
+          <div class="addr-item-name">${a.contact_name || a.user_name || ''} ${a.contact_phone || a.phone || ''}</div>
+          <div class="addr-item-text">${full}</div>
+          ${a.is_default ? '<div class="addr-item-default">默认地址</div>' : ''}
+        </div>
+        <div class="addr-item-radio${sel ? ' selected' : ''}"></div>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('addrSheet').classList.add('show');
+  document.getElementById('addrMask').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closeAddrSheet() {
+  document.getElementById('addrSheet').classList.remove('show');
+  document.getElementById('addrMask').classList.remove('show');
+  document.body.style.overflow = '';
+}
+function selectAddress(id, close=true) {
+  state.selectedAddrId = id;
+  renderSelectedAddress();
+  if (close) closeAddrSheet();
+}
+function goAddAddr() {
+  closeAddrSheet();
+  location.href = 'addresses.html?access_token=' + TOKEN + '&redirect=checkout';
+}
+
+// ---- 优惠券弹窗 ----
+function openCouponSheet() {
+  const avail = state.coupons.filter(c => {
+    const min = parseFloat(c.min_amount || 0);
+    return state.totalAmount >= min;
+  });
+  const el = document.getElementById('couponList');
+  if (!avail.length) {
+    el.innerHTML = '<div style="padding:20px;text-align:center;color:#bbb;font-size:14px">暂无可用优惠券</div>';
+  } else {
+    el.innerHTML = avail.map(c => {
+      const sel = state.selectedCoupon && state.selectedCoupon.user_coupon_id == c.user_coupon_id;
+      const dispAmt = c.coupon_type === 'cash' ? '¥' + parseFloat(c.discount_value).toFixed(0) :
+                      parseFloat(c.discount_value) * 10 + '折';
+      const expire = c.expire_at ? '有效期至 ' + c.expire_at.slice(0,10) : '';
+      return `<div class="coupon-option" onclick="selectCoupon(${JSON.stringify(c).replace(/"/g,'&quot;')})">
+        <div class="coupon-tag"><span class="coupon-tag-amount">${dispAmt}</span></div>
+        <div class="coupon-opt-info">
+          <div class="coupon-opt-name">${c.coupon_name || '优惠券'}</div>
+          <div class="coupon-opt-desc">满${parseFloat(c.min_amount||0).toFixed(0)}元可用</div>
+          ${expire ? `<div class="coupon-opt-expire">${expire}</div>` : ''}
+        </div>
+        <div class="coupon-opt-radio${sel ? ' selected' : ''}"></div>
+      </div>`;
+    }).join('');
+  }
+  const noSel = !state.selectedCoupon;
+  document.getElementById('noCouponRadio').className = 'coupon-opt-radio' + (noSel ? ' selected' : '');
+  document.getElementById('couponSheet').classList.add('show');
+  document.getElementById('couponMask').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closeCouponSheet() {
+  document.getElementById('couponSheet').classList.remove('show');
+  document.getElementById('couponMask').classList.remove('show');
+  document.body.style.overflow = '';
+}
+function selectCoupon(coupon) {
+  if (!coupon) {
+    state.selectedCoupon = null;
+    document.getElementById('couponLabel').textContent = '选择优惠券';
+    document.getElementById('couponValue').textContent = '';
+  } else {
+    const c = typeof coupon === 'string' ? JSON.parse(coupon) : coupon;
+    state.selectedCoupon = c;
+    const dispAmt = c.coupon_type === 'cash' ? '-¥' + parseFloat(c.discount_value).toFixed(2) :
+                    parseFloat(c.discount_value) * 10 + '折优惠';
+    document.getElementById('couponLabel').textContent = c.coupon_name || '优惠券';
+    document.getElementById('couponValue').textContent = dispAmt;
+  }
+  recalcAmount();
+  closeCouponSheet();
+}
+
+// ---- 提交订单 ----
+async function submitOrder() {
+  if (state.loading) return;
+  if (!state.items.length) { showToast('请先选择商品'); return; }
+  if (!state.selectedAddrId) { showToast('请选择收货地址'); return; }
+
+  state.loading = true;
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '提交中...';
+
+  try {
+    const body = {
+      order_type: 'product',
+      address_id: state.selectedAddrId,
+      remark: document.getElementById('remarkInput').value.trim(),
+      coupon_code: state.selectedCoupon ? (state.selectedCoupon.coupon_code || '') : '',
+    };
+
+    if (cartIds.length > 0) {
+      body.cart_ids = cartIds.map(Number);
+    } else {
+      body.items = state.items.map(i => ({
+        product_id: i.product_id,
+        quantity: i.quantity,
+        sku_id: i.sku_id || undefined,
+      }));
+    }
+
+    const res = await fetch(API('/api/user/orders'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }).then(r => r.json());
+
+    if (res.success) {
+      showToast('订单提交成功！');
+      const orderId = res.data?.order_id || res.data?.id || '';
+      const orderNo = res.data?.order_no || '';
+      setTimeout(() => {
+        location.href = `payment.html?access_token=${TOKEN}&order_id=${orderId}&order_no=${orderNo}&amount=${state.actualAmount.toFixed(2)}`;
+      }, 800);
+    } else {
+      showToast(res.msg || '提交失败，请重试');
+      btn.disabled = false;
+      btn.textContent = '提交订单';
+    }
+  } catch (e) {
+    showToast('网络异常，请重试');
+    btn.disabled = false;
+    btn.textContent = '提交订单';
+  } finally {
+    state.loading = false;
+  }
+}
+
+init();
+</script>
+</body>
+</html>

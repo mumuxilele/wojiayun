@@ -472,7 +472,7 @@
                     staffId = currentUser.userId || currentUser.empId || currentUser.id;
                     document.getElementById('currentUser').textContent = currentUser.userName || currentUser.empName || '客服';
                 } else {
-                    document.body.innerHTML = `<div style="padding:40px;text-align:center;"><h2>登录已失效</h2><p>${data.msg || '请重新登录'}</p></div>`;
+                    document.body.innerHTML = '<div style="padding:40px;text-align:center;"><h2>登录已失效</h2><p>' + escapeHtml(data.msg || '请重新登录') + '</p></div>';
                     return;
                 }
             } catch(e) { 
@@ -702,10 +702,10 @@
                 }
                 
                 return `<div class="session-item ${isActive}" onclick="selectSession('${uid}')">
-                    <div class="session-avatar">${(session.name || '用')[0]}${unreadBadge}</div>
+                    <div class="session-avatar">${escapeHtml((session.name || '用')[0])}${unreadBadge}</div>
                     <div class="session-info">
-                        <div class="session-name">${session.name}<span class="session-status-tag ${statusClass}">${statusText}</span></div>
-                        <div class="session-preview">${session.lastMessage || '暂无消息'}</div>
+                        <div class="session-name">${escapeHtml(session.name)}<span class="session-status-tag ${statusClass}">${statusText}</span></div>
+                        <div class="session-preview">${escapeHtml(session.lastMessage || '暂无消息')}</div>
                     </div>
                     <div class="session-time">${lastTime}</div>
                 </div>`;
@@ -780,7 +780,7 @@
                 });
                 
                 const senderName = isSelf ? '我' : (m.senderName || '用户');
-                const avatarText = isSelf ? (currentUser?.userName?.[0] || '我') : (m.senderName?.[0] || '用');
+                const avatarText = isSelf ? (currentUser?.userName?.[0] || '我') : escapeHtml((m.senderName || '用')[0]);
                 const time = new Date(m.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
                 
                 let contentHtml = '';
@@ -809,9 +809,8 @@
         }
         
         function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+            if (text === null || text === undefined) return '';
+            return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
         }
         
         function sendMessage(msgType = 'text', content = '') {

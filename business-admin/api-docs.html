@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API文档 - 社区商业服务系统</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.13/lib/theme-chalk/index.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 { font-size: 28px; margin-bottom: 10px; }
+        .header p { opacity: 0.8; font-size: 14px; }
+        
+        .container { display: flex; min-height: calc(100vh - 100px); }
+        
+        /* 左侧导航 */
+        .sidebar {
+            width: 250px;
+            background: #fff;
+            border-right: 1px solid #e4e7ed;
+            overflow-y: auto;
+            position: fixed;
+            height: calc(100vh - 100px);
+        }
+        .sidebar-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        .sidebar-item:hover { background: #f5f7fa; }
+        .sidebar-item.active {
+            background: #ecf5ff;
+            border-left-color: #409eff;
+            color: #409eff;
+        }
+        .sidebar-title {
+            font-weight: 500;
+            color: #303133;
+            padding: 15px 20px 10px;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        
+        /* 右侧内容 */
+        .main { margin-left: 250px; flex: 1; padding: 20px; }
+        
+        .api-card {
+            background: #fff;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .api-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #e4e7ed;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: #fafafa;
+        }
+        .method {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #fff;
+        }
+        .method.get { background: #67c23a; }
+        .method.post { background: #409eff; }
+        .method.put { background: #e6a23c; }
+        .method.delete { background: #f56c6c; }
+        .path { font-family: monospace; font-size: 14px; color: #303133; }
+        .summary { color: #909399; font-size: 14px; }
+        
+        .api-body { padding: 20px; }
+        
+        .section-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #606266;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #ebeef5;
+        }
+        
+        .param-table { width: 100%; border-collapse: collapse; }
+        .param-table th, .param-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ebeef5;
+            font-size: 13px;
+        }
+        .param-table th { background: #fafafa; color: #909399; font-weight: 500; }
+        .param-table td { color: #606266; }
+        .param-name { font-family: monospace; color: #409eff; }
+        .param-required { color: #f56c6c; font-size: 12px; }
+        
+        .example-box {
+            background: #f5f7fa;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+        .example-title { font-size: 12px; color: #909399; margin-bottom: 8px; }
+        .example-code {
+            font-family: monospace;
+            font-size: 12px;
+            color: #606266;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        .search-box {
+            padding: 15px 20px;
+            background: #fff;
+            border-bottom: 1px solid #e4e7ed;
+        }
+        .search-box input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #dcdfe6;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .back-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #409eff;
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(64,158,255,0.3);
+            text-decoration: none;
+        }
+        
+        .empty-state { text-align: center; padding: 60px; color: #909399; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="header">
+            <h1>📚 API 文档</h1>
+            <p>社区商业服务系统 V15.0 - 接口文档中心</p>
+        </div>
+        
+        <div class="container">
+            <div class="sidebar">
+                <div class="sidebar-title">用户端 API</div>
+                <div v-for="api in userApis" :key="api.path" 
+                     class="sidebar-item" 
+                     :class="{active: activeApi === api.path}"
+                     @click="scrollTo(api.path)">
+                    {{ api.summary }}
+                </div>
+                
+                <div class="sidebar-title">员工端 API</div>
+                <div v-for="api in staffApis" :key="api.path" 
+                     class="sidebar-item" 
+                     :class="{active: activeApi === api.path}"
+                     @click="scrollTo(api.path)">
+                    {{ api.summary }}
+                </div>
+                
+                <div class="sidebar-title">管理端 API</div>
+                <div v-for="api in adminApis" :key="api.path" 
+                     class="sidebar-item" 
+                     :class="{active: activeApi === api.path}"
+                     @click="scrollTo(api.path)">
+                    {{ api.summary }}
+                </div>
+            </div>
+            
+            <div class="main">
+                <div class="search-box">
+                    <input v-model="searchKeyword" placeholder="搜索API..." @input="filterApis">
+                </div>
+                
+                <!-- 用户端API -->
+                <div v-for="api in filteredUserApis" :key="api.path" class="api-card" :id="api.path">
+                    <div class="api-header">
+                        <span class="method" :class="api.method">{{ api.method.toUpperCase() }}</span>
+                        <span class="path">{{ api.path }}</span>
+                        <span class="summary">{{ api.summary }}</span>
+                    </div>
+                    <div class="api-body">
+                        <div v-if="api.params && api.params.length" class="section-title">请求参数</div>
+                        <table v-if="api.params && api.params.length" class="param-table">
+                            <thead>
+                                <tr>
+                                    <th>参数名</th>
+                                    <th>类型</th>
+                                    <th>必填</th>
+                                    <th>说明</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="param in api.params" :key="param.name">
+                                    <td><span class="param-name">{{ param.name }}</span></td>
+                                    <td>{{ param.type }}</td>
+                                    <td><span v-if="param.required" class="param-required">是</span></td>
+                                    <td>{{ param.description }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <div v-if="api.example" class="example-box">
+                            <div class="example-title">请求示例</div>
+                            <div class="example-code">{{ api.example }}</div>
+                        </div>
+                        
+                        <div v-if="api.response" class="example-box" style="margin-top: 15px;">
+                            <div class="example-title">响应示例</div>
+                            <div class="example-code">{{ api.response }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div v-if="filteredUserApis.length === 0" class="empty-state">暂无匹配的API</div>
+            </div>
+        </div>
+        
+        <a class="back-btn" href="index.html">← 返回管理后台</a>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script>
+    const app = new Vue({
+        el: '#app',
+        data: {
+            searchKeyword: '',
+            activeApi: '',
+            userApis: [],
+            staffApis: [],
+            adminApis: []
+        },
+        computed: {
+            filteredUserApis() {
+                const all = [...this.userApis, ...this.staffApis, ...this.adminApis];
+                if (!this.searchKeyword) return all;
+                return all.filter(api => 
+                    api.path.includes(this.searchKeyword) || 
+                    api.summary.includes(this.searchKeyword)
+                );
+            },
+            filteredStaffApis() { return []; },
+            filteredAdminApis() { return []; }
+        },
+        mounted() {
+            this.loadApis();
+        },
+        methods: {
+            loadApis() {
+                // 用户端API
+                this.userApis = [
+                    { path: 'user-stats', method: 'get', summary: '获取用户统计', pathFull: '/api/user/stats',
+                      params: [{name: 'access_token', type: 'string', required: true, description: '登录令牌'}],
+                      example: 'GET /api/user/stats?access_token=xxx',
+                      response: '{"success":true,"data":{"pending":2,"orders":5,"points":120}}' },
+                    { path: 'user-applications', method: 'get', summary: '获取申请单列表', pathFull: '/api/user/applications',
+                      params: [{name: 'access_token', type: 'string', required: true}, {name: 'page', type: 'int', description: '页码'}],
+                      example: 'GET /api/user/applications?access_token=xxx&page=1' },
+                    { path: 'user-orders', method: 'get', summary: '获取订单列表', pathFull: '/api/user/orders',
+                      params: [{name: 'access_token', type: 'string', required: true}, {name: 'status', type: 'string', description: '订单状态'}],
+                      example: 'GET /api/user/orders?access_token=xxx' },
+                    { path: 'user-bookings', method: 'get', summary: '获取预约列表', pathFull: '/api/user/bookings',
+                      params: [{name: 'access_token', type: 'string', required: true}],
+                      example: 'GET /api/user/bookings?access_token=xxx' },
+                    { path: 'user-checkin', method: 'post', summary: '签到', pathFull: '/api/user/checkin',
+                      params: [{name: 'access_token', type: 'string', required: true}],
+                      example: 'POST /api/user/checkin?access_token=xxx',
+                      response: '{"success":true,"data":{"points":10,"streak":3}}' },
+                    { path: 'user-products', method: 'get', summary: '商品列表', pathFull: '/api/user/products',
+                      params: [{name: 'access_token', type: 'string', required: true}, {name: 'category_id', type: 'int', description: '分类ID'}],
+                      example: 'GET /api/user/products?access_token=xxx&page=1&page_size=20' }
+                ];
+                
+                // 员工端API
+                this.staffApis = [
+                    { path: 'staff-applications', method: 'get', summary: '申请单管理', pathFull: '/api/staff/applications',
+                      params: [{name: 'access_token', type: 'string', required: true}, {name: 'status', type: 'string', description: '状态筛选'}],
+                      example: 'GET /api/staff/applications?access_token=xxx' },
+                    { path: 'staff-orders', method: 'get', summary: '订单管理', pathFull: '/api/staff/orders',
+                      params: [{name: 'access_token', type: 'string', required: true}],
+                      example: 'GET /api/staff/orders?access_token=xxx' },
+                    { path: 'staff-refund', method: 'post', summary: '退款处理', pathFull: '/api/staff/refunds',
+                      params: [{name: 'access_token', type: 'string', required: true}, {name: 'order_id', type: 'int', description: '订单ID'}, {name: 'action', type: 'string', description: 'approve/reject'}],
+                      example: 'POST /api/staff/refunds {"order_id":123,"action":"approve"}' },
+                    { path: 'staff-members', method: 'get', summary: '会员管理', pathFull: '/api/staff/members',
+                      params: [{name: 'access_token', type: 'string', required: true}, {name: 'keyword', type: 'string', description: '搜索关键字'}],
+                      example: 'GET /api/staff/members?access_token=xxx' }
+                ];
+                
+                // 管理端API
+                this.adminApis = [
+                    { path: 'admin-statistics', method: 'get', summary: '数据统计', pathFull: '/api/admin/statistics',
+                      params: [{name: 'access_token', type: 'string', required: true}],
+                      example: 'GET /api/admin/statistics?access_token=xxx',
+                      response: '{"success":true,"data":{"today_orders":10,"total_members":100}}' },
+                    { path: 'admin-members', method: 'get', summary: '会员管理', pathFull: '/api/admin/members',
+                      params: [{name: 'access_token', type: 'string', required: true}, {name: 'page', type: 'int'}],
+                      example: 'GET /api/admin/members?access_token=xxx&page=1' },
+                    { path: 'admin-venues', method: 'get', summary: '场地管理', pathFull: '/api/admin/venues',
+                      params: [{name: 'access_token', type: 'string', required: true}],
+                      example: 'GET /api/admin/venues?access_token=xxx' },
+                    { path: 'admin-shops', method: 'get', summary: '门店管理', pathFull: '/api/admin/shops',
+                      params: [{name: 'access_token', type: 'string', required: true}],
+                      example: 'GET /api/admin/shops?access_token=xxx' },
+                    { path: 'admin-coupons', method: 'get', summary: '优惠券管理', pathFull: '/api/admin/coupons',
+                      params: [{name: 'access_token', type: 'string', required: true}],
+                      example: 'GET /api/admin/coupons?access_token=xxx' },
+                    { path: 'admin-levels', method: 'get', summary: '会员等级管理', pathFull: '/api/admin/member-levels',
+                      params: [{name: 'access_token', type: 'string', required: true}],
+                      example: 'GET /api/admin/member-levels?access_token=xxx',
+                      response: '{"success":true,"data":[{"level_code":"L1","level_name":"普通会员",...}]}' },
+                    { path: 'admin-dashboard', method: 'get', summary: '数据大屏', pathFull: '/api/admin/statistics/trend',
+                      params: [{name: 'access_token', type: 'string', required: true}, {name: 'days', type: 'int', description: '天数'}],
+                      example: 'GET /api/admin/statistics/trend?days=7&access_token=xxx' }
+                ];
+            },
+            filterApis() {
+                // 搜索过滤逻辑
+            },
+            scrollTo(path) {
+                this.activeApi = path;
+                const el = document.getElementById(path);
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        }
+    });
+    </script>
+</body>
+</html>

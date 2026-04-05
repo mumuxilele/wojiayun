@@ -76,6 +76,7 @@
         </select>
         <button class="btn btn-primary" onclick="loadList(1)">搜索</button>
         <button class="btn" onclick="resetSearch()">重置</button>
+        <button class="btn" onclick="exportMembers()" style="margin-left:auto">📥 导出CSV</button>
     </div>
     <table class="el-table el-table--border el-table--striped">
         <thead class="el-table__header">
@@ -146,6 +147,7 @@
                             <td class="balance-num">¥${parseFloat(m.balance || 0).toFixed(2)}</td>
                             <td>${(m.created_at || '').substring(0, 10) || '-'}</td>
                             <td class="actions">
+                                <a href="member-profile.html?access_token=${encodeURIComponent(token)}&isdev=${isdev}&user_id=${m.user_id}" target="_blank">画像</a>
                                 <a href="points.html?access_token=${encodeURIComponent(token)}&isdev=${isdev}" target="_blank">积分管理</a>
                             </td>
                         </tr>`
@@ -162,6 +164,22 @@
             document.getElementById('levelFilter').value = '';
             loadList(1);
         }
+
+        function exportMembers() {
+            const keyword = document.getElementById('keyword').value;
+            const level = document.getElementById('levelFilter').value;
+            let url = '/api/admin/export/members?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+            if (keyword) url += '&keyword=' + encodeURIComponent(keyword);
+            if (level) url += '&member_level=' + level;
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '会员数据_' + new Date().toISOString().substring(0,10) + '.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+
 
         document.getElementById('keyword').addEventListener('keydown', e => { if (e.key === 'Enter') loadList(1); });
 

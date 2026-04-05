@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>消息通知 - 员工端</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; min-height: 100vh; }
+        
+        .header { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; padding: 15px 20px; display: flex; align-items: center; gap: 12px; }
+        .back-btn { font-size: 20px; cursor: pointer; text-decoration: none; color: white; }
+        .header h1 { font-size: 17px; flex: 1; }
+        .badge { background: #ff4d4f; color: white; font-size: 12px; padding: 2px 8px; border-radius: 10px; }
+        
+        .tabs { display: flex; background: white; margin: 10px 15px; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .tab { flex: 1; text-align: center; padding: 12px 0; font-size: 14px; color: #666; cursor: pointer; border-bottom: 2px solid transparent; }
+        .tab.active { color: #11998e; border-bottom-color: #11998e; font-weight: 600; }
+        
+        .mark-all { text-align: right; padding: 8px 15px; }
+        .mark-all a { color: #11998e; font-size: 13px; text-decoration: none; }
+        
+        .notice-list { padding: 0 15px 15px; }
+        .notice-item { background: white; border-radius: 10px; padding: 15px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+        .notice-item.unread { border-left: 3px solid #11998e; }
+        .notice-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .notice-title { font-size: 15px; font-weight: 600; color: #333; flex: 1; }
+        .unread-dot { width: 8px; height: 8px; background: #11998e; border-radius: 50%; }
+        .notice-content { font-size: 13px; color: #666; line-height: 1.5; margin-bottom: 6px; }
+        .notice-time { font-size: 12px; color: #bbb; }
+        .notice-type-tag { font-size: 11px; padding: 2px 6px; border-radius: 4px; background: #f0f0f0; color: #999; margin-top: 4px; display: inline-block; }
+        .type-system { background: #e6f7ff; color: #1890ff; }
+        .type-application { background: #f6ffed; color: #52c41a; }
+        .type-booking { background: #fff0f6; color: #eb2f96; }
+        
+        .empty { text-align: center; padding: 60px 20px; color: #bbb; }
+        .empty-icon { font-size: 48px; margin-bottom: 10px; }
+        .loading { text-align: center; padding: 30px; color: #999; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a class="back-btn" onclick="history.back()">←</a>
+        <h1>消息通知</h1>
+        <span class="badge" id="unreadBadge">0</span>
+    </div>
+    
+    <div class="tabs">
+        <div class="tab active" data-filter="" onclick="switchTab(this)">全部</div>
+        <div class="tab" data-filter="unread" onclick="switchTab(this)">未读</div>
+    </div>
+    
+    <div class="mark-all" id="markAllWrap">
+        <a href="javascript:void(0)" onclick="markAllRead()">全部标记已读</a>
+    </div>
+    
+    <div class="notice-list" id="noticeList">
+        <div class="loading">加载中...</div>
+    </div>
+
+    <script>
+    const API = localStorage.getItem('apiBase') || '';
+    let currentFilter = '';
+    
+    function getToken() {
+        return localStorage.getItem('access_token') || new URLSearchParams(location.search).get('access_token') || '';
+    }
+    
+    function switchTab(el) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        el.classList.add('active');
+        currentFilter = el.dataset.filter;
+        loadNotifications();
+    }
+    
+    async function loadNotifications() {
+        const list = document.getElementById('noticeList');
+        list.innerHTML = '<div class="loading">加载中...</div>';
+        
+        let url = `${API}/api/staff/notifications?page=1&page_size=20`;
+        if (currentFilter === 'unread') url += '&is_read=false';
+        
+        try {
+            const res = await fetch(url, { headers: { 'Token': getToken() } });
+            const json = await res.json();
+            if (json.success) {
+                const { items, unread_count } = json.data;
+                document.getElementById('unreadBadge').textContent = unread_count || 0;
+                document.getElementById('markAllWrap').style.display = unread_count > 0 ? 'block' : 'none';
+                
+                if (!items || items.length === 0) {
+                    list.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><p>暂无通知</p></div>';
+                    return;
+                }
+                
+                const typeLabels = { system:'系统', application:'申请', booking:'预约' };
+                list.innerHTML = items.map(n => `
+                    <div class="notice-item ${n.is_read ? '' : 'unread'}">
+                        <div class="notice-header">
+                            <span class="notice-title">${n.title || ''}</span>
+                            ${n.is_read ? '' : '<span class="unread-dot"></span>'}
+                        </div>
+                        <span class="notice-type-tag type-${n.notify_type || 'system'}">${typeLabels[n.notify_type] || '系统'}</span>
+                        <div class="notice-content">${n.content || ''}</div>
+                        <div class="notice-time">${formatTime(n.created_at)}</div>
+                    </div>
+                `).join('');
+            }
+        } catch (e) {
+            list.innerHTML = '<div class="empty"><p>加载失败</p></div>';
+        }
+    }
+    
+    async function markAllRead() {
+        try {
+            await fetch(`${API}/api/staff/notifications/read-all`, {
+                method: 'POST', headers: { 'Token': getToken() }
+            });
+            loadNotifications();
+        } catch (e) {}
+    }
+    
+    function formatTime(t) {
+        if (!t) return '';
+        const d = new Date(t);
+        const now = new Date();
+        const diff = now - d;
+        if (diff < 60000) return '刚刚';
+        if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前';
+        if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前';
+        if (diff < 172800000) return '昨天';
+        return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+    
+    loadNotifications();
+    </script>
+</body>
+</html>

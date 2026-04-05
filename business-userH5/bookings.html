@@ -236,6 +236,11 @@ function api(path,method,body){
   return fetch(url,{method:method||'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined}).then(function(r){return r.json()});
 }
 
+function escapeHtml(text) {
+  if (!text) return '';
+  return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
 function goBack(){location.href='index.html?access_token='+encodeURIComponent(TOKEN)+'&isdev='+ISDEV;}
 
 function switchTab(tab){
@@ -262,13 +267,13 @@ function loadVenues(){
           '<div class="v-top">'+
             '<div class="v-img">'+(imgs||TM[v.venue_type]||'🏟️')+'</div>'+
             '<div class="v-info">'+
-              '<div class="v-name">'+(v.venue_name||'')+'</div>'+
+              '<div class="v-name">'+escapeHtml(v.venue_name||'')+'</div>'+
               '<div class="v-tags">'+
                 '<span class="tag">'+TM[v.venue_type]+'</span>'+
                 '<span class="tag">可容'+(v.capacity||'-')+'人</span>'+
                 '<span class="tag tag-price">¥'+(parseFloat(v.price||0)).toFixed(0)+'/时</span>'+
               '</div>'+
-              '<div class="v-desc">'+(desc||'优质场地，欢迎预约')+'</div>'+
+              '<div class="v-desc">'+escapeHtml(desc||'优质场地，欢迎预约')+'</div>'+
             '</div>'+
           '</div>'+
           '<div class="v-bottom">'+

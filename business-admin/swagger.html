@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API文档 - 社区商业服务系统</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.9.0/swagger-ui.css">
+    <style>
+        body { margin: 0; padding: 0; }
+        .topbar { display: none; }
+    </style>
+</head>
+<body>
+    <div id="swagger-ui"></div>
+    <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js"></script>
+    <script>
+        const spec = {
+  "openapi": "3.0.0",
+  "info": {
+    "title": "社区商业服务系统API",
+    "version": "1.0.0",
+    "description": "社区商业服务系统 API 文档 - V8.0"
+  },
+  "servers": [
+    {"url": "http://127.0.0.1:22311", "description": "用户端H5服务"},
+    {"url": "http://127.0.0.1:22312", "description": "员工端H5服务"},
+    {"url": "http://127.0.0.1:22313", "description": "管理端Web服务"}
+  ],
+  "paths": {
+    "/api/user/stats": {
+      "get": {
+        "summary": "获取用户统计信息",
+        "tags": ["用户-统计"],
+        "parameters": [{"name": "access_token", "in": "query", "required": true, "schema": {"type": "string"}}],
+        "responses": {"200": {"description": "成功"}}
+      }
+    },
+    "/api/user/applications": {
+      "get": {"summary": "获取用户申请单列表", "tags": ["用户-申请单"], "responses": {"200": {"description": "成功"}}},
+      "post": {"summary": "创建申请单", "tags": ["用户-申请单"], "responses": {"200": {"description": "成功"}}}
+    },
+    "/api/user/orders": {
+      "get": {"summary": "获取用户订单列表", "tags": ["用户-订单"], "responses": {"200": {"description": "成功"}}},
+      "post": {"summary": "创建订单", "tags": ["用户-订单"], "responses": {"200": {"description": "成功"}}}
+    },
+    "/api/user/cart": {
+      "get": {"summary": "获取购物车列表", "tags": ["用户-购物车"], "responses": {"200": {"description": "成功"}}},
+      "post": {"summary": "添加商品到购物车", "tags": ["用户-购物车"], "responses": {"200": {"description": "成功"}}}
+    },
+    "/api/user/addresses": {
+      "get": {"summary": "获取收货地址列表", "tags": ["用户-地址管理"], "responses": {"200": {"description": "成功"}}},
+      "post": {"summary": "新增收货地址", "tags": ["用户-地址管理"], "responses": {"200": {"description": "成功"}}}
+    },
+    "/api/user/coupons": {"get": {"summary": "获取我的优惠券", "tags": ["用户-优惠券"], "responses": {"200": {"description": "成功"}}}},
+    "/api/user/favorites": {"get": {"summary": "获取我的收藏", "tags": ["用户-收藏"], "responses": {"200": {"description": "成功"}}}},
+    "/api/reviews": {"get": {"summary": "获取评价列表", "tags": ["用户-评价"], "responses": {"200": {"description": "成功"}}}},
+    "/api/notices": {"get": {"summary": "获取公告列表", "tags": ["用户-公告"], "responses": {"200": {"description": "成功"}}}},
+    "/api/user/notifications": {"get": {"summary": "获取通知列表", "tags": ["用户-通知"], "responses": {"200": {"description": "成功"}}}},
+    "/api/admin/statistics": {"get": {"summary": "管理端统计概览", "tags": ["管理-统计"], "responses": {"200": {"description": "成功"}}}},
+    "/api/admin/applications": {"get": {"summary": "申请单列表", "tags": ["管理-申请单"], "responses": {"200": {"description": "成功"}}}},
+    "/api/admin/orders": {"get": {"summary": "订单列表", "tags": ["管理-订单"], "responses": {"200": {"description": "成功"}}}},
+    "/api/admin/shops": {"get": {"summary": "门店列表", "tags": ["管理-门店"], "responses": {"200": {"description": "成功"}}}},
+    "/api/admin/products": {"get": {"summary": "商品列表", "tags": ["管理-商品"], "responses": {"200": {"description": "成功"}}}},
+    "/api/admin/venues": {"get": {"summary": "场地列表", "tags": ["管理-场地"], "responses": {"200": {"description": "成功"}}}},
+    "/api/admin/coupons": {"get": {"summary": "优惠券列表", "tags": ["管理-优惠券"], "responses": {"200": {"description": "成功"}}}},
+    "/api/admin/notices": {"get": {"summary": "公告管理列表", "tags": ["管理-公告"], "responses": {"200": {"description": "成功"}}}}
+  }
+};
+        window.onload = function() {
+            const ui = SwaggerUIBundle({
+                spec: spec,
+                dom_id: "#swagger-ui",
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIBundle.SwaggerUIStandalonePreset
+                ],
+                layout: "StandaloneLayout"
+            });
+            window.ui = ui;
+        };
+    </script>
+</body>
+</html>

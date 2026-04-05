@@ -273,8 +273,8 @@
             onlineCount.textContent = users.length;
             onlineList.innerHTML = users.map(u => `
                 <div class="online-user" onclick="selectReceiver('${u.userId}')">
-                    <div class="online-avatar">${(u.userName || '用户')[0]}</div>
-                    <div class="online-name">${u.userName || '用户'}</div>
+                    <div class="online-avatar">${escapeHtml((u.userName || '用户')[0])}</div>
+                    <div class="online-name">${escapeHtml(u.userName || '用户')}</div>
                 </div>
             `).join('');
         }
@@ -304,7 +304,7 @@
             
             container.innerHTML = filtered.map(m => {
                 const isSelf = m.senderId === userId;
-                const senderName = isSelf ? '我' : m.senderName;
+                const senderName = isSelf ? '我' : escapeHtml(m.senderName);
                 const avatarText = (senderName || '用户')[0];
                 const time = new Date(m.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
                 
@@ -345,9 +345,8 @@
         
         // 转义HTML
         function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+            if (text === null || text === undefined) return '';
+            return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
         }
         
         // 滚动到底部

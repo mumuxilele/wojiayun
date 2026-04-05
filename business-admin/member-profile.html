@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>会员画像 - 管理后台</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Microsoft YaHei',sans-serif;background:#f0f2f5;min-height:100vh}
+.header{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:16px 24px;display:flex;align-items:center;gap:16px;box-shadow:0 2px 8px rgba(102,126,234,.3)}
+.header h1{font-size:20px;font-weight:700}
+.back-btn{color:white;text-decoration:none;font-size:14px;padding:6px 14px;border:1px solid rgba(255,255,255,.5);border-radius:20px;transition:all .2s}
+.back-btn:hover{background:rgba(255,255,255,.2)}
+
+.page-wrap{max-width:1200px;margin:24px auto;padding:0 24px}
+
+/* ---- 会员基础信息 ---- */
+.profile-top{display:grid;grid-template-columns:340px 1fr;gap:20px;margin-bottom:20px}
+.profile-card{background:white;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.avatar-wrap{display:flex;align-items:center;gap:16px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #f5f5f5}
+.avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;color:white;font-size:28px;font-weight:700;flex-shrink:0}
+.member-meta{flex:1;min-width:0}
+.member-name{font-size:20px;font-weight:700;color:#333;margin-bottom:4px}
+.member-phone{font-size:14px;color:#999}
+.member-level-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:600;margin-top:6px}
+.lv-bronze{background:#fdf2e3;color:#d4800a}
+.lv-silver{background:#f0f0f0;color:#666}
+.lv-gold{background:#fff9e6;color:#c89000}
+.lv-platinum{background:#e8f4ff;color:#1677ff}
+.lv-diamond{background:#f5e6ff;color:#7c3aed}
+
+.info-rows{}
+.info-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #fafafa;font-size:14px}
+.info-row:last-child{border-bottom:none}
+.info-key{color:#999}
+.info-val{color:#333;font-weight:500}
+
+/* ---- 标签 ---- */
+.tags-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.tag-chip{padding:3px 12px;border-radius:20px;font-size:12px;font-weight:500}
+
+/* ---- KPI卡片 ---- */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
+.kpi-card{background:white;border-radius:12px;padding:18px 20px;box-shadow:0 2px 8px rgba(0,0,0,.06);text-align:center}
+.kpi-num{font-size:28px;font-weight:700;color:#333;margin-bottom:4px}
+.kpi-label{font-size:12px;color:#999}
+.kpi-card.orange .kpi-num{color:#f57c00}
+.kpi-card.green .kpi-num{color:#52c41a}
+.kpi-card.purple .kpi-num{color:#7c3aed}
+.kpi-card.blue .kpi-num{color:#1677ff}
+
+/* ---- 图表行 ---- */
+.chart-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
+.chart-card{background:white;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.card-title{font-size:15px;font-weight:600;color:#333;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.chart-area{height:220px}
+
+/* ---- 详情区块 ---- */
+.detail-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:20px}
+.detail-card{background:white;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+
+/* ---- 积分日志 ---- */
+.log-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f5f5f5;font-size:13px}
+.log-item:last-child{border-bottom:none}
+.log-desc{color:#555;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.log-pts.earn{color:#52c41a;font-weight:600;flex-shrink:0;margin-left:8px}
+.log-pts.consume{color:#f44336;font-weight:600;flex-shrink:0;margin-left:8px}
+.log-time{color:#bbb;font-size:11px;flex-shrink:0;margin-left:8px}
+
+/* ---- 类别偏好 ---- */
+.pref-item{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f5f5f5;font-size:13px}
+.pref-item:last-child{border-bottom:none}
+.pref-label{width:80px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0}
+.pref-bar-bg{flex:1;height:8px;background:#f0f0f0;border-radius:4px}
+.pref-bar{height:8px;border-radius:4px;background:linear-gradient(90deg,#667eea,#764ba2)}
+.pref-cnt{width:36px;text-align:right;color:#999;font-size:12px}
+
+/* ---- 近期浏览 ---- */
+.viewed-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.viewed-item{background:#f8f8f8;border-radius:8px;padding:8px;text-align:center;cursor:pointer}
+.viewed-item:hover{background:#f0f0f0}
+.viewed-name{font-size:12px;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px}
+.viewed-price{font-size:12px;color:#f57c00;font-weight:500}
+
+/* ---- 成就徽章 ---- */
+.badge-grid{display:flex;flex-wrap:wrap;gap:8px}
+.badge{background:linear-gradient(135deg,#fff9e6,#fef3c7);border:1px solid #fde68a;padding:5px 12px;border-radius:20px;font-size:12px;color:#92400e;font-weight:500}
+
+.empty-tip{text-align:center;color:#bbb;font-size:13px;padding:20px}
+.loading{text-align:center;color:#bbb;font-size:14px;padding:60px}
+</style>
+</head>
+<body>
+<div class="header">
+  <a class="back-btn" href="users.html">← 返回会员列表</a>
+  <h1>会员 360° 画像</h1>
+</div>
+
+<div class="page-wrap" id="pageWrap">
+  <div class="loading">加载中...</div>
+</div>
+
+<script>
+const TOKEN = new URLSearchParams(location.search).get('access_token') || localStorage.getItem('admin_token') || '';
+const USER_ID = new URLSearchParams(location.search).get('user_id') || '';
+const API = (p) => p + (p.includes('?') ? '&' : '?') + 'access_token=' + TOKEN;
+
+if (TOKEN) localStorage.setItem('admin_token', TOKEN);
+
+const LEVEL_BADGE = {
+  bronze:   { cls: 'lv-bronze', label: '铜牌会员' },
+  silver:   { cls: 'lv-silver', label: '银牌会员' },
+  gold:     { cls: 'lv-gold',   label: '金牌会员' },
+  platinum: { cls: 'lv-platinum', label: '白金会员' },
+  diamond:  { cls: 'lv-diamond', label: '钻石会员' },
+};
+
+async function loadProfile() {
+  if (!USER_ID) {
+    document.getElementById('pageWrap').innerHTML = '<div class="loading">参数缺失</div>';
+    return;
+  }
+  try {
+    const res = await fetch(API('/api/admin/users/' + USER_ID + '/profile')).then(r => r.json());
+    if (!res.success) {
+      document.getElementById('pageWrap').innerHTML = `<div class="loading">${res.msg || '加载失败'}</div>`;
+      return;
+    }
+    render(res.data);
+  } catch(e) {
+    document.getElementById('pageWrap').innerHTML = `<div class="loading">网络异常: ${e.message}</div>`;
+  }
+}
+
+function fmt(num, decimal=0) {
+  const n = parseFloat(num || 0);
+  return isNaN(n) ? '0' : n.toFixed(decimal);
+}
+
+function render(d) {
+  const m = d.member || {};
+  const os = d.order_stats || {};
+  const ps = d.points_stats || {};
+  const cs = d.checkin_stats || {};
+  const lv = LEVEL_BADGE[m.member_level] || { cls: 'lv-bronze', label: m.member_level || '普通会员' };
+  const tags = (d.tags || []);
+  const tagsHtml = tags.length
+    ? tags.map(t => `<span class="tag-chip" style="background:${t.tag_color||'#f0f4ff'};color:#333">${t.tag_name}</span>`).join('')
+    : '<span style="color:#bbb;font-size:13px">暂无标签</span>';
+
+  const regDate = (m.created_at || '').slice(0, 10);
+  const lastLogin = (m.last_login_at || m.updated_at || '').slice(0, 10);
+
+  let html = '';
+
+  // ---- 顶部：基础信息 + 成就徽章 ----
+  html += `<div class="profile-top">
+    <div class="profile-card">
+      <div class="avatar-wrap">
+        <div class="avatar">${(m.user_name || 'U')[0].toUpperCase()}</div>
+        <div class="member-meta">
+          <div class="member-name">${m.user_name || '未知用户'}</div>
+          <div class="member-phone">${m.phone || '暂无手机号'}</div>
+          <div class="member-level-badge ${lv.cls}">🏅 ${lv.label}</div>
+        </div>
+      </div>
+      <div class="info-rows">
+        <div class="info-row"><span class="info-key">用户ID</span><span class="info-val">${m.user_id || '-'}</span></div>
+        <div class="info-row"><span class="info-key">注册时间</span><span class="info-val">${regDate || '-'}</span></div>
+        <div class="info-row"><span class="info-key">成长值</span><span class="info-val">${m.growth_value || 0}</span></div>
+        <div class="info-row"><span class="info-key">余额</span><span class="info-val">¥${fmt(m.balance,2)}</span></div>
+        <div class="info-row"><span class="info-key">累计消费</span><span class="info-val">¥${fmt(m.total_consume || os.total_spent,2)}</span></div>
+        <div class="info-row"><span class="info-key">场地预约</span><span class="info-val">${d.venue_bookings || 0}次</span></div>
+        <div class="info-row" style="align-items:flex-start"><span class="info-key">客户标签</span><div class="tags-wrap">${tagsHtml}</div></div>
+      </div>
+    </div>
+    <div class="profile-card">
+      <div class="card-title">🏆 成就徽章</div>
+      ${d.achievements && d.achievements.length ? `<div class="badge-grid">${d.achievements.map(a => `<div class="badge" title="${(a.earned_at||'').slice(0,10)}">${a.achievement_name || a.achievement_code}</div>`).join('')}</div>` : '<div class="empty-tip">暂无成就徽章</div>'}
+      <div style="margin-top:20px"><div class="card-title">📊 评价贡献</div>
+        <div style="display:flex;gap:24px;padding:10px 0">
+          <div style="text-align:center"><div style="font-size:24px;font-weight:700;color:#f57c00">${d.review_stats.review_count||0}</div><div style="font-size:12px;color:#999">累计评价</div></div>
+          <div style="text-align:center"><div style="font-size:24px;font-weight:700;color:#ffd700">${(d.review_stats.avg_rating||0).toFixed(1)}★</div><div style="font-size:12px;color:#999">平均评分</div></div>
+          <div style="text-align:center"><div style="font-size:24px;font-weight:700;color:#667eea">${d.coupon_stats.used_count||0}</div><div style="font-size:12px;color:#999">用券次数</div></div>
+          <div style="text-align:center"><div style="font-size:24px;font-weight:700;color:#52c41a">¥${fmt(d.coupon_stats.saved_amount,2)}</div><div style="font-size:12px;color:#999">优惠节省</div></div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  // ---- KPI 卡片 ----
+  html += `<div class="kpi-grid">
+    <div class="kpi-card orange"><div class="kpi-num">¥${fmt(os.total_spent,0)}</div><div class="kpi-label">累计消费</div></div>
+    <div class="kpi-card"><div class="kpi-num">${os.total_orders||0}</div><div class="kpi-label">订单总数</div></div>
+    <div class="kpi-card green"><div class="kpi-num">${ps.current||0}</div><div class="kpi-label">当前积分</div></div>
+    <div class="kpi-card purple"><div class="kpi-num">${cs.current_streak||0}天</div><div class="kpi-label">连续签到</div></div>
+  </div>`;
+
+  // ---- 图表行 ----
+  html += `<div class="chart-row">
+    <div class="chart-card">
+      <div class="card-title">📈 近6月消费趋势</div>
+      <div class="chart-area" id="chartConsume"></div>
+    </div>
+    <div class="chart-card">
+      <div class="card-title">🛍️ 购买品类偏好</div>
+      <div class="chart-area" id="chartCategory"></div>
+    </div>
+  </div>`;
+
+  // ---- 详情三栏 ----
+  // 积分日志
+  const recentLogs = ps.recent_logs || [];
+  const logsHtml = recentLogs.length
+    ? recentLogs.map(l => {
+        const isEarn = parseInt(l.points) > 0;
+        return `<div class="log-item">
+          <span class="log-desc">${l.description || l.type || '积分变动'}</span>
+          <span class="log-pts ${isEarn?'earn':'consume'}">${isEarn?'+':''}${l.points}</span>
+          <span class="log-time">${(l.created_at||'').slice(5,16)}</span>
+        </div>`;
+      }).join('')
+    : '<div class="empty-tip">暂无积分记录</div>';
+
+  // 类别偏好
+  const catPref = d.category_preference || [];
+  const maxCnt = catPref.length ? Math.max(...catPref.map(c=>c.buy_count)) : 1;
+  const prefHtml = catPref.length
+    ? catPref.map(c => `<div class="pref-item">
+        <span class="pref-label">${c.category||'未分类'}</span>
+        <div class="pref-bar-bg"><div class="pref-bar" style="width:${Math.round(c.buy_count/maxCnt*100)}%"></div></div>
+        <span class="pref-cnt">${c.buy_count}次</span>
+      </div>`).join('')
+    : '<div class="empty-tip">暂无购买记录</div>';
+
+  // 近期浏览
+  const viewed = d.recently_viewed || [];
+  const viewedHtml = viewed.length
+    ? `<div class="viewed-grid">${viewed.map(v => `<div class="viewed-item">
+        <div class="viewed-name">${v.name||'商品'}</div>
+        <div class="viewed-price">${v.price ? '¥'+fmt(v.price,0) : ''}</div>
+      </div>`).join('')}</div>`
+    : '<div class="empty-tip">暂无浏览记录</div>';
+
+  html += `<div class="detail-row">
+    <div class="detail-card">
+      <div class="card-title">💎 积分流水<span style="font-size:12px;font-weight:400;color:#bbb;margin-left:8px">近10条</span></div>
+      ${logsHtml}
+    </div>
+    <div class="detail-card">
+      <div class="card-title">📦 购买偏好<span style="font-size:12px;font-weight:400;color:#bbb;margin-left:8px">TOP 5 品类</span></div>
+      ${prefHtml}
+    </div>
+    <div class="detail-card">
+      <div class="card-title">🔍 近期浏览</div>
+      ${viewedHtml}
+    </div>
+  </div>`;
+
+  // ---- 签到统计 ----
+  html += `<div class="profile-card" style="margin-bottom:20px">
+    <div class="card-title">📅 签到活跃度</div>
+    <div style="display:flex;gap:32px;padding:6px 0">
+      <div style="text-align:center"><div style="font-size:22px;font-weight:700;color:#52c41a">${cs.total_checkins||0}</div><div style="font-size:12px;color:#999">累计签到</div></div>
+      <div style="text-align:center"><div style="font-size:22px;font-weight:700;color:#667eea">${cs.current_streak||0}</div><div style="font-size:12px;color:#999">当前连签</div></div>
+      <div style="text-align:center"><div style="font-size:22px;font-weight:700;color:#f57c00">${cs.max_streak||0}</div><div style="font-size:12px;color:#999">最长连签</div></div>
+      <div style="text-align:center"><div style="font-size:16px;font-weight:500;color:#333">${(cs.last_checkin||'-').slice(0,10)}</div><div style="font-size:12px;color:#999">上次签到</div></div>
+      <div style="text-align:center"><div style="font-size:22px;font-weight:700;color:#7c3aed">${ps.total_earned||0}</div><div style="font-size:12px;color:#999">累计获得积分</div></div>
+      <div style="text-align:center"><div style="font-size:22px;font-weight:700;color:#f44336">${ps.total_consumed||0}</div><div style="font-size:12px;color:#999">累计消耗积分</div></div>
+    </div>
+  </div>`;
+
+  document.getElementById('pageWrap').innerHTML = html;
+
+  // 渲染 ECharts
+  renderConsumeChart(os.monthly_consume || []);
+  renderCategoryChart(catPref);
+}
+
+function renderConsumeChart(monthly) {
+  const chart = echarts.init(document.getElementById('chartConsume'));
+  const months = monthly.map(m => m.month);
+  const amounts = monthly.map(m => parseFloat(m.amount || 0).toFixed(2));
+  chart.setOption({
+    grid: { top: 20, right: 10, bottom: 30, left: 50 },
+    tooltip: { trigger: 'axis', formatter: '{b}<br/>消费: ¥{c}' },
+    xAxis: { type: 'category', data: months, axisLabel: { fontSize: 11, rotate: 30 } },
+    yAxis: { type: 'value', axisLabel: { fontSize: 11, formatter: v => '¥'+v } },
+    series: [{ type: 'bar', data: amounts, barMaxWidth: 40,
+      itemStyle: { borderRadius: [4,4,0,0], color: { type: 'linear', x:0, y:0, x2:0, y2:1, colorStops: [
+        {offset:0, color:'#667eea'}, {offset:1, color:'#764ba2'}
+      ]}}
+    }]
+  });
+}
+
+function renderCategoryChart(catPref) {
+  const chart = echarts.init(document.getElementById('chartCategory'));
+  if (!catPref.length) {
+    chart.setOption({ graphic: [{ type: 'text', left: 'center', top: 'middle', style: { text: '暂无数据', fill: '#bbb', font: '14px sans-serif' } }] });
+    return;
+  }
+  chart.setOption({
+    tooltip: { trigger: 'item', formatter: '{b}: {c}次 ({d}%)' },
+    legend: { bottom: 0, itemWidth: 10, itemHeight: 10, textStyle: { fontSize: 11 } },
+    series: [{
+      type: 'pie', radius: ['35%', '65%'], center: ['50%', '45%'],
+      data: catPref.map(c => ({ name: c.category||'未分类', value: c.buy_count })),
+      itemStyle: { borderRadius: 4 },
+      label: { fontSize: 11 }
+    }]
+  });
+}
+
+loadProfile();
+</script>
+</body>
+</html>

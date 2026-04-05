@@ -78,6 +78,7 @@
             <a href="orders.html">🧾 订单</a>
             <a href="shops.html">🏪 门店</a>
             <a href="points.html">💎 积分管理</a>
+            <a href="coupons.html">🎫 优惠券</a>
             <a href="users.html">👥 用户管理</a>
         </div>
         <div class="main">
@@ -126,6 +127,50 @@
                             <div class="stat-sub">待确认 <span id="pendingBookings">-</span> 笔</div>
                         </div>
                         <div class="stat-icon">🏟️</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- V10 新增指标卡 -->
+            <div class="stat-grid" style="margin-bottom:20px">
+                <div class="stat-card" style="background:linear-gradient(135deg,#43e97b,#38f9d7)">
+                    <div class="stat-content">
+                        <div>
+                            <div class="stat-num" id="todayCheckins">-</div>
+                            <div class="stat-label">今日签到人次</div>
+                            <div class="stat-sub">本月 <span id="monthCheckins">-</span> 次</div>
+                        </div>
+                        <div class="stat-icon">✅</div>
+                    </div>
+                </div>
+                <div class="stat-card" style="background:linear-gradient(135deg,#fa709a,#fee140)">
+                    <div class="stat-content">
+                        <div>
+                            <div class="stat-num" id="usedCouponsToday">-</div>
+                            <div class="stat-label">今日券使用</div>
+                            <div class="stat-sub">存量 <span id="activeCoupons">-</span> 张</div>
+                        </div>
+                        <div class="stat-icon">🎫</div>
+                    </div>
+                </div>
+                <div class="stat-card" style="background:linear-gradient(135deg,#a18cd1,#fbc2eb)">
+                    <div class="stat-content">
+                        <div>
+                            <div class="stat-num" id="totalMembers">-</div>
+                            <div class="stat-label">注册会员</div>
+                            <div class="stat-sub">今日新增 <span id="todayMembers">-</span> 人</div>
+                        </div>
+                        <div class="stat-icon">👥</div>
+                    </div>
+                </div>
+                <div class="stat-card" style="background:linear-gradient(135deg,#ff9a9e,#fad0c4)">
+                    <div class="stat-content">
+                        <div>
+                            <div class="stat-num" id="lowStockProducts" style="color:#ff4d4f">-</div>
+                            <div class="stat-label">⚠️ 库存预警</div>
+                            <div class="stat-sub">库存≤5件的商品数</div>
+                        </div>
+                        <div class="stat-icon">📦</div>
                     </div>
                 </div>
             </div>
@@ -226,6 +271,15 @@
                     document.getElementById('pendingApps').textContent = d.pending_applications ?? 0;
                     document.getElementById('todayIncome').textContent = parseFloat(d.today_income || 0).toFixed(2);
                     document.getElementById('totalIncome').textContent = parseFloat(d.total_income || 0).toFixed(2);
+                    // V10 新增指标
+                    if (document.getElementById('todayCheckins')) document.getElementById('todayCheckins').textContent = d.today_checkins ?? 0;
+                    if (document.getElementById('monthCheckins')) document.getElementById('monthCheckins').textContent = d.month_checkins ?? 0;
+                    if (document.getElementById('usedCouponsToday')) document.getElementById('usedCouponsToday').textContent = d.used_coupons_today ?? 0;
+                    if (document.getElementById('activeCoupons')) document.getElementById('activeCoupons').textContent = d.total_active_coupons ?? 0;
+                    if (document.getElementById('totalMembers')) document.getElementById('totalMembers').textContent = d.total_members ?? 0;
+                    if (document.getElementById('todayMembers')) document.getElementById('todayMembers').textContent = d.today_members ?? 0;
+                    if (document.getElementById('lowStockProducts')) document.getElementById('lowStockProducts').textContent = d.low_stock_products ?? 0;
+                    if (document.getElementById('pendingBookings')) document.getElementById('pendingBookings').textContent = d.pending_bookings ?? 0;
                 }
             } catch (e) { console.error('loadStats', e); }
         }
@@ -470,15 +524,29 @@
         }
 
         function refreshAll() {
-            loadStats();
-            loadTrend(currentDays);
-            loadAppChart();
-            loadAppTypeChart();
-            loadBookingChart();
-            loadMemberLevelChart();
-            loadVenueStats();
-            loadPointsStats();
-            loadVenueHot();
+            // 显示loading状态
+            document.querySelectorAll('.stat-num').forEach(el => el.textContent = '...');
+            document.getElementById('venueStats').innerHTML = '<div class="loading">加载中...</div>';
+            document.getElementById('pointsStats').innerHTML = '<div class="loading">加载中...</div>';
+            document.getElementById('venueHotList').innerHTML = '<div class="loading">加载中...</div>';
+            
+            // 并行加载所有数据
+            Promise.all([
+                loadStats(),
+                loadTrend(currentDays),
+                loadAppChart(),
+                loadAppTypeChart(),
+                loadBookingChart(),
+                loadMemberLevelChart(),
+                loadVenueStats(),
+                loadPointsStats(),
+                loadVenueHot()
+            ]).then(() => {
+                // 刷新完成，可以添加成功提示
+                console.log('数据刷新完成');
+            }).catch(err => {
+                console.error('数据刷新失败:', err);
+            });
         }
 
         refreshAll();

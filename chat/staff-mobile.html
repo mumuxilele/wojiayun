@@ -1069,7 +1069,7 @@
             
             container.innerHTML = sessionArray.map(([userId, session]) => {
                 const status = session.status || 'pending';
-                const avatarText = session.name ? session.name[0] : '用';
+                const avatarText = session.name ? escapeHtml(session.name[0]) : '用';
                 const time = session.lastTime ? formatTime(session.lastTime) : '';
                 
                 // 状态显示
@@ -1091,10 +1091,10 @@
                         </div>
                         <div class="session-info">
                             <div class="session-name">
-                                ${session.name}
+                                ${escapeHtml(session.name)}
                                 <span class="session-status ${statusClass}">${statusText}</span>
                             </div>
-                            <div class="session-preview">${session.lastMessage || '暂无消息'}</div>
+                            <div class="session-preview">${escapeHtml(session.lastMessage || '暂无消息')}</div>
                         </div>
                         <div class="session-meta">
                             <div class="session-time">${time}</div>
@@ -1205,7 +1205,7 @@
             
             container.innerHTML = sortedMessages.map(msg => {
                 const isSelf = msg.senderType === 'staff';
-                const avatarText = isSelf ? (staffName[0] || '我') : (msg.senderName ? msg.senderName[0] : '用');
+                const avatarText = isSelf ? (staffName[0] || '我') : escapeHtml((msg.senderName || '用')[0]);
                 const time = formatTime(msg.timestamp);
                 
                 return `
@@ -1302,9 +1302,9 @@
             }
             
             container.innerHTML = otherStaff.map(staff => {
-                const avatarText = staff.userName ? staff.userName[0] : '客';
+                const avatarText = staff.userName ? escapeHtml(staff.userName[0]) : '客';
                 return `
-                    <div class="staff-item" onclick="doTransfer('${staff.userId}', '${staff.userName || '客服'}')">
+                    <div class="staff-item" onclick="doTransfer('${staff.userId}', '${escapeHtml(staff.userName || '客服')}')">
                         <div class="staff-avatar">${avatarText}</div>
                         <div class="staff-info">
                             <div class="staff-name">${staff.userName || '客服'}</div>
@@ -1409,9 +1409,8 @@
         }
         
         function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+            if (text === null || text === undefined) return '';
+            return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
         }
         
         function showToast(msg) {

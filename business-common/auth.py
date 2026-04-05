@@ -1,36 +1,45 @@
 """
-用户认证模块 - 带缓存版本
+用户认证模块 - 带缓存版本（V15安全加固）
 优化：对Token验证结果进行内存缓存（TTL=60s），大幅减少对认证服务的HTTP请求次数
+安全：缓存key使用SHA256哈希，避免明文Token存储在内存中
 """
 import urllib.request
 import urllib.parse
 import json
 import time
+import hashlib
 import logging
 from .config import USER_SERVICE_URL, USER_SERVICE_URL_CLOUD, STAFF_SERVICE_URL_CLOUD
 
 logger = logging.getLogger(__name__)
 
 # ============ Token 缓存 ============
-# 格式: { token: {'data': user_dict, 'expire': timestamp} }
-_token_cache = {}
+# V15安全加固：使用SHA256哈希作为缓存key，不存储明文Token
+_token_cache = {}  # 格式: { sha256(key): {'data': user_dict, 'expire': timestamp} }
 TOKEN_CACHE_TTL = 60  # 缓存有效期（秒）
 
 
+def _hash_key(key):
+    """对缓存key进行SHA256哈希，避免明文Token出现在内存字典中"""
+    return hashlib.sha256(key.encode('utf-8')).hexdigest()
+
+
 def _cache_get(token):
-    """从缓存读取Token验证结果"""
-    entry = _token_cache.get(token)
+    """从缓存读取Token验证结果（使用哈希key查找）"""
+    hashed = _hash_key(token)
+    entry = _token_cache.get(hashed)
     if entry and time.time() < entry['expire']:
         return entry['data']
     # 过期则清除
     if entry:
-        del _token_cache[token]
+        del _token_cache[hashed]
     return None
 
 
 def _cache_set(token, user_data):
-    """写入Token缓存"""
-    _token_cache[token] = {
+    """写入Token缓存（使用哈希key存储）"""
+    hashed = _hash_key(token)
+    _token_cache[hashed] = {
         'data': user_data,
         'expire': time.time() + TOKEN_CACHE_TTL
     }
@@ -129,4 +138,5 @@ def invalidate_token(token):
     for prefix in ('user:', 'staff:'):
         for isdev in ('0', '1'):
             key = f"{prefix}{token}:{isdev}"
-            _token_cache.pop(key, None)
+            hashed = _hash_key(key)
+            _token_cache.pop(hashed, None)

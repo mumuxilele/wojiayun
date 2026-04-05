@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>公告管理</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f0f2f5;padding:20px}
+.toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.search-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.search-row input,.search-row select{padding:8px 12px;border:1px solid #d9d9d9;border-radius:6px;font-size:14px;outline:none}
+.search-row input:focus,.search-row select:focus{border-color:#1890ff}
+.btn{padding:8px 16px;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:500}
+.btn-primary{background:#1890ff;color:white}
+.btn-primary:hover{background:#096dd9}
+.btn-success{background:#52c41a;color:white}
+.btn-danger{background:#ff4d4f;color:white;padding:4px 10px;font-size:12px}
+.btn-default{background:white;border:1px solid #d9d9d9;color:#333;padding:4px 10px;font-size:12px}
+.btn-default:hover{border-color:#1890ff;color:#1890ff}
+.card{background:white;border-radius:8px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+table{width:100%;border-collapse:collapse}
+th,td{padding:12px;text-align:left;border-bottom:1px solid #f0f0f0;font-size:14px}
+th{background:#fafafa;font-weight:500;color:#666}
+td{color:#333}
+tr:hover td{background:#fafcff}
+.tag{padding:3px 8px;border-radius:4px;font-size:12px;font-weight:500}
+.tag-general{background:#f0f0f0;color:#666}
+.tag-activity{background:#e6f7ff;color:#1890ff}
+.tag-urgent{background:#fff1f0;color:#ff4d4f}
+.tag-published{background:#f6ffed;color:#52c41a}
+.tag-draft{background:#fff7e6;color:#fa8c16}
+.importance-0{color:#999}
+.importance-1{color:#1890ff}
+.importance-2{color:#ff4d4f;font-weight:600}
+.actions{display:flex;gap:8px}
+.pagination{display:flex;justify-content:flex-end;align-items:center;margin-top:16px;gap:8px}
+.page-btn{padding:6px 12px;border:1px solid #d9d9d9;border-radius:6px;cursor:pointer;background:white;font-size:14px}
+.page-btn.active{background:#1890ff;color:white;border-color:#1890ff}
+.page-btn:hover:not(.active){border-color:#1890ff;color:#1890ff}
+.page-info{color:#666;font-size:14px}
+
+/* 弹窗 */
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:1000;display:none;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:white;border-radius:8px;padding:24px;width:600px;max-width:95vw;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:18px;font-weight:600;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center}
+.modal-close{cursor:pointer;color:#999;font-size:20px;line-height:1}
+.modal-close:hover{color:#333}
+.form-row{margin-bottom:16px}
+.form-row label{display:block;font-size:14px;font-weight:500;color:#333;margin-bottom:6px}
+.form-row input,.form-row select,.form-row textarea{width:100%;padding:8px 12px;border:1px solid #d9d9d9;border-radius:6px;font-size:14px;outline:none;font-family:inherit}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-color:#1890ff;box-shadow:0 0 0 2px rgba(24,144,255,.2)}
+.form-row textarea{min-height:120px;resize:vertical}
+.form-row-inline{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid #f0f0f0}
+.required{color:#ff4d4f;margin-left:2px}
+
+/* 空态 */
+.empty{text-align:center;padding:60px 20px;color:#bbb}
+.empty-icon{font-size:48px;margin-bottom:12px}
+
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.stat-mini{background:white;border-radius:8px;padding:16px;text-align:center}
+.stat-mini .num{font-size:24px;font-weight:700;color:#1890ff}
+.stat-mini .label{font-size:12px;color:#999;margin-top:4px}
+</style>
+</head>
+<body>
+
+<div class="stats-row">
+    <div class="stat-mini"><div class="num" id="statTotal">0</div><div class="label">公告总数</div></div>
+    <div class="stat-mini"><div class="num" id="statPublished">0</div><div class="label">已发布</div></div>
+    <div class="stat-mini"><div class="num" id="statDraft">0</div><div class="label">草稿</div></div>
+    <div class="stat-mini"><div class="num" id="statUrgent">0</div><div class="label">紧急公告</div></div>
+</div>
+
+<div class="card">
+    <div class="toolbar">
+        <div class="search-row">
+            <input type="text" id="searchInput" placeholder="搜索标题..." style="width:200px" oninput="debounceSearch()">
+            <select id="filterStatus" onchange="loadNotices()">
+                <option value="">全部状态</option>
+                <option value="published">已发布</option>
+                <option value="draft">草稿</option>
+            </select>
+            <select id="filterType" onchange="loadNotices()">
+                <option value="">全部类型</option>
+                <option value="general">普通</option>
+                <option value="activity">活动</option>
+                <option value="urgent">紧急</option>
+            </select>
+        </div>
+        <button class="btn btn-primary" onclick="openCreate()">+ 新建公告</button>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>标题</th>
+                <th>类型</th>
+                <th>重要程度</th>
+                <th>状态</th>
+                <th>生效期</th>
+                <th>创建人</th>
+                <th>创建时间</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody id="noticeTableBody">
+            <tr><td colspan="8" style="text-align:center;padding:40px;color:#bbb">加载中...</td></tr>
+        </tbody>
+    </table>
+
+    <div class="pagination" id="pagination"></div>
+</div>
+
+<!-- 新建/编辑弹窗 -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal">
+        <div class="modal-title">
+            <span id="modalTitle">新建公告</span>
+            <span class="modal-close" onclick="closeModal()">✕</span>
+        </div>
+
+        <div class="form-row">
+            <label>公告标题<span class="required">*</span></label>
+            <input type="text" id="fTitle" placeholder="请输入公告标题" maxlength="255">
+        </div>
+
+        <div class="form-row-inline form-row">
+            <div>
+                <label>公告类型</label>
+                <select id="fType">
+                    <option value="general">普通</option>
+                    <option value="activity">活动</option>
+                    <option value="urgent">紧急</option>
+                </select>
+            </div>
+            <div>
+                <label>重要程度</label>
+                <select id="fImportance">
+                    <option value="0">普通</option>
+                    <option value="1">重要</option>
+                    <option value="2">紧急置顶</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row-inline form-row">
+            <div>
+                <label>生效日期</label>
+                <input type="date" id="fStartDate">
+            </div>
+            <div>
+                <label>失效日期</label>
+                <input type="date" id="fEndDate">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <label>发布状态</label>
+            <select id="fStatus">
+                <option value="published">立即发布</option>
+                <option value="draft">保存草稿</option>
+            </select>
+        </div>
+
+        <div class="form-row">
+            <label>公告内容<span class="required">*</span></label>
+            <textarea id="fContent" placeholder="请输入公告内容..."></textarea>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-default" onclick="closeModal()">取消</button>
+            <button class="btn btn-primary" onclick="submitNotice()">保存</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const token = localStorage.getItem('admin_token') || new URLSearchParams(location.search).get('access_token') || parent?.token || '';
+const isdev = new URLSearchParams(location.search).get('isdev') || '0';
+
+let currentPage = 1;
+let editingId = null;
+let searchTimer = null;
+
+async function api(method, path, data) {
+    const sep = path.includes('?') ? '&' : '?';
+    const url = `/api/admin${path}${sep}access_token=${encodeURIComponent(token)}&isdev=${isdev}`;
+    const opts = { method, headers: {'Content-Type': 'application/json'} };
+    if (data) opts.body = JSON.stringify(data);
+    const r = await fetch(url, opts);
+    return r.json();
+}
+
+function debounceSearch() {
+    if (searchTimer) clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { currentPage = 1; loadNotices(); }, 400);
+}
+
+async function loadNotices() {
+    const keyword = document.getElementById('searchInput').value.trim();
+    const status = document.getElementById('filterStatus').value;
+    const notice_type = document.getElementById('filterType').value;
+
+    let q = `?page=${currentPage}&page_size=10`;
+    if (keyword) q += `&keyword=${encodeURIComponent(keyword)}`;
+    if (status) q += `&status=${status}`;
+    if (notice_type) q += `&notice_type=${notice_type}`;
+
+    const r = await api('GET', `/notices${q}`);
+    if (!r.success) {
+        document.getElementById('noticeTableBody').innerHTML = 
+            `<tr><td colspan="8" style="text-align:center;padding:40px;color:#ff4d4f">加载失败: ${r.msg || '未知错误'}</td></tr>`;
+        return;
+    }
+
+    const items = r.data.items || [];
+    const total = r.data.total || 0;
+
+    // 更新统计
+    document.getElementById('statTotal').textContent = total;
+    document.getElementById('statPublished').textContent = items.filter(i => i.status === 'published').length;
+    document.getElementById('statDraft').textContent = items.filter(i => i.status === 'draft').length;
+    document.getElementById('statUrgent').textContent = items.filter(i => i.notice_type === 'urgent').length;
+
+    const tbody = document.getElementById('noticeTableBody');
+    if (!items.length) {
+        tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="empty-icon">📢</div>暂无公告</div></td></tr>`;
+        document.getElementById('pagination').innerHTML = '';
+        return;
+    }
+
+    const typeMap = {general:'普通', activity:'活动', urgent:'紧急'};
+    const typeCls = {general:'tag-general', activity:'tag-activity', urgent:'tag-urgent'};
+    const impMap = {0:'普通', 1:'重要', 2:'紧急置顶'};
+    const impCls = {0:'importance-0', 1:'importance-1', 2:'importance-2'};
+
+    tbody.innerHTML = items.map(n => `
+        <tr>
+            <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${n.title}">${n.title}</td>
+            <td><span class="tag ${typeCls[n.notice_type] || 'tag-general'}">${typeMap[n.notice_type] || n.notice_type}</span></td>
+            <td><span class="${impCls[String(n.importance)] || 'importance-0'}">${impMap[String(n.importance)] || '普通'}</span></td>
+            <td><span class="tag ${n.status === 'published' ? 'tag-published' : 'tag-draft'}">${n.status === 'published' ? '已发布' : '草稿'}</span></td>
+            <td style="font-size:12px;color:#999">${n.start_date ? n.start_date : '-'} ${n.end_date ? '~ ' + n.end_date : ''}</td>
+            <td>${n.created_by_name || '-'}</td>
+            <td style="font-size:12px;color:#999">${(n.created_at || '').substring(0,16)}</td>
+            <td>
+                <div class="actions">
+                    <button class="btn btn-default" onclick="openEdit(${n.id})">编辑</button>
+                    ${n.status === 'draft' ? `<button class="btn btn-success" style="padding:4px 10px;font-size:12px" onclick="publishNotice(${n.id})">发布</button>` : ''}
+                    <button class="btn btn-danger" onclick="deleteNotice(${n.id})">删除</button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+
+    // 分页
+    const totalPages = Math.ceil(total / 10);
+    renderPagination(currentPage, totalPages, total);
+}
+
+function renderPagination(page, totalPages, total) {
+    const p = document.getElementById('pagination');
+    if (totalPages <= 1) { p.innerHTML = `<span class="page-info">共 ${total} 条</span>`; return; }
+    let html = `<span class="page-info">共 ${total} 条</span>`;
+    if (page > 1) html += `<button class="page-btn" onclick="changePage(${page-1})">上一页</button>`;
+    const start = Math.max(1, page - 2);
+    const end = Math.min(totalPages, page + 2);
+    if (start > 1) html += `<button class="page-btn" onclick="changePage(1)">1</button>${start > 2 ? '<span>...</span>' : ''}`;
+    for (let i = start; i <= end; i++) {
+        html += `<button class="page-btn ${i === page ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+    }
+    if (end < totalPages) html += `${end < totalPages - 1 ? '<span>...</span>' : ''}<button class="page-btn" onclick="changePage(${totalPages})">${totalPages}</button>`;
+    if (page < totalPages) html += `<button class="page-btn" onclick="changePage(${page+1})">下一页</button>`;
+    p.innerHTML = html;
+}
+
+function changePage(page) {
+    currentPage = page;
+    loadNotices();
+}
+
+function openCreate() {
+    editingId = null;
+    document.getElementById('modalTitle').textContent = '新建公告';
+    document.getElementById('fTitle').value = '';
+    document.getElementById('fType').value = 'general';
+    document.getElementById('fImportance').value = '0';
+    document.getElementById('fStatus').value = 'published';
+    document.getElementById('fStartDate').value = '';
+    document.getElementById('fEndDate').value = '';
+    document.getElementById('fContent').value = '';
+    document.getElementById('editModal').classList.add('show');
+    document.getElementById('fTitle').focus();
+}
+
+async function openEdit(id) {
+    const r = await api('GET', `/notices/${id}`);
+    if (!r.success) { alert('获取公告失败'); return; }
+    const n = r.data;
+    editingId = id;
+    document.getElementById('modalTitle').textContent = '编辑公告';
+    document.getElementById('fTitle').value = n.title || '';
+    document.getElementById('fType').value = n.notice_type || 'general';
+    document.getElementById('fImportance').value = String(n.importance || 0);
+    document.getElementById('fStatus').value = n.status || 'published';
+    document.getElementById('fStartDate').value = n.start_date || '';
+    document.getElementById('fEndDate').value = n.end_date || '';
+    document.getElementById('fContent').value = n.content || '';
+    document.getElementById('editModal').classList.add('show');
+}
+
+function closeModal() {
+    document.getElementById('editModal').classList.remove('show');
+    editingId = null;
+}
+
+async function submitNotice() {
+    const title = document.getElementById('fTitle').value.trim();
+    const content = document.getElementById('fContent').value.trim();
+    if (!title) { alert('请填写公告标题'); return; }
+    if (!content) { alert('请填写公告内容'); return; }
+
+    const payload = {
+        title, content,
+        notice_type: document.getElementById('fType').value,
+        importance: parseInt(document.getElementById('fImportance').value),
+        status: document.getElementById('fStatus').value,
+        start_date: document.getElementById('fStartDate').value || null,
+        end_date: document.getElementById('fEndDate').value || null
+    };
+
+    let r;
+    if (editingId) {
+        r = await api('PUT', `/notices/${editingId}`, payload);
+    } else {
+        r = await api('POST', '/notices', payload);
+    }
+
+    if (r.success) {
+        alert(r.msg || '操作成功');
+        closeModal();
+        loadNotices();
+    } else {
+        alert(r.msg || '操作失败');
+    }
+}
+
+async function publishNotice(id) {
+    if (!confirm('确定要发布该公告吗？')) return;
+    const r = await api('PUT', `/notices/${id}`, {status: 'published'});
+    if (r.success) { loadNotices(); }
+    else { alert(r.msg || '发布失败'); }
+}
+
+async function deleteNotice(id) {
+    if (!confirm('确定要删除该公告吗？')) return;
+    const r = await api('DELETE', `/notices/${id}`);
+    if (r.success) {
+        alert('已删除');
+        loadNotices();
+    } else {
+        alert(r.msg || '删除失败');
+    }
+}
+
+// 初始化
+loadNotices();
+
+// 点击遮罩关闭弹窗
+document.getElementById('editModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+</script>
+</body>
+</html>

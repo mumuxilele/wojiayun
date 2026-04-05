@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据大屏 - 管理后台</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+        
+        /* 顶部标题栏 */
+        .header {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .header h1 { 
+            font-size: 28px; 
+            font-weight: 300;
+            letter-spacing: 2px;
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header-info { display: flex; align-items: center; gap: 20px; }
+        .datetime { color: rgba(255,255,255,0.7); font-size: 14px; }
+        
+        /* 主布局 */
+        .dashboard { padding: 20px; }
+        
+        /* 统计卡片行 */
+        .stats-row { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 20px; 
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s;
+        }
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .stat-card .label { color: rgba(255,255,255,0.6); font-size: 14px; margin-bottom: 10px; }
+        .stat-card .value { font-size: 32px; font-weight: bold; color: #00d2ff; }
+        .stat-card .trend { font-size: 12px; margin-top: 8px; }
+        .stat-card .trend.up { color: #52c41a; }
+        .stat-card .trend.down { color: #ff4d4f; }
+        
+        /* 图表区域 */
+        .charts-row { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .chart-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .chart-card h3 { 
+            font-size: 16px; 
+            font-weight: 400;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .chart-container { height: 300px; }
+        
+        /* 底部区域 */
+        .bottom-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .bottom-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .bottom-card h3 { 
+            font-size: 16px; 
+            font-weight: 400;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 15px;
+        }
+        .bottom-chart { height: 250px; }
+        
+        /* 加载状态 */
+        .loading { text-align: center; padding: 50px; color: rgba(255,255,255,0.5); }
+        
+        /* 响应式 */
+        @media (max-width: 1200px) {
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+            .charts-row { grid-template-columns: 1fr; }
+            .bottom-row { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            .stats-row { grid-template-columns: 1fr; }
+            .header h1 { font-size: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- 顶部 -->
+        <div class="header">
+            <h1>📊 社区商业数据大屏</h1>
+            <div class="header-info">
+                <span class="datetime">{{ currentTime }}</span>
+                <button class="btn" style="background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2);" @click="refreshData">
+                    🔄 刷新数据
+                </button>
+                <button class="btn" style="background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2);" @click="goBack">
+                    ← 返回
+                </button>
+            </div>
+        </div>
+        
+        <div class="dashboard" v-if="!loading">
+            <!-- 统计卡片 -->
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="label">今日订单</div>
+                    <div class="value">{{ stats.today_orders }}</div>
+                    <div class="trend" :class="stats.today_orders >= stats.yesterday_orders ? 'up' : 'down'">
+                        {{ stats.today_orders >= stats.yesterday_orders ? '↑' : '↓' }} 
+                        较昨日 {{ Math.abs(stats.today_orders - stats.yesterday_orders) }}
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">今日收入</div>
+                    <div class="value" style="color: #52c41a;">¥{{ stats.today_income.toFixed(2) }}</div>
+                    <div class="trend" :class="stats.today_income >= stats.yesterday_income ? 'up' : 'down'">
+                        {{ stats.today_income >= stats.yesterday_income ? '↑' : '↓' }}
+                        较昨日 {{ Math.abs(stats.today_income - stats.yesterday_income).toFixed(2) }}
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">总会员数</div>
+                    <div class="value" style="color: #faad14;">{{ stats.total_members }}</div>
+                    <div class="trend" style="color: #52c41a;">+{{ stats.today_new_members }} 今日新增</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">待处理预约</div>
+                    <div class="value" style="color: #722ed1;">{{ stats.pending_bookings }}</div>
+                    <div class="trend" style="color: rgba(255,255,255,0.5);">场地预约待确认</div>
+                </div>
+            </div>
+            
+            <!-- 图表行1 -->
+            <div class="charts-row">
+                <div class="chart-card">
+                    <h3>📈 订单趋势（近7天）</h3>
+                    <div id="orderTrendChart" class="chart-container"></div>
+                </div>
+                <div class="chart-card">
+                    <h3>🏆 会员等级分布</h3>
+                    <div id="memberLevelChart" class="chart-container"></div>
+                </div>
+            </div>
+            
+            <!-- 图表行2 -->
+            <div class="bottom-row">
+                <div class="bottom-card">
+                    <h3>🛒 热销商品 TOP5</h3>
+                    <div id="topProductsChart" class="bottom-chart"></div>
+                </div>
+                <div class="bottom-card">
+                    <h3>🏪 门店销售排行 TOP5</h3>
+                    <div id="topShopsChart" class="bottom-chart"></div>
+                </div>
+                <div class="bottom-card">
+                    <h3>📍 场地使用率</h3>
+                    <div id="venueUsageChart" class="bottom-chart"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div v-else class="loading">
+            <div>加载中...</div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@0.27.2/dist/axios.min.js"></script>
+    <script>
+    const app = new Vue({
+        el: '#app',
+        data: {
+            loading: true,
+            currentTime: '',
+            stats: {
+                today_orders: 0,
+                yesterday_orders: 0,
+                today_income: 0,
+                yesterday_income: 0,
+                total_members: 0,
+                today_new_members: 0,
+                pending_bookings: 0
+            },
+            charts: {}
+        },
+        mounted() {
+            this.updateTime();
+            setInterval(() => this.updateTime(), 1000);
+            this.checkLogin();
+            this.loadData();
+        },
+        methods: {
+            updateTime() {
+                const now = new Date();
+                this.currentTime = now.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+            },
+            getQueryParam(name) {
+                const url = new URL(window.location.href);
+                return url.searchParams.get(name);
+            },
+            checkLogin() {
+                const token = this.getQueryParam('access_token') || localStorage.getItem('admin_token');
+                if (!token) {
+                    alert('请先登录');
+                    setTimeout(() => window.location.href = 'index.html', 1500);
+                }
+            },
+            async loadData() {
+                try {
+                    const token = this.getQueryParam('access_token') || localStorage.getItem('admin_token');
+                    
+                    // 并行请求多个接口
+                    const [statsRes, trendRes, levelRes, productsRes, shopsRes, venueRes] = await Promise.all([
+                        axios.get('/api/admin/statistics?access_token=' + token).catch(() => ({data: {data: {}}})),
+                        axios.get('/api/admin/statistics/trend?days=7&access_token=' + token).catch(() => ({data: {data: {trend: []}}})),
+                        axios.get('/api/admin/member-levels/statistics?access_token=' + token).catch(() => ({data: {data: []}})),
+                        axios.get('/api/admin/products/top?limit=5&access_token=' + token).catch(() => ({data: {data: []}})),
+                        axios.get('/api/admin/shops?page=1&page_size=100&access_token=' + token).catch(() => ({data: {data: {items: []}}})),
+                        axios.get('/api/admin/venues/stats/hot?access_token=' + token).catch(() => ({data: {data: []}}))
+                    ]);
+                    
+                    const stats = statsRes.data.data || {};
+                    const trendPayload = trendRes.data.data || {};
+                    const trendData = Array.isArray(trendPayload) ? trendPayload : (trendPayload.trend || []);
+                    const latestTrend = trendData[trendData.length - 1] || {};
+                    const previousTrend = trendData[trendData.length - 2] || {};
+
+                    this.stats = {
+                        today_orders: stats.today_orders || latestTrend.order_count || 0,
+                        yesterday_orders: previousTrend.order_count || 0,
+                        today_income: parseFloat(stats.today_income || latestTrend.total_amount || 0),
+                        yesterday_income: parseFloat(previousTrend.total_amount || 0),
+                        total_members: stats.total_members || 0,
+                        today_new_members: stats.today_members || 0,
+                        pending_bookings: stats.pending_bookings || 0
+                    };
+                    
+                    // 渲染图表
+                    this.$nextTick(() => {
+                        this.renderOrderTrendChart(trendPayload);
+                        this.renderMemberLevelChart(levelRes.data.data || []);
+                        this.renderTopProductsChart(productsRes.data.data || []);
+                        this.renderTopShopsChart(shopsRes.data.data.items || []);
+                        this.renderVenueUsageChart(venueRes.data.data || []);
+                    });
+
+                    
+                    this.loading = false;
+                } catch (e) {
+                    console.error('加载数据失败:', e);
+                    this.loading = false;
+                    // 使用模拟数据
+                    this.loadMockData();
+                }
+            },
+            loadMockData() {
+                // 模拟数据
+                this.stats = {
+                    today_orders: 28,
+                    yesterday_orders: 22,
+                    today_income: 5680.50,
+                    yesterday_income: 4850.00,
+                    total_members: 1256,
+                    today_new_members: 12,
+                    pending_bookings: 8
+                };
+                
+                this.$nextTick(() => {
+                    this.renderMockCharts();
+                });
+            },
+            refreshData() {
+                this.loading = true;
+                this.loadData();
+            },
+            goBack() {
+                window.location.href = 'index.html?access_token=' + (this.getQueryParam('access_token') || localStorage.getItem('admin_token'));
+            },
+            
+            // 图表渲染方法
+            renderOrderTrendChart(data) {
+                const chart = echarts.init(document.getElementById('orderTrendChart'));
+                const dates = [];
+                const orderCounts = [];
+                const incomes = [];
+                const trend = Array.isArray(data) ? data : (data.trend || []);
+                const trendMap = new Map(trend.map(item => [item.date || item.d, item]));
+                
+                for (let i = 6; i >= 0; i--) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    const isoDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    const metric = trendMap.get(isoDate) || {};
+                    dates.push(d.toLocaleDateString('zh-CN', {month: '2-digit', day: '2-digit'}));
+                    orderCounts.push(metric.order_count || 0);
+                    incomes.push(metric.total_amount || 0);
+                }
+                
+                chart.setOption({
+
+                    backgroundColor: 'transparent',
+                    tooltip: { trigger: 'axis' },
+                    legend: { data: ['订单数', '收入(元)'], textStyle: { color: '#fff' }, top: 0 },
+                    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                    xAxis: { 
+                        type: 'category', 
+                        data: dates,
+                        axisLine: { lineStyle: { color: 'rgba(255,255,255,0.3)' } },
+                        axisLabel: { color: 'rgba(255,255,255,0.7)' }
+                    },
+                    yAxis: [
+                        { type: 'value', name: '订单', axisLine: { lineStyle: { color: 'rgba(255,255,255,0.3)' } }, axisLabel: { color: 'rgba(255,255,255,0.7)' } },
+                        { type: 'value', name: '收入', axisLine: { lineStyle: { color: 'rgba(255,255,255,0.3)' } }, axisLabel: { color: 'rgba(255,255,255,0.7)' } }
+                    ],
+                    series: [
+                        { name: '订单数', type: 'line', data: orderCounts, smooth: true, itemStyle: { color: '#00d2ff' }, areaStyle: { color: 'rgba(0,210,255,0.2)' } },
+                        { name: '收入(元)', type: 'line', yAxisIndex: 1, data: incomes, smooth: true, itemStyle: { color: '#52c41a' }, areaStyle: { color: 'rgba(82,196,26,0.2)' } }
+                    ]
+                });
+                this.charts.orderTrend = chart;
+            },
+            renderMemberLevelChart(data) {
+                const chart = echarts.init(document.getElementById('memberLevelChart'));
+                
+                const levels = data.length > 0 ? data : [
+                    { level_name: '普通会员', count: 800 },
+                    { level_name: '铜牌会员', count: 280 },
+                    { level_name: '银牌会员', count: 120 },
+                    { level_name: '金牌会员', count: 45 },
+                    { level_name: '钻石会员', count: 11 }
+                ];
+                
+                chart.setOption({
+                    backgroundColor: 'transparent',
+                    tooltip: { trigger: 'item' },
+                    series: [{
+                        type: 'pie',
+                        radius: ['40%', '70%'],
+                        avoidLabelOverlap: false,
+                        itemStyle: { borderRadius: 10, borderColor: '#1a1a2e', borderWidth: 2 },
+                        label: { show: true, color: '#fff' },
+                        data: levels.map((l, i) => ({
+                            value: l.count,
+                            name: l.level_name,
+                            itemStyle: { color: ['#909399', '#faad14', '#1890ff', '#52c41a', '#722ed1'][i] }
+                        }))
+                    }]
+                });
+                this.charts.memberLevel = chart;
+            },
+            renderTopProductsChart(data) {
+                const chart = echarts.init(document.getElementById('topProductsChart'));
+                
+                const products = data.length > 0 ? data : [
+                    { name: '新鲜水果拼盘', sales: 156 },
+                    { name: '有机蔬菜盒', sales: 132 },
+                    { name: '进口零食礼包', sales: 98 },
+                    { name: '鲜榨果汁', sales: 87 },
+                    { name: '手工面包', sales: 65 }
+                ];
+                
+                chart.setOption({
+                    backgroundColor: 'transparent',
+                    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                    xAxis: { 
+                        type: 'value',
+                        axisLine: { lineStyle: { color: 'rgba(255,255,255,0.3)' } },
+                        axisLabel: { color: 'rgba(255,255,255,0.7)' }
+                    },
+                    yAxis: { 
+                        type: 'category', 
+                        data: products.map(p => p.name).reverse(),
+                        axisLine: { lineStyle: { color: 'rgba(255,255,255,0.3)' } },
+                        axisLabel: { color: 'rgba(255,255,255,0.7)' }
+                    },
+                    series: [{
+                        type: 'bar',
+                        data: products.map(p => p.sales).reverse(),
+                        itemStyle: { 
+                            color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                                { offset: 0, color: '#00d2ff' },
+                                { offset: 1, color: '#3a7bd5' }
+                            ])
+                        },
+                        barWidth: '60%'
+                    }]
+                });
+                this.charts.topProducts = chart;
+            },
+            renderTopShopsChart(data) {
+                const chart = echarts.init(document.getElementById('topShopsChart'));
+                
+                const shops = data.length > 0 ? data.slice(0, 5) : [
+                    { shop_name: '社区便利店', total_amount: 25800 },
+                    { shop_name: '生鲜水果店', total_amount: 18500 },
+                    { shop_name: '早餐快餐店', total_amount: 12300 },
+                    { shop_name: '社区药店', total_amount: 9800 },
+                    { shop_name: '便利快递站', total_amount: 6500 }
+                ];
+                
+                chart.setOption({
+                    backgroundColor: 'transparent',
+                    tooltip: { trigger: 'item' },
+                    series: [{
+                        type: 'funnel',
+                        left: '10%',
+                        top: 20,
+                        bottom: 20,
+                        width: '80%',
+                        min: 0,
+                        max: Math.max(...shops.map(s => s.total_amount)),
+                        minSize: '10%',
+                        maxSize: '100%',
+                        sort: 'descending',
+                        gap: 2,
+                        label: { show: true, position: 'inside', formatter: '{b}: {c}' },
+                        labelLine: { length: 10 },
+                        itemStyle: { borderColor: '#1a1a2e', borderWidth: 1 },
+                        data: shops.map((s, i) => ({
+                            value: s.total_amount,
+                            name: s.shop_name,
+                            itemStyle: { color: ['#ff4d4f', '#faad14', '#52c41a', '#1890ff', '#722ed1'][i] }
+                        }))
+                    }]
+                });
+                this.charts.topShops = chart;
+            },
+            renderVenueUsageChart(data) {
+                const chart = echarts.init(document.getElementById('venueUsageChart'));
+                
+                const venues = data.length > 0 ? data.slice(0, 6) : [
+                    { venue_name: '篮球场', book_cnt: 45 },
+                    { venue_name: '羽毛球场', book_cnt: 38 },
+                    { venue_name: '乒乓球室', book_cnt: 32 },
+                    { venue_name: '舞蹈室', book_cnt: 25 },
+                    { venue_name: '会议室', book_cnt: 18 },
+                    { venue_name: '活动室', book_cnt: 12 }
+                ];
+                
+                chart.setOption({
+                    backgroundColor: 'transparent',
+                    tooltip: { trigger: 'axis' },
+                    radar: {
+                        indicator: venues.map(v => ({ name: v.venue_name, max: 50 })),
+                        shape: 'polygon',
+                        splitNumber: 4,
+                        axisName: { color: '#fff' },
+                        splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+                        splitArea: { show: true, areaStyle: { color: 'rgba(255,255,255,0.05)' } }
+                    },
+                    series: [{
+                        type: 'radar',
+                        data: [{
+                            value: venues.map(v => v.book_cnt),
+                            name: '预约次数',
+                            areaStyle: { color: 'rgba(0,210,255,0.3)' },
+                            itemStyle: { color: '#00d2ff' }
+                        }]
+                    }]
+                });
+                this.charts.venueUsage = chart;
+            },
+            renderMockCharts() {
+                this.renderOrderTrendChart([]);
+                this.renderMemberLevelChart([]);
+                this.renderTopProductsChart([]);
+                this.renderTopShopsChart([]);
+                this.renderVenueUsageChart([]);
+            }
+        }
+    });
+    
+    // 窗口大小变化时重新调整图表
+    window.addEventListener('resize', () => {
+        Object.values(app.charts).forEach(chart => chart && chart.resize());
+    });
+    </script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Staff H5 Service - Fixed Version"""
+"""Staff H5 Service - V7.0 Enhanced"""
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import sys
@@ -13,7 +13,8 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from business_common import config, db, auth, utils
+from business_common import config, db, auth, utils, error_handler, notification, rate_limiter, OrderStatusTransition
+from business_common.cache_service import cache_get, cache_set, cache_delete
 
 # 图片上传目录
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), 'uploads')
@@ -22,6 +23,9 @@ if not os.path.exists(UPLOAD_DIR):
 
 app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
+
+# 注册全局错误处理器
+error_handler.register_error_handlers(app)
 
 @app.after_request
 def add_headers(response):
@@ -61,11 +65,46 @@ def get_staff_stats(user):
     total_orders = db.get_total(f"SELECT COUNT(*) FROM business_orders WHERE {scope}", p.copy())
     return jsonify({'success': True, 'data': {'pending': pending, 'processing': processing, 'completed_today': completed_today, 'total_orders': total_orders, 'total_apps': pending+processing}})
 
+def _get_date_range(rng):
+    """根据range参数返回(date_from, date_to)"""
+    from datetime import date, timedelta
+    today = date.today()
+    if rng == 'today':
+        return str(today), str(today)
+    elif rng == 'week':
+        return str(today - timedelta(days=6)), str(today)
+    elif rng == 'month':
+        return str(today.replace(day=1)), str(today)
+    return None, None
+
+
+def _build_scope_with_date(scope, params, date_from, date_to):
+    """给scope添加日期过滤条件"""
+    if date_from:
+        scope += " AND created_at>=%s"
+        params.append(date_from)
+    if date_to:
+        scope += " AND created_at<=%s"
+        params.append(date_to + ' 23:59:59')
+    return scope, params
+
+
 @app.route('/api/staff/statistics', methods=['GET'])
 @require_staff
 def get_staff_statistics(user):
+    """V14增强：支持时间段筛选+环比数据"""
     ec_id = user.get('ec_id')
     project_id = user.get('project_id')
+    rng = request.args.get('range', 'today')
+    date_from = request.args.get('date_from')
+    date_to = request.args.get('date_to')
+
+    # 自动计算日期范围
+    if not date_from or not date_to:
+        date_from, date_to = _get_date_range(rng)
+        if not date_from:
+            date_from = date_to = time.strftime('%Y-%m-%d')
+
     scope = "deleted=0"
     p = []
     if ec_id:
@@ -73,44 +112,249 @@ def get_staff_statistics(user):
     if project_id:
         scope += " AND project_id=%s"; p.append(project_id)
 
-    today_apps = db.get_total(f"SELECT COUNT(*) FROM business_applications WHERE {scope} AND DATE(created_at)=CURDATE()", p.copy())
-    pending_apps = db.get_total(f"SELECT COUNT(*) FROM business_applications WHERE {scope} AND status='pending'", p.copy())
-    processing_apps = db.get_total(f"SELECT COUNT(*) FROM business_applications WHERE {scope} AND status='processing'", p.copy())
+    # 当前周期统计
+    curr_scope, curr_p = _build_scope_with_date(scope, p.copy(), date_from, date_to)
 
-    today_orders = 0
-    today_income = 0
+    total_apps = db.get_total(f"SELECT COUNT(*) FROM business_applications WHERE {curr_scope}", curr_p.copy())
+    pending_apps = db.get_total(f"SELECT COUNT(*) FROM business_applications WHERE {curr_scope} AND status='pending'", curr_p.copy())
+
+    total_orders = 0
+    total_income = 0.0
     try:
-        today_orders = db.get_total(f"SELECT COUNT(*) FROM business_orders WHERE {scope} AND DATE(created_at)=CURDATE()", p.copy())
-        income_row = db.get_one(f"SELECT COALESCE(SUM(actual_amount),0) as income FROM business_orders WHERE {scope} AND order_status IN ('paid','completed') AND DATE(created_at)=CURDATE()", p.copy())
+        total_orders = db.get_total(f"SELECT COUNT(*) FROM business_orders WHERE {curr_scope}", curr_p.copy())
+        income_row = db.get_one(f"SELECT COALESCE(SUM(actual_amount),0) as income FROM business_orders WHERE {curr_scope} AND order_status IN ('paid','completed')", curr_p.copy())
         if income_row:
-            today_income = float(income_row.get('income') or 0)
+            total_income = float(income_row.get('income') or 0)
     except Exception as e:
-        logging.error('Error getting today orders/income: %s', e)
+        logging.error('Error getting orders/income: %s', e)
 
-    app_stats = []
+    # 计算上期数据（用于环比）
     try:
-        app_stats = db.get_all(f"SELECT status, COUNT(*) as cnt FROM business_applications WHERE {scope} GROUP BY status ORDER BY cnt DESC", p.copy())
-    except Exception as e:
-        logging.error('Error getting app_stats: %s', e)
+        from datetime import date, timedelta
+        days = (date.fromisoformat(date_to) - date.fromisoformat(date_from)).days + 1
+        prev_to = (date.fromisoformat(date_from) - timedelta(days=1)).strftime('%Y-%m-%d')
+        prev_from = (date.fromisoformat(prev_to) - timedelta(days=days - 1)).strftime('%Y-%m-%d')
+        prev_scope, prev_p = _build_scope_with_date(scope, p.copy(), prev_from, prev_to)
+        prev_orders = db.get_total(f"SELECT COUNT(*) FROM business_orders WHERE {prev_scope}", prev_p.copy())
+        prev_income_row = db.get_one(f"SELECT COALESCE(SUM(actual_amount),0) as income FROM business_orders WHERE {prev_scope} AND order_status IN ('paid','completed')", prev_p.copy())
+        prev_income = float(prev_income_row.get('income') or 0) if prev_income_row else 0
+        prev_apps = db.get_total(f"SELECT COUNT(*) FROM business_applications WHERE {prev_scope}", prev_p.copy())
+    except Exception:
+        prev_orders = prev_income = prev_apps = None
 
-    order_stats = []
+    # 状态分布
+    app_stats = db.get_all(f"SELECT status, COUNT(*) as cnt FROM business_applications WHERE {curr_scope} GROUP BY status ORDER BY cnt DESC", curr_p.copy()) or []
+    order_stats = db.get_all(f"SELECT order_status as status, COUNT(*) as cnt FROM business_orders WHERE {curr_scope} GROUP BY order_status ORDER BY cnt DESC", curr_p.copy()) or []
+
+    result = {
+        'total_applications': total_apps,
+        'pending_applications': pending_apps,
+        'total_orders': total_orders,
+        'total_income': round(total_income, 2),
+        'prev_orders': prev_orders,
+        'prev_income': prev_income,
+        'prev_apps': prev_apps,
+        'application_stats': app_stats,
+        'order_stats': order_stats,
+        'date_from': date_from,
+        'date_to': date_to,
+        'range': rng,
+    }
+
+    return jsonify({'success': True, 'data': result})
+
+
+@app.route('/api/staff/statistics/trend', methods=['GET'])
+@require_staff
+def get_staff_statistics_trend(user):
+    """V14新增：统计趋势数据（近N天的订单和收入趋势）"""
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    rng = request.args.get('range', 'today')
+    date_from = request.args.get('date_from')
+    date_to = request.args.get('date_to')
+
+    if not date_from or not date_to:
+        date_from, date_to = _get_date_range(rng)
+        if not date_from:
+            date_from = date_to = time.strftime('%Y-%m-%d')
+
+    scope = "deleted=0"
+    p = []
+    if ec_id:
+        scope += " AND ec_id=%s"; p.append(ec_id)
+    if project_id:
+        scope += " AND project_id=%s"; p.append(project_id)
+
+    # 订单趋势（含收入）
+    order_trend = []
     try:
-        order_stats = db.get_all(f"SELECT order_status as status, COUNT(*) as cnt FROM business_orders WHERE {scope} GROUP BY order_status ORDER BY cnt DESC", p.copy())
+        date_scope, date_p = _build_scope_with_date(scope, p.copy(), date_from, date_to)
+        rows = db.get_all(
+            f"SELECT DATE(created_at) as date, COUNT(*) as order_cnt, "
+            f"COALESCE(SUM(CASE WHEN order_status IN ('paid','completed') THEN actual_amount ELSE 0 END),0) as income "
+            f"FROM business_orders WHERE {date_scope} "
+            f"GROUP BY DATE(created_at) ORDER BY date ASC",
+            date_p
+        )
+        # 填充缺失日期
+        from datetime import date, timedelta
+        date_map = {}
+        for r in (rows or []):
+            k = str(r['date']) if r.get('date') else ''
+            if k:
+                date_map[k] = {'date': k, 'order_cnt': r['order_cnt'], 'income': float(r['income'] or 0)}
+        d_from = date.fromisoformat(date_from)
+        d_to = date.fromisoformat(date_to)
+        for i in range((d_to - d_from).days + 1):
+            d = str(d_from + timedelta(days=i))
+            if d in date_map:
+                order_trend.append(date_map[d])
+            else:
+                order_trend.append({'date': d, 'order_cnt': 0, 'income': 0})
     except Exception as e:
-        logging.error('Error getting order_stats: %s', e)
+        logging.error('趋势查询失败: %s', e)
 
-    return jsonify({
-        'success': True,
-        'data': {
-            'today': {'applications': today_apps, 'orders': today_orders, 'income': round(today_income, 2)},
-            'pending_applications': pending_apps,
-            'processing_applications': processing_apps,
-            'today_orders': today_orders,
-            'today_income': round(today_income, 2),
-            'application_stats': app_stats,
-            'order_stats': order_stats
-        }
-    })
+    # 申请趋势
+    app_trend = []
+    try:
+        date_scope, date_p = _build_scope_with_date(scope, p.copy(), date_from, date_to)
+        rows = db.get_all(
+            f"SELECT DATE(created_at) as date, COUNT(*) as app_cnt "
+            f"FROM business_applications WHERE {date_scope} "
+            f"GROUP BY DATE(created_at) ORDER BY date ASC",
+            date_p
+        )
+        app_map = {str(r['date']): r['app_cnt'] for r in (rows or []) if r.get('date')}
+        for item in order_trend:
+            item['app_cnt'] = app_map.get(item['date'], 0)
+    except Exception as e:
+        logging.error('申请趋势查询失败: %s', e)
+
+    return jsonify({'success': True, 'data': {'trend': order_trend}})
+
+
+@app.route('/api/staff/statistics/performance', methods=['GET'])
+@require_staff
+def get_staff_performance(user):
+    """V14新增：个人绩效数据"""
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    staff_id = user.get('user_id')
+    rng = request.args.get('range', 'today')
+    date_from = request.args.get('date_from')
+    date_to = request.args.get('date_to')
+
+    if not date_from or not date_to:
+        date_from, date_to = _get_date_range(rng)
+        if not date_from:
+            date_from = date_to = time.strftime('%Y-%m-%d')
+
+    # 我处理的申请数
+    processed_count = 0
+    try:
+        scope = "deleted=0 AND assignee_id=%s"
+        params = [staff_id]
+        scope, params = _build_scope_with_date(scope, params, date_from, date_to)
+        processed_count = db.get_total(f"SELECT COUNT(*) FROM business_applications WHERE {scope}", params)
+    except Exception:
+        pass
+
+    # 我完成的订单数（发货+确认完成）
+    completed_orders = 0
+    try:
+        # 通过审计日志查询
+        scope2 = "action IN ('ship_order','update_order','complete_booking') AND user_id=%s"
+        params2 = [staff_id]
+        scope2, params2 = _build_scope_with_date(scope2, params2, date_from, date_to)
+        completed_orders = db.get_total(f"SELECT COUNT(*) FROM business_staff_operation_logs WHERE {scope2}", params2)
+    except Exception:
+        pass
+
+    # 申请完成率
+    completion_rate = 0
+    try:
+        my_total = db.get_total(
+            "SELECT COUNT(*) FROM business_applications WHERE deleted=0 AND assignee_id=%s",
+            [staff_id]
+        )
+        my_completed = db.get_total(
+            "SELECT COUNT(*) FROM business_applications WHERE deleted=0 AND assignee_id=%s AND status='completed'",
+            [staff_id]
+        )
+        completion_rate = round(my_completed / my_total * 100, 1) if my_total > 0 else 0
+    except Exception:
+        pass
+
+    return jsonify({'success': True, 'data': {
+        'processed_count': processed_count,
+        'completed_orders': completed_orders,
+        'completion_rate': completion_rate
+    }})
+
+
+@app.route('/api/staff/statistics/members', methods=['GET'])
+@require_staff
+def get_staff_member_activity(user):
+    """V15新增：会员活跃度统计（活跃/沉睡/新注册会员分析）"""
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    rng = request.args.get('range', 'today')
+    date_from = request.args.get('date_from')
+    date_to = request.args.get('date_to')
+
+    if not date_from or not date_to:
+        date_from, date_to = _get_date_range(rng)
+        if not date_from:
+            date_from = date_to = time.strftime('%Y-%m-%d')
+
+    where = "1=1"
+    params = []
+    if ec_id:
+        where += " AND ec_id=%s"; params.append(ec_id)
+    if project_id:
+        where += " AND project_id=%s"; params.append(project_id)
+
+    result = {}
+    try:
+        # 会员总数
+        total = db.get_total(f"SELECT COUNT(*) FROM business_members WHERE {where}", params.copy())
+        result['total_members'] = total
+
+        # 活跃会员（近7天有签到或下单）
+        active_scope = where + " AND (last_login_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) OR last_checkin_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY))"
+        active = db.get_total(f"SELECT COUNT(*) FROM business_member_activity_view WHERE {active_scope}", params.copy())
+        result['active_members'] = active
+
+        # 沉睡会员（近30天无任何活动）
+        dormant_scope = where + " AND (last_login_at < DATE_SUB(CURDATE(), INTERVAL 30 DAY) OR last_login_at IS NULL)"
+        dormant = db.get_total(f"SELECT COUNT(*) FROM business_member_activity_view WHERE {dormant_scope}", params.copy())
+        result['dormant_members'] = dormant
+
+        # 新注册会员（当前时间段内注册）
+        new_scope, new_params = _build_scope_with_date(where, params.copy(), date_from, date_to)
+        new_members = db.get_total(f"SELECT COUNT(*) FROM business_members WHERE {new_scope}", new_params)
+        result['new_members'] = new_members
+
+        # 会员等级分布
+        level_dist = db.get_all(
+            f"SELECT member_level, COUNT(*) as cnt FROM business_members WHERE {where} GROUP BY member_level ORDER BY cnt DESC",
+            params.copy()
+        )
+        result['level_distribution'] = level_dist or []
+
+        # Top消费会员
+        top_spenders = db.get_all(
+            f"SELECT user_name, total_amount, order_count FROM business_member_activity_view "
+            f"WHERE {where} AND total_amount > 0 ORDER BY total_amount DESC LIMIT 5",
+            params.copy()
+        )
+        result['top_spenders'] = top_spenders or []
+    except Exception as e:
+        logging.warning(f"会员活跃度统计失败: {e}")
+        result = {'total_members': 0, 'active_members': 0, 'dormant_members': 0, 'new_members': 0, 'level_distribution': [], 'top_spenders': []}
+
+    return jsonify({'success': True, 'data': result})
 
 @app.route('/api/staff/applications', methods=['GET'])
 @require_staff
@@ -149,8 +393,18 @@ def get_all_applications(user):
 @app.route('/api/staff/applications/<app_id>', methods=['GET'])
 @require_staff
 def get_application_detail(user, app_id):
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    # 修复：添加数据范围过滤，防止跨项目查看申请单
     sql = "SELECT * FROM business_applications WHERE id=%s AND deleted=0"
-    app = db.get_one(sql, [app_id])
+    params = [app_id]
+    if ec_id:
+        sql += " AND ec_id=%s"
+        params.append(ec_id)
+    if project_id:
+        sql += " AND project_id=%s"
+        params.append(project_id)
+    app = db.get_one(sql, params)
     if not app:
         return jsonify({'success': False, 'msg': '申请不存在'})
     if app.get('images'):
@@ -180,14 +434,25 @@ def get_application_detail(user, app_id):
 
 @app.route('/api/staff/applications/<app_id>/process', methods=['POST'])
 @require_staff
+@rate_limiter.rate_limit(limit=30, window_seconds=60)
 def process_application(user, app_id):
     data = request.get_json() or {}
     action = data.get('action')
     result = data.get('result', '')
     images = data.get('images', [])  # 处理时上传的图片
     
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    # 修复：添加数据范围过滤
     sql = "SELECT * FROM business_applications WHERE id=%s AND deleted=0"
-    app = db.get_one(sql, [app_id])
+    params = [app_id]
+    if ec_id:
+        sql += " AND ec_id=%s"
+        params.append(ec_id)
+    if project_id:
+        sql += " AND project_id=%s"
+        params.append(project_id)
+    app = db.get_one(sql, params)
     
     if not app:
         return jsonify({'success': False, 'msg': '申请不存在'})
@@ -219,6 +484,14 @@ def process_application(user, app_id):
         else:
             sql = "UPDATE business_applications SET status=%s, result=%s, assignee_id=%s, assignee_name=%s, updated_at=NOW() WHERE id=%s"
         db.execute(sql, [new_status, result, user['user_id'], user['user_name'], app_id])
+        # 状态变更时通知用户
+        if new_status in ('processing', 'completed', 'rejected'):
+            try:
+                notification.notify_application_status(
+                    app.get('user_id', ''), app.get('app_no', ''), new_status, app.get('status', '')
+                )
+            except:
+                pass
     
     return jsonify({'success': True, 'msg': '处理成功'})
 
@@ -251,20 +524,55 @@ def get_all_orders(user):
 @app.route('/api/staff/orders/<order_id>', methods=['GET'])
 @require_staff
 def get_order_detail(user, order_id):
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    # 修复：添加数据范围过滤
     sql = "SELECT * FROM business_orders WHERE id=%s AND deleted=0"
-    order = db.get_one(sql, [order_id])
+    params = [order_id]
+    if ec_id:
+        sql += " AND ec_id=%s"
+        params.append(ec_id)
+    if project_id:
+        sql += " AND project_id=%s"
+        params.append(project_id)
+    order = db.get_one(sql, params)
     if not order:
-        return jsonify({'success': False, 'msg': '订单不存在'})
+        return jsonify({'success': False, 'msg': '订单不存在或无权限查看'})
     return jsonify({'success': True, 'data': order})
 
 @app.route('/api/staff/orders/<order_id>/status', methods=['POST'])
 @require_staff
 def update_order_status(user, order_id):
+    """P13修复：添加订单状态流转校验"""
     data = request.get_json() or {}
     status = data.get('status')
     
     if not status:
         return jsonify({'success': False, 'msg': '请提供状态'})
+    
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    
+    # 验证订单是否属于当前员工管辖范围
+    check_sql = "SELECT order_status FROM business_orders WHERE id=%s AND deleted=0"
+    check_params = [order_id]
+    if ec_id:
+        check_sql += " AND ec_id=%s"
+        check_params.append(ec_id)
+    if project_id:
+        check_sql += " AND project_id=%s"
+        check_params.append(project_id)
+    
+    order = db.get_one(check_sql, check_params)
+    if not order:
+        return jsonify({'success': False, 'msg': '订单不存在或无权限操作'})
+    
+    old_status = order.get('order_status') or 'pending'
+    
+    # P13新增：状态流转校验
+    allowed, error_msg = OrderStatusTransition.can_transition(old_status, status)
+    if not allowed:
+        return jsonify({'success': False, 'msg': error_msg or '不允许的状态流转'})
     
     sql = "UPDATE business_orders SET order_status=%s, updated_at=NOW() WHERE id=%s"
     db.execute(sql, [status, order_id])
@@ -339,9 +647,1818 @@ def serve_upload(filename):
 def health():
     return jsonify({'status': 'ok', 'service': 'staff-h5', 'time': time.strftime('%Y-%m-%d %H:%M:%S')})
 
+
+# ============ V27.0 客户标签管理 ============
+
+@app.route('/api/staff/customer-tags', methods=['GET'])
+@require_staff
+def get_customer_tags(user):
+    """V27.0: 获取客户标签列表"""
+    try:
+        tags = db.get_all("""
+            SELECT id, tag_name, tag_color, tag_type, description, sort_order, status
+            FROM business_customer_tags 
+            WHERE status=1 
+            ORDER BY sort_order, id
+        """) or []
+        
+        # 获取各标签下的客户数量
+        staff_id = user.get('user_id')
+        for tag in tags:
+            count = db.get_total("""
+                SELECT COUNT(*) FROM business_customer_tag_relations 
+                WHERE staff_id=%s AND tag_id=%s
+            """, [staff_id, tag['id']])
+            tag['customer_count'] = count
+        
+        return jsonify({'success': True, 'data': tags})
+    except Exception as e:
+        logging.warning(f"获取客户标签失败: {e}")
+        return jsonify({'success': True, 'data': []})
+
+
+@app.route('/api/staff/customer-tags', methods=['POST'])
+@require_staff
+def create_customer_tag(user):
+    """V27.0: 创建客户标签"""
+    data = request.get_json() or {}
+    tag_name = data.get('tag_name', '').strip()
+    tag_color = data.get('tag_color', '#1890ff')
+    description = data.get('description', '')
+    
+    if not tag_name:
+        return jsonify({'success': False, 'msg': '标签名称不能为空'})
+    
+    if len(tag_name) > 20:
+        return jsonify({'success': False, 'msg': '标签名称不能超过20个字符'})
+    
+    try:
+        # 获取当前最大排序值
+        max_order = db.get_one("SELECT MAX(sort_order) as max_order FROM business_customer_tags")
+        sort_order = (max_order['max_order'] or 0) + 1
+        
+        tag_id = db.execute("""
+            INSERT INTO business_customer_tags 
+            (tag_name, tag_color, tag_type, description, sort_order, status, created_by)
+            VALUES (%s, %s, 'custom', %s, %s, 1, %s)
+        """, [tag_name, tag_color, description, sort_order, user.get('user_name', '')])
+        
+        return jsonify({'success': True, 'msg': '标签创建成功', 'data': {'id': tag_id}})
+    except Exception as e:
+        logging.error(f"创建客户标签失败: {e}")
+        return jsonify({'success': False, 'msg': '创建失败'})
+
+
+@app.route('/api/staff/customer-tags/<int:tag_id>', methods=['PUT'])
+@require_staff
+def update_customer_tag(user, tag_id):
+    """V27.0: 更新客户标签"""
+    data = request.get_json() or {}
+    tag_name = data.get('tag_name', '').strip()
+    tag_color = data.get('tag_color')
+    description = data.get('description')
+    
+    # 检查标签是否存在且属于自定义标签
+    tag = db.get_one("SELECT * FROM business_customer_tags WHERE id=%s AND status=1", [tag_id])
+    if not tag:
+        return jsonify({'success': False, 'msg': '标签不存在'})
+    
+    if tag.get('tag_type') == 'system':
+        return jsonify({'success': False, 'msg': '系统标签不可修改'})
+    
+    try:
+        updates = []
+        params = []
+        if tag_name:
+            if len(tag_name) > 20:
+                return jsonify({'success': False, 'msg': '标签名称不能超过20个字符'})
+            updates.append("tag_name=%s")
+            params.append(tag_name)
+        if tag_color:
+            updates.append("tag_color=%s")
+            params.append(tag_color)
+        if description is not None:
+            updates.append("description=%s")
+            params.append(description)
+        
+        if updates:
+            params.append(tag_id)
+            db.execute(f"UPDATE business_customer_tags SET {', '.join(updates)} WHERE id=%s", params)
+        
+        return jsonify({'success': True, 'msg': '标签更新成功'})
+    except Exception as e:
+        logging.error(f"更新客户标签失败: {e}")
+        return jsonify({'success': False, 'msg': '更新失败'})
+
+
+@app.route('/api/staff/customer-tags/<int:tag_id>', methods=['DELETE'])
+@require_staff
+def delete_customer_tag(user, tag_id):
+    """V27.0: 删除客户标签"""
+    # 检查标签是否存在且属于自定义标签
+    tag = db.get_one("SELECT * FROM business_customer_tags WHERE id=%s AND status=1", [tag_id])
+    if not tag:
+        return jsonify({'success': False, 'msg': '标签不存在'})
+    
+    if tag.get('tag_type') == 'system':
+        return jsonify({'success': False, 'msg': '系统标签不可删除'})
+    
+    try:
+        # 删除标签关联关系
+        db.execute("DELETE FROM business_customer_tag_relations WHERE tag_id=%s", [tag_id])
+        # 删除标签
+        db.execute("UPDATE business_customer_tags SET status=0 WHERE id=%s", [tag_id])
+        return jsonify({'success': True, 'msg': '标签已删除'})
+    except Exception as e:
+        logging.error(f"删除客户标签失败: {e}")
+        return jsonify({'success': False, 'msg': '删除失败'})
+
+
+@app.route('/api/staff/customers', methods=['GET'])
+@require_staff
+def get_my_customers(user):
+    """V27.0: 获取我的客户列表（带标签）"""
+    page = max(1, int(request.args.get('page', 1)))
+    page_size = min(max(1, int(request.args.get('page_size', 20))), 100)
+    tag_id = request.args.get('tag_id')  # 可选：按标签筛选
+    keyword = request.args.get('keyword', '').strip()  # 可选：搜索用户名/手机
+    
+    staff_id = user.get('user_id')
+    
+    # 构建查询
+    where = "r.staff_id=%s"
+    params = [staff_id]
+    
+    if tag_id:
+        where += " AND r.tag_id=%s"
+        params.append(tag_id)
+    
+    if keyword:
+        where += " AND (m.user_name LIKE %s OR m.phone LIKE %s)"
+        kw = f'%{keyword}%'
+        params.extend([kw, kw])
+    
+    # 查询总数
+    total = db.get_total(f"""
+        SELECT COUNT(DISTINCT r.customer_user_id) 
+        FROM business_customer_tag_relations r
+        LEFT JOIN business_members m ON r.customer_user_id = m.user_id
+        WHERE {where}
+    """, params)
+    
+    # 分页查询
+    offset = (page - 1) * page_size
+    customers = db.get_all(f"""
+        SELECT DISTINCT r.customer_user_id, m.user_name, m.phone, m.member_level,
+               m.total_consume, m.checkin_streak, m.last_checkin_date,
+               r.updated_at as tagged_at
+        FROM business_customer_tag_relations r
+        LEFT JOIN business_members m ON r.customer_user_id = m.user_id
+        WHERE {where}
+        ORDER BY r.updated_at DESC
+        LIMIT %s OFFSET %s
+    """, params + [page_size, offset])
+    
+    # 查询每个客户的标签
+    for customer in (customers or []):
+        tags = db.get_all("""
+            SELECT ct.id, ct.tag_name, ct.tag_color
+            FROM business_customer_tag_relations r
+            JOIN business_customer_tags ct ON r.tag_id = ct.id
+            WHERE r.staff_id=%s AND r.customer_user_id=%s AND ct.status=1
+        """, [staff_id, customer['customer_user_id']])
+        customer['tags'] = tags or []
+    
+    return jsonify({'success': True, 'data': {
+        'items': customers or [],
+        'total': total,
+        'page': page,
+        'page_size': page_size,
+        'pages': (total + page_size - 1) // page_size if total else 0
+    }})
+
+
+@app.route('/api/staff/customers/<int:customer_user_id>/tags', methods=['GET'])
+@require_staff
+def get_customer_tags_by_user(user, customer_user_id):
+    """V27.0: 获取指定客户的所有标签"""
+    staff_id = user.get('user_id')
+    
+    tags = db.get_all("""
+        SELECT ct.id, ct.tag_name, ct.tag_color, ct.tag_type, r.note, r.created_at as tagged_at
+        FROM business_customer_tag_relations r
+        JOIN business_customer_tags ct ON r.tag_id = ct.id
+        WHERE r.staff_id=%s AND r.customer_user_id=%s AND ct.status=1
+    """, [staff_id, customer_user_id])
+    
+    return jsonify({'success': True, 'data': tags or []})
+
+
+@app.route('/api/staff/customers/<int:customer_user_id>/tags', methods=['POST'])
+@require_staff
+def add_customer_tag(user, customer_user_id):
+    """V27.0: 给客户添加标签"""
+    data = request.get_json() or {}
+    tag_id = data.get('tag_id')
+    note = data.get('note', '')
+    
+    if not tag_id:
+        return jsonify({'success': False, 'msg': '请选择标签'})
+    
+    staff_id = user.get('user_id')
+    
+    # 检查标签是否存在
+    tag = db.get_one("SELECT * FROM business_customer_tags WHERE id=%s AND status=1", [tag_id])
+    if not tag:
+        return jsonify({'success': False, 'msg': '标签不存在'})
+    
+    # 检查是否已添加过该标签
+    exists = db.get_one("""
+        SELECT id FROM business_customer_tag_relations 
+        WHERE staff_id=%s AND customer_user_id=%s AND tag_id=%s
+    """, [staff_id, customer_user_id, tag_id])
+    
+    if exists:
+        return jsonify({'success': False, 'msg': '该标签已添加'})
+    
+    try:
+        db.execute("""
+            INSERT INTO business_customer_tag_relations 
+            (staff_id, customer_user_id, tag_id, note)
+            VALUES (%s, %s, %s, %s)
+        """, [staff_id, customer_user_id, tag_id, note])
+        return jsonify({'success': True, 'msg': '标签添加成功'})
+    except Exception as e:
+        logging.error(f"添加客户标签失败: {e}")
+        return jsonify({'success': False, 'msg': '添加失败'})
+
+
+@app.route('/api/staff/customers/<int:customer_user_id>/tags/<int:tag_id>', methods=['DELETE'])
+@require_staff
+def remove_customer_tag(user, customer_user_id, tag_id):
+    """V27.0: 移除客户标签"""
+    staff_id = user.get('user_id')
+    
+    try:
+        result = db.execute("""
+            DELETE FROM business_customer_tag_relations 
+            WHERE staff_id=%s AND customer_user_id=%s AND tag_id=%s
+        """, [staff_id, customer_user_id, tag_id])
+        return jsonify({'success': True, 'msg': '标签已移除'})
+    except Exception as e:
+        logging.error(f"移除客户标签失败: {e}")
+        return jsonify({'success': False, 'msg': '移除失败'})
+
+
+@app.route('/api/staff/customers/<int:customer_user_id>/tags/batch', methods=['PUT'])
+@require_staff
+def batch_update_customer_tags(user, customer_user_id):
+    """V27.0: 批量更新客户标签"""
+    data = request.get_json() or {}
+    tag_ids = data.get('tag_ids', [])  # 要保留的标签ID列表
+    
+    staff_id = user.get('user_id')
+    
+    try:
+        # 删除不在列表中的标签
+        if tag_ids:
+            placeholders = ','.join(['%s'] * len(tag_ids))
+            db.execute(f"""
+                DELETE FROM business_customer_tag_relations 
+                WHERE staff_id=%s AND customer_user_id=%s AND tag_id NOT IN ({placeholders})
+            """, [staff_id, customer_user_id] + tag_ids)
+        else:
+            # 空列表表示清空所有标签
+            db.execute("""
+                DELETE FROM business_customer_tag_relations 
+                WHERE staff_id=%s AND customer_user_id=%s
+            """, [staff_id, customer_user_id])
+        
+        return jsonify({'success': True, 'msg': '标签更新成功'})
+    except Exception as e:
+        logging.error(f"批量更新客户标签失败: {e}")
+        return jsonify({'success': False, 'msg': '更新失败'})
+
+
+@app.route('/api/staff/customers/all', methods=['GET'])
+@require_staff
+def get_all_customer_stats(user):
+    """V27.0: 获取员工客户统计"""
+    staff_id = user.get('user_id')
+    
+    # 总客户数
+    total_customers = db.get_total("""
+        SELECT COUNT(DISTINCT customer_user_id) 
+        FROM business_customer_tag_relations 
+        WHERE staff_id=%s
+    """, [staff_id])
+    
+    # 各标签客户数
+    tag_stats = db.get_all("""
+        SELECT ct.id, ct.tag_name, ct.tag_color, COUNT(r.customer_user_id) as count
+        FROM business_customer_tags ct
+        LEFT JOIN business_customer_tag_relations r ON ct.id = r.tag_id AND r.staff_id=%s
+        WHERE ct.status=1
+        GROUP BY ct.id, ct.tag_name, ct.tag_color
+        ORDER BY count DESC
+    """, [staff_id]) or []
+    
+    # 最近新增客户
+    recent_customers = db.get_all("""
+        SELECT m.user_name, m.phone, m.member_level, r.created_at
+        FROM business_customer_tag_relations r
+        JOIN business_members m ON r.customer_user_id = m.user_id
+        WHERE r.staff_id=%s
+        ORDER BY r.created_at DESC
+        LIMIT 10
+    """, [staff_id]) or []
+    
+    return jsonify({'success': True, 'data': {
+        'total_customers': total_customers,
+        'tag_stats': tag_stats,
+        'recent_customers': recent_customers
+    }})
+
+
+
+@app.route('/api/health/detailed')
+def health_detailed():
+    """V17.0新增：详细健康检查接口"""
+    try:
+        from business_common.health_check import HealthCheck
+        checker = HealthCheck()
+        result = checker.get_summary()
+        return jsonify({
+            'success': True,
+            'data': result
+        })
+    except ImportError:
+        return jsonify({
+            'success': True,
+            'data': {
+                'status': 'healthy',
+                'message': '健康检查模块不可用'
+            }
+        })
+    except Exception as e:
+        logging.warning(f"健康检查失败: {e}")
+        return jsonify({
+            'success': True,
+            'data': {
+                'status': 'degraded',
+                'message': f'健康检查异常: {str(e)}'
+            }
+        })
+
+
+# ============ 通知功能 ============
+
+@app.route('/api/staff/notifications', methods=['GET'])
+@require_staff
+def staff_get_notifications(user):
+    """获取员工通知列表"""
+    page = int(request.args.get('page', 1))
+    page_size = min(int(request.args.get('page_size', 20)), 50)
+    is_read = request.args.get('is_read')
+    
+    where = "user_id=%s AND deleted=0"
+    params = [user['user_id']]
+    if is_read is not None and is_read != '':
+        read_val = 1 if is_read in ('true', '1') else 0
+        where += " AND is_read=%s"; params.append(read_val)
+    
+    try:
+        total = db.get_total("SELECT COUNT(*) FROM business_notifications WHERE " + where, params)
+        unread = db.get_total("SELECT COUNT(*) FROM business_notifications WHERE user_id=%s AND is_read=0 AND deleted=0", [user['user_id']])
+        offset = (page - 1) * page_size
+        items = db.get_all(
+            "SELECT id, title, content, notify_type, is_read, created_at "
+            "FROM business_notifications WHERE " + where + " ORDER BY created_at DESC LIMIT %s OFFSET %s",
+            params + [page_size, offset]
+        )
+        return jsonify({'success': True, 'data': {
+            'items': items or [], 'total': total, 'page': page, 'page_size': page_size,
+            'unread_count': unread
+        }})
+    except Exception as e:
+        logging.warning(f"员工通知查询失败: {e}")
+        return jsonify({'success': True, 'data': {'items': [], 'total': 0, 'unread_count': 0}})
+
+
+@app.route('/api/staff/notifications/<nid>/read', methods=['POST'])
+@require_staff
+def staff_mark_read(user, nid):
+    """标记通知已读"""
+    try:
+        notification.mark_as_read(nid, user['user_id'])
+    except:
+        pass
+    return jsonify({'success': True, 'msg': '已读'})
+
+
+@app.route('/api/staff/notifications/read-all', methods=['POST'])
+@require_staff
+def staff_mark_all_read(user):
+    """全部标记已读"""
+    try:
+        notification.mark_all_as_read(user['user_id'])
+    except:
+        pass
+    return jsonify({'success': True, 'msg': '全部已读'})
+
+
+# ============ 反馈功能 ============
+
+@app.route('/api/staff/feedback', methods=['GET'])
+@require_staff
+def staff_list_feedback(user):
+    """员工查看反馈列表（本管辖范围内的）"""
+    page = int(request.args.get('page', 1))
+    page_size = min(int(request.args.get('page_size', 20)), 50)
+    status = request.args.get('status')
+    feedback_type = request.args.get('feedback_type')
+
+    where = "deleted=0"
+    params = []
+    if status:
+        where += " AND status=%s"; params.append(status)
+    if feedback_type:
+        where += " AND feedback_type=%s"; params.append(feedback_type)
+    # 数据隔离
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    if ec_id:
+        where += " AND ec_id=%s"; params.append(ec_id)
+    if project_id:
+        where += " AND project_id=%s"; params.append(project_id)
+
+    try:
+        total = db.get_total("SELECT COUNT(*) FROM business_feedback WHERE " + where, params)
+        offset = (page - 1) * page_size
+        items = db.get_all(
+            "SELECT id, user_name, feedback_type, title, content, contact, status, reply, replied_at, created_at "
+            "FROM business_feedback WHERE " + where + " ORDER BY created_at DESC LIMIT %s OFFSET %s",
+            params + [page_size, offset]
+        )
+        return jsonify({'success': True, 'data': {
+            'items': items or [], 'total': total, 'page': page, 'page_size': page_size,
+            'pages': (total + page_size - 1) // page_size if total else 0
+        }})
+    except Exception as e:
+        logging.warning(f"员工反馈列表查询失败: {e}")
+        return jsonify({'success': True, 'data': {'items': [], 'total': 0, 'page': page, 'page_size': page_size, 'pages': 0}})
+
+
+@app.route('/api/staff/feedback/<fb_id>/reply', methods=['POST'])
+@require_staff
+@rate_limiter.rate_limit(limit=10, window_seconds=60)
+def staff_reply_feedback(user, fb_id):
+    """员工回复反馈"""
+    data = request.get_json() or {}
+    reply = data.get('reply', '').strip()
+    if not reply:
+        return jsonify({'success': False, 'msg': '回复内容不能为空'})
+    try:
+        db.execute(
+            "UPDATE business_feedback SET reply=%s, replied_by=%s, replied_at=NOW(), status='replied' WHERE id=%s",
+            [reply, user.get('user_name', ''), fb_id]
+        )
+        # 通知用户
+        try:
+            fb = db.get_one("SELECT user_id, title FROM business_feedback WHERE id=%s", [fb_id])
+            if fb:
+                notification.send_notification(
+                    fb['user_id'], '您的意见反馈已回复',
+                    f"关于「{fb['title']}」的反馈已回复：{reply[:100]}",
+                    notify_type='system', ref_id=str(fb_id), ref_type='feedback'
+                )
+        except:
+            pass
+        return jsonify({'success': True, 'msg': '回复成功'})
+    except Exception as e:
+        logging.warning(f"员工回复反馈失败: {e}")
+        return jsonify({'success': False, 'msg': '回复失败'})
+
+
+# ============ 预约核销 ============
+
+@app.route('/api/staff/bookings', methods=['GET'])
+@require_staff
+def staff_list_bookings(user):
+    """员工查看预约列表"""
+    page = int(request.args.get('page', 1))
+    page_size = min(int(request.args.get('page_size', 20)), 50)
+    status = request.args.get('status')
+    venue_id = request.args.get('venue_id')
+
+    where = "vb.deleted=0"
+    params = []
+    if status:
+        where += " AND vb.status=%s"; params.append(status)
+    if venue_id:
+        where += " AND vb.venue_id=%s"; params.append(venue_id)
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    if ec_id:
+        where += " AND vb.ec_id=%s"; params.append(ec_id)
+    if project_id:
+        where += " AND vb.project_id=%s"; params.append(project_id)
+
+    try:
+        total = db.get_total("SELECT COUNT(*) FROM business_venue_bookings vb WHERE " + where, params)
+        offset = (page - 1) * page_size
+        items = db.get_all(
+            "SELECT vb.id, vb.venue_id, vb.user_name, vb.user_phone, vb.book_date, "
+            "CAST(vb.start_time AS CHAR) as start_time, CAST(vb.end_time AS CHAR) as end_time, "
+            "vb.total_price, vb.status, vb.pay_status, vb.verify_code, vb.created_at, "
+            "v.venue_name, v.venue_type "
+            "FROM business_venue_bookings vb "
+            "LEFT JOIN business_venues v ON vb.venue_id=v.id "
+            "WHERE " + where + " ORDER BY vb.book_date DESC, vb.start_time ASC LIMIT %s OFFSET %s",
+            params + [page_size, offset]
+        )
+        return jsonify({'success': True, 'data': {
+            'items': items or [], 'total': total, 'page': page, 'page_size': page_size
+        }})
+    except Exception as e:
+        logging.warning(f"员工预约列表查询失败: {e}")
+        return jsonify({'success': True, 'data': {'items': [], 'total': 0}})
+
+
+@app.route('/api/staff/bookings/<booking_id>/complete', methods=['POST'])
+@require_staff
+def staff_complete_booking(user, booking_id):
+    """员工完成预约（核销）- V17.0修复：添加完整数据隔离验证"""
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    
+    # V17.0 P0修复：添加完整的数据隔离验证
+    where = "id=%s AND deleted=0"
+    params = [booking_id]
+    if ec_id:
+        where += " AND ec_id=%s"; params.append(ec_id)
+    if project_id:
+        where += " AND project_id=%s"; params.append(project_id)
+    
+    booking = db.get_one(
+        "SELECT id, status, user_id FROM business_venue_bookings WHERE " + where, params
+    )
+    if not booking:
+        return jsonify({'success': False, 'msg': '预约不存在或无权操作'})
+    if booking.get('status') != 'confirmed':
+        return jsonify({'success': False, 'msg': '只有已确认的预约才能完成核销'})
+    
+    # V17.0：添加审计日志
+    try:
+        from business_common.audit_log import audit_log
+        audit_log.log_action(
+            user['user_id'], user.get('user_name', ''),
+            'complete_booking', f'核销预约ID:{booking_id}',
+            ref_type='booking', ref_id=str(booking_id)
+        )
+    except:
+        pass
+    
+    db.execute(
+        "UPDATE business_venue_bookings SET status='completed', updated_at=NOW() WHERE id=%s",
+        [booking_id]
+    )
+    
+    # 发送核销成功通知
+    try:
+        notification.send_notification(
+            booking.get('user_id', ''), '预约已核销',
+            f"您的场地预约已完成核销，感谢使用！",
+            notify_type='booking', ref_id=str(booking_id), ref_type='booking'
+        )
+    except:
+        pass
+    
+    return jsonify({'success': True, 'msg': '核销成功'})
+
+
+@app.route('/api/staff/bookings/verify', methods=['POST'])
+@require_staff
+@rate_limiter.rate_limit(limit=30, window_seconds=60)
+def staff_verify_booking(user):
+    """核销码验证"""
+    data = request.get_json() or {}
+    verify_code = (data.get('verify_code') or '').strip().upper()
+    if not verify_code:
+        return jsonify({'success': False, 'msg': '请输入核销码'})
+    
+    where = "verify_code=%s AND deleted=0"
+    params = [verify_code]
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    if ec_id:
+        where += " AND ec_id=%s"; params.append(ec_id)
+    if project_id:
+        where += " AND project_id=%s"; params.append(project_id)
+    
+    booking = db.get_one(
+        "SELECT vb.*, v.venue_name FROM business_venue_bookings vb "
+        "LEFT JOIN business_venues v ON vb.venue_id=v.id "
+        "WHERE vb." + where, params
+    )
+    if not booking:
+        return jsonify({'success': False, 'msg': '核销码无效'})
+    if booking.get('status') == 'completed':
+        return jsonify({'success': False, 'msg': '该预约已核销'})
+    if booking.get('status') == 'cancelled':
+        return jsonify({'success': False, 'msg': '该预约已取消'})
+    if booking.get('status') == 'pending':
+        return jsonify({'success': False, 'msg': '该预约尚未确认，无法核销'})
+    
+    db.execute("UPDATE business_venue_bookings SET status='completed', updated_at=NOW() WHERE id=%s", [booking['id']])
+    return jsonify({'success': True, 'msg': '核销成功', 'data': booking})
+
+# ============ V11.0 员工端新增功能 ============
+
+@app.route('/api/staff/orders/<order_id>/ship', methods=['POST'])
+@require_staff
+@rate_limiter.rate_limit(limit=20, window_seconds=60)
+def staff_ship_order(user, order_id):
+    """员工端订单发货"""
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    data = request.get_json() or {}
+    tracking_no = (data.get('tracking_no') or '').strip()
+    logistics_company = (data.get('logistics_company') or '').strip()
+
+    where = "id=%s AND deleted=0"
+    params = [order_id]
+    if ec_id:
+        where += " AND ec_id=%s"; params.append(ec_id)
+    if project_id:
+        where += " AND project_id=%s"; params.append(project_id)
+
+    order = db.get_one("SELECT * FROM business_orders WHERE " + where, params)
+    if not order:
+        return jsonify({'success': False, 'msg': '订单不存在或无权操作'})
+    if order.get('order_status') != 'paid':
+        return jsonify({'success': False, 'msg': '只有已支付订单可以发货'})
+
+    try:
+        db.execute(
+            """UPDATE business_orders SET order_status='shipped', tracking_no=%s,
+               logistics_company=%s, shipped_at=NOW(), updated_at=NOW() WHERE id=%s""",
+            [tracking_no, logistics_company, order_id]
+        )
+        # 发送用户通知
+        try:
+            notification.send_notification(
+                order.get('user_id', ''), '您的订单已发货',
+                f"订单 {order.get('order_no','')} 已发货，物流：{logistics_company or '未填写'} 单号：{tracking_no or '未填写'}",
+                notify_type='order', ref_id=str(order_id), ref_type='order'
+            )
+        except:
+            pass
+        return jsonify({'success': True, 'msg': '发货成功'})
+    except Exception as e:
+        logging.error(f"发货失败: {e}")
+        return jsonify({'success': False, 'msg': '发货失败'})
+
+
+@app.route('/api/staff/orders/<order_id>/refund', methods=['POST'])
+@require_staff
+@rate_limiter.rate_limit(limit=20, window_seconds=60)
+def staff_process_refund(user, order_id):
+    """员工端处理退款申请（批准/拒绝）"""
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    data = request.get_json() or {}
+    action = data.get('action')  # 'approve' or 'reject'
+    remark = (data.get('remark') or '').strip()
+
+    if action not in ('approve', 'reject'):
+        return jsonify({'success': False, 'msg': '无效操作，必须为approve或reject'})
+
+    where = "id=%s AND deleted=0 AND order_status='refunding'"
+    params = [order_id]
+    if ec_id:
+        where += " AND ec_id=%s"; params.append(ec_id)
+    if project_id:
+        where += " AND project_id=%s"; params.append(project_id)
+
+    order = db.get_one("SELECT * FROM business_orders WHERE " + where, params)
+    if not order:
+        return jsonify({'success': False, 'msg': '订单不存在或状态不是退款中'})
+
+    # V15安全校验：退款金额不能超过实付金额
+    actual_amount = float(order.get('actual_amount') or 0)
+
+    try:
+        conn = db.get_db()
+        cursor = conn.cursor()
+        conn.begin()
+
+        if action == 'approve':
+            cursor.execute(
+                "UPDATE business_orders SET order_status='refunded', pay_status='refunded', refunded_at=NOW(), updated_at=NOW() WHERE id=%s",
+                [order_id]
+            )
+            msg = '退款已批准'
+            notify_msg = f"订单 {order.get('order_no','')} 退款申请已批准，款项将退回原支付方式"
+
+            # V23.0: 退款时回收该订单产生的积分
+            try:
+                points_earned = cursor.execute(
+                    """SELECT COALESCE(SUM(points), 0) as earned
+                       FROM business_points_log
+                       WHERE ref_id=%s AND ref_type='payment' AND log_type='earn' AND points > 0""",
+                    [str(order_id)]
+                )
+                row = cursor.fetchone()
+                if row and row[0] and row[0] > 0:
+                    earned = int(row[0])
+                    user_id_refund = order.get('user_id')
+                    cursor.execute(
+                        "UPDATE business_members SET points=GREATEST(0, points-%s) WHERE user_id=%s",
+                        [earned, user_id_refund]
+                    )
+                    cursor.execute(
+                        """INSERT INTO business_points_log
+                           (user_id, user_name, log_type, points, balance_after, description, ref_id, ref_type, ec_id, project_id)
+                           SELECT %s, %s, 'refund_deduct', -%s, points, %s, %s, 'refund', %s, %s
+                           FROM business_members WHERE user_id=%s""",
+                        [user_id_refund, order.get('user_name', ''), earned,
+                         f'订单退款积分回收', str(order_id),
+                         ec_id, project_id, user_id_refund]
+                    )
+            except Exception as e:
+                logging.warning(f"退款积分回收失败: {e}")
+        else:
+            # 拒绝退款，回滚状态到 paid
+            cursor.execute(
+                "UPDATE business_orders SET order_status='paid', refund_reason=NULL, updated_at=NOW() WHERE id=%s",
+                [order_id]
+            )
+            # 重新扣减库存（用户申请退款时已回滚库存，拒绝后需重新扣减，sales_count保持不变）
+            items = db.get_all("SELECT product_id, quantity FROM business_order_items WHERE order_id=%s", [order_id])
+            if items:
+                for item in items:
+                    cursor.execute(
+                        "UPDATE business_products SET stock=GREATEST(0, stock-%s) WHERE id=%s",
+                        [item['quantity'], item['product_id']]
+                    )
+            msg = '退款已拒绝'
+            notify_msg = f"订单 {order.get('order_no','')} 退款申请被拒绝" + (f"：{remark}" if remark else "")
+
+        conn.commit()
+
+        # 发送通知给用户
+        try:
+            notification.send_notification(
+                order.get('user_id', ''), f'退款{"批准" if action == "approve" else "拒绝"}通知',
+                notify_msg,
+                notify_type='order', ref_id=str(order_id), ref_type='order'
+            )
+        except:
+            pass
+
+        return jsonify({'success': True, 'msg': msg})
+    except Exception as e:
+        try:
+            conn.rollback()
+        except:
+            pass
+        logging.error(f"处理退款失败: {e}")
+        return jsonify({'success': False, 'msg': '操作失败，请稍后重试'})
+    finally:
+        try:
+            cursor.close()
+            conn.close()
+        except:
+            pass
+
+
+@app.route('/api/staff/orders/<order_id>/complete', methods=['POST'])
+@require_staff
+def staff_complete_order(user, order_id):
+    """员工端确认完成订单"""
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+
+    where = "id=%s AND deleted=0"
+    params = [order_id]
+    if ec_id:
+        where += " AND ec_id=%s"; params.append(ec_id)
+    if project_id:
+        where += " AND project_id=%s"; params.append(project_id)
+
+    order = db.get_one("SELECT * FROM business_orders WHERE " + where, params)
+    if not order:
+        return jsonify({'success': False, 'msg': '订单不存在'})
+    if order.get('order_status') not in ('shipped', 'paid'):
+        return jsonify({'success': False, 'msg': '当前状态不可完成'})
+
+    try:
+        db.execute(
+            "UPDATE business_orders SET order_status='completed', completed_at=NOW(), updated_at=NOW() WHERE id=%s",
+            [order_id]
+        )
+        return jsonify({'success': True, 'msg': '订单已完成'})
+    except Exception as e:
+        logging.error(f"完成订单失败: {e}")
+        return jsonify({'success': False, 'msg': '操作失败'})
+
+
+@app.route('/api/staff/members', methods=['GET'])
+@require_staff
+def staff_list_members(user):
+    """员工端会员列表查询"""
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    keyword = request.args.get('keyword', '').strip()
+    page = max(1, int(request.args.get('page', 1)))
+    page_size = min(int(request.args.get('page_size', 20)), 50)
+
+    where = "1=1"
+    params = []
+    if ec_id:
+        where += " AND ec_id=%s"; params.append(ec_id)
+    if project_id:
+        where += " AND project_id=%s"; params.append(project_id)
+    if keyword:
+        where += " AND (user_name LIKE %s OR phone LIKE %s)"
+        kw = f'%{keyword}%'
+        params.extend([kw, kw])
+
+    try:
+        total = db.get_total("SELECT COUNT(*) FROM business_members WHERE " + where, params)
+        offset = (page - 1) * page_size
+        items = db.get_all(
+            "SELECT user_id, user_name, phone, member_level, points, total_points, balance, created_at "
+            "FROM business_members WHERE " + where + " ORDER BY created_at DESC LIMIT %s OFFSET %s",
+            params + [page_size, offset]
+        )
+        return jsonify({'success': True, 'data': {'items': items or [], 'total': total, 'page': page, 'page_size': page_size}})
+    except Exception as e:
+        logging.warning(f"会员查询失败: {e}")
+        return jsonify({'success': True, 'data': {'items': [], 'total': 0}})
+
+
+@app.route('/api/staff/checkin/stats', methods=['GET'])
+@require_staff
+def staff_checkin_stats(user):
+    """员工端签到统计（今日/本周/本月签到人数）"""
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    today = time.strftime('%Y-%m-%d')
+    week_ago = time.strftime('%Y-%m-%d', time.localtime(time.time() - 7 * 86400))
+    month_start = today[:8] + '01'
+
+    # 需要通过members关联取到当前项目的用户
+    member_where = "1=1"
+    member_params = []
+    if ec_id:
+        member_where += " AND ec_id=%s"; member_params.append(ec_id)
+    if project_id:
+        member_where += " AND project_id=%s"; member_params.append(project_id)
+
+    try:
+        today_count = db.get_total(
+            f"SELECT COUNT(*) FROM business_checkin_logs cl "
+            f"INNER JOIN business_members m ON cl.user_id=m.user_id "
+            f"WHERE {member_where.replace('1=1 AND', '').replace('1=1', 'm.user_id IS NOT NULL')} AND cl.checkin_date=%s",
+            member_params + [today]
+        )
+        week_count = db.get_total(
+            f"SELECT COUNT(DISTINCT cl.user_id) FROM business_checkin_logs cl "
+            f"INNER JOIN business_members m ON cl.user_id=m.user_id "
+            f"WHERE cl.checkin_date BETWEEN %s AND %s",
+            [week_ago, today]
+        )
+        month_count = db.get_total(
+            f"SELECT COUNT(DISTINCT cl.user_id) FROM business_checkin_logs cl "
+            f"INNER JOIN business_members m ON cl.user_id=m.user_id "
+            f"WHERE cl.checkin_date BETWEEN %s AND %s",
+            [month_start, today]
+        )
+        # 本月签到次数Top5
+        top_users = db.get_all(
+            """SELECT m.user_name, m.phone, COUNT(cl.id) as checkin_count, MAX(cl.continuous_days) as max_continuous
+               FROM business_checkin_logs cl
+               INNER JOIN business_members m ON cl.user_id=m.user_id
+               WHERE cl.checkin_date BETWEEN %s AND %s
+               GROUP BY cl.user_id ORDER BY checkin_count DESC LIMIT 5""",
+            [month_start, today]
+        )
+        return jsonify({'success': True, 'data': {
+            'today_count': today_count,
+            'week_active_users': week_count,
+            'month_active_users': month_count,
+            'top_users': top_users or []
+        }})
+    except Exception as e:
+        logging.warning(f"签到统计失败: {e}")
+        return jsonify({'success': True, 'data': {'today_count': 0, 'week_active_users': 0, 'month_active_users': 0, 'top_users': []}})
+
+
+@app.route('/api/staff/orders/pending-refunds', methods=['GET'])
+@require_staff
+def staff_pending_refunds(user):
+    """员工端退款管理列表（支持状态筛选+统计）"""
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    status = request.args.get('status', '')  # '', 'pending', 'approved', 'rejected'
+    page = max(1, int(request.args.get('page', 1)))
+    page_size = min(int(request.args.get('page_size', 20)), 50)
+
+    # 基础过滤条件
+    base_where = "deleted=0"
+    params = []
+    if ec_id:
+        base_where += " AND ec_id=%s"; params.append(ec_id)
+    if project_id:
+        base_where += " AND project_id=%s"; params.append(project_id)
+
+    # 状态映射: 前端状态 -> 数据库状态
+    status_map = {
+        'pending': 'refunding',       # 待处理 -> 退款中
+        'approved': 'refunded',       # 已批准 -> 已退款
+        'rejected': 'paid'            # 已拒绝 -> 已支付(恢复原状态)
+    }
+    refund_status_map = {
+        'refunding': 'pending',
+        'refunded': 'approved',
+        'paid': 'rejected'
+    }
+
+    # 根据状态筛选
+    if status and status in status_map:
+        if status == 'rejected':
+            # 拒绝的订单: order_status='paid' AND refund_reason IS NOT NULL AND refund_reason != ''
+            where = base_where + " AND order_status='paid' AND refund_reason IS NOT NULL AND refund_reason != ''"
+        else:
+            # V20.0: 使用参数化查询替代字符串拼接
+            where = base_where + " AND order_status=%s"
+            params.append(status_map[status])
+    else:
+        # 全部: 包含退款中/已退款/被拒绝的
+        where = base_where + " AND (order_status IN ('refunding','refunded') OR (order_status='paid' AND refund_reason IS NOT NULL AND refund_reason != ''))"
+
+    try:
+        # 查询统计数据
+        stats = {}
+        try:
+            pending_count = db.get_total(
+                f"SELECT COUNT(*) FROM business_orders WHERE {base_where} AND order_status='refunding'",
+                params.copy()
+            )
+            approved_count = db.get_total(
+                f"SELECT COUNT(*) FROM business_orders WHERE {base_where} AND order_status='refunded'",
+                params.copy()
+            )
+            rejected_count = db.get_total(
+                f"SELECT COUNT(*) FROM business_orders WHERE {base_where} AND order_status='paid' AND refund_reason IS NOT NULL AND refund_reason != ''",
+                params.copy()
+            )
+            total_refund = db.get_one(
+                f"SELECT COALESCE(SUM(actual_amount),0) as total FROM business_orders WHERE {base_where} AND order_status IN ('refunding','refunded')",
+                params.copy()
+            )
+            stats = {
+                'pending': pending_count,
+                'approved': approved_count,
+                'rejected': rejected_count,
+                'total_refund': float(total_refund.get('total', 0) if total_refund else 0)
+            }
+        except Exception as e:
+            logging.warning(f"退款统计查询失败: {e}")
+
+        # 查询列表
+        total = db.get_total("SELECT COUNT(*) FROM business_orders WHERE " + where, params)
+        offset = (page - 1) * page_size
+        items = db.get_all(
+            "SELECT id, order_no, order_type, user_id, user_name, user_phone, actual_amount, "
+            "order_status, pay_status, refund_reason, created_at, updated_at, refunded_at "
+            "FROM business_orders WHERE " + where + " ORDER BY updated_at DESC LIMIT %s OFFSET %s",
+            params + [page_size, offset]
+        )
+        
+        # 转换前端状态
+        for item in items:
+            item['refund_status'] = refund_status_map.get(item.get('order_status'), item.get('order_status'))
+        
+        return jsonify({'success': True, 'data': {'items': items or [], 'total': total, 'page': page, 'page_size': page_size, 'stats': stats}})
+    except Exception as e:
+        logging.warning(f"退款列表查询失败: {e}")
+        return jsonify({'success': True, 'data': {'items': [], 'total': 0, 'stats': {'pending': 0, 'approved': 0, 'rejected': 0, 'total_refund': 0}}})
+
+
+@app.route('/api/staff/audit-logs', methods=['GET'])
+@require_staff
+def staff_audit_logs(user):
+    """V17.0新增：操作日志查询"""
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    page = max(1, int(request.args.get('page', 1)))
+    page_size = min(int(request.args.get('page_size', 20)), 100)
+    
+    # 筛选参数
+    action = request.args.get('action', '').strip()
+    keyword = request.args.get('keyword', '').strip()
+    date_from = request.args.get('date_from', '')
+    date_to = request.args.get('date_to', '')
+    
+    result = []
+    total = 0
+    
+    try:
+        from business_common.audit_log import get_audit_logs
+        
+        logs = get_audit_logs(
+            ec_id=ec_id,
+            project_id=project_id,
+            action=action if action else None,
+            date_from=date_from if date_from else None,
+            date_to=date_to if date_to else None,
+            page=page,
+            page_size=page_size
+        )
+        result = logs.get('items', [])
+        total = logs.get('total', 0)
+        
+        # 关键词过滤（内存过滤）
+        if keyword and result:
+            result = [
+                log for log in result
+                if keyword.lower() in str(log.get('action', '')).lower()
+                or keyword.lower() in str(log.get('user_name', '')).lower()
+                or keyword.lower() in str(log.get('details', '')).lower()
+            ]
+        
+    except Exception as e:
+        logging.warning(f"操作日志查询失败: {e}")
+    
+    return jsonify({'success': True, 'data': {
+        'items': result,
+        'total': total,
+        'page': page,
+        'page_size': page_size,
+        'pages': (total + page_size - 1) // page_size if total else 0
+    }})
+
+
+@app.route('/api/staff/audit-logs/actions', methods=['GET'])
+@require_staff
+def staff_audit_action_stats(user):
+    """V17.0新增：操作类型统计"""
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    date_from = request.args.get('date_from', '')
+    date_to = request.args.get('date_to', '')
+    
+    try:
+        where = "1=1"
+        params = []
+        if ec_id:
+            where += " AND ec_id=%s"; params.append(ec_id)
+        if project_id:
+            where += " AND project_id=%s"; params.append(project_id)
+        if date_from:
+            where += " AND DATE(created_at)>=%s"; params.append(date_from)
+        if date_to:
+            where += " AND DATE(created_at)<=%s"; params.append(date_to)
+        
+        stats = db.get_all(
+            f"""SELECT action, COUNT(*) as cnt 
+                FROM system_audit_log WHERE {where}
+                GROUP BY action ORDER BY cnt DESC LIMIT 20""",
+            params
+        )
+        return jsonify({'success': True, 'data': {'items': stats or []}})
+    except Exception as e:
+        logging.warning(f"操作类型统计失败: {e}")
+        return jsonify({'success': True, 'data': {'items': []}})
+
+
+@app.route('/api/staff/statistics/dashboard', methods=['GET'])
+@require_staff
+def staff_dashboard_stats(user):
+    """V17.0新增：员工端仪表盘统计数据（多维度）"""
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    rng = request.args.get('range', 'today')
+    date_from = request.args.get('date_from')
+    date_to = request.args.get('date_to')
+
+    # 自动计算日期范围
+    if not date_from or not date_to:
+        date_from, date_to = _get_date_range(rng)
+        if not date_from:
+            date_from = date_to = time.strftime('%Y-%m-%d')
+
+    scope = "deleted=0"
+    p = []
+    if ec_id:
+        scope += " AND ec_id=%s"; p.append(ec_id)
+    if project_id:
+        scope += " AND project_id=%s"; p.append(project_id)
+
+    # V20.0: 使用参数化查询替代字符串拼接，防止SQL注入
+    date_scope = f"{scope} AND created_at >= %s AND created_at <= %s"
+    date_p = p + [f'{date_from} 00:00:00', f'{date_to} 23:59:59']
+
+    result = {
+        'date_range': {'from': date_from, 'to': date_to, 'range': rng},
+        'overview': {},
+        'orders': {},
+        'applications': {},
+        'members': {},
+        'venues': {}
+    }
+
+    try:
+        # 1. 总览数据
+        result['overview'] = {
+            'total_orders': db.get_total(f"SELECT COUNT(*) FROM business_orders WHERE {date_scope}", date_p) or 0,
+            'total_income': float(db.get_one(f"SELECT COALESCE(SUM(actual_amount),0) as total FROM business_orders WHERE {date_scope} AND order_status IN ('paid','completed')", date_p).get('total') or 0),
+            'total_applications': db.get_total(f"SELECT COUNT(*) FROM business_applications WHERE {date_scope}", date_p) or 0,
+            'total_members': db.get_total(f"SELECT COUNT(*) FROM business_members WHERE {scope}", p) or 0,
+            'new_members': db.get_total(f"SELECT COUNT(*) FROM business_members WHERE {date_scope}", date_p) or 0
+        }
+
+        # 2. 订单统计
+        order_stats = db.get_all(f"""
+            SELECT order_status, COUNT(*) as cnt, COALESCE(SUM(actual_amount),0) as amount
+            FROM business_orders WHERE {date_scope}
+            GROUP BY order_status
+        """, date_p) or []
+        result['orders']['by_status'] = {r['order_status']: {'count': r['cnt'], 'amount': float(r['amount'])} for r in order_stats}
+        
+        # 订单来源分布
+        order_by_type = db.get_all(f"""
+            SELECT order_type, COUNT(*) as cnt
+            FROM business_orders WHERE {date_scope}
+            GROUP BY order_type
+        """, date_p) or []
+        result['orders']['by_type'] = {r['order_type']: r['cnt'] for r in order_by_type}
+
+        # 3. 申请统计
+        app_stats = db.get_all(f"""
+            SELECT status, COUNT(*) as cnt
+            FROM business_applications WHERE {date_scope}
+            GROUP BY status
+        """, date_p) or []
+        result['applications']['by_status'] = {r['status']: r['cnt'] for r in app_stats}
+        
+        app_by_type = db.get_all(f"""
+            SELECT app_type, COUNT(*) as cnt
+            FROM business_applications WHERE {date_scope}
+            GROUP BY app_type
+        """, date_p) or []
+        result['applications']['by_type'] = {r['app_type']: r['cnt'] for r in app_by_type if r['app_type']}
+
+        # 4. 会员统计
+        level_dist = db.get_all(f"""
+            SELECT member_level, COUNT(*) as cnt
+            FROM business_members WHERE {scope}
+            GROUP BY member_level
+        """, p) or []
+        result['members']['by_level'] = {r['member_level']: r['cnt'] for r in level_dist}
+
+        # 5. 场地预约统计
+        booking_stats = db.get_one(f"""
+            SELECT COUNT(*) as total,
+                   SUM(CASE WHEN status='confirmed' THEN 1 ELSE 0 END) as confirmed,
+                   SUM(CASE WHEN status='completed' THEN 1 ELSE 0 END) as completed,
+                   COALESCE(SUM(total_price),0) as income
+            FROM business_venue_bookings WHERE {date_scope}
+        """, date_p) or {}
+        result['venues'] = {
+            'total_bookings': booking_stats.get('total') or 0,
+            'confirmed': booking_stats.get('confirmed') or 0,
+            'completed': booking_stats.get('completed') or 0,
+            'income': float(booking_stats.get('income') or 0)
+        }
+
+    except Exception as e:
+        logging.error(f"仪表盘统计失败: {e}")
+
+    return jsonify({'success': True, 'data': result})
+
+
+@app.route('/api/staff/products', methods=['GET'])
+@require_staff
+def staff_list_products(user):
+    """员工端商品列表（查看库存和状态）- V18.0增强：支持状态筛选"""
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    keyword = request.args.get('keyword', '').strip()
+    status_filter = request.args.get('status', '')  # V18: active/inactive/low_stock/out_of_stock
+    page = max(1, int(request.args.get('page', 1)))
+    page_size = min(int(request.args.get('page_size', 20)), 50)
+
+    where = "deleted=0"
+    params = []
+    if ec_id:
+        where += " AND ec_id=%s"; params.append(ec_id)
+    if project_id:
+        where += " AND project_id=%s"; params.append(project_id)
+    if keyword:
+        where += " AND product_name LIKE %s"
+        params.append(f'%{keyword}%')
+    # V18: 状态筛选
+    if status_filter == 'active':
+        where += " AND status='active'"
+    elif status_filter == 'inactive':
+        where += " AND status='inactive'"
+    elif status_filter == 'low_stock':
+        where += " AND stock > 0 AND stock <= 10"
+    elif status_filter == 'out_of_stock':
+        where += " AND stock = 0"
+
+    try:
+        total = db.get_total("SELECT COUNT(*) FROM business_products WHERE " + where, params)
+        offset = (page - 1) * page_size
+        items = db.get_all(
+            "SELECT id, product_name, category, price, original_price, stock, sales_count, status, image, created_at "
+            "FROM business_products WHERE " + where + " ORDER BY stock ASC, created_at DESC LIMIT %s OFFSET %s",
+            params + [page_size, offset]
+        )
+        # V18: 统计各状态数量
+        low_stock_count = db.get_total(
+            "SELECT COUNT(*) FROM business_products WHERE deleted=0 AND stock > 0 AND stock <= 10" +
+            (" AND ec_id=%s" if ec_id else "") + (" AND project_id=%s" if project_id else ""),
+            ([ec_id] if ec_id else []) + ([project_id] if project_id else [])
+        )
+        out_of_stock_count = db.get_total(
+            "SELECT COUNT(*) FROM business_products WHERE deleted=0 AND stock = 0" +
+            (" AND ec_id=%s" if ec_id else "") + (" AND project_id=%s" if project_id else ""),
+            ([ec_id] if ec_id else []) + ([project_id] if project_id else [])
+        )
+        return jsonify({'success': True, 'data': {
+            'items': items or [], 'total': total, 'page': page, 'page_size': page_size,
+            'low_stock_count': low_stock_count, 'out_of_stock_count': out_of_stock_count
+        }})
+    except Exception as e:
+        logging.warning(f"商品列表查询失败: {e}")
+        return jsonify({'success': True, 'data': {'items': [], 'total': 0}})
+
+
+@app.route('/api/staff/products/<int:product_id>/stock', methods=['POST'])
+@require_staff
+def staff_adjust_stock(user, product_id):
+    """V18.0新增：员工端商品库存调整"""
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    data = request.get_json() or {}
+
+    adjust_type = data.get('adjust_type')  # add / subtract / set
+    quantity = data.get('quantity')
+    reason = data.get('reason', '').strip()
+
+    if adjust_type not in ('add', 'subtract', 'set'):
+        return jsonify({'success': False, 'msg': '操作类型无效，仅支持 add/subtract/set'})
+    if quantity is None or not isinstance(quantity, (int, float)) or int(quantity) < 0:
+        return jsonify({'success': False, 'msg': '数量参数无效'})
+    quantity = int(quantity)
+
+    # 校验商品归属
+    product = db.get_one(
+        "SELECT id, product_name, stock FROM business_products WHERE id=%s AND deleted=0" +
+        (" AND ec_id=%s" if ec_id else "") + (" AND project_id=%s" if project_id else ""),
+        [product_id] + ([ec_id] if ec_id else []) + ([project_id] if project_id else [])
+    )
+    if not product:
+        return jsonify({'success': False, 'msg': '商品不存在'})
+
+    old_stock = int(product['stock'] or 0)
+
+    if adjust_type == 'add':
+        new_stock = old_stock + quantity
+    elif adjust_type == 'subtract':
+        new_stock = max(0, old_stock - quantity)
+    else:  # set
+        new_stock = quantity
+
+    try:
+        db.execute(
+            "UPDATE business_products SET stock=%s, updated_at=NOW() WHERE id=%s",
+            [new_stock, product_id]
+        )
+        # 写入操作日志
+        try:
+            from business_common import audit_log
+            audit_log.log_action(
+                user_id=user.get('user_id'),
+                user_name=user.get('user_name', ''),
+                action='adjust_stock',
+                details=f"商品[{product['product_name']}] 库存调整: {old_stock} -> {new_stock} ({adjust_type} {quantity}) 原因: {reason}",
+                ip=request.remote_addr,
+                ec_id=ec_id,
+                project_id=project_id
+            )
+        except Exception:
+            pass
+        logging.info(f"库存调整: product={product_id}, {old_stock} -> {new_stock}, staff={user.get('user_id')}")
+        return jsonify({'success': True, 'msg': '库存调整成功', 'data': {'old_stock': old_stock, 'new_stock': new_stock}})
+    except Exception as e:
+        logging.error(f"库存调整失败: {e}")
+        return jsonify({'success': False, 'msg': '库存调整失败'})
+
+
+@app.route('/api/staff/products/<int:product_id>/status', methods=['POST'])
+@require_staff
+def staff_toggle_product_status(user, product_id):
+    """V18.0新增：员工端切换商品上/下架状态"""
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    data = request.get_json() or {}
+    new_status = data.get('status')
+
+    if new_status not in ('active', 'inactive'):
+        return jsonify({'success': False, 'msg': '状态值无效'})
+
+    product = db.get_one(
+        "SELECT id, product_name, status FROM business_products WHERE id=%s AND deleted=0" +
+        (" AND ec_id=%s" if ec_id else "") + (" AND project_id=%s" if project_id else ""),
+        [product_id] + ([ec_id] if ec_id else []) + ([project_id] if project_id else [])
+    )
+    if not product:
+        return jsonify({'success': False, 'msg': '商品不存在'})
+
+    try:
+        db.execute(
+            "UPDATE business_products SET status=%s, updated_at=NOW() WHERE id=%s",
+            [new_status, product_id]
+        )
+        try:
+            from business_common import audit_log
+            audit_log.log_action(
+                user_id=user.get('user_id'),
+                user_name=user.get('user_name', ''),
+                action='toggle_product_status',
+                details=f"商品[{product['product_name']}] 状态: {product['status']} -> {new_status}",
+                ip=request.remote_addr,
+                ec_id=ec_id,
+                project_id=project_id
+            )
+        except Exception:
+            pass
+        return jsonify({'success': True, 'msg': f"商品已{'上架' if new_status == 'active' else '下架'}"})
+    except Exception as e:
+        logging.error(f"商品状态切换失败: {e}")
+        return jsonify({'success': False, 'msg': '操作失败'})
+
+
+@app.route('/api/staff/applications/overdue', methods=['GET'])
+@require_staff
+def get_overdue_applications(staff):
+    """V19.0: 获取超时申请单统计"""
+    from business_common.application_monitor import get_overdue_statistics
+    
+    ec_id = staff.get('ec_id')
+    project_id = staff.get('project_id')
+    
+    stats = get_overdue_statistics(ec_id=ec_id, project_id=project_id)
+    return jsonify({'success': True, 'data': stats})
+
+
+@app.route('/api/staff/applications/<app_id>/timeline', methods=['GET'])
+@require_staff
+def get_application_timeline(staff, app_id):
+    """V19.0: 获取申请单处理时间线"""
+    from business_common.application_monitor import get_application_timeline as get_timeline
+    
+    timeline = get_timeline(app_id)
+    if not timeline:
+        return jsonify({'success': False, 'msg': '申请单不存在'})
+    
+    return jsonify({'success': True, 'data': timeline})
+
+
 @app.route('/')
 def index():
     return send_from_directory('.', 'index.html')
 
+# ============ 评价管理 V21.0新增 ============
+
+@app.route('/api/staff/reviews', methods=['GET'])
+@require_staff
+def staff_list_reviews(user):
+    """员工端评价列表"""
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    keyword = request.args.get('keyword', '').strip()
+    rating = request.args.get('rating', '')  # 1-5星
+    target_type = request.args.get('target_type', '')  # order/shop/product/venue
+    page = max(1, int(request.args.get('page', 1)))
+    page_size = min(int(request.args.get('page_size', 20)), 50)
+    
+    where = "deleted=0"
+    params = []
+    
+    if ec_id:
+        where += " AND (ec_id=%s OR ec_id IS NULL)"
+        params.append(ec_id)
+    if project_id:
+        where += " AND (project_id=%s OR project_id IS NULL)"
+        params.append(project_id)
+    if keyword:
+        where += " AND (user_name LIKE %s OR content LIKE %s)"
+        kw = f'%{keyword}%'
+        params.extend([kw, kw])
+    if rating:
+        where += " AND rating=%s"
+        params.append(int(rating))
+    if target_type:
+        where += " AND target_type=%s"
+        params.append(target_type)
+    
+    try:
+        total = db.get_total(f"SELECT COUNT(*) FROM business_reviews WHERE {where}", params)
+        offset = (page - 1) * page_size
+        items = db.get_all(f"""
+            SELECT r.*,
+                   CASE r.target_type
+                       WHEN 'order' THEN (SELECT order_no FROM business_orders WHERE id=r.target_id)
+                       WHEN 'shop' THEN (SELECT shop_name FROM business_shops WHERE id=r.target_id)
+                       WHEN 'product' THEN (SELECT product_name FROM business_products WHERE id=r.target_id)
+                       WHEN 'venue' THEN (SELECT venue_name FROM business_venues WHERE id=r.target_id)
+                       ELSE '未知'
+                   END as target_name
+            FROM business_reviews r
+            WHERE {where}
+            ORDER BY r.created_at DESC
+            LIMIT %s OFFSET %s
+        """, params + [page_size, offset])
+        
+        return jsonify({'success': True, 'data': {
+            'items': items or [],
+            'total': total,
+            'page': page,
+            'page_size': page_size
+        }})
+    except Exception as e:
+        logging.error(f"评价列表查询失败: {e}")
+        return jsonify({'success': True, 'data': {'items': [], 'total': 0}})
+
+
+@app.route('/api/staff/reviews/<int:review_id>/reply', methods=['POST'])
+@require_staff
+def staff_reply_review(user, review_id):
+    """员工端回复评价"""
+    data = request.get_json() or {}
+    reply_content = (data.get('reply_content') or '').strip()
+    
+    if not reply_content:
+        return jsonify({'success': False, 'msg': '请输入回复内容'})
+    
+    if len(reply_content) > 300:
+        return jsonify({'success': False, 'msg': '回复内容不能超过300字'})
+    
+    try:
+        review = db.get_one(
+            "SELECT * FROM business_reviews WHERE id=%s AND deleted=0",
+            [review_id]
+        )
+        if not review:
+            return jsonify({'success': False, 'msg': '评价不存在'})
+        
+        db.execute("""
+            UPDATE business_reviews
+            SET reply_content=%s, replied_at=NOW(), reply_user_id=%s, reply_user_name=%s
+            WHERE id=%s
+        """, [reply_content, user.get('user_id'), user.get('user_name'), review_id])
+        
+        # 发送通知给用户
+        from business_common.notification import send_notification
+        send_notification(
+            user_id=review.get('user_id'),
+            title='您的评价已收到回复',
+            content=f"商家已回复您的评价: {reply_content[:50]}...",
+            notify_type='review_reply',
+            ec_id=review.get('ec_id'),
+            project_id=review.get('project_id')
+        )
+        
+        return jsonify({'success': True, 'msg': '回复成功'})
+    except Exception as e:
+        logging.error(f"回复评价失败: {e}")
+        return jsonify({'success': False, 'msg': '回复失败'})
+
+
+@app.route('/api/staff/reviews/statistics', methods=['GET'])
+@require_staff
+def staff_review_statistics(user):
+    """员工端评价统计"""
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    
+    where = "deleted=0"
+    params = []
+    if ec_id:
+        where += " AND (ec_id=%s OR ec_id IS NULL)"
+        params.append(ec_id)
+    if project_id:
+        where += " AND (project_id=%s OR project_id IS NULL)"
+        params.append(project_id)
+    
+    try:
+        # 总体统计
+        total = db.get_total(f"SELECT COUNT(*) FROM business_reviews WHERE {where}", params)
+        avg_rating_row = db.get_one(f"SELECT AVG(rating) as avg FROM business_reviews WHERE {where}", params)
+        avg_rating = round(float(avg_rating_row.get('avg') or 0), 1)
+        
+        # 评分分布
+        rating_dist = db.get_all(f"""
+            SELECT rating, COUNT(*) as count
+            FROM business_reviews WHERE {where}
+            GROUP BY rating
+            ORDER BY rating DESC
+        """, params) or []
+        
+        # 类型分布
+        type_dist = db.get_all(f"""
+            SELECT target_type, COUNT(*) as count
+            FROM business_reviews WHERE {where}
+            GROUP BY target_type
+        """, params) or []
+        
+        # 今日新增
+        today_count = db.get_total(
+            f"SELECT COUNT(*) FROM business_reviews WHERE {where} AND DATE(created_at)=CURDATE()",
+            params
+        )
+        
+        # 待回复
+        unreplied = db.get_total(
+            f"SELECT COUNT(*) FROM business_reviews WHERE {where} AND (reply_content IS NULL OR reply_content='')",
+            params
+        )
+        
+        return jsonify({'success': True, 'data': {
+            'total_reviews': total,
+            'avg_rating': avg_rating,
+            'rating_distribution': {str(r['rating']): r['count'] for r in rating_dist},
+            'type_distribution': {r['target_type']: r['count'] for r in type_dist},
+            'today_new': today_count,
+            'unreplied': unreplied
+        }})
+    except Exception as e:
+        logging.error(f"评价统计失败: {e}")
+        return jsonify({'success': False, 'msg': '统计失败'})
+
+
+@app.route('/api/staff/reviews/<int:review_id>', methods=['DELETE'])
+@require_staff
+def staff_delete_review(user, review_id):
+    """员工端删除评价"""
+    try:
+        review = db.get_one(
+            "SELECT * FROM business_reviews WHERE id=%s AND deleted=0",
+            [review_id]
+        )
+        if not review:
+            return jsonify({'success': False, 'msg': '评价不存在'})
+        
+        db.execute("UPDATE business_reviews SET deleted=1 WHERE id=%s", [review_id])
+        
+        return jsonify({'success': True, 'msg': '评价已删除'})
+    except Exception as e:
+        logging.error(f"删除评价失败: {e}")
+        return jsonify({'success': False, 'msg': '删除失败'})
+
+
+# ============ V28.0 批量操作接口 ============
+
+@app.route('/api/staff/batch/ship', methods=['POST'])
+@require_staff
+@rate_limiter.rate_limit(limit=5, window_seconds=60)
+def staff_batch_ship_orders(user):
+    """V28.0: 批量订单发货"""
+    from business_common.batch_operation_service import BatchOperationService
+    data = request.get_json() or {}
+    order_ids = data.get('order_ids', [])
+    logistics_company = (data.get('logistics_company') or '').strip()
+
+    if not order_ids:
+        return jsonify({'success': False, 'msg': '请选择要发货的订单'})
+    if len(order_ids) > 50:
+        return jsonify({'success': False, 'msg': '每次最多处理50个订单'})
+
+    result = BatchOperationService.batch_ship_orders(
+        operator_id=user.get('user_id'),
+        operator_name=user.get('user_name', ''),
+        order_ids=order_ids,
+        logistics_company=logistics_company,
+        ec_id=user.get('ec_id'),
+        project_id=user.get('project_id')
+    )
+    return jsonify(result)
+
+
+@app.route('/api/staff/batch/applications', methods=['POST'])
+@require_staff
+@rate_limiter.rate_limit(limit=5, window_seconds=60)
+def staff_batch_process_applications(user):
+    """V28.0: 批量处理申请单"""
+    from business_common.batch_operation_service import BatchOperationService
+    data = request.get_json() or {}
+    app_ids = data.get('app_ids', [])
+    action = data.get('action', '')
+
+    if not app_ids:
+        return jsonify({'success': False, 'msg': '请选择要处理的申请单'})
+    if len(app_ids) > 50:
+        return jsonify({'success': False, 'msg': '每次最多处理50个申请单'})
+
+    result = BatchOperationService.batch_process_applications(
+        operator_id=user.get('user_id'),
+        operator_name=user.get('user_name', ''),
+        app_ids=app_ids,
+        action=action,
+        ec_id=user.get('ec_id'),
+        project_id=user.get('project_id')
+    )
+    return jsonify(result)
+
+
+@app.route('/api/staff/batch/logs', methods=['GET'])
+@require_staff
+def staff_batch_operation_logs(user):
+    """V28.0: 获取批量操作日志"""
+    from business_common.batch_operation_service import BatchOperationService
+    page = max(1, int(request.args.get('page', 1)))
+    page_size = min(max(1, int(request.args.get('page_size', 20))), 50)
+
+    result = BatchOperationService.get_batch_operation_logs(
+        operator_id=user.get('user_id'),
+        page=page,
+        page_size=page_size,
+        ec_id=user.get('ec_id'),
+        project_id=user.get('project_id')
+    )
+    return jsonify({'success': True, 'data': result})
+
+
+# ============ V28.0 打印服务接口 ============
+
+@app.route('/api/staff/print/logistics-companies', methods=['GET'])
+@require_staff
+def get_logistics_companies(user):
+    """V28.0: 获取物流公司列表"""
+    from business_common.print_service import PrintService
+    companies = PrintService.get_logistics_companies()
+    return jsonify({'success': True, 'data': companies})
+
+
+@app.route('/api/staff/print/express/<int:order_id>', methods=['GET'])
+@require_staff
+def generate_express_print(user, order_id):
+    """V28.0: 生成快递单打印数据"""
+    from business_common.print_service import PrintService
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+
+    where = "id=%s AND deleted=0"
+    params = [order_id]
+    if ec_id:
+        where += " AND ec_id=%s"; params.append(ec_id)
+    if project_id:
+        where += " AND project_id=%s"; params.append(project_id)
+
+    order = db.get_one(f"SELECT * FROM business_orders WHERE {where}", params)
+    if not order:
+        return jsonify({'success': False, 'msg': '订单不存在'})
+
+    express_data = PrintService.generate_express_template(order)
+    return jsonify({'success': True, 'data': express_data})
+
+
+@app.route('/api/staff/print/picking/<int:order_id>', methods=['GET'])
+@require_staff
+def generate_picking_print(user, order_id):
+    """V28.0: 生成配货单打印数据"""
+    from business_common.print_service import PrintService
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+
+    where = "id=%s AND deleted=0"
+    params = [order_id]
+    if ec_id:
+        where += " AND ec_id=%s"; params.append(ec_id)
+    if project_id:
+        where += " AND project_id=%s"; params.append(project_id)
+
+    order = db.get_one(f"SELECT * FROM business_orders WHERE {where}", params)
+    if not order:
+        return jsonify({'success': False, 'msg': '订单不存在'})
+
+    picking_data = PrintService.generate_picking_template(order)
+    return jsonify({'success': True, 'data': picking_data})
+
+
+@app.route('/api/staff/print/log', methods=['POST'])
+@require_staff
+def record_print_log(user):
+    """V28.0: 记录打印日志"""
+    from business_common.print_service import PrintService
+    data = request.get_json() or {}
+    order_id = data.get('order_id')
+    order_no = data.get('order_no', '')
+    print_type = data.get('print_type', 'express')
+    print_content = data.get('print_content', {})
+
+    if not order_id:
+        return jsonify({'success': False, 'msg': '订单ID不能为空'})
+
+    print_id = PrintService.log_print(
+        order_id=order_id,
+        order_no=order_no,
+        print_type=print_type,
+        print_content=print_content,
+        operator_id=user.get('user_id'),
+        operator_name=user.get('user_name', ''),
+        ip_address=request.remote_addr
+    )
+    return jsonify({'success': True, 'msg': '打印记录已保存', 'data': {'print_id': print_id}})
+
+
+@app.route('/api/staff/print/history/<int:order_id>', methods=['GET'])
+@require_staff
+def get_print_history(user, order_id):
+    """V28.0: 获取订单打印历史"""
+    from business_common.print_service import PrintService
+    limit = min(max(1, int(request.args.get('limit', 10))), 50)
+    history = PrintService.get_print_history(order_id, limit)
+    return jsonify({'success': True, 'data': history})
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=22312, debug=False)
+
+
+# ============ V23.0 积分商城管理（员工端发货） ============
+
+@app.route('/api/staff/points-exchanges', methods=['GET'])
+@require_staff
+def staff_get_points_exchanges(user):
+    """员工端获取积分兑换列表"""
+    from business_common.points_mall import PointsMallService
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    page = max(1, int(request.args.get('page', 1)))
+    page_size = min(max(1, int(request.args.get('page_size', 20))), 50)
+    status = request.args.get('status')
+
+    where = "e.deleted=0"
+    params = []
+    if ec_id:
+        where += " AND e.ec_id=%s"; params.append(ec_id)
+    if project_id:
+        where += " AND e.project_id=%s"; params.append(project_id)
+    if status:
+        where += " AND e.status=%s"; params.append(status)
+
+    total = db.get_total(f"SELECT COUNT(*) FROM business_points_exchanges e WHERE {where}", params)
+    offset = (page - 1) * page_size
+    items = db.get_all(
+        f"""SELECT e.id, e.exchange_no, e.user_id, e.user_name, e.goods_name, e.goods_image,
+                  e.points_price, e.quantity, e.total_points, e.status,
+                  e.address_snapshot, e.phone, e.tracking_no, e.logistics_company,
+                  e.created_at, e.shipped_at
+           FROM business_points_exchanges e
+           WHERE {where} ORDER BY e.created_at DESC LIMIT %s OFFSET %s""",
+        params + [page_size, offset]
+    )
+
+    # 统计待发货数量
+    pending_count = db.get_total(
+        f"SELECT COUNT(*) FROM business_points_exchanges e WHERE {where} AND e.status='paid'",
+        [p for p in params]
+    )
+
+    return jsonify({'success': True, 'data': {
+        'items': items or [],
+        'total': total,
+        'pending_count': pending_count,
+        'page': page,
+        'page_size': page_size
+    }})
+
+
+@app.route('/api/staff/points-exchanges/<exchange_id>/ship', methods=['POST'])
+@require_staff
+@rate_limiter.rate_limit(limit=20, window_seconds=60)
+def staff_ship_points_exchange(user, exchange_id):
+    """员工端积分兑换商品发货"""
+    from business_common.points_mall import PointsMallService
+    data = request.get_json() or {}
+    tracking_no = (data.get('tracking_no') or '').strip()
+    logistics_company = (data.get('logistics_company') or '').strip()
+
+    if not tracking_no:
+        return jsonify({'success': False, 'msg': '请填写物流单号'})
+
+    result = PointsMallService.ship_exchange(
+        exchange_id=exchange_id,
+        tracking_no=tracking_no,
+        logistics_company=logistics_company,
+        admin_user=user
+    )
+    return jsonify(result)

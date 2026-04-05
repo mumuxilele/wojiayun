@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>会员等级管理 - 管理后台</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.13/lib/theme-chalk/index.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; }
+        .container { padding: 20px; }
+        
+        /* 顶部导航 */
+        .header { background: #fff; padding: 15px 20px; border-bottom: 1px solid #e4e7ed; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 18px; color: #303133; }
+        .header-right { display: flex; align-items: center; gap: 15px; }
+        .user-info { color: #606266; font-size: 14px; }
+        
+        /* 卡片样式 */
+        .card { background: #fff; border-radius: 8px; margin-bottom: 20px; overflow: hidden; }
+        .card-header { padding: 15px 20px; border-bottom: 1px solid #e4e7ed; display: flex; justify-content: space-between; align-items: center; }
+        .card-header h2 { font-size: 16px; color: #303133; font-weight: 500; }
+        
+        /* 等级卡片 */
+        .level-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; padding: 20px; }
+        .level-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 20px; color: #fff; position: relative; overflow: hidden; }
+        .level-card.gold { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); }
+        .level-card.silver { background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%); color: #333; }
+        .level-card.bronze { background: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%); color: #333; }
+        .level-card::before { content: ''; position: absolute; top: -50%; right: -50%; width: 100%; height: 100%; background: rgba(255,255,255,0.1); border-radius: 50%; }
+        
+        .level-card .level-icon { font-size: 40px; margin-bottom: 10px; }
+        .level-card .level-name { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
+        .level-card .level-code { font-size: 12px; opacity: 0.8; margin-bottom: 15px; }
+        .level-card .level-stats { display: flex; flex-direction: column; gap: 8px; }
+        .level-card .stat-item { display: flex; justify-content: space-between; font-size: 14px; }
+        .level-card .stat-label { opacity: 0.8; }
+        .level-card .stat-value { font-weight: 500; }
+        
+        /* 统计表格 */
+        .stats-table { width: 100%; border-collapse: collapse; }
+        .stats-table th, .stats-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ebeef5; }
+        .stats-table th { background: #fafafa; color: #909399; font-weight: 500; font-size: 13px; }
+        .stats-table td { color: #606266; }
+        .stats-table tr:hover { background: #f5f7fa; }
+        
+        /* 按钮 */
+        .btn { padding: 8px 16px; border-radius: 4px; border: none; cursor: pointer; font-size: 14px; transition: all 0.3s; }
+        .btn-primary { background: #409eff; color: #fff; }
+        .btn-primary:hover { background: #66b1ff; }
+        .btn-success { background: #67c23a; color: #fff; }
+        .btn-warning { background: #e6a23c; color: #fff; }
+        .btn-danger { background: #f56c6c; color: #fff; }
+        .btn-info { background: #909399; color: #fff; }
+        
+        /* 搜索栏 */
+        .search-bar { display: flex; gap: 15px; padding: 15px 20px; background: #fafafa; border-bottom: 1px solid #e4e7ed; flex-wrap: wrap; }
+        .search-bar .input-group { display: flex; align-items: center; gap: 8px; }
+        .search-bar label { color: #909399; font-size: 14px; white-space: nowrap; }
+        .search-bar input { padding: 8px 12px; border: 1px solid #dcdfe6; border-radius: 4px; font-size: 14px; width: 200px; }
+        .search-bar input:focus { border-color: #409eff; outline: none; }
+        
+        /* 表格 */
+        .data-table { width: 100%; }
+        .data-table th { background: #fafafa; color: #606266; font-weight: 500; padding: 12px; text-align: left; font-size: 14px; border-bottom: 2px solid #e4e7ed; }
+        .data-table td { padding: 12px; border-bottom: 1px solid #ebeef5; color: #606266; font-size: 14px; }
+        .data-table tr:hover { background: #f5f7fa; }
+        
+        /* 标签 */
+        .tag { display: inline-block; padding: 3px 8px; border-radius: 3px; font-size: 12px; }
+        .tag-success { background: #f0f9eb; color: #67c23a; }
+        .tag-warning { background: #fdf6ec; color: #e6a23c; }
+        .tag-danger { background: #fef0f0; color: #f56c6c; }
+        .tag-info { background: #f4f4f5; color: #909399; }
+        
+        /* 分页 */
+        .pagination { display: flex; justify-content: flex-end; align-items: center; padding: 15px 20px; gap: 10px; }
+        
+        /* 弹窗 */
+        .dialog-body { padding: 20px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; color: #606266; margin-bottom: 8px; font-size: 14px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #dcdfe6; border-radius: 4px; font-size: 14px; }
+        .form-group textarea { min-height: 80px; resize: vertical; }
+        .form-row { display: flex; gap: 15px; }
+        .form-row .form-group { flex: 1; }
+        
+        /* 权益标签 */
+        .privilege-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+        .privilege-tag { background: #ecf5ff; color: #409eff; padding: 4px 10px; border-radius: 4px; font-size: 12px; }
+        
+        /* 空状态 */
+        .empty-state { text-align: center; padding: 60px 20px; color: #909399; }
+        .empty-state .icon { font-size: 48px; margin-bottom: 15px; }
+        
+        /* 加载 */
+        .loading { text-align: center; padding: 40px; color: #909399; }
+        
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .level-grid { grid-template-columns: 1fr; }
+            .search-bar { flex-direction: column; }
+            .search-bar input { width: 100%; }
+            .form-row { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- 顶部导航 -->
+        <div class="header">
+            <h1>🏆 会员等级管理</h1>
+            <div class="header-right">
+                <span class="user-info">当前用户：{{ userInfo.user_name || '管理员' }}</span>
+                <button class="btn btn-info" @click="goBack">返回首页</button>
+            </div>
+        </div>
+        
+        <div class="container">
+            <!-- 会员等级卡片展示 -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>会员等级体系</h2>
+                    <button class="btn btn-primary" @click="showAddDialog">新增等级</button>
+                </div>
+                <div class="level-grid" v-if="levels.length > 0">
+                    <div v-for="(level, index) in levels" :key="level.id" 
+                         class="level-card" 
+                         :class="getLevelClass(level.level_code)">
+                        <div class="level-icon">👑</div>
+                        <div class="level-name">{{ level.level_name }}</div>
+                        <div class="level-code">{{ level.level_code }}</div>
+                        <div class="level-stats">
+                            <div class="stat-item">
+                                <span class="stat-label">升级门槛</span>
+                                <span class="stat-value">¥{{ level.min_amount || 0 }}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">折扣</span>
+                                <span class="stat-value">{{ (level.discount_rate * 10).toFixed(1) }}折</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">积分倍率</span>
+                                <span class="stat-value">{{ level.points_rate }}倍</span>
+                            </div>
+                        </div>
+                        <div style="margin-top: 15px;">
+                            <button class="btn btn-warning" style="font-size: 12px; padding: 5px 10px;" @click="editLevel(level)">编辑</button>
+                        </div>
+                    </div>
+                </div>
+                <div v-else class="empty-state">
+                    <div class="icon">📊</div>
+                    <div>暂无会员等级配置</div>
+                    <button class="btn btn-primary" style="margin-top: 15px;" @click="showAddDialog">创建第一个等级</button>
+                </div>
+            </div>
+            
+            <!-- 会员统计 -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>会员等级分布统计</h2>
+                </div>
+                <table class="stats-table">
+                    <thead>
+                        <tr>
+                            <th>等级</th>
+                            <th>会员数量</th>
+                            <th>累计消费总额</th>
+                            <th>人均消费</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="stat in statistics" :key="stat.level_code">
+                            <td>{{ stat.level_name }}</td>
+                            <td>{{ stat.count }}</td>
+                            <td>¥{{ (stat.total_amount || 0).toFixed(2) }}</td>
+                            <td>¥{{ (stat.avg_amount || 0).toFixed(2) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 会员列表 -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>会员列表</h2>
+                    <div>
+                        <button class="btn btn-primary" @click="refreshData">刷新</button>
+                    </div>
+                </div>
+                <div class="search-bar">
+                    <div class="input-group">
+                        <label>手机号:</label>
+                        <input v-model="searchParams.phone" placeholder="请输入手机号" @keyup.enter="searchMembers">
+                    </div>
+                    <div class="input-group">
+                        <label>等级:</label>
+                        <select v-model="searchParams.level">
+                            <option value="">全部</option>
+                            <option v-for="l in levels" :key="l.level_code" :value="l.level_code">{{ l.level_name }}</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" @click="searchMembers">搜索</button>
+                    <button class="btn btn-info" @click="resetSearch">重置</button>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>会员ID</th>
+                            <th>姓名</th>
+                            <th>手机号</th>
+                            <th>当前等级</th>
+                            <th>累计消费</th>
+                            <th>当前积分</th>
+                            <th>注册时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="member in members" :key="member.user_id">
+                            <td>{{ member.user_id }}</td>
+                            <td>{{ member.user_name || '-' }}</td>
+                            <td>{{ member.phone || '-' }}</td>
+                            <td>
+                                <span class="tag" :class="getLevelTagClass(member.member_level)">
+                                    {{ member.member_level_name || '普通会员' }}
+                                </span>
+                            </td>
+                            <td>¥{{ (member.total_consume || 0).toFixed(2) }}</td>
+                            <td>{{ member.points || 0 }}</td>
+                            <td>{{ member.created_at ? member.created_at.substring(0, 10) : '-' }}</td>
+                            <td>
+                                <button class="btn btn-info" style="font-size: 12px; padding: 4px 8px;" @click="viewMemberDetail(member)">详情</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div v-if="members.length === 0" class="empty-state">
+                    <div class="icon">📭</div>
+                    <div>暂无会员数据</div>
+                </div>
+                <div class="pagination">
+                    <span>共 {{ totalMembers }} 条</span>
+                    <select v-model="pageSize" @change="loadMembers" style="padding: 5px;">
+                        <option :value="10">10条/页</option>
+                        <option :value="20">20条/页</option>
+                        <option :value="50">50条/页</option>
+                    </select>
+                    <button class="btn btn-info" :disabled="currentPage === 1" @click="currentPage--; loadMembers()">上一页</button>
+                    <span>{{ currentPage }} / {{ totalPages }}</span>
+                    <button class="btn btn-info" :disabled="currentPage >= totalPages" @click="currentPage++; loadMembers()">下一页</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 新增/编辑等级弹窗 -->
+        <div v-if="levelDialogVisible" class="dialog-overlay" @click.self="levelDialogVisible = false">
+            <div class="dialog" style="width: 500px;">
+                <div class="dialog-header">
+                    <h3>{{ isEdit ? '编辑等级' : '新增等级' }}</h3>
+                    <button class="dialog-close" @click="levelDialogVisible = false">&times;</button>
+                </div>
+                <div class="dialog-body">
+                    <div class="form-group">
+                        <label>等级编码 *</label>
+                        <input v-model="levelForm.level_code" placeholder="如：L1, L2, L3" :disabled="isEdit">
+                    </div>
+                    <div class="form-group">
+                        <label>等级名称 *</label>
+                        <input v-model="levelForm.level_name" placeholder="如：普通会员、铜牌会员">
+                    </div>
+                    <div class="form-group">
+                        <label>升级门槛（累计消费金额）</label>
+                        <input type="number" v-model="levelForm.min_amount" placeholder="0">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>折扣率</label>
+                            <input type="number" step="0.01" v-model="levelForm.discount_rate" placeholder="1.00">
+                            <small style="color: #909399;">1=无折扣, 0.9=9折</small>
+                        </div>
+                        <div class="form-group">
+                            <label>积分倍率</label>
+                            <input type="number" step="0.1" v-model="levelForm.points_rate" placeholder="1.0">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>权益说明（JSON格式）</label>
+                        <textarea v-model="levelForm.privileges" placeholder='["权益1", "权益2"]'></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>排序</label>
+                        <input type="number" v-model="levelForm.sort_order" placeholder="0">
+                    </div>
+                </div>
+                <div class="dialog-footer">
+                    <button class="btn btn-info" @click="levelDialogVisible = false">取消</button>
+                    <button class="btn btn-primary" @click="saveLevel">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/element-ui@2.15.13/lib/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@0.27.2/dist/axios.min.js"></script>
+    <script>
+    // XSS防护工具
+    function escapeHtml(text) {
+        if (!text) return '';
+        return text.replace(/&/g, '&amp;')
+                   .replace(/</g, '&lt;')
+                   .replace(/>/g, '&gt;')
+                   .replace(/"/g, '&quot;')
+                   .replace(/'/g, '&#039;');
+    }
+    
+    const app = new Vue({
+        el: '#app',
+        data: {
+            userInfo: {},
+            levels: [],
+            statistics: [],
+            members: [],
+            totalMembers: 0,
+            currentPage: 1,
+            pageSize: 10,
+            searchParams: {
+                phone: '',
+                level: ''
+            },
+            levelDialogVisible: false,
+            isEdit: false,
+            levelForm: {
+                id: null,
+                level_code: '',
+                level_name: '',
+                min_amount: 0,
+                discount_rate: 1.00,
+                points_rate: 1.00,
+                privileges: '[]',
+                sort_order: 0
+            }
+        },
+        computed: {
+            totalPages() {
+                return Math.ceil(this.totalMembers / this.pageSize) || 1;
+            }
+        },
+        mounted() {
+            this.checkLogin();
+            this.loadLevels();
+            this.loadStatistics();
+            this.loadMembers();
+        },
+        methods: {
+            checkLogin() {
+                const token = this.getQueryParam('access_token') || localStorage.getItem('admin_token');
+                if (!token) {
+                    this.$message.error('请先登录');
+                    setTimeout(() => window.location.href = 'index.html', 1500);
+                    return;
+                }
+                this.loadUserInfo(token);
+            },
+            getQueryParam(name) {
+                const url = new URL(window.location.href);
+                return url.searchParams.get(name);
+            },
+            async loadUserInfo(token) {
+                try {
+                    const res = await axios.get('/api/admin/userinfo?access_token=' + token);
+                    if (res.data.success) {
+                        this.userInfo = res.data.data;
+                    }
+                } catch (e) { console.error(e); }
+            },
+            async loadLevels() {
+                try {
+                    const token = this.getQueryParam('access_token') || localStorage.getItem('admin_token');
+                    const res = await axios.get('/api/admin/member-levels?access_token=' + token);
+                    if (res.data.success) {
+                        this.levels = res.data.data || [];
+                    }
+                } catch (e) {
+                    console.error('加载等级失败:', e);
+                    // 使用默认等级
+                    this.levels = [
+                        { id: 1, level_code: 'L1', level_name: '普通会员', min_amount: 0, discount_rate: 1.00, points_rate: 1.00, sort_order: 1 },
+                        { id: 2, level_code: 'L2', level_name: '铜牌会员', min_amount: 500, discount_rate: 0.95, points_rate: 1.20, sort_order: 2 },
+                        { id: 3, level_code: 'L3', level_name: '银牌会员', min_amount: 2000, discount_rate: 0.90, points_rate: 1.50, sort_order: 3 },
+                        { id: 4, level_code: 'L4', level_name: '金牌会员', min_amount: 5000, discount_rate: 0.85, points_rate: 2.00, sort_order: 4 },
+                        { id: 5, level_code: 'L5', level_name: '钻石会员', min_amount: 10000, discount_rate: 0.80, points_rate: 3.00, sort_order: 5 },
+                    ];
+                }
+            },
+            async loadStatistics() {
+                try {
+                    const token = this.getQueryParam('access_token') || localStorage.getItem('admin_token');
+                    const res = await axios.get('/api/admin/member-levels/statistics?access_token=' + token);
+                    if (res.data.success) {
+                        this.statistics = res.data.data || [];
+                    }
+                } catch (e) {
+                    console.error('加载统计失败:', e);
+                    this.statistics = [];
+                }
+            },
+            async loadMembers() {
+                try {
+                    const token = this.getQueryParam('access_token') || localStorage.getItem('admin_token');
+                    const params = new URLSearchParams({
+                        access_token: token,
+                        page: this.currentPage,
+                        page_size: this.pageSize,
+                        phone: this.searchParams.phone,
+                        level: this.searchParams.level
+                    });
+                    const res = await axios.get('/api/admin/members?' + params);
+                    if (res.data.success) {
+                        this.members = (res.data.data.items || []).map(m => ({
+                            ...m,
+                            member_level_name: this.getLevelName(m.member_level)
+                        }));
+                        this.totalMembers = res.data.data.total || 0;
+                    }
+                } catch (e) {
+                    console.error('加载会员失败:', e);
+                    this.members = [];
+                }
+            },
+            searchMembers() {
+                this.currentPage = 1;
+                this.loadMembers();
+            },
+            resetSearch() {
+                this.searchParams = { phone: '', level: '' };
+                this.currentPage = 1;
+                this.loadMembers();
+            },
+            refreshData() {
+                this.loadLevels();
+                this.loadStatistics();
+                this.loadMembers();
+                this.$message.success('刷新成功');
+            },
+            getLevelName(code) {
+                const level = this.levels.find(l => l.level_code === code);
+                return level ? level.level_name : '普通会员';
+            },
+            getLevelClass(code) {
+                if (code === 'L5') return 'gold';
+                if (code === 'L4') return 'gold';
+                if (code === 'L3') return 'silver';
+                if (code === 'L2') return 'bronze';
+                return '';
+            },
+            getLevelTagClass(code) {
+                if (code === 'L5' || code === 'L4') return 'tag-success';
+                if (code === 'L3') return 'tag-warning';
+                if (code === 'L2') return 'tag-info';
+                return 'tag-info';
+            },
+            showAddDialog() {
+                this.isEdit = false;
+                this.levelForm = {
+                    id: null,
+                    level_code: '',
+                    level_name: '',
+                    min_amount: 0,
+                    discount_rate: 1.00,
+                    points_rate: 1.00,
+                    privileges: '[]',
+                    sort_order: this.levels.length + 1
+                };
+                this.levelDialogVisible = true;
+            },
+            editLevel(level) {
+                this.isEdit = true;
+                this.levelForm = { ...level };
+                this.levelDialogVisible = true;
+            },
+            async saveLevel() {
+                if (!this.levelForm.level_code || !this.levelForm.level_name) {
+                    this.$message.error('请填写等级编码和名称');
+                    return;
+                }
+                try {
+                    const token = this.getQueryParam('access_token') || localStorage.getItem('admin_token');
+                    const res = await axios.post('/api/admin/member-levels/save?access_token=' + token, this.levelForm);
+                    if (res.data.success) {
+                        this.$message.success(this.isEdit ? '修改成功' : '创建成功');
+                        this.levelDialogVisible = false;
+                        this.loadLevels();
+                    } else {
+                        this.$message.error(res.data.msg || '操作失败');
+                    }
+                } catch (e) {
+                    this.$message.error('保存失败');
+                }
+            },
+            viewMemberDetail(member) {
+                this.$message.info('查看会员详情: ' + escapeHtml(member.user_name || member.user_id));
+            },
+            goBack() {
+                window.location.href = 'index.html?access_token=' + (this.getQueryParam('access_token') || localStorage.getItem('admin_token'));
+            }
+        }
+    });
+    </script>
+</body>
+</html>

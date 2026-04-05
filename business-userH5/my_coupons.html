@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>我的优惠券</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f5;min-height:100vh;padding-bottom:20px}
+.header{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:15px;display:flex;align-items:center;position:sticky;top:0;z-index:50}
+.header h1{font-size:18px;flex:1;text-align:center}
+.back{color:white;font-size:20px;text-decoration:none;padding:4px 8px}
+.tabs{display:flex;background:white;border-bottom:1px solid #f0f0f0;position:sticky;top:52px;z-index:40}
+.tab{flex:1;padding:12px;text-align:center;font-size:14px;color:#666;cursor:pointer;border-bottom:2px solid transparent}
+.tab.active{color:#667eea;border-bottom-color:#667eea;font-weight:600}
+.section-title{padding:12px 15px 6px;font-size:13px;color:#999;font-weight:500}
+.coupon-list{padding:0 12px}
+.coupon-card{background:white;border-radius:12px;margin-bottom:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);display:flex;position:relative}
+.coupon-card.used,.coupon-card.expired{opacity:.6}
+.coupon-left{width:100px;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 8px;flex-shrink:0}
+.coupon-left.cash{background:linear-gradient(135deg,#f093fb,#f5576c)}
+.coupon-left.discount{background:linear-gradient(135deg,#4facfe,#00f2fe)}
+.coupon-left.points{background:linear-gradient(135deg,#43e97b,#38f9d7)}
+.coupon-amount{font-size:26px;font-weight:700;color:white;line-height:1}
+.coupon-amount-unit{font-size:13px;color:rgba(255,255,255,.85);margin-top:2px}
+.coupon-right{flex:1;padding:14px 12px;min-width:0}
+.coupon-name{font-size:15px;color:#333;font-weight:600;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.coupon-condition{font-size:12px;color:#999;margin-bottom:6px}
+.coupon-footer{display:flex;align-items:center;justify-content:space-between}
+.coupon-expire{font-size:11px;color:#bbb}
+.coupon-code{font-size:11px;color:#667eea;font-family:monospace;background:#f0f4ff;padding:2px 6px;border-radius:4px}
+.coupon-status-badge{position:absolute;top:8px;right:8px;font-size:11px;padding:2px 8px;border-radius:8px}
+.badge-used{background:#f5f5f5;color:#999}
+.badge-expired{background:#fff1f0;color:#ff4d4f}
+.use-btn{padding:6px 14px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;border-radius:16px;font-size:12px;cursor:pointer;flex-shrink:0}
+.use-btn:active{transform:scale(.96)}
+/* 领券区 */
+.exchange-section{background:white;margin:0 12px 12px;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.exchange-title{font-size:15px;font-weight:600;color:#333;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.exchange-card{border:1px solid #f0f0f0;border-radius:10px;padding:12px;margin-bottom:10px;display:flex;align-items:center;gap:10px}
+.exchange-info{flex:1;min-width:0}
+.exchange-name{font-size:14px;color:#333;font-weight:500}
+.exchange-desc{font-size:12px;color:#999;margin-top:3px}
+.exchange-btn{padding:7px 14px;background:linear-gradient(135deg,#f093fb,#f5576c);color:white;border:none;border-radius:16px;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.exchange-btn:disabled{background:#ccc;cursor:not-allowed}
+.points-info{background:#fff7e6;border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.points-value{font-size:18px;font-weight:700;color:#f57c00}
+.empty{text-align:center;padding:60px 20px;color:#bbb}
+.empty-icon{font-size:48px;margin-bottom:10px}
+.loading{text-align:center;padding:30px;color:#bbb}
+</style>
+</head>
+<body>
+<div class="header">
+    <a href="javascript:history.back()" class="back">‹</a>
+    <h1>🎫 我的优惠券</h1>
+    <span style="width:32px"></span>
+</div>
+<div class="tabs">
+    <div class="tab active" data-status="unused" onclick="switchTab(this)">未使用</div>
+    <div class="tab" data-status="used" onclick="switchTab(this)">已使用</div>
+    <div class="tab" data-status="expired" onclick="switchTab(this)">已过期</div>
+    <div class="tab" data-status="exchange" onclick="switchTab(this)">积分兑换</div>
+</div>
+
+<div id="mainContent">
+    <div class="loading">加载中...</div>
+</div>
+
+<script>
+var urlParams = new URLSearchParams(location.search);
+var token = urlParams.get('access_token') || localStorage.getItem('user_token');
+var isdev = urlParams.get('isdev') || localStorage.getItem('user_isdev') || '0';
+var currentStatus = 'unused';
+var myPoints = 0;
+
+if (!token) {
+    document.body.innerHTML = '<div style="text-align:center;padding:60px;color:#999"><h2>请先登录</h2></div>';
+    throw new Error('No token');
+}
+
+if (token) {
+    localStorage.setItem('user_token', token);
+    localStorage.setItem('user_isdev', isdev);
+}
+
+function api(path) {
+    return path + (path.includes('?') ? '&' : '?') + 'access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+}
+
+function goTo(url) {
+    var sep = url.indexOf('?') >= 0 ? '&' : '?';
+    location.href = url + sep + 'access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+}
+
+function switchTab(el) {
+    document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+    el.classList.add('active');
+    currentStatus = el.dataset.status;
+    if (currentStatus === 'exchange') {
+        loadExchangePage();
+    } else {
+        loadCoupons(currentStatus);
+    }
+}
+
+function getCouponTypeText(type, value) {
+    if (type === 'cash') return { amount: '¥' + parseFloat(value||0).toFixed(0), unit: '现金券' };
+    if (type === 'discount') return { amount: parseFloat(value||0) * 10 + '折', unit: '折扣券' };
+    return { amount: parseFloat(value||0) + '积分', unit: '积分券' };
+}
+
+function renderCouponCard(c) {
+    var typeInfo = getCouponTypeText(c.coupon_type, c.coupon_discount || c.discount_value);
+    var typeClass = c.coupon_type === 'cash' ? 'cash' : c.coupon_type === 'discount' ? 'discount' : 'points';
+    var statusBadge = '';
+    if (c.status === 'used') statusBadge = '<div class="coupon-status-badge badge-used">已使用</div>';
+    if (c.status === 'expired') statusBadge = '<div class="coupon-status-badge badge-expired">已过期</div>';
+    var minStr = c.min_amount > 0 ? '满' + parseFloat(c.min_amount).toFixed(0) + '元可用' : '无门槛';
+    var expireStr = c.valid_until ? '有效期至 ' + (c.valid_until+'').substring(0,10) : '长期有效';
+    var actionBtn = c.status === 'unused' 
+        ? '<button class="use-btn" onclick="goTo(\'products.html\')">去使用</button>'
+        : '';
+    return '<div class="coupon-card ' + c.status + '">'
+        + '<div class="coupon-left ' + typeClass + '"><div class="coupon-amount">' + typeInfo.amount + '</div><div class="coupon-amount-unit">' + typeInfo.unit + '</div></div>'
+        + '<div class="coupon-right">'
+        + '<div class="coupon-name">' + (c.coupon_name || '优惠券') + '</div>'
+        + '<div class="coupon-condition">' + minStr + '</div>'
+        + '<div class="coupon-footer"><span class="coupon-expire">' + expireStr + '</span>' + actionBtn + '</div>'
+        + '<div style="margin-top:6px"><span class="coupon-code">' + (c.coupon_code || '') + '</span></div>'
+        + '</div>'
+        + statusBadge + '</div>';
+}
+
+function loadCoupons(status) {
+    document.getElementById('mainContent').innerHTML = '<div class="loading">加载中...</div>';
+    fetch(api('/api/user/coupons?status=' + status))
+    .then(function(r){ return r.json(); })
+    .then(function(d) {
+        if (!d.success || !d.data || !d.data.items || d.data.items.length === 0) {
+            var emptyText = { unused: '暂无可用优惠券', used: '暂无已使用的优惠券', expired: '暂无过期优惠券' };
+            document.getElementById('mainContent').innerHTML = 
+                '<div class="empty"><div class="empty-icon">🎫</div><p>' + (emptyText[status] || '暂无数据') + '</p></div>';
+            return;
+        }
+        var html = '<div class="section-title">' + d.data.items.length + ' 张优惠券</div><div class="coupon-list">';
+        d.data.items.forEach(function(c) { html += renderCouponCard(c); });
+        html += '</div>';
+        document.getElementById('mainContent').innerHTML = html;
+    })
+    .catch(function() {
+        document.getElementById('mainContent').innerHTML = '<div class="empty"><div class="empty-icon">😞</div><p>加载失败，请重试</p></div>';
+    });
+}
+
+function loadExchangePage() {
+    // 加载我的积分和可兑换的优惠券
+    document.getElementById('mainContent').innerHTML = '<div class="loading">加载中...</div>';
+    Promise.all([
+        fetch(api('/api/user/member')).then(function(r){ return r.json(); }),
+        fetch(api('/api/coupons/available')).then(function(r){ return r.json(); })
+    ]).then(function(results) {
+        var memberData = results[0];
+        var couponsData = results[1];
+        myPoints = (memberData.success && memberData.data) ? (memberData.data.points || 0) : 0;
+        var coupons = (couponsData.success && couponsData.data) ? (couponsData.data.items || []) : [];
+        var html = '<div class="exchange-section">'
+            + '<div class="points-info"><span style="font-size:13px;color:#666">我的积分</span><span class="points-value">' + myPoints + ' 积分</span></div>'
+            + '<div class="exchange-title">🎁 可兑换优惠券</div>';
+        if (coupons.length === 0) {
+            html += '<div style="text-align:center;padding:20px;color:#bbb">暂无可兑换的优惠券</div>';
+        } else {
+            coupons.forEach(function(c) {
+                var typeInfo = getCouponTypeText(c.coupon_type, c.discount_value);
+                var canExchange = myPoints >= (c.points_cost || 0);
+                var stockInfo = c.total_count > 0 ? ('剩余 ' + (c.total_count - (c.used_count||0)) + ' 张') : '不限量';
+                html += '<div class="exchange-card">'
+                    + '<div class="exchange-info">'
+                    + '<div class="exchange-name">' + (c.coupon_name || '') + ' <span style="font-size:12px;color:#f5576c">（' + typeInfo.amount + '）</span></div>'
+                    + '<div class="exchange-desc">' + (c.min_amount > 0 ? '满' + c.min_amount + '元可用 · ' : '') + stockInfo + '</div>'
+                    + '</div>'
+                    + '<button class="exchange-btn" ' + (canExchange ? '' : 'disabled') + ' onclick="exchangeCoupon(' + c.id + ', ' + (c.points_cost||0) + ', \'' + (c.coupon_name||'') + '\')">'
+                    + (c.points_cost || 0) + '积分兑换</button>'
+                    + '</div>';
+            });
+        }
+        html += '</div>';
+        document.getElementById('mainContent').innerHTML = html;
+    }).catch(function() {
+        document.getElementById('mainContent').innerHTML = '<div class="empty"><div class="empty-icon">😞</div><p>加载失败</p></div>';
+    });
+}
+
+function exchangeCoupon(couponId, cost, name) {
+    if (!confirm('确认使用 ' + cost + ' 积分兑换「' + name + '」？')) return;
+    fetch(api('/api/user/coupons/exchange'), {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({coupon_id: couponId})
+    }).then(function(r){ return r.json(); })
+    .then(function(d) {
+        if (d.success) {
+            alert('兑换成功！优惠券码：' + (d.data && d.data.coupon_code ? d.data.coupon_code : ''));
+            loadExchangePage();
+        } else {
+            alert(d.msg || '兑换失败');
+        }
+    }).catch(function() { alert('操作失败，请重试'); });
+}
+
+loadCoupons('unused');
+</script>
+</body>
+</html>

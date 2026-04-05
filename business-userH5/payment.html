@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>确认支付 - 社区服务</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; min-height: 100vh; }
+
+        .header { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 15px; display: flex; align-items: center; }
+        .header h1 { font-size: 18px; flex: 1; text-align: center; }
+        .back { color: white; font-size: 20px; text-decoration: none; padding: 4px 8px; }
+
+        /* 金额展示 */
+        .amount-card { background: linear-gradient(135deg, #667eea, #764ba2); color: white; margin: 0; padding: 30px 20px; text-align: center; }
+        .amount-label { font-size: 14px; opacity: .85; margin-bottom: 8px; }
+        .amount-num { font-size: 48px; font-weight: 700; }
+        .amount-num::before { content: '¥'; font-size: 24px; vertical-align: top; margin-top: 8px; display: inline-block; }
+        .order-info { font-size: 12px; opacity: .75; margin-top: 8px; }
+
+        /* 支付方式 */
+        .section { background: white; margin: 12px 0; border-radius: 0; }
+        .section-title { font-size: 13px; color: #999; padding: 12px 15px 6px; }
+        .pay-method { display: flex; align-items: center; gap: 12px; padding: 14px 15px; border-bottom: 1px solid #f5f5f5; cursor: pointer; }
+        .pay-method:last-child { border-bottom: none; }
+        .pay-method:active { background: #f9f9f9; }
+        .method-icon { font-size: 28px; width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .method-wechat { background: #07C160; }
+        .method-alipay { background: #1677FF; }
+        .method-mock { background: #722ed1; }
+        .method-info { flex: 1; }
+        .method-name { font-size: 15px; color: #333; font-weight: 500; }
+        .method-sub { font-size: 12px; color: #999; margin-top: 2px; }
+        .method-radio { width: 20px; height: 20px; border: 2px solid #ddd; border-radius: 50%; flex-shrink: 0; transition: all .2s; }
+        .method-radio.selected { background: #667eea; border-color: #667eea; }
+        .method-radio.selected::after { content: ''; display: block; width: 8px; height: 8px; background: white; border-radius: 50%; margin: 4px auto; }
+
+        /* 倒计时 */
+        .countdown-bar { background: #fff3e0; padding: 10px 15px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: #f57c00; }
+        .cd-time { font-weight: 700; font-size: 16px; }
+
+        /* 优惠信息 */
+        .discount-section { background: white; margin: 12px 0; }
+        .discount-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #f5f5f5; font-size: 14px; }
+        .discount-row:last-child { border-bottom: none; }
+        .discount-label { color: #666; }
+        .discount-value { color: #333; font-weight: 500; }
+        .discount-saved { color: #52c41a; }
+
+        /* 支付按钮 */
+        .pay-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 12px 20px; box-shadow: 0 -2px 8px rgba(0,0,0,.08); }
+        .pay-btn { width: 100%; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 25px; padding: 15px; font-size: 17px; font-weight: 700; cursor: pointer; letter-spacing: 1px; }
+        .pay-btn:disabled { background: #ccc; cursor: not-allowed; }
+        .pay-btn:active:not(:disabled) { transform: scale(.98); }
+        .pay-btn .amt { font-size: 13px; font-weight: 400; opacity: .85; margin-left: 4px; }
+
+        /* 状态提示 */
+        .result-wrap { text-align: center; padding: 60px 20px; }
+        .result-icon { font-size: 72px; margin-bottom: 16px; }
+        .result-title { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+        .result-sub { font-size: 14px; color: #999; margin-bottom: 30px; }
+        .result-btns { display: flex; gap: 12px; justify-content: center; }
+        .result-btn { padding: 12px 28px; border-radius: 22px; font-size: 15px; cursor: pointer; border: none; font-weight: 500; }
+        .result-btn-outline { background: white; color: #667eea; border: 2px solid #667eea; }
+        .result-btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .result-btn:active { transform: scale(.97); }
+
+        .loading-wrap { text-align: center; padding: 80px 20px; color: #999; font-size: 14px; }
+
+        body { padding-bottom: 80px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a class="back" id="backLink" href="javascript:history.back()">←</a>
+        <h1>确认支付</h1>
+    </div>
+
+    <div id="mainContent">
+        <div class="loading-wrap">加载中...</div>
+    </div>
+
+<script>
+var urlParams = new URLSearchParams(location.search);
+var token = urlParams.get('access_token') || localStorage.getItem('user_token') || '';
+var isdev = urlParams.get('isdev') || localStorage.getItem('user_isdev') || '0';
+var payNo = urlParams.get('pay_no') || '';
+var orderNo = urlParams.get('order_no') || '';
+var amount = parseFloat(urlParams.get('amount') || '0');
+var selectedMethod = 'mock';
+var countdown = 30 * 60; // 30分钟倒计时
+var cdTimer = null;
+var queryTimer = null;
+var isPaid = false;
+
+function api(path) { return path + '?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev; }
+function goTo(p) { location.href = p + (token ? '?access_token=' + token + '&isdev=' + isdev : ''); }
+
+function renderPage() {
+    if (!payNo || !token) {
+        document.getElementById('mainContent').innerHTML = '<div class="result-wrap"><div class="result-icon">⚠️</div><div class="result-title">参数错误</div><div class="result-sub">支付信息不完整</div></div>';
+        return;
+    }
+
+    var html = '';
+
+    // 金额区
+    html += '<div class="amount-card">';
+    html += '<div class="amount-label">待支付金额</div>';
+    html += '<div class="amount-num">' + amount.toFixed(2) + '</div>';
+    if (orderNo) html += '<div class="order-info">订单号：' + escH(orderNo) + '</div>';
+    html += '</div>';
+
+    // 倒计时
+    html += '<div class="countdown-bar" id="countdownBar">';
+    html += '<span>⏰ 支付剩余时间</span>';
+    html += '<span class="cd-time" id="cdTime">30:00</span>';
+    html += '</div>';
+
+    // 支付方式
+    html += '<div class="section">';
+    html += '<div class="section-title">选择支付方式</div>';
+    html += '<div class="pay-method" onclick="selectMethod(\'mock\')" id="method-mock">';
+    html += '<div class="method-icon method-mock">💜</div>';
+    html += '<div class="method-info"><div class="method-name">模拟支付</div><div class="method-sub">开发测试用，直接确认支付</div></div>';
+    html += '<div class="method-radio selected" id="radio-mock"></div>';
+    html += '</div>';
+    html += '<div class="pay-method" onclick="selectMethod(\'wechat\')" id="method-wechat">';
+    html += '<div class="method-icon method-wechat">💚</div>';
+    html += '<div class="method-info"><div class="method-name">微信支付</div><div class="method-sub">推荐，安全快捷</div></div>';
+    html += '<div class="method-radio" id="radio-wechat"></div>';
+    html += '</div>';
+    html += '<div class="pay-method" onclick="selectMethod(\'alipay\')" id="method-alipay">';
+    html += '<div class="method-icon method-alipay">💙</div>';
+    html += '<div class="method-info"><div class="method-name">支付宝</div><div class="method-sub">更多优惠，芝麻信用</div></div>';
+    html += '<div class="method-radio" id="radio-alipay"></div>';
+    html += '</div>';
+    html += '</div>';
+
+    // 金额明细
+    html += '<div class="discount-section">';
+    html += '<div class="discount-row"><span class="discount-label">商品金额</span><span class="discount-value">¥' + amount.toFixed(2) + '</span></div>';
+    html += '<div class="discount-row"><span class="discount-label">运费</span><span class="discount-value">免费</span></div>';
+    html += '<div class="discount-row"><span class="discount-label" style="font-weight:600;color:#333">实付金额</span><span style="font-size:18px;font-weight:700;color:#f57c00">¥' + amount.toFixed(2) + '</span></div>';
+    html += '</div>';
+
+    // 支付按钮
+    html += '<div class="pay-bar">';
+    html += '<button class="pay-btn" id="payBtn" onclick="doPay()">立即支付<span class="amt">¥' + amount.toFixed(2) + '</span></button>';
+    html += '</div>';
+
+    document.getElementById('mainContent').innerHTML = html;
+
+    // 启动倒计时
+    startCountdown();
+}
+
+function selectMethod(method) {
+    selectedMethod = method;
+    ['mock', 'wechat', 'alipay'].forEach(function(m) {
+        var r = document.getElementById('radio-' + m);
+        if (r) r.className = 'method-radio' + (m === method ? ' selected' : '');
+    });
+}
+
+function startCountdown() {
+    cdTimer = setInterval(function() {
+        countdown--;
+        if (countdown <= 0) {
+            clearInterval(cdTimer);
+            showExpired();
+            return;
+        }
+        var m = Math.floor(countdown / 60);
+        var s = countdown % 60;
+        var cdEl = document.getElementById('cdTime');
+        if (cdEl) cdEl.textContent = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+        // 最后5分钟变红
+        var bar = document.getElementById('countdownBar');
+        if (bar && countdown <= 300) bar.style.background = '#fce4ec';
+    }, 1000);
+}
+
+function showExpired() {
+    document.getElementById('mainContent').innerHTML = '<div class="result-wrap"><div class="result-icon">⏰</div><div class="result-title">支付超时</div><div class="result-sub">订单已超时取消，请重新下单</div><div class="result-btns"><button class="result-btn result-btn-primary" onclick="goTo(\'orders.html\')">查看订单</button></div></div>';
+}
+
+async function doPay() {
+    if (isPaid) return;
+    var btn = document.getElementById('payBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '支付处理中...'; }
+
+    try {
+        if (selectedMethod === 'mock') {
+            // 直接确认支付
+            var r = await fetch(api('/api/user/payments/' + payNo + '/confirm'), { method: 'POST' });
+            var d = await r.json();
+            if (d.success) {
+                clearInterval(cdTimer);
+                isPaid = true;
+                showPaySuccess();
+            } else {
+                alert(d.msg || '支付失败，请重试');
+                if (btn) { btn.disabled = false; btn.innerHTML = '立即支付<span class="amt">¥' + amount.toFixed(2) + '</span>'; }
+            }
+        } else {
+            // 微信/支付宝：提示跳转
+            alert('微信/支付宝支付需在正式环境配置，当前使用模拟支付');
+            if (btn) { btn.disabled = false; btn.innerHTML = '立即支付<span class="amt">¥' + amount.toFixed(2) + '</span>'; }
+        }
+    } catch(e) {
+        alert('支付异常，请重试');
+        if (btn) { btn.disabled = false; btn.innerHTML = '立即支付<span class="amt">¥' + amount.toFixed(2) + '</span>'; }
+    }
+}
+
+function showPaySuccess() {
+    document.getElementById('mainContent').innerHTML =
+        '<div class="result-wrap">' +
+        '<div class="result-icon">🎉</div>' +
+        '<div class="result-title" style="color:#52c41a">支付成功</div>' +
+        '<div class="result-sub">¥' + amount.toFixed(2) + ' 已支付，积分已发放</div>' +
+        '<div class="result-btns">' +
+        '<button class="result-btn result-btn-outline" onclick="goTo(\'orders.html\')">查看订单</button>' +
+        '<button class="result-btn result-btn-primary" onclick="goTo(\'products.html\')">继续购物</button>' +
+        '</div></div>';
+}
+
+function escH(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+renderPage();
+</script>
+</body>
+</html>

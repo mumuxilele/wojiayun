@@ -14,7 +14,7 @@ DB_CONFIG = {
     'host':     os.environ.get('DB_HOST', '47.98.238.209'),
     'port':     int(os.environ.get('DB_PORT', '3306')),
     'user':     os.environ.get('DB_USER', 'root'),
-    'password': os.environ.get('DB_PASSWORD', 'Wojiacloud$2023'),
+    'password': os.environ.get('DB_PASSWORD') or os.environ.get('MYSQL_PWD', ''),
     'database': os.environ.get('DB_NAME', 'visit_system'),
     'charset':  'utf8mb4',
     'connect_timeout': 10,

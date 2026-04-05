@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>商品管理 - 员工端</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; min-height: 100vh; }
+        .header { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; padding: 16px 15px; display: flex; align-items: center; gap: 12px; }
+        .back-btn { font-size: 22px; cursor: pointer; }
+        .header h1 { font-size: 18px; font-weight: 600; flex: 1; }
+        .header-action { font-size: 13px; background: rgba(255,255,255,0.25); padding: 5px 10px; border-radius: 8px; cursor: pointer; }
+
+        .search-bar { background: white; padding: 10px 15px; display: flex; gap: 8px; align-items: center; border-bottom: 1px solid #eee; }
+        .search-input { flex: 1; height: 36px; padding: 0 12px; border: 1px solid #e0e0e0; border-radius: 18px; font-size: 13px; outline: none; }
+        .search-btn { height: 36px; padding: 0 16px; background: #11998e; color: white; border: none; border-radius: 18px; font-size: 13px; cursor: pointer; }
+
+        .filter-bar { display: flex; gap: 8px; padding: 10px 15px; background: white; border-bottom: 1px solid #f0f0f0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .filter-tag { padding: 5px 14px; border-radius: 15px; font-size: 12px; white-space: nowrap; background: #f0f0f0; color: #666; cursor: pointer; border: none; flex-shrink: 0; }
+        .filter-tag.active { background: #11998e; color: white; }
+
+        /* 低库存预警 */
+        .warning-banner { margin: 10px 15px; background: #fff7e6; border: 1px solid #ffd591; border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+        .warning-banner:active { background: #fff0d0; }
+        .warning-icon { font-size: 20px; }
+        .warning-text { flex: 1; font-size: 13px; color: #d46b08; }
+        .warning-arrow { color: #fa8c16; }
+
+        /* 商品列表 */
+        .product-item { background: white; margin: 0 15px 10px; border-radius: 12px; padding: 12px; display: flex; gap: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); cursor: pointer; }
+        .product-item:active { background: #fafafa; }
+        .product-img { width: 70px; height: 70px; border-radius: 10px; background: #f5f5f5; object-fit: cover; display: flex; align-items: center; justify-content: center; font-size: 30px; flex-shrink: 0; }
+        .product-info { flex: 1; min-width: 0; }
+        .product-name { font-size: 14px; font-weight: 600; color: #333; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .product-meta { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+        .product-price { font-size: 16px; font-weight: 700; color: #f5576c; }
+        .product-category { font-size: 11px; background: #e8f5f2; color: #11998e; padding: 2px 6px; border-radius: 4px; }
+        .product-bottom { display: flex; justify-content: space-between; align-items: center; }
+        .stock-info { font-size: 12px; }
+        .stock-normal { color: #52c41a; }
+        .stock-low { color: #fa8c16; }
+        .stock-out { color: #f5222d; font-weight: 600; }
+        .product-status { font-size: 11px; padding: 2px 8px; border-radius: 4px; }
+        .status-active { background: #f6ffed; color: #52c41a; }
+        .status-inactive { background: #f5f5f5; color: #999; }
+        .sales-info { font-size: 11px; color: #999; }
+
+        /* 库存调整弹窗 */
+        .modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; display: none; align-items: flex-end; }
+        .modal-mask.show { display: flex; }
+        .modal { background: white; width: 100%; border-radius: 16px 16px 0 0; padding: 20px 20px 40px; }
+        .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; display: flex; justify-content: space-between; }
+        .modal-close { font-size: 20px; cursor: pointer; color: #999; }
+        .modal-product-name { font-size: 14px; color: #333; margin-bottom: 8px; }
+        .modal-current { font-size: 13px; color: #666; margin-bottom: 16px; }
+        .stock-form { display: flex; flex-direction: column; gap: 12px; }
+        .stock-form label { font-size: 13px; color: #555; margin-bottom: 4px; display: block; }
+        .stock-form input { width: 100%; height: 42px; padding: 0 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; outline: none; }
+        .stock-form input:focus { border-color: #11998e; }
+        .modal-btns { display: flex; gap: 10px; margin-top: 16px; }
+        .btn-cancel { flex: 1; height: 42px; background: #f5f5f5; color: #666; border: none; border-radius: 10px; font-size: 14px; cursor: pointer; }
+        .btn-confirm { flex: 2; height: 42px; background: linear-gradient(90deg, #11998e, #38ef7d); color: white; border: none; border-radius: 10px; font-size: 14px; cursor: pointer; font-weight: 600; }
+
+        .empty { text-align: center; padding: 40px 20px; color: #bbb; font-size: 14px; }
+        .load-more { text-align: center; padding: 15px; color: #11998e; font-size: 13px; cursor: pointer; }
+        .toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: rgba(0,0,0,0.75); color: white; padding: 10px 20px; border-radius: 8px; font-size: 14px; z-index: 999; display: none; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <span class="back-btn" onclick="history.back()">←</span>
+        <h1>商品管理</h1>
+        <div class="header-action" onclick="showStockWarning()">⚠️ 预警</div>
+    </div>
+
+    <div class="search-bar">
+        <input type="text" class="search-input" id="searchInput" placeholder="搜索商品名称..." onkeypress="handleSearchKey(event)">
+        <button class="search-btn" onclick="loadProducts(1)">搜索</button>
+    </div>
+
+    <div class="filter-bar">
+        <button class="filter-tag active" data-status="">全部</button>
+        <button class="filter-tag" data-status="active">在售</button>
+        <button class="filter-tag" data-status="inactive">下架</button>
+        <button class="filter-tag" data-stock="low">低库存</button>
+        <button class="filter-tag" data-stock="out">缺货</button>
+    </div>
+
+    <div id="warningBanner" style="display:none" class="warning-banner" onclick="loadStockWarning()">
+        <span class="warning-icon">⚠️</span>
+        <span class="warning-text" id="warningText">检查库存预警中...</span>
+        <span class="warning-arrow">›</span>
+    </div>
+
+    <div id="productList" style="padding-top:10px">
+        <div class="empty">加载中...</div>
+    </div>
+    <div id="loadMore" class="load-more" style="display:none" onclick="loadMore()">加载更多</div>
+
+    <!-- 库存调整弹窗 -->
+    <div class="modal-mask" id="stockModal" onclick="closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-title">调整库存 <span class="modal-close" onclick="closeStockModal()">×</span></div>
+            <div class="modal-product-name" id="modalProductName"></div>
+            <div class="modal-current" id="modalCurrentStock"></div>
+            <div class="stock-form">
+                <div>
+                    <label>操作类型</label>
+                    <select id="stockAction" style="width:100%;height:42px;padding:0 12px;border:1px solid #d9d9d9;border-radius:8px;font-size:14px;outline:none">
+                        <option value="add">补货（增加库存）</option>
+                        <option value="sub">减少库存</option>
+                        <option value="set">直接设置库存</option>
+                    </select>
+                </div>
+                <div>
+                    <label>数量</label>
+                    <input type="number" id="stockQty" min="1" placeholder="请输入数量" value="1">
+                </div>
+                <div>
+                    <label>备注（可选）</label>
+                    <input type="text" id="stockRemark" placeholder="如：进货补充">
+                </div>
+                <div class="modal-btns">
+                    <button class="btn-cancel" onclick="closeStockModal()">取消</button>
+                    <button class="btn-confirm" onclick="submitStockAdjust()">确认调整</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        var urlParams = new URLSearchParams(location.search);
+        var token = urlParams.get('access_token') || localStorage.getItem('staff_token') || '';
+        var isdev = urlParams.get('isdev') || localStorage.getItem('staff_isdev') || '0';
+        var currentPage = 1;
+        var hasMore = false;
+        var currentStatus = '';
+        var currentStock = '';
+        var currentProductId = null;
+        var currentStockVal = 0;
+
+        function apiUrl(path, extra) {
+            var url = path + '?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+            if (extra) url += '&' + extra;
+            return url;
+        }
+
+        function escapeHtml(t) {
+            if (!t) return '';
+            return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        function showToast(msg, duration) {
+            var el = document.getElementById('toast');
+            el.textContent = msg;
+            el.style.display = 'block';
+            setTimeout(function(){ el.style.display = 'none'; }, duration || 2000);
+        }
+
+        function loadProducts(page) {
+            currentPage = page || 1;
+            var keyword = document.getElementById('searchInput').value.trim();
+            var extra = 'page=' + currentPage + '&page_size=15';
+            if (keyword) extra += '&keyword=' + encodeURIComponent(keyword);
+            if (currentStatus) extra += '&status=' + currentStatus;
+            if (currentStock === 'low') extra += '&stock_max=10';
+            if (currentStock === 'out') extra += '&stock_max=0';
+
+            fetch(apiUrl('/api/staff/products', extra))
+            .then(function(r){ return r.json(); })
+            .then(function(d) {
+                if (!d.success) {
+                    document.getElementById('productList').innerHTML = '<div class="empty">加载失败，请重试</div>';
+                    return;
+                }
+                var items = (d.data && d.data.items) || d.data || [];
+                var total = (d.data && d.data.total) || items.length;
+                hasMore = items.length === 15 && items.length < total;
+
+                if (page === 1) {
+                    if (!items.length) {
+                        document.getElementById('productList').innerHTML = '<div class="empty">暂无商品</div>';
+                    } else {
+                        document.getElementById('productList').innerHTML = items.map(renderProduct).join('');
+                    }
+                } else {
+                    document.getElementById('productList').insertAdjacentHTML('beforeend', items.map(renderProduct).join(''));
+                }
+                document.getElementById('loadMore').style.display = hasMore ? 'block' : 'none';
+            });
+        }
+
+        function renderProduct(item) {
+            var stock = parseInt(item.stock) || 0;
+            var stockClass = stock <= 0 ? 'stock-out' : (stock <= 5 ? 'stock-low' : 'stock-normal');
+            var stockText = stock <= 0 ? '已售罄' : (stock <= 5 ? '库存紧张: ' + stock + '件' : '库存: ' + stock + '件');
+            var statusCls = item.status === 'active' ? 'status-active' : 'status-inactive';
+            var statusText = item.status === 'active' ? '在售' : '下架';
+            return '<div class="product-item" onclick="showStockModal(' + item.id + ',\'' + escapeHtml(item.product_name||item.name) + '\',' + stock + ')">' +
+                '<div class="product-img">' + (item.images ? '<img src="' + escapeHtml((item.images||'').split(',')[0]) + '" style="width:70px;height:70px;border-radius:10px;object-fit:cover">' : '🛒') + '</div>' +
+                '<div class="product-info">' +
+                '<div class="product-name">' + escapeHtml(item.product_name || item.name) + '</div>' +
+                '<div class="product-meta">' +
+                '<span class="product-price">¥' + parseFloat(item.price || 0).toFixed(2) + '</span>' +
+                (item.category ? '<span class="product-category">' + escapeHtml(item.category) + '</span>' : '') +
+                '</div>' +
+                '<div class="product-bottom">' +
+                '<span class="stock-info ' + stockClass + '">' + stockText + '</span>' +
+                '<div style="display:flex;gap:8px;align-items:center">' +
+                '<span class="sales-info">销量:' + (item.sales_count || 0) + '</span>' +
+                '<span class="product-status ' + statusCls + '">' + statusText + '</span>' +
+                '</div></div></div></div>';
+        }
+
+        function loadMore() {
+            loadProducts(currentPage + 1);
+        }
+
+        function handleSearchKey(e) {
+            if (e.key === 'Enter') loadProducts(1);
+        }
+
+        function showStockWarning() {
+            document.getElementById('warningBanner').style.display = 'flex';
+            loadStockWarning();
+        }
+
+        function loadStockWarning() {
+            fetch(apiUrl('/api/staff/products', 'stock_max=5&status=active&page_size=50'))
+            .then(function(r){ return r.json(); })
+            .then(function(d) {
+                var count = (d.data && d.data.total) || ((d.data && d.data.items) ? d.data.items.length : 0);
+                document.getElementById('warningText').textContent = count > 0 ?
+                    '有 ' + count + ' 个商品库存不足5件，请及时补货！' : '暂无库存预警商品';
+                document.getElementById('warningBanner').style.display = count > 0 ? 'flex' : 'none';
+            });
+        }
+
+        function showStockModal(productId, name, stock) {
+            currentProductId = productId;
+            currentStockVal = stock;
+            document.getElementById('modalProductName').textContent = name;
+            document.getElementById('modalCurrentStock').textContent = '当前库存：' + stock + ' 件';
+            document.getElementById('stockQty').value = '1';
+            document.getElementById('stockRemark').value = '';
+            document.getElementById('stockModal').classList.add('show');
+        }
+
+        function closeModal(e) {
+            if (e.target === document.getElementById('stockModal')) closeStockModal();
+        }
+
+        function closeStockModal() {
+            document.getElementById('stockModal').classList.remove('show');
+        }
+
+        function submitStockAdjust() {
+            if (!currentProductId) return;
+            var action = document.getElementById('stockAction').value;
+            var qty = parseInt(document.getElementById('stockQty').value) || 0;
+            var remark = document.getElementById('stockRemark').value.trim();
+
+            if (qty <= 0) { showToast('请输入有效数量'); return; }
+
+            var newStock = currentStockVal;
+            if (action === 'add') newStock = currentStockVal + qty;
+            else if (action === 'sub') newStock = Math.max(0, currentStockVal - qty);
+            else newStock = qty;
+
+            // 通过员工端接口调整库存（如无专用接口则调用产品查看记录）
+            fetch(apiUrl('/api/staff/products'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ product_id: currentProductId, stock: newStock, action: action, qty: qty, remark: remark })
+            })
+            .then(function(r){ return r.json(); })
+            .then(function(d) {
+                if (d.success) {
+                    showToast('库存已调整为 ' + newStock + ' 件');
+                    closeStockModal();
+                    loadProducts(1);
+                } else {
+                    showToast(d.msg || '调整失败，请重试');
+                }
+            })
+            .catch(function() {
+                showToast('网络错误，请重试');
+            });
+        }
+
+        // 筛选按钮事件
+        document.querySelectorAll('.filter-tag').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.filter-tag').forEach(function(b){ b.classList.remove('active'); });
+                btn.classList.add('active');
+                currentStatus = btn.dataset.status || '';
+                currentStock = btn.dataset.stock || '';
+                loadProducts(1);
+            });
+        });
+
+        loadProducts(1);
+        loadStockWarning();
+    </script>
+</body>
+</html>

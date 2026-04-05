@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>商品详情</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; min-height: 100vh; padding-bottom: 80px; }
+
+        .header { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 15px; display: flex; align-items: center; position: sticky; top: 0; z-index: 50; }
+        .header h1 { font-size: 18px; flex: 1; text-align: center; }
+        .back { color: white; font-size: 22px; text-decoration: none; padding: 4px 8px; }
+        .share-btn { color: white; font-size: 20px; padding: 4px 8px; cursor: pointer; }
+
+        /* 图片轮播 */
+        .img-wrap { background: white; position: relative; overflow: hidden; }
+        .img-scroll { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+        .img-scroll::-webkit-scrollbar { display: none; }
+        .img-item { min-width: 100vw; height: 280px; background: #f5f5f5; flex-shrink: 0; scroll-snap-align: start; display: flex; align-items: center; justify-content: center; }
+        .img-item img { width: 100%; height: 100%; object-fit: cover; }
+        .img-placeholder { font-size: 60px; color: #ddd; }
+        .img-dots { position: absolute; bottom: 8px; left: 0; right: 0; display: flex; justify-content: center; gap: 4px; }
+        .img-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.5); }
+        .img-dot.active { background: white; }
+
+        /* 商品基本信息 */
+        .info-block { background: white; padding: 16px; margin-bottom: 10px; }
+        .price-row { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+        .price { font-size: 26px; font-weight: 700; color: #f44336; }
+        .price::before { content: '¥'; font-size: 16px; }
+        .original-price { font-size: 14px; color: #bbb; text-decoration: line-through; }
+        .original-price::before { content: '¥'; }
+        .discount-tag { background: #f44336; color: white; font-size: 11px; padding: 2px 6px; border-radius: 3px; }
+        .product-name { font-size: 17px; font-weight: 600; color: #333; margin-bottom: 6px; line-height: 1.4; }
+        .product-meta { display: flex; align-items: center; gap: 12px; font-size: 12px; color: #999; }
+        .meta-item { display: flex; align-items: center; gap: 3px; }
+
+        /* SKU规格 */
+        .sku-block { background: white; padding: 16px; margin-bottom: 10px; }
+        .block-title { font-size: 14px; font-weight: 600; color: #333; margin-bottom: 12px; }
+        /* 规格属性分组 */
+        .spec-group { margin-bottom: 14px; }
+        .spec-group-name { font-size: 13px; color: #666; margin-bottom: 8px; font-weight: 500; }
+        .sku-list { display: flex; flex-wrap: wrap; gap: 8px; }
+        .sku-item { padding: 6px 14px; border: 1.5px solid #e0e0e0; border-radius: 8px; font-size: 13px; color: #666; cursor: pointer; position: relative; transition: all 0.15s; background: #fafafa; }
+        .sku-item:active { transform: scale(0.96); }
+        .sku-item.selected { border-color: #667eea; color: #667eea; background: #f0f2ff; font-weight: 600; }
+        .sku-item.out-stock { opacity: 0.4; cursor: not-allowed; }
+        .sku-item.out-stock::after { content: ''; position: absolute; top: 50%; left: 10%; right: 10%; height: 1px; background: #ccc; }
+        .sku-summary { margin-top: 10px; padding: 10px 12px; background: #f9f9f9; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .sku-summary-price { font-size: 18px; font-weight: 700; color: #f44336; }
+        .sku-summary-price::before { content: '¥'; font-size: 13px; }
+        .sku-summary-stock { font-size: 12px; color: #999; }
+        .sku-stock { font-size: 12px; color: #f44336; margin-top: 4px; }
+
+        /* 数量选择 */
+        .qty-block { background: white; padding: 12px 16px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+        .qty-label { font-size: 14px; color: #333; }
+        .qty-control { display: flex; align-items: center; gap: 0; }
+        .qty-btn { width: 32px; height: 32px; border: 1px solid #e0e0e0; background: #f9f9f9; font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #333; }
+        .qty-btn:first-child { border-radius: 8px 0 0 8px; }
+        .qty-btn:last-child { border-radius: 0 8px 8px 0; }
+        .qty-input { width: 44px; height: 32px; border: 1px solid #e0e0e0; border-left: none; border-right: none; text-align: center; font-size: 15px; color: #333; }
+
+        /* 门店信息 */
+        .shop-block { background: white; padding: 14px 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; }
+        .shop-icon { width: 40px; height: 40px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+        .shop-info { flex: 1; }
+        .shop-name { font-size: 14px; font-weight: 500; color: #333; }
+        .shop-address { font-size: 12px; color: #999; margin-top: 2px; }
+        .shop-arrow { color: #ccc; font-size: 18px; }
+
+        /* 商品详情/描述 */
+        .desc-block { background: white; padding: 16px; margin-bottom: 10px; }
+        .desc-content { font-size: 14px; color: #555; line-height: 1.7; white-space: pre-wrap; }
+
+        /* 评价区 */
+        .review-block { background: white; margin-bottom: 10px; }
+        .review-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid #f5f5f5; }
+        .review-title { font-size: 14px; font-weight: 600; color: #333; }
+        .review-avg { font-size: 22px; font-weight: 700; color: #f44336; }
+        .review-more { font-size: 12px; color: #667eea; text-decoration: none; }
+        .review-item { padding: 12px 16px; border-bottom: 1px solid #f8f8f8; }
+        .review-item:last-child { border-bottom: none; }
+        .review-user { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .review-avatar { width: 28px; height: 28px; border-radius: 50%; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #999; }
+        .review-name { font-size: 13px; color: #666; }
+        .review-date { font-size: 11px; color: #bbb; margin-left: auto; }
+        .stars { color: #ffc107; font-size: 13px; letter-spacing: 1px; }
+        .review-text { font-size: 13px; color: #333; line-height: 1.6; }
+        .review-empty { text-align: center; padding: 30px; color: #bbb; font-size: 13px; }
+
+        /* 底部操作栏 */
+        .bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 10px 16px; display: flex; gap: 10px; box-shadow: 0 -2px 8px rgba(0,0,0,0.08); z-index: 100; }
+        .btn-fav { width: 48px; height: 48px; border-radius: 50%; border: 1px solid #e0e0e0; background: white; font-size: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all 0.2s; }
+        .btn-fav.active { border-color: #f44336; color: #f44336; background: #fff5f5; }
+        .btn-cart { flex: 1; height: 48px; border-radius: 24px; border: none; background: linear-gradient(135deg, #ff9800, #f44336); color: white; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn-buy { flex: 1; height: 48px; border-radius: 24px; border: none; background: linear-gradient(135deg, #667eea, #764ba2); color: white; font-size: 15px; font-weight: 600; cursor: pointer; }
+        .btn-cart:active, .btn-buy:active { opacity: 0.88; transform: scale(0.98); }
+
+        /* 加购成功浮层 */
+        .toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); background: rgba(0,0,0,0.75); color: white; padding: 12px 24px; border-radius: 12px; font-size: 14px; opacity: 0; transition: all 0.25s; z-index: 500; pointer-events: none; }
+        .toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+        /* 加载状态 */
+        .loading-wrap { display: flex; align-items: center; justify-content: center; padding: 60px 20px; flex-direction: column; gap: 12px; }
+        .loading-spinner { width: 40px; height: 40px; border: 3px solid #f0f0f0; border-top-color: #667eea; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .error-wrap { text-align: center; padding: 60px 20px; color: #999; }
+        .error-wrap .icon { font-size: 48px; margin-bottom: 12px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a class="back" onclick="history.back()">‹</a>
+        <h1>商品详情</h1>
+        <span class="share-btn" onclick="shareProduct()">⎘</span>
+    </div>
+
+    <div id="loadingWrap" class="loading-wrap">
+        <div class="loading-spinner"></div>
+        <div style="color:#999;font-size:13px">加载中...</div>
+    </div>
+
+    <div id="mainContent" style="display:none">
+        <!-- 图片轮播 -->
+        <div class="img-wrap">
+            <div class="img-scroll" id="imgScroll"></div>
+            <div class="img-dots" id="imgDots"></div>
+        </div>
+
+        <!-- 价格/名称 -->
+        <div class="info-block">
+            <div class="price-row">
+                <span class="price" id="prodPrice">0</span>
+                <span class="original-price" id="prodOriginal" style="display:none">0</span>
+                <span class="discount-tag" id="discountTag" style="display:none"></span>
+            </div>
+            <div class="product-name" id="prodName"></div>
+            <div class="product-meta">
+                <span class="meta-item">🔥 <span id="salesCount">0</span>件已售</span>
+                <span class="meta-item">⭐ <span id="avgRating">暂无评分</span></span>
+                <span class="meta-item">📦 库存 <span id="stockCount">0</span></span>
+            </div>
+        </div>
+
+        <!-- SKU规格 -->
+        <div class="sku-block" id="skuBlock" style="display:none">
+            <div class="block-title">选择规格</div>
+            <!-- 规格属性分组 -->
+            <div id="specGroups"></div>
+            <!-- 当前选中SKU汇总 -->
+            <div class="sku-summary" id="skuSummary" style="display:none">
+                <span>已选：<span id="skuSelectedName" style="color:#333"></span></span>
+                <span class="sku-summary-price" id="skuSummaryPrice">0</span>
+            </div>
+            <div class="sku-summary" id="skuNoSelect" style="display:none;background:#fff7e6;border:1px solid #ffe58f">
+                <span style="color:#fa8c16;font-size:13px">⚠️ 请选择规格</span>
+                <span style="font-size:12px;color:#bbb">价格将随规格变化</span>
+            </div>
+            <div class="sku-stock" id="skuStock"></div>
+        </div>
+
+        <!-- 数量 -->
+        <div class="qty-block">
+            <span class="qty-label">购买数量</span>
+            <div class="qty-control">
+                <div class="qty-btn" onclick="changeQty(-1)">−</div>
+                <input type="number" class="qty-input" id="qtyInput" value="1" min="1" max="99" readonly>
+                <div class="qty-btn" onclick="changeQty(1)">+</div>
+            </div>
+        </div>
+
+        <!-- 门店 -->
+        <div class="shop-block" id="shopBlock">
+            <div class="shop-icon">🏪</div>
+            <div class="shop-info">
+                <div class="shop-name" id="shopName">加载中...</div>
+                <div class="shop-address" id="shopAddress"></div>
+            </div>
+            <span class="shop-arrow">›</span>
+        </div>
+
+        <!-- 商品描述 -->
+        <div class="desc-block">
+            <div class="block-title">商品描述</div>
+            <div class="desc-content" id="prodDesc">暂无描述</div>
+        </div>
+
+        <!-- 评价区 -->
+        <div class="review-block">
+            <div class="review-header">
+                <span class="review-title">用户评价</span>
+                <span class="review-avg" id="reviewAvg"></span>
+                <a class="review-more" id="reviewMoreBtn" href="#">查看全部</a>
+            </div>
+            <div id="reviewList">
+                <div class="review-empty">暂无评价</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部操作栏 -->
+    <div class="bottom-bar" id="bottomBar" style="display:none">
+        <div class="btn-fav" id="favBtn" onclick="toggleFavorite()">🤍</div>
+        <button class="btn-cart" onclick="addToCart()">🛒 加入购物车</button>
+        <button class="btn-buy" onclick="buyNow()">立即购买</button>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const urlParams = new URLSearchParams(location.search);
+        const productId = urlParams.get('id');
+        const token = urlParams.get('access_token') || localStorage.getItem('access_token') || '';
+        const API_BASE = location.origin;
+
+        let product = null;
+        let selectedSkuId = null;
+        let isFavorite = false;
+        let qty = 1;
+
+        function getHeaders() {
+            return { 'Content-Type': 'application/json', 'Token': token };
+        }
+
+        async function loadProduct() {
+            if (!productId) {
+                showError('缺少商品ID');
+                return;
+            }
+            try {
+                const res = await fetch(`${API_BASE}/api/products/${productId}?access_token=${token}`);
+                const data = await res.json();
+                if (!data.success) { showError(data.msg || '商品不存在'); return; }
+                product = data.data;
+                renderProduct();
+                loadReviews();
+                checkFavorite();
+            } catch (e) {
+                showError('加载失败，请刷新重试');
+            }
+        }
+
+        function renderProduct() {
+            document.getElementById('loadingWrap').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+            document.getElementById('bottomBar').style.display = 'flex';
+            document.title = product.product_name || '商品详情';
+
+            // 图片
+            let images = [];
+            try {
+                images = product.images ? (typeof product.images === 'string' ? JSON.parse(product.images) : product.images) : [];
+            } catch(e) { images = []; }
+            const imgScroll = document.getElementById('imgScroll');
+            const imgDots = document.getElementById('imgDots');
+            if (images.length === 0) {
+                imgScroll.innerHTML = `<div class="img-item"><span class="img-placeholder">🛍️</span></div>`;
+            } else {
+                imgScroll.innerHTML = images.map(url =>
+                    `<div class="img-item"><img src="${url}" onerror="this.parentNode.innerHTML='<span class=\\"img-placeholder\\">🛍️</span>'" alt="商品图"></div>`
+                ).join('');
+                imgDots.innerHTML = images.map((_, i) =>
+                    `<div class="img-dot${i === 0 ? ' active' : ''}"></div>`
+                ).join('');
+                // 监听滚动更新dots
+                imgScroll.addEventListener('scroll', function() {
+                    const idx = Math.round(this.scrollLeft / window.innerWidth);
+                    document.querySelectorAll('.img-dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+                });
+            }
+
+            // 价格
+            const price = parseFloat(product.price || 0);
+            const origPrice = parseFloat(product.original_price || 0);
+            document.getElementById('prodPrice').textContent = price.toFixed(2);
+            if (origPrice > price) {
+                document.getElementById('prodOriginal').style.display = 'inline';
+                document.getElementById('prodOriginal').textContent = origPrice.toFixed(2);
+                const disc = Math.round((1 - price / origPrice) * 10);
+                if (disc > 0) {
+                    document.getElementById('discountTag').style.display = 'inline';
+                    document.getElementById('discountTag').textContent = `${disc}折`;
+                }
+            }
+
+            // 名称、销量、库存
+            document.getElementById('prodName').textContent = product.product_name || '';
+            document.getElementById('salesCount').textContent = product.sales_count || 0;
+            document.getElementById('stockCount').textContent = product.stock || 0;
+
+            // 描述
+            document.getElementById('prodDesc').textContent = product.description || '暂无描述';
+
+            // 门店
+            if (product.shop_name) {
+                document.getElementById('shopName').textContent = product.shop_name;
+                document.getElementById('shopAddress').textContent = product.shop_address || '';
+            }
+
+            // SKU - 规格属性分组展示
+            const skus = product.skus || [];
+            if (skus.length > 0) {
+                document.getElementById('skuBlock').style.display = 'block';
+                document.getElementById('skuNoSelect').style.display = 'flex';
+
+                // 解析规格属性，构建分组
+                const specMap = {};  // {specName: [{value, skuIds}]}
+                skus.forEach(sku => {
+                    let specs = {};
+                    try { specs = sku.specs ? (typeof sku.specs === 'string' ? JSON.parse(sku.specs) : sku.specs) : {}; } catch(e) {}
+                    Object.entries(specs).forEach(([k, v]) => {
+                        if (!specMap[k]) specMap[k] = {};
+                        if (!specMap[k][v]) specMap[k][v] = [];
+                        specMap[k][v].push(sku.id);
+                    });
+                });
+
+                const container = document.getElementById('specGroups');
+                const hasSpecs = Object.keys(specMap).length > 0;
+
+                if (hasSpecs) {
+                    // 多规格属性分组展示
+                    window._selectedSpecs = {};
+                    container.innerHTML = Object.entries(specMap).map(([specName, values]) => `
+                        <div class="spec-group">
+                            <div class="spec-group-name">${specName}</div>
+                            <div class="sku-list">
+                                ${Object.entries(values).map(([val, skuIds]) => {
+                                    const hasStock = skuIds.some(id => (skus.find(s => s.id == id)?.stock || 0) > 0);
+                                    return `<div class="sku-item${hasStock ? '' : ' out-stock'}"
+                                        data-spec-name="${specName}" data-spec-value="${val}"
+                                        onclick="selectSpec(this,'${specName}','${val}')">
+                                        ${val}
+                                    </div>`;
+                                }).join('')}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    // 无规格属性，直接展示SKU名称
+                    container.innerHTML = `<div class="spec-group"><div class="sku-list">${
+                        skus.map(sku => `
+                            <div class="sku-item${sku.stock <= 0 ? ' out-stock' : ''}"
+                                 data-sku-id="${sku.id}" data-price="${sku.price}" data-stock="${sku.stock}"
+                                 onclick="selectSkuDirect(this,${sku.id},${sku.price},${sku.stock})">
+                                ${sku.sku_name}${sku.stock <= 0 ? '<br><small>已售罄</small>' : ''}
+                            </div>`).join('')
+                    }</div></div>`;
+                }
+            }
+        }
+
+        // 无规格属性时直接选SKU
+        function selectSkuDirect(el, skuId, price, stock) {
+            if (stock <= 0) { showToast('该规格已售罄'); return; }
+            document.querySelectorAll('[data-sku-id]').forEach(e => e.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedSkuId = skuId;
+            updateSkuSummary(el.textContent.trim(), price, stock);
+        }
+
+        // 规格属性选择联动
+        function selectSpec(el, specName, specValue) {
+            if (el.classList.contains('out-stock')) { showToast('该规格已售罄'); return; }
+            el.closest('.spec-group').querySelectorAll('.sku-item').forEach(e => e.classList.remove('selected'));
+            el.classList.add('selected');
+            if (!window._selectedSpecs) window._selectedSpecs = {};
+            window._selectedSpecs[specName] = specValue;
+
+            const skus = product.skus || [];
+            const matched = skus.filter(sku => {
+                let specs = {};
+                try { specs = sku.specs ? (typeof sku.specs === 'string' ? JSON.parse(sku.specs) : sku.specs) : {}; } catch(e) {}
+                return Object.entries(window._selectedSpecs).every(([k, v]) => specs[k] === v);
+            });
+
+            if (matched.length === 1 && matched[0].stock > 0) {
+                selectedSkuId = matched[0].id;
+                const skuNameParts = Object.values(window._selectedSpecs).join(' ');
+                updateSkuSummary(skuNameParts, matched[0].price, matched[0].stock);
+            } else if (matched.length === 1 && matched[0].stock <= 0) {
+                selectedSkuId = null;
+                document.getElementById('skuSummary').style.display = 'none';
+                document.getElementById('skuNoSelect').style.display = 'flex';
+                document.getElementById('skuNoSelect').querySelector('span').textContent = '😢 该组合已售罄';
+            } else {
+                selectedSkuId = null;
+                document.getElementById('skuSummary').style.display = 'none';
+                document.getElementById('skuNoSelect').style.display = 'flex';
+                document.getElementById('skuNoSelect').querySelector('span').textContent = '⚠️ 请继续选择规格';
+            }
+        }
+
+        function updateSkuSummary(name, price, stock) {
+            document.getElementById('skuNoSelect').style.display = 'none';
+            document.getElementById('skuSummary').style.display = 'flex';
+            document.getElementById('skuSelectedName').textContent = name;
+            document.getElementById('skuSummaryPrice').textContent = parseFloat(price).toFixed(2);
+            document.getElementById('prodPrice').textContent = parseFloat(price).toFixed(2);
+            document.getElementById('stockCount').textContent = stock;
+            document.getElementById('skuStock').textContent = `库存：${stock}件`;
+            qty = 1;
+            document.getElementById('qtyInput').value = 1;
+        }
+
+        function changeQty(delta) {
+            const maxStock = selectedSkuId
+                ? parseInt(document.querySelector('.sku-item.selected')?.dataset.stock || 99)
+                : parseInt(product?.stock || 99);
+            qty = Math.max(1, Math.min(99, Math.min(maxStock, qty + delta)));
+            document.getElementById('qtyInput').value = qty;
+        }
+
+        async function checkFavorite() {
+            if (!token) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/user/favorites/check?type=product&id=${productId}&access_token=${token}`);
+                const data = await res.json();
+                isFavorite = data.success && data.data?.is_favorite;
+                updateFavBtn();
+            } catch(e) {}
+        }
+
+        function updateFavBtn() {
+            const btn = document.getElementById('favBtn');
+            btn.textContent = isFavorite ? '❤️' : '🤍';
+            btn.classList.toggle('active', isFavorite);
+        }
+
+        async function toggleFavorite() {
+            if (!token) { showToast('请先登录'); return; }
+            try {
+                if (isFavorite) {
+                    await fetch(`${API_BASE}/api/user/favorites/product/${productId}?access_token=${token}`, { method: 'DELETE' });
+                    isFavorite = false;
+                    showToast('已取消收藏');
+                } else {
+                    await fetch(`${API_BASE}/api/user/favorites?access_token=${token}`, {
+                        method: 'POST',
+                        headers: getHeaders(),
+                        body: JSON.stringify({ target_type: 'product', target_id: productId })
+                    });
+                    isFavorite = true;
+                    showToast('❤️ 已收藏');
+                }
+                updateFavBtn();
+            } catch(e) { showToast('操作失败'); }
+        }
+
+        async function addToCart() {
+            if (!token) { showToast('请先登录'); return; }
+            if (product?.skus?.length > 0 && !selectedSkuId) {
+                showToast('请先选择规格');
+                document.getElementById('skuBlock').scrollIntoView({ behavior: 'smooth' });
+                return;
+            }
+            try {
+                const res = await fetch(`${API_BASE}/api/user/cart?access_token=${token}`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ product_id: productId, quantity: qty, sku_id: selectedSkuId || null })
+                });
+                const data = await res.json();
+                showToast(data.success ? '🛒 已加入购物车' : (data.msg || '加入失败'));
+            } catch(e) { showToast('加入购物车失败'); }
+        }
+
+        function buyNow() {
+            if (!token) { showToast('请先登录'); return; }
+            if (product?.skus?.length > 0 && !selectedSkuId) {
+                showToast('请先选择规格');
+                document.getElementById('skuBlock').scrollIntoView({ behavior: 'smooth' });
+                return;
+            }
+            // 直接跳转到结算确认页（V30.0）
+            const params = new URLSearchParams({
+                access_token: token,
+                isdev: new URLSearchParams(location.search).get('isdev') || '0',
+                product_id: productId,
+                qty: qty,
+                sku_id: selectedSkuId || ''
+            });
+            location.href = `checkout.html?${params.toString()}`;
+        }
+
+        async function loadReviews() {
+            try {
+                const res = await fetch(`${API_BASE}/api/reviews?target_type=product&target_id=${productId}&page_size=3`);
+                const data = await res.json();
+                const items = data.data?.items || [];
+                const total = data.data?.total || 0;
+                const avg = data.data?.avg_rating;
+
+                if (avg) document.getElementById('reviewAvg').textContent = `${avg}分`;
+                document.getElementById('avgRating').textContent = avg ? `${avg}分` : '暂无评分';
+
+                // 更新查看全部按钮
+                document.getElementById('reviewMoreBtn').textContent = total > 0 ? `查看全部 ${total} 条 ›` : '暂无评价';
+                document.getElementById('reviewMoreBtn').href = total > 0 ? `#reviews` : '#';
+
+                const container = document.getElementById('reviewList');
+                if (items.length === 0) {
+                    container.innerHTML = '<div class="review-empty">暂无评价，快来抢先评价吧 ✨</div>';
+                } else {
+                    container.innerHTML = items.map(r => `
+                        <div class="review-item">
+                            <div class="review-user">
+                                <div class="review-avatar">${(r.user_name || '匿').charAt(0)}</div>
+                                <span class="review-name">${r.is_anonymous ? '匿名用户' : (r.user_name || '用户')}</span>
+                                <span class="review-date">${(r.created_at || '').substring(0,10)}</span>
+                            </div>
+                            <div class="stars">${'★'.repeat(r.rating || 0)}${'☆'.repeat(5 - (r.rating || 0))}</div>
+                            <div class="review-text" style="margin-top:4px">${r.content || ''}</div>
+                        </div>
+                    `).join('');
+                }
+            } catch(e) {}
+        }
+
+        function shareProduct() {
+            if (navigator.share) {
+                navigator.share({ title: product?.product_name || '商品', url: location.href });
+            } else {
+                showToast('复制链接到剪贴板分享');
+            }
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2200);
+        }
+
+        function showError(msg) {
+            document.getElementById('loadingWrap').innerHTML = `<div class="error-wrap"><div class="icon">😕</div><div>${msg}</div><br><a href="products.html?access_token=${token}" style="color:#667eea;font-size:13px">返回商城</a></div>`;
+        }
+
+        loadProduct();
+    </script>
+</body>
+</html>

@@ -81,6 +81,11 @@
         .badge-silver { background: #c0c0c0; color: white; }
         .badge-gold { background: #ffd700; color: #333; }
         .badge-platinum { background: #e5e4e2; color: #333; }
+        /* 角标样式 */
+        .menu-item { position: relative; }
+        .menu-badge { position: absolute; top: 6px; right: 6px; background: #f5222d; color: white; font-size: 10px; min-width: 16px; height: 16px; line-height: 16px; border-radius: 8px; padding: 0 4px; text-align: center; display: none; }
+        /* 签到打卡按钮高亮 */
+        .menu-item.highlight { background: linear-gradient(135deg, #fff7e6, #fffbe6); border: 1px solid #ffe58f; }
     </style>
 </head>
 <body>
@@ -136,6 +141,53 @@
         <div class="menu-item" onclick="goTo('bookings.html')">
             <span class="menu-icon">📅</span>
             <div class="menu-text">场馆预约</div>
+        </div>
+        <div class="menu-item" onclick="goTo('products.html')">
+            <span class="menu-icon">🏪</span>
+            <div class="menu-text">商品商城</div>
+        </div>
+        <div class="menu-item" onclick="goTo('cart.html')">
+            <span class="menu-icon">🛍️</span>
+            <div class="menu-text">购物车</div>
+        </div>
+        <div class="menu-item" onclick="goTo('notifications.html')">
+            <span class="menu-badge" id="notifBadge"></span>
+            <span class="menu-icon">🔔</span>
+            <div class="menu-text">消息通知</div>
+        </div>
+        <div class="menu-item" onclick="goTo('feedback.html')">
+            <span class="menu-icon">💬</span>
+            <div class="menu-text">意见反馈</div>
+        </div>
+        <div class="menu-item" onclick="goTo('member.html')">
+            <span class="menu-icon">💎</span>
+            <div class="menu-text">会员中心</div>
+        </div>
+        <div class="menu-item" onclick="goTo('my_coupons.html')">
+            <span class="menu-badge" id="couponBadge"></span>
+            <span class="menu-icon">🎫</span>
+            <div class="menu-text">优惠券</div>
+        </div>
+        <div class="menu-item highlight" onclick="goTo('checkin.html')">
+            <span class="menu-badge" id="checkinBadge" style="background:#52c41a"></span>
+            <span class="menu-icon">✅</span>
+            <div class="menu-text">每日签到</div>
+        </div>
+        <div class="menu-item" onclick="goTo('favorites.html')">
+            <span class="menu-icon">❤️</span>
+            <div class="menu-text">我的收藏</div>
+        </div>
+        <div class="menu-item" onclick="goTo('shops.html')">
+            <span class="menu-icon">🏪</span>
+            <div class="menu-text">附近门店</div>
+        </div>
+        <div class="menu-item" onclick="goTo('promotions.html')">
+            <span class="menu-icon">🔥</span>
+            <div class="menu-text">限时促销</div>
+        </div>
+        <div class="menu-item" onclick="goTo('addresses.html')">
+            <span class="menu-icon">📍</span>
+            <div class="menu-text">收货地址</div>
         </div>
     </div>
 
@@ -372,6 +424,43 @@
         loadRecentOrders();
         checkNotifications();
         checkUnpaidBookings();
+        loadBadges();
+
+        // 加载角标（未读消息数、未用优惠券数、今日是否已签到）
+        function loadBadges() {
+            // 未读通知数角标
+            fetch('/api/user/notifications?page=1&page_size=1&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev)
+            .then(function(r){return r.json()})
+            .then(function(d){
+                if(d.success && d.data) {
+                    var cnt = d.data.unread_count || 0;
+                    var el = document.getElementById('notifBadge');
+                    if(cnt > 0) { el.textContent = cnt > 99 ? '99+' : cnt; el.style.display = 'block'; }
+                }
+            }).catch(function(){});
+            
+            // 未用优惠券数角标
+            fetch('/api/user/stats?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev)
+            .then(function(r){return r.json()})
+            .then(function(d){
+                if(d.success && d.data) {
+                    var cnt = d.data.unused_coupons || 0;
+                    var el = document.getElementById('couponBadge');
+                    if(cnt > 0) { el.textContent = cnt > 99 ? '99+' : cnt; el.style.display = 'block'; }
+                }
+            }).catch(function(){});
+
+            // 今日签到检测（未签到则显示红点）
+            fetch('/api/user/checkin/status?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev)
+            .then(function(r){return r.json()})
+            .then(function(d){
+                if(d.success && d.data && !d.data.checked_today) {
+                    var el = document.getElementById('checkinBadge');
+                    el.textContent = '签到';
+                    el.style.display = 'block';
+                }
+            }).catch(function(){});
+        }
     </script>
 </body>
 </html>

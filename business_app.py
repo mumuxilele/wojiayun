@@ -1,29 +1,25 @@
 #!/usr/bin/env python3
 """
-社区商业管理系统 - 后端API
+社区商业管理系统 - 后端API (Legacy - 请使用 business-userH5/app.py)
+安全加固: V20.0 - 移除硬编码密码，使用公共配置模块
 """
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import pymysql
 import datetime
 import json
 import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from business_common import config
+from business_common import db as db_module
+import pymysql
 
 app = Flask(__name__)
 CORS(app)
 
-# 数据库配置
-DB_CONFIG = {
-    'host': '47.98.238.209',
-    'port': 3306,
-    'user': 'root',
-    'password': 'Wojiacloud$2023',
-    'database': 'visit_system',
-    'charset': 'utf8mb4'
-}
-
 def get_db():
-    return pymysql.connect(**DB_CONFIG)
+    return db_module.get_db()
 
 def success(data=None, msg='success'):
     return jsonify({'success': True, 'msg': msg, 'data': data})
@@ -533,4 +529,4 @@ def health():
     return success({'status': 'ok', 'module': 'business'})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=22311, debug=True)
+    app.run(host='0.0.0.0', port=config.PORTS.get('user', 22311), debug=False)

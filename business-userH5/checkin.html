@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>每日签到 - 社区服务</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; min-height: 100vh; }
+        
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px 15px; display: flex; align-items: center; gap: 12px; }
+        .header a { color: white; text-decoration: none; font-size: 18px; }
+        .header h2 { font-size: 18px; font-weight: 600; }
+        
+        .checkin-card { background: white; margin: 15px; border-radius: 16px; padding: 25px; text-align: center; box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+        .checkin-title { font-size: 18px; color: #333; font-weight: 600; margin-bottom: 8px; }
+        .checkin-subtitle { font-size: 13px; color: #999; margin-bottom: 20px; }
+        
+        .checkin-btn { width: 100px; height: 100px; border-radius: 50%; border: none; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.3s; margin: 0 auto 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .checkin-btn.available { background: linear-gradient(135deg, #667eea, #764ba2); color: white; box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4); }
+        .checkin-btn.available:active { transform: scale(0.95); }
+        .checkin-btn.done { background: #f0f0f0; color: #bbb; }
+        .checkin-btn .icon { font-size: 32px; margin-bottom: 4px; }
+        .checkin-btn .text { font-size: 14px; }
+        
+        .stats-row { display: flex; justify-content: center; gap: 30px; margin-top: 15px; }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 24px; font-weight: 700; color: #667eea; }
+        .stat-label { font-size: 12px; color: #999; margin-top: 2px; }
+        
+        .week-section { background: white; margin: 0 15px 15px; border-radius: 12px; padding: 15px; }
+        .section-title { font-size: 15px; font-weight: 600; color: #333; margin-bottom: 12px; }
+        .week-grid { display: flex; justify-content: space-between; gap: 6px; }
+        .week-day { flex: 1; text-align: center; }
+        .week-date { font-size: 11px; color: #999; margin-bottom: 6px; }
+        .week-circle { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 14px; }
+        .week-circle.checked { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .week-circle.unchecked { background: #f0f0f0; color: #ccc; }
+        .week-circle.today { border: 2px solid #667eea; background: #f8f9ff; color: #667eea; }
+        .week-points { font-size: 10px; color: #f5576c; margin-top: 4px; }
+        
+        .reward-preview { background: white; margin: 0 15px 15px; border-radius: 12px; padding: 15px; }
+        .reward-grid { display: flex; justify-content: space-between; gap: 6px; }
+        .reward-item { flex: 1; text-align: center; padding: 10px 4px; border-radius: 8px; background: #fafafa; }
+        .reward-item.active { background: #f0edff; border: 1px solid #667eea; }
+        .reward-day { font-size: 12px; color: #666; margin-bottom: 4px; }
+        .reward-pts { font-size: 14px; font-weight: 700; color: #f5576c; }
+        .reward-bonus { font-size: 10px; color: #667eea; margin-top: 2px; }
+        
+        .rank-section { background: white; margin: 0 15px 15px; border-radius: 12px; padding: 15px; }
+        .rank-item { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid #f5f5f5; }
+        .rank-item:last-child { border-bottom: none; }
+        .rank-num { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; margin-right: 10px; flex-shrink: 0; }
+        .rank-1 { background: #ffd700; color: #333; }
+        .rank-2 { background: #c0c0c0; color: #333; }
+        .rank-3 { background: #cd7f32; color: white; }
+        .rank-normal { background: #f0f0f0; color: #999; }
+        .rank-info { flex: 1; }
+        .rank-name { font-size: 14px; color: #333; font-weight: 500; }
+        .rank-level { font-size: 11px; color: #999; }
+        .rank-days { font-size: 14px; color: #667eea; font-weight: 600; text-align: right; }
+        
+        .toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.75); color: white; padding: 15px 30px; border-radius: 12px; font-size: 15px; z-index: 1000; display: none; }
+        .loading { display: flex; align-items: center; justify-content: center; padding: 20px; color: #999; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="index.html" id="backLink">←</a>
+        <h2>✅ 每日签到</h2>
+    </div>
+    
+    <div class="checkin-card">
+        <div class="checkin-title" id="checkinTitle">每日签到</div>
+        <div class="checkin-subtitle" id="checkinSubtitle">连续签到获取更多积分奖励</div>
+        <button class="checkin-btn available" id="checkinBtn" onclick="doCheckin()">
+            <span class="icon">✅</span>
+            <span class="text" id="checkinText">签到</span>
+        </button>
+        <div class="stats-row">
+            <div class="stat-item">
+                <div class="stat-value" id="continuousDays">0</div>
+                <div class="stat-label">连续签到</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="monthDays">0</div>
+                <div class="stat-label">本月签到</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalDays">0</div>
+                <div class="stat-label">累计签到</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="week-section">
+        <div class="section-title">近7天签到</div>
+        <div class="week-grid" id="weekGrid"></div>
+    </div>
+    
+    <div class="reward-preview">
+        <div class="section-title">连续签到奖励</div>
+        <div class="reward-grid" id="rewardGrid"></div>
+    </div>
+    
+    <div class="rank-section">
+        <div class="section-title">本月签到排行</div>
+        <div id="rankList"><div class="loading">加载中...</div></div>
+    </div>
+    
+    <div class="toast" id="toast"></div>
+
+    <script>
+        var urlParams = new URLSearchParams(location.search);
+        var token = urlParams.get('access_token');
+        var isdev = urlParams.get('isdev') || '0';
+        
+        if (token) {
+            localStorage.setItem('user_token', token);
+            localStorage.setItem('user_isdev', isdev);
+        } else {
+            token = localStorage.getItem('user_token');
+            isdev = localStorage.getItem('user_isdev') || '0';
+        }
+        
+        document.getElementById('backLink').href = 'index.html?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+        
+        function showToast(msg) {
+            var t = document.getElementById('toast');
+            t.textContent = msg;
+            t.style.display = 'block';
+            setTimeout(function(){ t.style.display = 'none'; }, 2000);
+        }
+        
+        function loadStatus() {
+            fetch('/api/user/checkin/status?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev)
+            .then(function(r){return r.json()})
+            .then(function(d){
+                if (!d.success || !d.data) return;
+                var data = d.data;
+                document.getElementById('continuousDays').textContent = data.continuous_days;
+                document.getElementById('monthDays').textContent = data.month_count;
+                document.getElementById('totalDays').textContent = data.total_days;
+                
+                if (data.checked_in) {
+                    document.getElementById('checkinBtn').className = 'checkin-btn done';
+                    document.getElementById('checkinText').textContent = '已签到';
+                    document.getElementById('checkinTitle').textContent = '今日已签到';
+                    document.getElementById('checkinSubtitle').textContent = '明天继续签到可获得更多奖励';
+                } else {
+                    var reward = data.today_reward || 1;
+                    document.getElementById('checkinSubtitle').textContent = '今日签到可获 ' + reward + ' 积分';
+                }
+                
+                // 渲染近7天
+                var weekHtml = '';
+                var dayNames = ['日','一','二','三','四','五','六'];
+                for (var i = 6; i >= 0; i--) {
+                    var dt = new Date();
+                    dt.setDate(dt.getDate() - i);
+                    var dateStr = dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0');
+                    var isToday = i === 0;
+                    var checked = false;
+                    if (data.recent) {
+                        for (var j = 0; j < data.recent.length; j++) {
+                            if (data.recent[j].checkin_date === dateStr) { checked = true; break; }
+                        }
+                    }
+                    var circleClass = isToday ? (checked ? 'checked' : 'today') : (checked ? 'checked' : 'unchecked');
+                    weekHtml += '<div class="week-day"><div class="week-date">周' + dayNames[dt.getDay()] + '</div>'
+                        + '<div class="week-circle ' + circleClass + '">' + (checked ? '✓' : (isToday ? '?' : '·')) + '</div>'
+                        + (checked ? '<div class="week-points">+' + (i === 0 ? (data.today_reward || '') : '') + '</div>' : '') + '</div>';
+                }
+                document.getElementById('weekGrid').innerHTML = weekHtml;
+                
+                // 渲染奖励预览
+                var rewardHtml = '';
+                for (var d = 1; d <= 7; d++) {
+                    var pts = d;
+                    var active = d <= (data.continuous_days + (data.checked_in ? 0 : 1));
+                    rewardHtml += '<div class="reward-item ' + (active ? 'active' : '') + '">'
+                        + '<div class="reward-day">第' + d + '天</div>'
+                        + '<div class="reward-pts">+' + pts + '</div>'
+                        + (d === 7 ? '<div class="reward-bonus">额外+10</div>' : '') + '</div>';
+                }
+                document.getElementById('rewardGrid').innerHTML = rewardHtml;
+            })
+            .catch(function(e){ console.error('loadStatus error:', e); });
+        }
+        
+        function doCheckin() {
+            var btn = document.getElementById('checkinBtn');
+            if (btn.classList.contains('done')) return;
+            btn.disabled = true;
+            
+            fetch('/api/user/checkin?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev, {method: 'POST'})
+            .then(function(r){return r.json()})
+            .then(function(d){
+                btn.disabled = false;
+                if (d.success) {
+                    showToast('签到成功！获得 ' + (d.data ? d.data.reward_points : 0) + ' 积分');
+                    loadStatus();
+                    loadRank();
+                } else {
+                    showToast(d.msg || '签到失败');
+                }
+            })
+            .catch(function(e){
+                btn.disabled = false;
+                showToast('网络异常，请重试');
+            });
+        }
+        
+        function loadRank() {
+            fetch('/api/user/checkin/rank?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev)
+            .then(function(r){return r.json()})
+            .then(function(d){
+                if (!d.success || !d.data || d.data.length === 0) {
+                    document.getElementById('rankList').innerHTML = '<div style="text-align:center;color:#bbb;padding:15px;font-size:13px">暂无签到记录</div>';
+                    return;
+                }
+                var html = '';
+                var levelMap = {bronze:'青铜',silver:'白银',gold:'黄金',platinum:'铂金'};
+                for (var i = 0; i < d.data.length; i++) {
+                    var r = d.data[i];
+                    var numClass = i < 3 ? 'rank-' + (i+1) : 'rank-normal';
+                    html += '<div class="rank-item">'
+                        + '<div class="rank-num ' + numClass + '">' + (i+1) + '</div>'
+                        + '<div class="rank-info"><div class="rank-name">' + (r.user_name || '未知') + '</div>'
+                        + '<div class="rank-level">' + (levelMap[r.member_level] || '') + ' · 最长连续 ' + (r.max_continuous || 0) + ' 天</div></div>'
+                        + '<div class="rank-days">' + (r.checkin_days || 0) + ' 天</div></div>';
+                }
+                document.getElementById('rankList').innerHTML = html;
+            })
+            .catch(function(e){
+                document.getElementById('rankList').innerHTML = '<div style="text-align:center;color:#bbb;padding:15px;font-size:13px">加载失败</div>';
+            });
+        }
+        
+        loadStatus();
+        loadRank();
+    </script>
+</body>
+</html>

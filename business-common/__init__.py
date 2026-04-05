@@ -22,6 +22,9 @@ from .audit_log import log_action, get_audit_logs, CREATE_AUDIT_LOG_SQL
 # 限流模块
 from .rate_limiter import rate_limit, get_limit
 
+# 订单状态流转模块
+from .order_status import OrderStatusTransition, OrderStatusValidator, OrderStatus
+
 # 装饰器模块
 from .decorators import (
     require_admin,
@@ -33,6 +36,15 @@ from .decorators import (
     validate_json,
     catch_errors
 )
+
+# V23.0: 统一错误码与响应构建器
+from .response_builder import ErrorCode, ResponseBuilder, success_resp, error_resp, paginated_resp
+
+# V24.0: 拼团服务
+from .group_buy_service import GroupBuyService, group_buy
+
+    # V14: WebSocket消息推送（延迟导入，避免强制依赖）
+    # from .websocket_service import init_websocket, push_notification
 
 __all__ = [
     # 数据库
@@ -52,6 +64,10 @@ __all__ = [
     # 限流
     'rate_limit',
     'get_limit',
+    # 订单状态流转
+    'OrderStatusTransition',
+    'OrderStatusValidator',
+    'OrderStatus',
     # 装饰器
     'require_admin',
     'require_staff',
@@ -61,4 +77,13 @@ __all__ = [
     'log_api_call',
     'validate_json',
     'catch_errors',
+    # V23.0: 统一错误码
+    'ErrorCode',
+    'ResponseBuilder',
+    'success_resp',
+    'error_resp',
+    'paginated_resp',
+    # V24.0: 拼团服务
+    'GroupBuyService',
+    'group_buy',
 ]

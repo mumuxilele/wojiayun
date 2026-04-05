@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>物流追踪</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f5;min-height:100vh;padding-bottom:30px}
+.header{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:15px;display:flex;align-items:center;position:sticky;top:0;z-index:50}
+.header h1{font-size:18px;flex:1;text-align:center}
+.back{color:white;font-size:20px;text-decoration:none;padding:4px 8px}
+
+/* ---- 状态顶部 ---- */
+.status-banner{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:20px 20px 30px;text-align:center}
+.status-icon{font-size:52px;margin-bottom:10px}
+.status-text{font-size:20px;font-weight:700;margin-bottom:4px}
+.status-sub{font-size:13px;opacity:.8}
+
+/* ---- 快递单号卡 ---- */
+.card{background:white;margin:10px;border-radius:12px;padding:14px 15px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.card-title{font-size:13px;color:#999;margin-bottom:10px;font-weight:500}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:14px}
+.info-label{color:#999;flex-shrink:0;width:72px}
+.info-value{color:#333;font-weight:500;text-align:right;flex:1;word-break:break-all}
+.copy-btn{color:#667eea;font-size:12px;cursor:pointer;padding:2px 8px;border:1px solid #667eea;border-radius:10px;flex-shrink:0;margin-left:8px}
+.copy-btn:active{background:#667eea;color:white}
+
+/* ---- 物流时间线 ---- */
+.timeline{padding:0 15px}
+.timeline-item{display:flex;gap:14px;padding:14px 0;position:relative}
+.timeline-item:not(:last-child)::after{content:'';position:absolute;left:17px;top:42px;bottom:0;width:2px;background:#e8e8e8}
+.dot-wrap{flex-shrink:0;width:36px;display:flex;flex-direction:column;align-items:center;padding-top:4px}
+.dot{width:12px;height:12px;border-radius:50%;background:#ddd;border:3px solid #ddd;transition:all .2s}
+.timeline-item:first-child .dot{background:#667eea;border-color:#667eea;width:14px;height:14px}
+.timeline-item.first-active .dot{background:white;border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,.3)}
+.timeline-content{flex:1;min-width:0}
+.timeline-status{font-size:14px;color:#333;font-weight:500;margin-bottom:3px;line-height:1.5}
+.timeline-item:not(:first-child) .timeline-status{color:#999;font-weight:400}
+.timeline-time{font-size:12px;color:#bbb}
+
+/* ---- 未发货占位 ---- */
+.no-logistics{text-align:center;padding:40px 20px}
+.no-logistics-icon{font-size:64px;margin-bottom:14px}
+.no-logistics-text{font-size:15px;color:#999;margin-bottom:6px}
+.no-logistics-sub{font-size:13px;color:#bbb}
+
+/* ---- 刷新按钮 ---- */
+.refresh-wrap{text-align:center;padding:16px 0 4px}
+.refresh-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 24px;border:1px solid #667eea;color:#667eea;border-radius:20px;font-size:13px;cursor:pointer;background:white}
+.refresh-btn:active{background:#667eea;color:white}
+.refresh-btn.spinning .icon{display:inline-block;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.loading{text-align:center;padding:50px 20px;color:#bbb;font-size:14px}
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.9);background:rgba(0,0,0,.75);color:white;padding:10px 20px;border-radius:8px;font-size:14px;z-index:999;opacity:0;transition:all .2s;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+</style>
+</head>
+<body>
+<div class="header">
+  <a class="back" onclick="history.back()">&#8592;</a>
+  <h1>物流追踪</h1>
+</div>
+
+<div id="app"><div class="loading">加载中...</div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const TOKEN = new URLSearchParams(location.search).get('access_token') || '';
+const ORDER_ID = new URLSearchParams(location.search).get('order_id') || '';
+const API = (p) => p + (p.includes('?') ? '&' : '?') + 'access_token=' + TOKEN;
+
+const STATUS_MAP = {
+  pending:   { icon: '📋', text: '待付款',   sub: '等待您完成付款' },
+  paid:      { icon: '✅', text: '已付款',   sub: '正在准备发货' },
+  shipped:   { icon: '🚚', text: '运输中',   sub: '商品正在配送途中' },
+  completed: { icon: '🎉', text: '已完成',   sub: '商品已签收，感谢购买' },
+  cancelled: { icon: '❌', text: '已取消',   sub: '订单已取消' },
+  refunding: { icon: '↩️', text: '退款中',   sub: '退款申请处理中' },
+  refunded:  { icon: '💰', text: '已退款',   sub: '退款已处理完毕' },
+};
+
+function showToast(msg, duration=1500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function copyText(text) {
+  navigator.clipboard ? navigator.clipboard.writeText(text).then(() => showToast('已复制')) :
+    (function(){const e=document.createElement('textarea');e.value=text;document.body.appendChild(e);e.select();document.execCommand('copy');document.body.removeChild(e);showToast('已复制')})();
+}
+
+async function loadData() {
+  if (!ORDER_ID) {
+    document.getElementById('app').innerHTML = '<div class="no-logistics"><div class="no-logistics-icon">📦</div><div class="no-logistics-text">参数缺失</div></div>';
+    return;
+  }
+  
+  try {
+    const [orderRes, logisticsRes] = await Promise.all([
+      fetch(API('/api/user/orders/' + ORDER_ID)).then(r=>r.json()).catch(()=>({})),
+      fetch(API('/api/user/orders/' + ORDER_ID + '/logistics')).then(r=>r.json()).catch(()=>({})),
+    ]);
+
+    const order = orderRes.data || {};
+    const logData = logisticsRes.data || null;
+    const status = order.order_status || 'pending';
+    const statusInfo = STATUS_MAP[status] || { icon: '📦', text: status, sub: '' };
+
+    let html = '';
+
+    // 顶部状态栏
+    html += `<div class="status-banner">
+      <div class="status-icon">${statusInfo.icon}</div>
+      <div class="status-text">${statusInfo.text}</div>
+      <div class="status-sub">${statusInfo.sub}</div>
+    </div>`;
+
+    // 快递单号信息
+    if (order.tracking_no || order.logistics_company) {
+      html += `<div class="card">
+        <div class="card-title">快递信息</div>
+        ${order.logistics_company ? `<div class="info-row"><span class="info-label">快递公司</span><span class="info-value">${order.logistics_company}</span></div>` : ''}
+        ${order.tracking_no ? `<div class="info-row">
+          <span class="info-label">快递单号</span>
+          <span class="info-value">${order.tracking_no}</span>
+          <span class="copy-btn" onclick="copyText('${order.tracking_no}')">复制</span>
+        </div>` : ''}
+        ${order.shipped_at ? `<div class="info-row"><span class="info-label">发货时间</span><span class="info-value">${order.shipped_at.slice(0,16)}</span></div>` : ''}
+      </div>`;
+    }
+
+    // 订单基础信息
+    html += `<div class="card">
+      <div class="card-title">订单信息</div>
+      <div class="info-row"><span class="info-label">订单编号</span>
+        <span class="info-value">${order.order_no || ''}</span>
+        <span class="copy-btn" onclick="copyText('${order.order_no || ''}')">复制</span>
+      </div>
+      <div class="info-row"><span class="info-label">下单时间</span><span class="info-value">${(order.created_at || '').slice(0,16)}</span></div>
+      ${order.shipping_address ? `<div class="info-row"><span class="info-label">收货地址</span><span class="info-value">${order.shipping_address}</span></div>` : ''}
+    </div>`;
+
+    // 物流轨迹
+    if (logData && logData.traces && logData.traces.length > 0) {
+      html += `<div class="card">
+        <div class="card-title">物流轨迹</div>
+        <div class="timeline">`;
+      logData.traces.forEach((trace, idx) => {
+        const isFirst = idx === 0;
+        html += `<div class="timeline-item${isFirst ? ' first-active' : ''}">
+          <div class="dot-wrap"><div class="dot"></div></div>
+          <div class="timeline-content">
+            <div class="timeline-status">${trace.desc || trace.status || ''}</div>
+            <div class="timeline-time">${(trace.time || '').slice(0,16)}</div>
+          </div>
+        </div>`;
+      });
+      html += `</div></div>`;
+    } else if (status === 'shipped' || status === 'completed') {
+      // 已发货但暂时无详细轨迹
+      html += `<div class="card">
+        <div class="card-title">物流轨迹</div>
+        <div class="no-logistics">
+          <div class="no-logistics-icon">🔍</div>
+          <div class="no-logistics-text">暂无详细轨迹</div>
+          <div class="no-logistics-sub">快递公司尚未更新轨迹，请稍后刷新</div>
+        </div>
+        <div class="refresh-wrap">
+          <div class="refresh-btn" id="refreshBtn" onclick="refresh()">
+            <span class="icon">🔄</span><span>刷新轨迹</span>
+          </div>
+        </div>
+      </div>`;
+    } else if (status === 'paid' || status === 'pending') {
+      html += `<div class="card">
+        <div class="no-logistics">
+          <div class="no-logistics-icon">📦</div>
+          <div class="no-logistics-text">商品尚未发货</div>
+          <div class="no-logistics-sub">商家正在备货，预计1-3个工作日发货</div>
+        </div>
+      </div>`;
+    }
+
+    // 刷新按钮（已发货时显示）
+    if (status === 'shipped') {
+      html += `<div class="refresh-wrap">
+        <div class="refresh-btn" id="refreshBtn" onclick="refresh()">
+          <span class="icon">🔄</span><span>刷新物流</span>
+        </div>
+      </div>`;
+    }
+
+    document.getElementById('app').innerHTML = html;
+  } catch(e) {
+    document.getElementById('app').innerHTML = `<div class="no-logistics">
+      <div class="no-logistics-icon">⚠️</div>
+      <div class="no-logistics-text">加载失败</div>
+      <div class="no-logistics-sub">${e.message || '请检查网络后重试'}</div>
+    </div>`;
+  }
+}
+
+async function refresh() {
+  const btn = document.getElementById('refreshBtn');
+  if (btn) {
+    btn.classList.add('spinning');
+    btn.querySelector('span').textContent = '刷新中...';
+  }
+  await loadData();
+  showToast('已刷新');
+}
+
+loadData();
+</script>
+</body>
+</html>

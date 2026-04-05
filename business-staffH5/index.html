@@ -9,44 +9,56 @@
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; min-height: 100vh; }
         
         .header { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; padding: 20px; }
+        .header-top { display: flex; justify-content: space-between; align-items: flex-start; }
         .header h1 { font-size: 20px; margin-bottom: 5px; }
         .header-sub { font-size: 13px; opacity: 0.9; }
+        .ws-status { font-size: 11px; padding: 3px 8px; border-radius: 10px; background: rgba(255,255,255,0.2); display: flex; align-items: center; gap: 4px; }
+        .ws-dot { width: 6px; height: 6px; border-radius: 50%; background: #90ee90; animation: ws-pulse 2s infinite; }
+        .ws-dot.offline { background: #ff9999; animation: none; }
+        @keyframes ws-pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
         
         .stats-row { display: flex; gap: 10px; margin-top: 15px; }
-        .stat-card { background: rgba(255,255,255,0.2); padding: 12px; border-radius: 10px; flex: 1; text-align: center; }
+        .stat-card { background: rgba(255,255,255,0.2); padding: 12px; border-radius: 10px; flex: 1; text-align: center; cursor: pointer; }
+        .stat-card:active { background: rgba(255,255,255,0.3); }
         .stat-num { font-size: 24px; font-weight: 600; }
         .stat-label { font-size: 11px; opacity: 0.85; margin-top: 2px; }
         
+        /* 菜单行 */
         .menu-row { display: flex; gap: 10px; padding: 15px; background: white; margin: 10px 15px; border-radius: 12px; }
-        .menu-item { flex: 1; text-align: center; padding: 12px 8px; border-radius: 8px; cursor: pointer; }
+        .menu-item { flex: 1; text-align: center; padding: 12px 8px; border-radius: 8px; cursor: pointer; position: relative; }
         .menu-item:active { background: #f5f5f5; }
         .menu-icon { font-size: 26px; margin-bottom: 4px; }
         .menu-text { font-size: 12px; color: #333; font-weight: 500; }
+        /* 角标 */
+        .m-badge { position: absolute; top: 4px; right: 10px; background: #f5222d; color: white; font-size: 10px; min-width: 16px; height: 16px; line-height: 16px; border-radius: 8px; padding: 0 4px; text-align: center; display: none; }
+        
+        /* 实时提醒悬浮气泡 */
+        .alert-bubble { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 10px 20px; border-radius: 24px; font-size: 13px; z-index: 1000; box-shadow: 0 4px 16px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 10px; max-width: 90%; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        .alert-bubble.show { opacity: 1; pointer-events: auto; }
+        .alert-bubble .close-btn { color: rgba(255,255,255,0.7); font-size: 16px; cursor: pointer; flex-shrink: 0; }
         
         .section { background: white; margin: 0 15px 15px; border-radius: 12px; overflow: hidden; }
         .section-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #f5f5f5; }
         .section-title { font-size: 15px; font-weight: 600; color: #333; }
         .section-more { font-size: 12px; color: #11998e; text-decoration: none; }
         
-        /* 筛选器 */
         .filter-bar { display: flex; gap: 8px; padding: 10px 15px; background: #fafafa; overflow-x: auto; }
         .filter-tag { padding: 5px 12px; border-radius: 15px; font-size: 12px; white-space: nowrap; background: #f0f0f0; color: #666; cursor: pointer; }
         .filter-tag.active { background: #11998e; color: white; }
         
-        /* 列表项 */
         .record-item { display: flex; padding: 12px 15px; border-bottom: 1px solid #f5f5f5; cursor: pointer; }
         .record-item:last-child { border-bottom: none; }
+        .record-item:active { background: #fafafa; }
         .record-icon { width: 36px; height: 36px; background: #f5f5f5; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; margin-right: 10px; }
         .record-info { flex: 1; min-width: 0; }
-        .record-title { font-size: 14px; color: #333; }
+        .record-title { font-size: 14px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .record-desc { font-size: 12px; color: #999; margin-top: 2px; }
-        .record-status { font-size: 11px; padding: 2px 6px; border-radius: 4px; }
+        .record-status { font-size: 11px; padding: 2px 6px; border-radius: 4px; flex-shrink: 0; }
         
         .status-pending { background: #fff7e6; color: #fa8c16; }
         .status-processing { background: #e6f7ff; color: #1890ff; }
         .status-completed { background: #f6ffed; color: #52c41a; }
         
-        /* 图表区 */
         .chart-section { padding: 15px; }
         .chart-bar { display: flex; align-items: center; margin-bottom: 8px; }
         .chart-label { width: 70px; font-size: 12px; color: #666; }
@@ -60,28 +72,92 @@
 </head>
 <body>
     <div class="header">
-        <h1>🏢 工作台</h1>
-        <div class="header-sub">员工端</div>
+        <div class="header-top">
+            <div>
+                <h1>🏢 工作台</h1>
+                <div class="header-sub" id="staffName">员工端</div>
+            </div>
+            <div class="ws-status" id="wsStatus">
+                <span class="ws-dot offline" id="wsDot"></span>
+                <span id="wsLabel">连接中</span>
+            </div>
+        </div>
         <div class="stats-row">
-            <div class="stat-card"><div class="stat-num" id="statPending">0</div><div class="stat-label">待处理</div></div>
-            <div class="stat-card"><div class="stat-num" id="statProcessing">0</div><div class="stat-label">处理中</div></div>
-            <div class="stat-card"><div class="stat-num" id="statTodayOrders">0</div><div class="stat-label">今日订单</div></div>
+            <div class="stat-card" onclick="goTo('application_list.html?status=pending')"><div class="stat-num" id="statPending">0</div><div class="stat-label">待处理</div></div>
+            <div class="stat-card" onclick="goTo('application_list.html?status=processing')"><div class="stat-num" id="statProcessing">0</div><div class="stat-label">处理中</div></div>
+            <div class="stat-card" onclick="goTo('order_list.html')"><div class="stat-num" id="statTodayOrders">0</div><div class="stat-label">今日订单</div></div>
             <div class="stat-card"><div class="stat-num" id="statIncome">¥0</div><div class="stat-label">今日收入</div></div>
         </div>
     </div>
 
+    <!-- 实时提醒气泡 -->
+    <div class="alert-bubble" id="alertBubble">
+        <span id="alertText">新消息</span>
+        <span class="close-btn" onclick="document.getElementById('alertBubble').classList.remove('show')">×</span>
+    </div>
+
     <div class="menu-row">
         <div class="menu-item" onclick="goTo('application_list.html')">
+            <span class="m-badge" id="badge-app">0</span>
             <div class="menu-icon">📋</div>
             <div class="menu-text">申请单</div>
         </div>
         <div class="menu-item" onclick="goTo('order_list.html')">
+            <span class="m-badge" id="badge-order">0</span>
             <div class="menu-icon">📦</div>
             <div class="menu-text">订单</div>
+        </div>
+        <div class="menu-item" onclick="goTo('refunds.html')">
+            <span class="m-badge" id="badge-refund">0</span>
+            <div class="menu-icon">💰</div>
+            <div class="menu-text">退款</div>
+        </div>
+        <div class="menu-item" onclick="goTo('members.html')">
+            <div class="menu-icon">👥</div>
+            <div class="menu-text">会员</div>
+        </div>
+        <div class="menu-item" onclick="goTo('bookings.html')">
+            <span class="m-badge" id="badge-booking">0</span>
+            <div class="menu-icon">📅</div>
+            <div class="menu-text">预约</div>
+        </div>
+    </div>
+
+    <div class="menu-row" style="margin-top:0">
+        <div class="menu-item" onclick="goTo('bookings.html?tab=verify')">
+            <div class="menu-icon">✅</div>
+            <div class="menu-text">核销站</div>
         </div>
         <div class="menu-item" onclick="goTo('statistics.html')">
             <div class="menu-icon">📊</div>
             <div class="menu-text">统计</div>
+        </div>
+        <div class="menu-item" onclick="goTo('products.html')">
+            <div class="menu-icon">🛒</div>
+            <div class="menu-text">商品</div>
+        </div>
+        <div class="menu-item" onclick="goTo('checkin_stats.html')">
+            <div class="menu-icon">📅</div>
+            <div class="menu-text">签到</div>
+        </div>
+    </div>
+
+    <div class="menu-row" style="margin-top:0">
+        <div class="menu-item" onclick="goTo('notifications.html')">
+            <div class="menu-icon">🔔</div>
+            <div class="menu-text">通知</div>
+        </div>
+        <div class="menu-item" onclick="goTo('feedback.html')">
+            <div class="menu-icon">💬</div>
+            <div class="menu-text">反馈</div>
+        </div>
+        <div class="menu-item" onclick="goTo('reviews.html')">
+            <div class="menu-icon">⭐</div>
+            <div class="menu-text">评价管理</div>
+        </div>
+        <div class="menu-item" style="flex:0;visibility:hidden">
+            <div class="menu-icon"></div>
+            <div class="menu-text"></div>
         </div>
     </div>
 
@@ -115,6 +191,10 @@
         var isdev = urlParams.get('isdev') || '0';
         var currentType = '';
         
+        function escapeHtml(text) {
+            if (!text) return '';
+            return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+        }
         if (token) {
             localStorage.setItem('staff_token', token);
             localStorage.setItem('staff_isdev', isdev);
@@ -179,7 +259,7 @@
             fetch(url).then(function(r){return r.json()}).then(function(d){
                 if(d.success && d.data && d.data.items && d.data.items.length > 0) {
                     document.getElementById('pendingList').innerHTML = d.data.items.map(function(item){
-                        return '<div class="record-item" onclick="goTo(\'application_detail.html?id=' + item.id + '\')"><div class="record-icon">📋</div><div class="record-info"><div class="record-title">' + (item.title||'') + '</div><div class="record-desc">' + (item.user_name||'') + ' | ' + (item.created_at||'') + '</div></div><span class="record-status status-pending">待处理</span></div>';
+                        return '<div class="record-item" onclick="goTo(\'application_detail.html?id=' + item.id + '\')"><div class="record-icon">📋</div><div class="record-info"><div class="record-title">' + escapeHtml(item.title||'') + '</div><div class="record-desc">' + escapeHtml(item.user_name||'') + ' | ' + escapeHtml(item.created_at||'') + '</div></div><span class="record-status status-pending">待处理</span></div>';
                     }).join('');
                 } else {
                     document.getElementById('pendingList').innerHTML = '<div class="empty">暂无待处理申请</div>';
@@ -198,6 +278,109 @@
 
         loadStats();
         loadPending();
+        loadBadges();
+        initWebSocket();
+
+        // 加载各模块待处理数角标
+        function loadBadges() {
+            var base = '/api/staff/stats?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+            fetch(base)
+            .then(function(r){return r.json()})
+            .then(function(d){
+                if(d.success && d.data) {
+                    var s = d.data;
+                    setBadge('badge-app', s.pending || 0);
+                    setBadge('badge-order', s.total_orders_today || 0);
+                }
+            }).catch(function(){});
+
+            // 待处理退款数
+            fetch('/api/staff/refunds?page=1&page_size=1&status=pending&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev)
+            .then(function(r){return r.json()})
+            .then(function(d){
+                if(d.success && d.data) setBadge('badge-refund', d.data.total || 0);
+            }).catch(function(){});
+
+            // 今日待核销预约数
+            fetch('/api/staff/bookings?page=1&page_size=1&status=paid&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev)
+            .then(function(r){return r.json()})
+            .then(function(d){
+                if(d.success && d.data) setBadge('badge-booking', d.data.total || 0);
+            }).catch(function(){});
+        }
+
+        function setBadge(id, cnt) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            if (cnt > 0) { el.textContent = cnt > 99 ? '99+' : cnt; el.style.display = 'block'; }
+            else { el.style.display = 'none'; }
+        }
+
+        // WebSocket实时提醒
+        var ws = null, wsRetry = 0, wsTimer = null;
+        function initWebSocket() {
+            if (!token) return;
+            var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            var wsUrl = proto + '//' + location.host + '/ws/staff?token=' + encodeURIComponent(token);
+            try {
+                ws = new WebSocket(wsUrl);
+                ws.onopen = function() {
+                    wsRetry = 0;
+                    document.getElementById('wsDot').classList.remove('offline');
+                    document.getElementById('wsLabel').textContent = '实时';
+                };
+                ws.onmessage = function(e) {
+                    try {
+                        var msg = JSON.parse(e.data);
+                        handleWsMsg(msg);
+                    } catch(ex) {}
+                };
+                ws.onclose = function() {
+                    document.getElementById('wsDot').classList.add('offline');
+                    document.getElementById('wsLabel').textContent = '已断开';
+                    wsRetry++;
+                    var delay = Math.min(30000, wsRetry * 3000);
+                    clearTimeout(wsTimer);
+                    wsTimer = setTimeout(initWebSocket, delay);
+                };
+                ws.onerror = function() {
+                    document.getElementById('wsLabel').textContent = '连接失败';
+                };
+            } catch(e) {
+                document.getElementById('wsLabel').textContent = '不支持';
+            }
+        }
+
+        var ALERT_ICONS = {
+            refund_request: '💰 新退款申请', new_application: '📋 新申请单',
+            new_booking: '📅 新预约', new_order: '📦 新订单', review_new: '⭐ 新评价'
+        };
+
+        function handleWsMsg(msg) {
+            if (!msg || !msg.type) return;
+            var label = ALERT_ICONS[msg.type] || '📢 新消息';
+            var detail = msg.user_name ? '来自：' + msg.user_name : (msg.order_no || msg.app_no || '');
+            showAlert(label + (detail ? ' · ' + detail : ''));
+            // 刷新角标
+            loadBadges();
+            // 刷新首页统计
+            loadStats();
+            if (msg.type === 'new_application' || msg.type === 'refund_request') loadPending();
+        }
+
+        var alertTimer = null;
+        function showAlert(text) {
+            var el = document.getElementById('alertBubble');
+            document.getElementById('alertText').textContent = text;
+            el.classList.add('show');
+            clearTimeout(alertTimer);
+            alertTimer = setTimeout(function(){ el.classList.remove('show'); }, 4000);
+        }
+
+        // 每60秒轮询刷新（作为WS的降级方案）
+        setInterval(function() {
+            if (!ws || ws.readyState !== 1) { loadBadges(); loadStats(); }
+        }, 60000);
     </script>
 </body>
 </html>

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>反馈管理 - 员工端</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; min-height: 100vh; }
+        
+        .header { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; padding: 15px 20px; display: flex; align-items: center; gap: 12px; }
+        .back-btn { font-size: 20px; cursor: pointer; text-decoration: none; color: white; }
+        .header h1 { font-size: 17px; flex: 1; }
+        
+        .filters { display: flex; gap: 8px; padding: 12px 15px; overflow-x: auto; }
+        .filter-btn { padding: 6px 14px; border-radius: 15px; border: 1px solid #e8e8e8; background: white; font-size: 13px; color: #666; cursor: pointer; white-space: nowrap; }
+        .filter-btn.active { background: #11998e; color: white; border-color: #11998e; }
+        
+        .feedback-list { padding: 0 15px 15px; }
+        .feedback-item { background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+        .feedback-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .feedback-title { font-size: 15px; font-weight: 500; color: #333; flex: 1; margin-right: 8px; }
+        .feedback-type-tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; }
+        .tag-suggestion { background: #e6f7ff; color: #1890ff; }
+        .tag-bug { background: #fff2f0; color: #ff4d4f; }
+        .tag-complaint { background: #fff7e6; color: #fa8c16; }
+        .tag-praise { background: #f6ffed; color: #52c41a; }
+        
+        .feedback-user { font-size: 12px; color: #999; margin-bottom: 6px; }
+        .feedback-content { font-size: 13px; color: #666; line-height: 1.5; margin-bottom: 8px; }
+        
+        .feedback-reply { background: #f6ffed; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; border-left: 3px solid #52c41a; }
+        .reply-label { font-size: 12px; color: #52c41a; font-weight: 500; }
+        .reply-content { font-size: 13px; color: #333; line-height: 1.5; margin-top: 4px; }
+        
+        .feedback-footer { display: flex; justify-content: space-between; align-items: center; }
+        .feedback-time { font-size: 12px; color: #bbb; }
+        .feedback-status { font-size: 12px; padding: 2px 8px; border-radius: 4px; }
+        .status-pending { background: #fff7e6; color: #fa8c16; }
+        .status-replied { background: #f6ffed; color: #52c41a; }
+        
+        .reply-btn { padding: 6px 14px; background: #11998e; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; }
+        .reply-btn:active { opacity: 0.8; }
+        
+        .empty { text-align: center; padding: 60px 20px; color: #bbb; }
+        .empty-icon { font-size: 48px; margin-bottom: 10px; }
+        .loading { text-align: center; padding: 30px; color: #999; }
+        
+        /* 回复弹窗 */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: flex-end; justify-content: center; z-index: 999; }
+        .modal-overlay.show { display: flex; }
+        .modal-box { background: white; border-radius: 16px 16px 0 0; padding: 20px; width: 100%; max-width: 500px; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .modal-header h3 { font-size: 16px; }
+        .modal-close { font-size: 22px; cursor: pointer; color: #999; background: none; border: none; }
+        textarea.reply-input { width: 100%; padding: 12px; border: 1.5px solid #e8e8e8; border-radius: 8px; font-size: 14px; min-height: 100px; resize: none; outline: none; }
+        textarea.reply-input:focus { border-color: #11998e; }
+        .submit-reply { width: 100%; padding: 12px; background: #11998e; color: white; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; margin-top: 12px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a class="back-btn" onclick="history.back()">←</a>
+        <h1>反馈管理</h1>
+    </div>
+    
+    <div class="filters">
+        <div class="filter-btn active" data-status="" onclick="filterFeedback(this)">全部</div>
+        <div class="filter-btn" data-status="pending" onclick="filterFeedback(this)">待处理</div>
+        <div class="filter-btn" data-status="replied" onclick="filterFeedback(this)">已回复</div>
+        <div class="filter-btn" data-status="suggestion" data-type="1" onclick="filterFeedback(this)">建议</div>
+        <div class="filter-btn" data-status="bug" data-type="1" onclick="filterFeedback(this)">问题</div>
+        <div class="filter-btn" data-status="complaint" data-type="1" onclick="filterFeedback(this)">投诉</div>
+    </div>
+    
+    <div class="feedback-list" id="feedbackList">
+        <div class="loading">加载中...</div>
+    </div>
+    
+    <!-- 回复弹窗 -->
+    <div class="modal-overlay" id="replyModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>回复反馈</h3>
+                <button class="modal-close" onclick="closeReplyModal()">&times;</button>
+            </div>
+            <div id="replyTargetInfo" style="margin-bottom:10px;font-size:13px;color:#666"></div>
+            <textarea class="reply-input" id="replyText" placeholder="请输入回复内容..."></textarea>
+            <button class="submit-reply" id="replySubmitBtn" onclick="submitReply()">提交回复</button>
+        </div>
+    </div>
+
+    <script>
+    const API = localStorage.getItem('apiBase') || '';
+    
+    function escapeHtml(text) {
+        if (text === null || text === undefined) return '';
+        return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+    let currentFilter = { status: '', feedback_type: '' };
+    let currentReplyId = null;
+    
+    function getToken() {
+        return localStorage.getItem('access_token') || new URLSearchParams(location.search).get('access_token') || '';
+    }
+    
+    function filterFeedback(el) {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        el.classList.add('active');
+        
+        if (el.dataset.type === '1') {
+            currentFilter = { status: '', feedback_type: el.dataset.status };
+        } else {
+            currentFilter = { status: el.dataset.status, feedback_type: '' };
+        }
+        loadFeedback();
+    }
+    
+    async function loadFeedback() {
+        const list = document.getElementById('feedbackList');
+        list.innerHTML = '<div class="loading">加载中...</div>';
+        
+        let url = `${API}/api/staff/feedback?page=1&page_size=20`;
+        if (currentFilter.status) url += `&status=${currentFilter.status}`;
+        if (currentFilter.feedback_type) url += `&feedback_type=${currentFilter.feedback_type}`;
+        
+        try {
+            const res = await fetch(url, { headers: { 'Token': getToken() } });
+            const json = await res.json();
+            if (json.success) {
+                const items = json.data.items || [];
+                if (items.length === 0) {
+                    list.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><p>暂无反馈</p></div>';
+                    return;
+                }
+                
+                const typeLabels = { suggestion: '建议', bug: '问题', complaint: '投诉', praise: '表扬' };
+                const statusLabels = { pending: '待处理', replied: '已回复', closed: '已关闭' };
+                
+                list.innerHTML = items.map(fb => `
+                    <div class="feedback-item">
+                        <div class="feedback-header">
+                            <div class="feedback-title">${escapeHtml(fb.title || '')}</div>
+                            <span class="feedback-type-tag tag-${fb.feedback_type}">${typeLabels[fb.feedback_type] || '建议'}</span>
+                        </div>
+                        <div class="feedback-user">👤 ${escapeHtml(fb.user_name || '-')}${fb.contact ? ' | 📞 ' + escapeHtml(fb.contact) : ''}</div>
+                        <div class="feedback-content">${escapeHtml(fb.content || '')}</div>
+                        ${fb.reply ? `
+                        <div class="feedback-reply">
+                            <div class="reply-label">💬 回复内容</div>
+                            <div class="reply-content">${escapeHtml(fb.reply)}</div>
+                        </div>` : ''}
+                        <div class="feedback-footer">
+                            <span class="feedback-time">${formatTime(fb.created_at)}</span>
+                            <div style="display:flex;align-items:center;gap:8px">
+                                <span class="feedback-status status-${fb.status}">${statusLabels[fb.status] || '待处理'}</span>
+                                <button class="reply-btn" onclick="showReply(${fb.id}, '${(fb.title||'').replace(/'/g,"\\'")}')">回复</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        } catch (e) {
+            list.innerHTML = '<div class="empty"><p>加载失败</p></div>';
+        }
+    }
+    
+    function showReply(fbId, title) {
+        currentReplyId = fbId;
+        document.getElementById('replyTargetInfo').textContent = `回复「${title}」`;
+        document.getElementById('replyText').value = '';
+        document.getElementById('replyModal').classList.add('show');
+        setTimeout(() => document.getElementById('replyText').focus(), 100);
+    }
+    
+    function closeReplyModal() {
+        document.getElementById('replyModal').classList.remove('show');
+        currentReplyId = null;
+    }
+    
+    async function submitReply() {
+        const reply = document.getElementById('replyText').value.trim();
+        if (!reply) { alert('请输入回复内容'); return; }
+        
+        const btn = document.getElementById('replySubmitBtn');
+        btn.disabled = true;
+        btn.textContent = '提交中...';
+        
+        try {
+            const res = await fetch(`${API}/api/staff/feedback/${currentReplyId}/reply`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Token': getToken() },
+                body: JSON.stringify({ reply })
+            });
+            const json = await res.json();
+            if (json.success) {
+                closeReplyModal();
+                loadFeedback();
+            } else {
+                alert(json.msg || '回复失败');
+            }
+        } catch (e) {
+            alert('网络错误');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '提交回复';
+        }
+    }
+    
+    function formatTime(t) {
+        if (!t) return '';
+        const d = new Date(t);
+        const now = new Date();
+        const diff = now - d;
+        if (diff < 60000) return '刚刚';
+        if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前';
+        if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前';
+        if (diff < 172800000) return '昨天';
+        return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+    
+    loadFeedback();
+    </script>
+</body>
+</html>

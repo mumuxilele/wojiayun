@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>购物车</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f5;min-height:100vh;padding-bottom:80px}
+.header{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:15px;display:flex;align-items:center;position:sticky;top:0;z-index:50}
+.header h1{font-size:18px;flex:1;text-align:center}
+.back{color:white;font-size:14px;text-decoration:none;padding:4px 8px}
+.manage-btn{color:white;font-size:13px;cursor:pointer;padding:4px 8px}
+
+.cart-list{padding:10px}
+.cart-item{background:white;border-radius:12px;margin-bottom:10px;padding:12px;display:flex;align-items:flex-start;gap:10px}
+.item-check{width:22px;height:22px;border:2px solid #ddd;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:8px;transition:all .2s}
+.item-check.checked{background:#667eea;border-color:#667eea;color:white}
+.item-check.checked::after{content:'✓';font-size:12px}
+.item-img{width:72px;height:72px;border-radius:8px;background:#f5f5f5;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:28px}
+.item-img img{width:100%;height:100%;object-fit:cover}
+.item-info{flex:1;min-width:0}
+.item-name{font-size:14px;color:#333;font-weight:500;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item-shop{font-size:11px;color:#999;margin-bottom:8px}
+.item-bottom{display:flex;align-items:center;justify-content:space-between}
+.item-price{font-size:16px;color:#f57c00;font-weight:700}
+.qty-ctrl{display:flex;align-items:center;gap:8px}
+.qty-btn{width:26px;height:26px;border:1px solid #e0e0e0;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;background:white;color:#333}
+.qty-btn:active{background:#f5f5f5}
+.qty-num{font-size:14px;color:#333;min-width:20px;text-align:center}
+.item-delete{color:#ff4d4f;font-size:12px;padding:4px 8px;cursor:pointer}
+.empty{text-align:center;padding:60px 20px;color:#bbb}
+.empty-icon{font-size:60px;margin-bottom:12px}
+.empty-text{font-size:15px;margin-bottom:20px}
+.go-shop-btn{padding:10px 30px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;border-radius:25px;font-size:14px;cursor:pointer}
+
+/* 底部结算栏 */
+.footer-bar{position:fixed;bottom:0;left:0;right:0;background:white;padding:12px 15px;display:flex;align-items:center;box-shadow:0 -2px 8px rgba(0,0,0,.08);z-index:50}
+.select-all{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px;color:#333}
+.select-all-check{width:22px;height:22px;border:2px solid #ddd;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.select-all-check.checked{background:#667eea;border-color:#667eea;color:white}
+.select-all-check.checked::after{content:'✓';font-size:12px}
+.total-info{flex:1;text-align:right;margin-right:12px}
+.total-label{font-size:12px;color:#999}
+.total-price{font-size:18px;color:#f57c00;font-weight:700}
+.checkout-btn{padding:10px 24px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;border-radius:25px;font-size:15px;font-weight:600;cursor:pointer;flex-shrink:0}
+.checkout-btn:disabled{background:#ccc;cursor:not-allowed}
+.checkout-btn:active:not(:disabled){transform:scale(.96)}
+
+.coupon-row{background:white;margin:0 10px 10px;border-radius:12px;padding:12px 15px;display:flex;align-items:center;gap:8px}
+.coupon-row input{flex:1;border:1px solid #e0e0e0;border-radius:8px;padding:8px 12px;font-size:13px;outline:none}
+.coupon-apply{padding:8px 14px;background:#667eea;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer}
+.coupon-applied{font-size:12px;color:#52c41a}
+</style>
+</head>
+<body>
+<div class="header">
+    <a href="javascript:history.back()" class="back">‹ 返回</a>
+    <h1>🛒 购物车</h1>
+    <div class="manage-btn" id="manageBtn" onclick="toggleManage()">管理</div>
+</div>
+
+<div id="cartContent">
+    <div class="empty"><div class="empty-icon">🛒</div><div class="empty-text">加载中...</div></div>
+</div>
+
+<div class="coupon-row" id="couponRow" style="display:none">
+    <span style="font-size:13px;color:#666;flex-shrink:0">优惠券</span>
+    <input type="text" id="couponInput" placeholder="输入优惠券码" maxlength="20" style="text-transform:uppercase">
+    <button class="coupon-apply" onclick="applyCoupon()">使用</button>
+    <span class="coupon-applied" id="couponApplied" style="display:none"></span>
+</div>
+
+<div class="footer-bar" id="footerBar" style="display:none">
+    <div class="select-all" onclick="toggleSelectAll()">
+        <div class="select-all-check" id="selectAllCheck"></div>
+        <span>全选</span>
+    </div>
+    <div class="total-info">
+        <div class="total-label">合计</div>
+        <div class="total-price">¥<span id="totalPrice">0.00</span></div>
+    </div>
+    <button class="checkout-btn" id="checkoutBtn" onclick="checkout()">结算(<span id="selectedCount">0</span>)</button>
+</div>
+
+<script>
+var urlParams = new URLSearchParams(location.search);
+var token = urlParams.get('access_token') || localStorage.getItem('user_token');
+var isdev = urlParams.get('isdev') || localStorage.getItem('user_isdev') || '0';
+var cartItems = [];
+var isManaging = false;
+var appliedCoupon = null;
+
+if (!token) {
+    document.body.innerHTML = '<div style="text-align:center;padding:60px;color:#999"><h2>请先登录</h2></div>';
+    throw new Error('No token');
+}
+
+function apiUrl(path) {
+    return path + (path.includes('?') ? '&' : '?') + 'access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+}
+
+function goTo(url) {
+    var sep = url.indexOf('?') >= 0 ? '&' : '?';
+    location.href = url + sep + 'access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+}
+
+function loadCart() {
+    fetch(apiUrl('/api/user/cart'))
+    .then(r => r.json())
+    .then(d => {
+        if (d.success && d.data) {
+            cartItems = d.data.items || [];
+            renderCart();
+        }
+    })
+    .catch(() => {
+        document.getElementById('cartContent').innerHTML = '<div class="empty"><div class="empty-icon">😞</div><div class="empty-text">加载失败</div></div>';
+    });
+}
+
+function renderCart() {
+    var content = document.getElementById('cartContent');
+    var footer = document.getElementById('footerBar');
+    var couponRow = document.getElementById('couponRow');
+
+    if (cartItems.length === 0) {
+        content.innerHTML = '<div class="empty"><div class="empty-icon">🛒</div><div class="empty-text">购物车空空如也</div><button class="go-shop-btn" onclick="goTo(\'orders.html\')">去逛逛</button></div>';
+        footer.style.display = 'none';
+        couponRow.style.display = 'none';
+        return;
+    }
+
+    var html = '<div class="cart-list">';
+    cartItems.forEach(function(item, idx) {
+        var checked = item.selected ? 'checked' : '';
+        var imgHtml = item.images ? '<img src="' + (JSON.parse(item.images||'[]')[0]||'') + '" onerror="this.style.display=\'none\'">' : '🛍️';
+        html += '<div class="cart-item" id="item_' + item.id + '">'
+            + '<div class="item-check ' + checked + '" onclick="toggleItem(' + idx + ')"></div>'
+            + '<div class="item-img">' + imgHtml + '</div>'
+            + '<div class="item-info">'
+            + '<div class="item-name">' + (item.product_name || '') + '</div>'
+            + '<div class="item-shop">' + (item.shop_name || '') + '</div>'
+            + '<div class="item-bottom">'
+            + '<div class="item-price">¥' + parseFloat(item.price || 0).toFixed(2) + '</div>'
+            + '<div class="qty-ctrl">'
+            + (isManaging ? '<span class="item-delete" onclick="removeItem(' + idx + ')">删除</span>' :
+                '<div class="qty-btn" onclick="changeQty(' + idx + ',-1)">−</div>'
+                + '<div class="qty-num">' + (item.quantity || 1) + '</div>'
+                + '<div class="qty-btn" onclick="changeQty(' + idx + ',1)">+</div>')
+            + '</div>'
+            + '</div>'
+            + '</div>'
+            + '</div>';
+    });
+    html += '</div>';
+    content.innerHTML = html;
+    footer.style.display = 'flex';
+    couponRow.style.display = 'flex';
+    updateFooter();
+}
+
+function toggleItem(idx) {
+    var item = cartItems[idx];
+    var newSelected = item.selected ? 0 : 1;
+    fetch(apiUrl('/api/user/cart/' + item.id), {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({selected: newSelected})
+    }).then(r => r.json()).then(d => {
+        if (d.success) {
+            item.selected = newSelected;
+            renderCart();
+        }
+    });
+}
+
+function changeQty(idx, delta) {
+    var item = cartItems[idx];
+    var newQty = Math.max(1, Math.min(99, (item.quantity || 1) + delta));
+    fetch(apiUrl('/api/user/cart/' + item.id), {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({quantity: newQty})
+    }).then(r => r.json()).then(d => {
+        if (d.success) {
+            item.quantity = newQty;
+            renderCart();
+        }
+    });
+}
+
+function removeItem(idx) {
+    var item = cartItems[idx];
+    if (!confirm('确认从购物车移除该商品？')) return;
+    fetch(apiUrl('/api/user/cart/' + item.id), {method: 'DELETE'})
+    .then(r => r.json())
+    .then(d => {
+        if (d.success) {
+            cartItems.splice(idx, 1);
+            renderCart();
+        }
+    });
+}
+
+function toggleSelectAll() {
+    var selectedAll = cartItems.every(i => i.selected);
+    var newVal = selectedAll ? 0 : 1;
+    fetch(apiUrl('/api/user/cart/select-all'), {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({selected: !selectedAll})
+    }).then(r => r.json()).then(d => {
+        if (d.success) {
+            cartItems.forEach(i => i.selected = newVal);
+            renderCart();
+        }
+    });
+}
+
+function toggleManage() {
+    isManaging = !isManaging;
+    document.getElementById('manageBtn').textContent = isManaging ? '完成' : '管理';
+    renderCart();
+}
+
+function updateFooter() {
+    var selected = cartItems.filter(i => i.selected);
+    var total = selected.reduce((s, i) => s + parseFloat(i.price || 0) * (i.quantity || 1), 0);
+    if (appliedCoupon) total = Math.max(0, total - appliedCoupon.discount);
+    document.getElementById('totalPrice').textContent = total.toFixed(2);
+    document.getElementById('selectedCount').textContent = selected.length;
+    var btn = document.getElementById('checkoutBtn');
+    btn.disabled = selected.length === 0;
+    var allSelected = cartItems.length > 0 && cartItems.every(i => i.selected);
+    var allCheck = document.getElementById('selectAllCheck');
+    if (allSelected) allCheck.classList.add('checked'); else allCheck.classList.remove('checked');
+}
+
+function applyCoupon() {
+    var code = document.getElementById('couponInput').value.trim().toUpperCase();
+    if (!code) return;
+    var selected = cartItems.filter(i => i.selected);
+    var total = selected.reduce((s, i) => s + parseFloat(i.price || 0) * (i.quantity || 1), 0);
+    fetch(apiUrl('/api/user/coupons/validate'), {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({coupon_code: code, order_amount: total})
+    }).then(r => r.json()).then(d => {
+        if (d.success && d.data) {
+            appliedCoupon = {code: code, discount: d.data.discount, name: d.data.coupon_name};
+            document.getElementById('couponApplied').style.display = 'inline';
+            document.getElementById('couponApplied').textContent = '已优惠¥' + d.data.discount.toFixed(2);
+            updateFooter();
+            alert('优惠券「' + d.data.coupon_name + '」已应用，优惠¥' + d.data.discount.toFixed(2));
+        } else {
+            alert(d.msg || '优惠券不可用');
+        }
+    });
+}
+
+function checkout() {
+    // V30.0: 跳转独立结算确认页，而非直接下单
+    var selected = cartItems.filter(i => i.selected);
+    if (selected.length === 0) { alert('请先勾选商品'); return; }
+    var cartIds = selected.map(i => i.id).join(',');
+    goTo('checkout.html?cart_ids=' + encodeURIComponent(cartIds));
+}
+
+loadCart();
+</script>
+</body>
+</html>

@@ -1,0 +1,183 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.13.12, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\kingdee\.workbuddy\binaries\python\versions\3.13.12\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\kingdee\WorkBuddy\Claw\wojiayun
+collecting ... collected 32 items
+
+tests/test_v14_structure.py::TestRedisCacheService::test_module_import FAILED [  3%]
+tests/test_v14_structure.py::TestRedisCacheService::test_backend_selection FAILED [  6%]
+tests/test_v14_structure.py::TestRedisCacheService::test_cache_set_get FAILED [  9%]
+tests/test_v14_structure.py::TestRedisCacheService::test_cache_delete FAILED [ 12%]
+tests/test_v14_structure.py::TestRedisCacheService::test_cache_clear_with_prefix FAILED [ 15%]
+tests/test_v14_structure.py::TestRedisCacheService::test_cache_stats FAILED [ 18%]
+tests/test_v14_structure.py::TestRedisCacheService::test_cache_expiration FAILED [ 21%]
+tests/test_v14_structure.py::TestCacheServiceCompatibility::test_original_import_path FAILED [ 25%]
+tests/test_v14_structure.py::TestCacheServiceCompatibility::test_cache_service_api_compatible FAILED [ 28%]
+tests/test_v14_structure.py::TestWebSocketService::test_module_import PASSED [ 31%]
+tests/test_v14_structure.py::TestStorageService::test_module_import FAILED [ 34%]
+tests/test_v14_structure.py::TestStorageService::test_get_backend_type FAILED [ 37%]
+tests/test_v14_structure.py::TestStorageService::test_local_backend_upload FAILED [ 40%]
+tests/test_v14_structure.py::TestStorageService::test_upload_invalid_type FAILED [ 43%]
+tests/test_v14_structure.py::TestStorageService::test_upload_magic_check FAILED [ 46%]
+tests/test_v14_structure.py::TestPaymentServiceEnhancements::test_module_import FAILED [ 50%]
+tests/test_v14_structure.py::TestPaymentServiceEnhancements::test_status_constants FAILED [ 53%]
+tests/test_v14_structure.py::TestPaymentServiceEnhancements::test_wechat_callback_verify FAILED [ 56%]
+tests/test_v14_structure.py::TestPaymentServiceEnhancements::test_alipay_callback_verify FAILED [ 59%]
+tests/test_v14_structure.py::TestPaymentServiceEnhancements::test_query_external_payment FAILED [ 62%]
+tests/test_v14_structure.py::TestPaymentServiceEnhancements::test_cancel_expired_interface FAILED [ 65%]
+tests/test_v14_structure.py::TestMigrationScript::test_migrate_module_exists PASSED [ 68%]
+tests/test_v14_structure.py::TestMigrationScript::test_migrate_has_required_functions FAILED [ 71%]
+tests/test_v14_structure.py::TestStaffStatisticsEnhancement::test_date_range_utility PASSED [ 75%]
+tests/test_v14_structure.py::TestAdminNewRoutes::test_batch_product_status_route FAILED [ 78%]
+tests/test_v14_structure.py::TestAdminNewRoutes::test_product_categories_routes FAILED [ 81%]
+tests/test_v14_structure.py::TestAdminNewRoutes::test_stock_warning_route FAILED [ 84%]
+tests/test_v14_structure.py::TestAdminNewRoutes::test_advanced_search_route FAILED [ 87%]
+tests/test_v14_structure.py::TestStaffNewRoutes::test_trend_route FAILED [ 90%]
+tests/test_v14_structure.py::TestStaffNewRoutes::test_performance_route FAILED [ 93%]
+tests/test_v14_structure.py::TestRequirements::test_requirements_has_redis PASSED [ 96%]
+tests/test_v14_structure.py::TestRequirements::test_requirements_has_socketio PASSED [100%]
+
+================================== FAILURES ===================================
+__________________ TestRedisCacheService.test_module_import ___________________
+tests\test_v14_structure.py:20: in test_module_import
+    from business_common.redis_cache_service import (
+E   ModuleNotFoundError: No module named 'business_common'
+________________ TestRedisCacheService.test_backend_selection _________________
+tests\test_v14_structure.py:29: in test_backend_selection
+    from business_common.redis_cache_service import CacheService
+E   ModuleNotFoundError: No module named 'business_common'
+__________________ TestRedisCacheService.test_cache_set_get ___________________
+tests\test_v14_structure.py:35: in test_cache_set_get
+    from business_common.redis_cache_service import cache_set, cache_get
+E   ModuleNotFoundError: No module named 'business_common'
+___________________ TestRedisCacheService.test_cache_delete ___________________
+tests\test_v14_structure.py:43: in test_cache_delete
+    from business_common.redis_cache_service import cache_set, cache_get, cache_delete
+E   ModuleNotFoundError: No module named 'business_common'
+_____________ TestRedisCacheService.test_cache_clear_with_prefix ______________
+tests\test_v14_structure.py:50: in test_cache_clear_with_prefix
+    from business_common.redis_cache_service import cache_set, cache_get, cache_clear
+E   ModuleNotFoundError: No module named 'business_common'
+___________________ TestRedisCacheService.test_cache_stats ____________________
+tests\test_v14_structure.py:61: in test_cache_stats
+    from business_common.redis_cache_service import CacheService
+E   ModuleNotFoundError: No module named 'business_common'
+_________________ TestRedisCacheService.test_cache_expiration _________________
+tests\test_v14_structure.py:69: in test_cache_expiration
+    from business_common.redis_cache_service import cache_set, cache_get
+E   ModuleNotFoundError: No module named 'business_common'
+___________ TestCacheServiceCompatibility.test_original_import_path ___________
+tests\test_v14_structure.py:83: in test_original_import_path
+    from business_common.cache_service import (
+E   ModuleNotFoundError: No module named 'business_common'
+_______ TestCacheServiceCompatibility.test_cache_service_api_compatible _______
+tests\test_v14_structure.py:90: in test_cache_service_api_compatible
+    from business_common.cache_service import CacheService
+E   ModuleNotFoundError: No module named 'business_common'
+____________________ TestStorageService.test_module_import ____________________
+tests\test_v14_structure.py:124: in test_module_import
+    from business_common.storage_service import StorageService
+E   ModuleNotFoundError: No module named 'business_common'
+__________________ TestStorageService.test_get_backend_type ___________________
+tests\test_v14_structure.py:129: in test_get_backend_type
+    from business_common.storage_service import StorageService
+E   ModuleNotFoundError: No module named 'business_common'
+________________ TestStorageService.test_local_backend_upload _________________
+tests\test_v14_structure.py:136: in test_local_backend_upload
+    from business_common.storage_service import StorageService
+E   ModuleNotFoundError: No module named 'business_common'
+_________________ TestStorageService.test_upload_invalid_type _________________
+tests\test_v14_structure.py:149: in test_upload_invalid_type
+    from business_common.storage_service import StorageService
+E   ModuleNotFoundError: No module named 'business_common'
+_________________ TestStorageService.test_upload_magic_check __________________
+tests\test_v14_structure.py:155: in test_upload_magic_check
+    from business_common.storage_service import StorageService
+E   ModuleNotFoundError: No module named 'business_common'
+______________ TestPaymentServiceEnhancements.test_module_import ______________
+tests\test_v14_structure.py:169: in test_module_import
+    from business_common.payment_service import PaymentService
+E   ModuleNotFoundError: No module named 'business_common'
+____________ TestPaymentServiceEnhancements.test_status_constants _____________
+tests\test_v14_structure.py:174: in test_status_constants
+    from business_common.payment_service import PaymentService
+E   ModuleNotFoundError: No module named 'business_common'
+_________ TestPaymentServiceEnhancements.test_wechat_callback_verify __________
+tests\test_v14_structure.py:180: in test_wechat_callback_verify
+    from business_common.payment_service import PaymentService
+E   ModuleNotFoundError: No module named 'business_common'
+_________ TestPaymentServiceEnhancements.test_alipay_callback_verify __________
+tests\test_v14_structure.py:186: in test_alipay_callback_verify
+    from business_common.payment_service import PaymentService
+E   ModuleNotFoundError: No module named 'business_common'
+_________ TestPaymentServiceEnhancements.test_query_external_payment __________
+tests\test_v14_structure.py:192: in test_query_external_payment
+    from business_common.payment_service import PaymentService
+E   ModuleNotFoundError: No module named 'business_common'
+________ TestPaymentServiceEnhancements.test_cancel_expired_interface _________
+tests\test_v14_structure.py:199: in test_cancel_expired_interface
+    from business_common.payment_service import PaymentService
+E   ModuleNotFoundError: No module named 'business_common'
+___________ TestMigrationScript.test_migrate_has_required_functions ___________
+tests\test_v14_structure.py:222: in test_migrate_has_required_functions
+    spec.loader.exec_module(module)
+<frozen importlib._bootstrap_external>:1023: in exec_module
+    ???
+<frozen importlib._bootstrap>:488: in _call_with_frames_removed
+    ???
+business-common\migrate_v14.py:19: in <module>
+    from business_common import db
+E   ModuleNotFoundError: No module named 'business_common'
+_____________ TestAdminNewRoutes.test_batch_product_status_route ______________
+tests\test_v14_structure.py:249: in test_batch_product_status_route
+    from business_admin.app import app
+E   ModuleNotFoundError: No module named 'business_admin'
+______________ TestAdminNewRoutes.test_product_categories_routes ______________
+tests\test_v14_structure.py:255: in test_product_categories_routes
+    from business_admin.app import app
+E   ModuleNotFoundError: No module named 'business_admin'
+_________________ TestAdminNewRoutes.test_stock_warning_route _________________
+tests\test_v14_structure.py:261: in test_stock_warning_route
+    from business_admin.app import app
+E   ModuleNotFoundError: No module named 'business_admin'
+________________ TestAdminNewRoutes.test_advanced_search_route ________________
+tests\test_v14_structure.py:267: in test_advanced_search_route
+    from business_admin.app import app
+E   ModuleNotFoundError: No module named 'business_admin'
+_____________________ TestStaffNewRoutes.test_trend_route _____________________
+tests\test_v14_structure.py:279: in test_trend_route
+    from business_staffH5.app import app
+E   ModuleNotFoundError: No module named 'business_staffH5'
+__________________ TestStaffNewRoutes.test_performance_route __________________
+tests\test_v14_structure.py:285: in test_performance_route
+    from business_staffH5.app import app
+E   ModuleNotFoundError: No module named 'business_staffH5'
+=========================== short test summary info ===========================
+FAILED tests/test_v14_structure.py::TestRedisCacheService::test_module_import
+FAILED tests/test_v14_structure.py::TestRedisCacheService::test_backend_selection
+FAILED tests/test_v14_structure.py::TestRedisCacheService::test_cache_set_get
+FAILED tests/test_v14_structure.py::TestRedisCacheService::test_cache_delete
+FAILED tests/test_v14_structure.py::TestRedisCacheService::test_cache_clear_with_prefix
+FAILED tests/test_v14_structure.py::TestRedisCacheService::test_cache_stats
+FAILED tests/test_v14_structure.py::TestRedisCacheService::test_cache_expiration
+FAILED tests/test_v14_structure.py::TestCacheServiceCompatibility::test_original_import_path
+FAILED tests/test_v14_structure.py::TestCacheServiceCompatibility::test_cache_service_api_compatible
+FAILED tests/test_v14_structure.py::TestStorageService::test_module_import - ...
+FAILED tests/test_v14_structure.py::TestStorageService::test_get_backend_type
+FAILED tests/test_v14_structure.py::TestStorageService::test_local_backend_upload
+FAILED tests/test_v14_structure.py::TestStorageService::test_upload_invalid_type
+FAILED tests/test_v14_structure.py::TestStorageService::test_upload_magic_check
+FAILED tests/test_v14_structure.py::TestPaymentServiceEnhancements::test_module_import
+FAILED tests/test_v14_structure.py::TestPaymentServiceEnhancements::test_status_constants
+FAILED tests/test_v14_structure.py::TestPaymentServiceEnhancements::test_wechat_callback_verify
+FAILED tests/test_v14_structure.py::TestPaymentServiceEnhancements::test_alipay_callback_verify
+FAILED tests/test_v14_structure.py::TestPaymentServiceEnhancements::test_query_external_payment
+FAILED tests/test_v14_structure.py::TestPaymentServiceEnhancements::test_cancel_expired_interface
+FAILED tests/test_v14_structure.py::TestMigrationScript::test_migrate_has_required_functions
+FAILED tests/test_v14_structure.py::TestAdminNewRoutes::test_batch_product_status_route
+FAILED tests/test_v14_structure.py::TestAdminNewRoutes::test_product_categories_routes
+FAILED tests/test_v14_structure.py::TestAdminNewRoutes::test_stock_warning_route
+FAILED tests/test_v14_structure.py::TestAdminNewRoutes::test_advanced_search_route
+FAILED tests/test_v14_structure.py::TestStaffNewRoutes::test_trend_route - Mo...
+FAILED tests/test_v14_structure.py::TestStaffNewRoutes::test_performance_route
+======================== 27 failed, 5 passed in 0.50s =========================

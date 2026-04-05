@@ -476,7 +476,7 @@
         async function apiRequest(endpoint, method = 'GET', data = null) {
             const accessToken = getUrlParam('access_token') || 'demo_token';
             const isDev = getUrlParam('isdev') || 'true';
-            const apiUrl = 'http://47.98.238.209:22311';
+            const apiUrl = location.origin;
             
             const url = new URL(apiUrl + endpoint);
             url.searchParams.append('access_token', accessToken);

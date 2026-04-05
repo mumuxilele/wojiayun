@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>预约管理 - 员工端</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; min-height: 100vh; }
+        
+        .header { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; padding: 15px; position: sticky; top: 0; z-index: 100; }
+        .header-top { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+        .header a { color: white; text-decoration: none; font-size: 18px; }
+        .header h2 { font-size: 18px; flex: 1; }
+        
+        .tab-bar { display: flex; gap: 5px; overflow-x: auto; }
+        .tab-bar::-webkit-scrollbar { display: none; }
+        .tab { padding: 6px 14px; border-radius: 16px; font-size: 12px; background: rgba(255,255,255,0.25); color: white; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+        .tab.active { background: white; color: #11998e; font-weight: 600; }
+        
+        .booking-list { padding: 10px 15px; }
+        .booking-card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .booking-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .venue-name { font-size: 16px; font-weight: 600; color: #333; }
+        .booking-status { font-size: 11px; padding: 3px 8px; border-radius: 4px; font-weight: 500; }
+        .status-pending { background: #fff7e6; color: #fa8c16; }
+        .status-confirmed { background: #e6f7ff; color: #1890ff; }
+        .status-completed { background: #f6ffed; color: #52c41a; }
+        .status-cancelled { background: #fff1f0; color: #f5222d; }
+        
+        .booking-info { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .info-item { font-size: 13px; }
+        .info-label { color: #999; font-size: 11px; }
+        .info-value { color: #333; margin-top: 2px; }
+        
+        .booking-actions { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f5f5f5; }
+        .btn { padding: 8px 16px; border: none; border-radius: 8px; font-size: 13px; cursor: pointer; flex: 1; text-align: center; }
+        .btn-primary { background: #11998e; color: white; }
+        .btn-secondary { background: #f5f5f5; color: #666; }
+        .btn-danger { background: #f5222d; color: white; }
+        .btn:active { opacity: 0.8; }
+        
+        .verify-section { background: white; margin: 10px 15px; border-radius: 12px; padding: 20px; text-align: center; }
+        .verify-input { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 20px; text-align: center; letter-spacing: 4px; text-transform: uppercase; outline: none; }
+        .verify-input:focus { border-color: #11998e; }
+        .verify-btn { width: 100%; padding: 12px; border: none; border-radius: 10px; background: linear-gradient(135deg, #11998e, #38ef7d); color: white; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 12px; }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; display: none; align-items: center; justify-content: center; }
+        .modal { background: white; border-radius: 16px; padding: 20px; margin: 20px; max-width: 400px; width: 100%; }
+        .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 12px; text-align: center; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+        
+        .empty { text-align: center; padding: 40px; color: #bbb; font-size: 14px; }
+        .loading { text-align: center; padding: 20px; color: #999; }
+        .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.75); color: white; padding: 10px 20px; border-radius: 20px; font-size: 13px; z-index: 1000; display: none; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-top">
+            <a href="index.html" id="backLink">←</a>
+            <h2>📅 预约管理</h2>
+        </div>
+        <div class="tab-bar" id="tabBar">
+            <div class="tab active" data-status="">全部</div>
+            <div class="tab" data-status="pending">待确认</div>
+            <div class="tab" data-status="confirmed">已确认</div>
+            <div class="tab" data-status="completed">已完成</div>
+            <div class="tab" data-status="cancelled">已取消</div>
+        </div>
+    </div>
+    
+    <div class="verify-section">
+        <div style="font-size:14px;color:#666;margin-bottom:10px">核销码验证</div>
+        <input type="text" class="verify-input" id="verifyCode" placeholder="输入核销码" maxlength="10">
+        <button class="verify-btn" onclick="verifyBooking()">扫码核销</button>
+    </div>
+    
+    <div class="booking-list" id="bookingList"><div class="loading">加载中...</div></div>
+    
+    <div class="modal-overlay" id="modal">
+        <div class="modal">
+            <div class="modal-title" id="modalTitle">确认操作</div>
+            <div id="modalContent"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()" style="flex:1">取消</button>
+                <button class="btn btn-primary" id="modalConfirm" style="flex:1">确认</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="toast" id="toast"></div>
+
+    <script>
+        var urlParams = new URLSearchParams(location.search);
+        var token = urlParams.get('access_token');
+        var isdev = urlParams.get('isdev') || '0';
+        if (token) {
+            localStorage.setItem('staff_token', token);
+            localStorage.setItem('staff_isdev', isdev);
+        } else {
+            token = localStorage.getItem('staff_token');
+            isdev = localStorage.getItem('staff_isdev') || '0';
+        }
+        
+        var currentStatus = '';
+        var page = 1;
+        var hasMore = true;
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+        }
+        document.getElementById('backLink').href = 'index.html?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+        
+        function showToast(msg) {
+            var t = document.getElementById('toast');
+            t.textContent = msg; t.style.display = 'block';
+            setTimeout(function(){ t.style.display = 'none'; }, 2000);
+        }
+        
+        function api(method, url, data) {
+            var opts = { method: method, headers: {} };
+            if (data) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(data); }
+            return fetch(url + '&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev, opts).then(function(r){return r.json()});
+        }
+        
+        document.querySelectorAll('.tab').forEach(function(el){
+            el.addEventListener('click', function(){
+                document.querySelectorAll('.tab').forEach(function(e){e.classList.remove('active')});
+                el.classList.add('active');
+                currentStatus = el.dataset.status;
+                page = 1;
+                hasMore = true;
+                loadBookings();
+            });
+        });
+        
+        function loadBookings() {
+            var url = '/api/staff/bookings?page=' + page + '&page_size=20';
+            if (currentStatus) url += '&status=' + currentStatus;
+            api('GET', url)
+            .then(function(d){
+                if (!d.success) {
+                    document.getElementById('bookingList').innerHTML = '<div class="empty">加载失败</div>';
+                    return;
+                }
+                var items = d.data.items || [];
+                hasMore = items.length >= 20;
+                if (page === 1 && items.length === 0) {
+                    document.getElementById('bookingList').innerHTML = '<div class="empty">暂无预约记录</div>';
+                    return;
+                }
+                var html = '';
+                if (page === 1) html = '';
+                var statusMap = {pending:'待确认',confirmed:'已确认',completed:'已完成',cancelled:'已取消'};
+                var payMap = {paid:'已支付',unpaid:'未支付'};
+                
+                for (var i = 0; i < items.length; i++) {
+                    var b = items[i];
+                    html += '<div class="booking-card">'
+                        + '<div class="booking-header">'
+                        + '<div class="venue-name">' + escapeHtml(b.venue_name || '未知场地') + '</div>'
+                        + '<span class="booking-status status-' + (b.status||'pending') + '">' + (statusMap[b.status]||b.status) + '</span>'
+                        + '</div>'
+                        + '<div class="booking-info">'
+                        + '<div class="info-item"><div class="info-label">预约人</div><div class="info-value">' + escapeHtml(b.user_name||'-') + '</div></div>'
+                        + '<div class="info-item"><div class="info-label">联系电话</div><div class="info-value">' + escapeHtml(b.user_phone||'-') + '</div></div>'
+                        + '<div class="info-item"><div class="info-label">预约日期</div><div class="info-value">' + (b.book_date||'-') + '</div></div>'
+                        + '<div class="info-item"><div class="info-label">时段</div><div class="info-value">' + (b.start_time||'') + ' ~ ' + (b.end_time||'') + '</div></div>'
+                        + '<div class="info-item"><div class="info-label">金额</div><div class="info-value">¥' + parseFloat(b.total_price||0).toFixed(2) + '</div></div>'
+                        + '<div class="info-item"><div class="info-label">支付</div><div class="info-value">' + (payMap[b.pay_status]||b.pay_status||'-') + '</div></div>'
+                        + '<div class="info-item"><div class="info-label">核销码</div><div class="info-value" style="font-weight:600;letter-spacing:2px">' + (b.verify_code||'-') + '</div></div>'
+                        + '</div>'
+                        + '<div class="booking-actions">';
+                    
+                    if (b.status === 'pending') {
+                        html += '<button class="btn btn-primary" onclick="confirmBooking(' + b.id + ')">确认</button>';
+                        html += '<button class="btn btn-danger" onclick="cancelBooking(' + b.id + ')">取消</button>';
+                    } else if (b.status === 'confirmed') {
+                        html += '<button class="btn btn-primary" onclick="completeBooking(' + b.id + ')">核销完成</button>';
+                    }
+                    html += '</div></div>';
+                }
+                if (page === 1) {
+                    document.getElementById('bookingList').innerHTML = html;
+                } else {
+                    document.getElementById('bookingList').innerHTML += html;
+                }
+            })
+            .catch(function(){
+                document.getElementById('bookingList').innerHTML = '<div class="empty">加载失败</div>';
+            });
+        }
+        
+        function confirmBooking(id) {
+            showModal('确认预约', '确认此预约？确认后用户可到场使用', function(){
+                api('POST', '/api/staff/bookings/' + id + '/complete', {action:'confirm'})
+                .then(function(d){
+                    showToast(d.success ? '已确认' : (d.msg || '操作失败'));
+                    if (d.success) { page = 1; loadBookings(); }
+                });
+            });
+        }
+        
+        function completeBooking(id) {
+            showModal('完成核销', '确认完成此预约的核销？', function(){
+                api('POST', '/api/staff/bookings/' + id + '/complete', {})
+                .then(function(d){
+                    showToast(d.success ? '核销成功' : (d.msg || '操作失败'));
+                    if (d.success) { page = 1; loadBookings(); }
+                });
+            });
+        }
+        
+        function cancelBooking(id) {
+            showModal('取消预约', '确认取消此预约？此操作不可撤销', function(){
+                api('POST', '/api/staff/orders/' + id + '/status', {status:'cancelled'})
+                .then(function(d){
+                    showToast(d.success ? '已取消' : (d.msg || '操作失败'));
+                    if (d.success) { page = 1; loadBookings(); }
+                });
+            });
+        }
+        
+        function verifyBooking() {
+            var code = document.getElementById('verifyCode').value.trim().toUpperCase();
+            if (!code) { showToast('请输入核销码'); return; }
+            
+            api('POST', '/api/staff/bookings/verify', {verify_code: code})
+            .then(function(d){
+                if (d.success && d.data) {
+                    var b = d.data;
+                    showToast('核销成功: ' + (b.venue_name || '') + ' ' + (b.user_name || ''));
+                    document.getElementById('verifyCode').value = '';
+                    page = 1;
+                    loadBookings();
+                } else {
+                    showToast(d.msg || '核销失败');
+                }
+            });
+        }
+        
+        var modalCallback = null;
+        function showModal(title, content, callback) {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalContent').textContent = content;
+            modalCallback = callback;
+            document.getElementById('modal').style.display = 'flex';
+            document.getElementById('modalConfirm').onclick = function(){
+                closeModal();
+                if (modalCallback) modalCallback();
+            };
+        }
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+            modalCallback = null;
+        }
+        
+        // 滚动加载
+        window.addEventListener('scroll', function(){
+            if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100 && hasMore) {
+                page++;
+                loadBookings();
+            }
+        });
+        
+        loadBookings();
+    </script>
+</body>
+</html>
