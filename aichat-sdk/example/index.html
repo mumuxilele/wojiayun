@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Chat SDK Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f0f2f5;
+      padding: 20px;
+    }
+
+    .demo-container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .demo-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .demo-header h1 {
+      font-size: 24px;
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .demo-header p {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .chat-wrapper {
+      height: 600px;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .config-panel {
+      margin-top: 20px;
+      padding: 16px;
+      background: white;
+      border-radius: 8px;
+    }
+
+    .config-item {
+      margin-bottom: 12px;
+    }
+
+    .config-item label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 14px;
+      color: #333;
+      font-weight: 500;
+    }
+
+    .config-item input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #d9d9d9;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .config-item input:focus {
+      outline: none;
+      border-color: #1890ff;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: #1890ff;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #40a9ff;
+    }
+
+    .note {
+      margin-top: 16px;
+      padding: 12px;
+      background: #e6f7ff;
+      border: 1px solid #91d5ff;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #0050b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-container">
+    <div class="demo-header">
+      <h1>🤖 AI Chat SDK Demo</h1>
+      <p>React SDK for AI Chat with voice input support</p>
+    </div>
+
+    <div id="chat-root" class="chat-wrapper"></div>
+
+    <div class="config-panel">
+      <div class="config-item">
+        <label>Access Token:</label>
+        <input type="text" id="accessToken" placeholder="Enter access token" />
+      </div>
+      <div class="config-item">
+        <label>API URL:</label>
+        <input type="text" id="apiUrl" value="/api" placeholder="API base URL" />
+      </div>
+      <button class="btn btn-primary" onclick="initChat()">Initialize Chat</button>
+      
+      <div class="note">
+        <strong>Usage:</strong><br>
+        1. Enter your access token from URL parameters<br>
+        2. Click "Initialize Chat" to start<br>
+        3. Long-press the voice button for voice input
+      </div>
+    </div>
+  </div>
+
+  <!-- React & ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- SDK Bundle (will be built) -->
+  <script src="../dist/umd/aichat-sdk.min.js"></script>
+  
+  <script>
+    // 从 URL 获取 access_token
+    const urlParams = new URLSearchParams(window.location.search);
+    const accessToken = urlParams.get('access_token') || '';
+    
+    // 设置默认值
+    document.getElementById('accessToken').value = accessToken;
+    
+    function initChat() {
+      const token = document.getElementById('accessToken').value;
+      const apiUrl = document.getElementById('apiUrl').value;
+      
+      if (!token) {
+        alert('Please enter an access token');
+        return;
+      }
+      
+      const config = {
+        accessToken: token,
+        apiUrl: apiUrl,
+        enableVoice: true,
+        placeholder: '输入消息或长按语音按钮...',
+        welcomeMessage: '你好！我是 AI 助手，有什么可以帮助你的吗？',
+        theme: 'light',
+        customVariables: {
+          access_token: token
+        }
+      };
+      
+      // 使用 SDK 渲染聊天组件
+      const root = ReactDOM.createRoot(document.getElementById('chat-root'));
+      root.render(
+        React.createElement(AIChatSDK.ChatContainer, { config })
+      );
+    }
+    
+    // 如果有 token，自动初始化
+    if (accessToken) {
+      initChat();
+    }
+  </script>
+</body>
+</html>

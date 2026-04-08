@@ -1,0 +1,43 @@
+/* AI Chat SDK Styles */
+@import '../components/ChatContainer.css';
+@import '../components/MessageList.css';
+@import '../components/InputArea.css';
+
+/* Global Styles */
+.aichat-sdk {
+  box-sizing: border-box;
+}
+
+.aichat-sdk *,
+.aichat-sdk *::before,
+.aichat-sdk *::after {
+  box-sizing: inherit;
+}
+
+/* Scrollbar Styles */
+.aichat-sdk ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.aichat-sdk ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.aichat-sdk ::-webkit-scrollbar-thumb {
+  background: #d9d9d9;
+  border-radius: 3px;
+}
+
+.aichat-sdk ::-webkit-scrollbar-thumb:hover {
+  background: #bfbfbf;
+}
+
+/* Dark Theme Scrollbar */
+.aichat-sdk.dark-theme ::-webkit-scrollbar-thumb {
+  background: #4a4a4a;
+}
+
+.aichat-sdk.dark-theme ::-webkit-scrollbar-thumb:hover {
+  background: #5a5a5a;
+}
