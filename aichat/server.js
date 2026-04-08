@@ -66,7 +66,7 @@ app.get('/api/userinfo', async (req, res) => {
         const options = {
             hostname: CONFIG.WOJIA_API_HOST,
             port: 443,
-            path: `/api/user/getUserInfo?access_token=${accessToken}`,
+            path: `/users/getUserInfo?access_token=${accessToken}`,
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
