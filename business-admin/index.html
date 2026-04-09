@@ -51,7 +51,7 @@
             <div class="menu-item" data-page="dashboard" onclick="switchPage('dashboard')"><span>📊</span><span>概览</span></div>
             <div class="menu-item" data-page="applications" onclick="switchPage('applications')"><span>📋</span><span>申请单管理</span></div>
             <div class="menu-item" data-page="orders" onclick="switchPage('orders')"><span>📦</span><span>订单管理</span></div>
-            <div class="menu-item" onclick="window.open('refunds.html','_blank')"><span>💸</span><span>退款管理</span></div>
+            <div class="menu-item" data-page="refunds" onclick="switchPage('refunds')"><span>💸</span><span>退款管理</span></div>
             <div class="menu-item" data-page="shops" onclick="switchPage('shops')"><span>🏪</span><span>门店管理</span></div>
             <div class="menu-item" data-page="products" onclick="switchPage('products')"><span>📦</span><span>商品管理</span></div>
             <div class="menu-item" data-page="users" onclick="switchPage('users')"><span>👥</span><span>用户管理</span></div>
@@ -143,6 +143,10 @@
             <div id="panel-orders" class="page-panel">
                 <iframe id="iframe-orders" src="about:blank"></iframe>
             </div>
+            <!-- 退款管理 (iframe) -->
+            <div id="panel-refunds" class="page-panel">
+                <iframe id="iframe-refunds" src="about:blank"></iframe>
+            </div>
             <div id="panel-shops" class="page-panel">
                 <iframe id="iframe-shops" src="about:blank"></iframe>
             </div>
@@ -219,8 +223,8 @@
         let currentUser = null;
         
         const PAGE_TITLES = {
-            dashboard:'概览', applications:'申请单管理', orders:'订单管理', 
-            shops:'门店管理', products:'商品管理', users:'用户管理', venues:'场地管理', 
+            dashboard:'概览', applications:'申请单管理', orders:'订单管理', refunds:'退款管理',
+            shops:'门店管理', products:'商品管理', users:'用户管理', venues:'场地管理',
             points:'积分管理', coupons:'优惠券管理', feedback:'反馈管理',
             notifications:'通知管理', notices:'公告管理', statistics:'数据统计',
             swagger:'API文档', visual:'数据大屏', 'member-levels':'会员等级',

@@ -10,13 +10,7 @@
         :root { --primary: #1890ff; --success: #52c41a; --warning: #faad14; --danger: #ff4d4f; --border: #ebeef5; --bg: #f5f7fa; --text: #303133; --text2: #606266; --text3: #909399; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg); font-size: 14px; color: var(--text2); }
         .layout { display: flex; min-height: 100vh; }
-        .sidebar { width: 200px; background: #2c3e50; min-height: 100vh; position: fixed; top: 0; left: 0; z-index: 100; overflow-y: auto; }
-        .sidebar-header { padding: 16px 20px; border-bottom: 1px solid #3d4f5f; }
-        .sidebar-header h5 { color: white; font-size: 16px; font-weight: 600; }
-        .sidebar a { color: #ecf0f1; text-decoration: none; padding: 12px 20px; display: block; font-size: 14px; transition: all .2s; }
-        .sidebar a:hover { background: #34495e; }
-        .sidebar a.active { background: #34495e; border-left: 3px solid var(--primary); }
-        .main { flex: 1; margin-left: 200px; padding: 20px; }
+        .main { flex: 1; padding: 20px; }
         .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .page-title { font-size: 18px; font-weight: 600; color: var(--text); }
         .filter-bar { background: white; padding: 14px 16px; border-radius: 6px; margin-bottom: 20px; display: flex; gap: 12px; align-items: center; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
@@ -54,23 +48,6 @@
 </head>
 <body>
 <div class="layout">
-    <div class="sidebar">
-        <div class="sidebar-header"><h5>管理后台</h5></div>
-        <a href="index.html">🏠 首页</a>
-        <a href="statistics.html">📊 数据统计</a>
-        <a href="data-board.html" class="active">📈 运营看板</a>
-        <a href="venues.html">🏟️ 场地管理</a>
-        <a href="shops.html">🏪 门店管理</a>
-        <a href="products.html">📦 商品管理</a>
-        <a href="applications.html">📋 申请单</a>
-        <a href="orders.html">🧾 订单管理</a>
-        <a href="points.html">💎 积分管理</a>
-        <a href="coupons.html">🎫 优惠券</a>
-        <a href="promotions.html">🔥 促销活动</a>
-        <a href="points-mall.html">🎁 积分商城</a>
-        <a href="group-buy.html">👥 拼团活动</a>
-        <a href="member-levels.html">🏆 会员等级</a>
-    </div>
     <div class="main">
         <div class="page-header">
             <h1 class="page-title">📈 运营数据看板</h1>

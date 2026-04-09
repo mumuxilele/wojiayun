@@ -20,14 +20,15 @@
         
         .container { display: flex; min-height: calc(100vh - 100px); }
         
-        /* 左侧导航 */
+        /* 左侧导航 - 调整为适合iframe显示 */
         .sidebar {
-            width: 250px;
+            width: 220px;
             background: #fff;
             border-right: 1px solid #e4e7ed;
             overflow-y: auto;
             position: fixed;
             height: calc(100vh - 100px);
+            top: 100px;
         }
         .sidebar-item {
             padding: 12px 20px;
@@ -49,8 +50,8 @@
             text-transform: uppercase;
         }
         
-        /* 右侧内容 */
-        .main { margin-left: 250px; flex: 1; padding: 20px; }
+        /* 右侧内容 - 调整margin匹配新侧边栏宽度 */
+        .main { margin-left: 220px; flex: 1; padding: 20px; }
         
         .api-card {
             background: #fff;
