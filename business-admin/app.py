@@ -12,7 +12,7 @@ import sys, os, time, json, logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from business_common import config, db, auth, utils, audit_log, error_handler, rate_limiter, notification, export_service, OrderStatusTransition
+from business_common import config, db, auth, utils, audit_log, error_handler, rate_limiter, notification, export_service, OrderStatusTransition, analytics_service
 
 app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
@@ -45,7 +45,8 @@ def get_current_admin():
     """获取当前管理员信息，包含 ec_id 和 project_id"""
     token = request.args.get('access_token') or request.headers.get('Token')
     isdev = request.args.get('isdev') or '0'
-    return auth.verify_user(token, isdev) if token else None
+    # P0-2修复：管理端必须使用verify_staff进行权限校验，禁止使用verify_user
+    return auth.verify_staff(token, isdev) if token else None
 
 def get_data_scope():
     """获取当前用户的数据范围（ec_id, project_id）"""
@@ -501,13 +502,11 @@ def admin_rfm_overview(user):
             FROM rfm_analysis_view v
             JOIN business_members m ON v.member_id = m.user_id
             WHERE 1=1
-            {} {}
+            AND m.ec_id=%s
+            AND m.project_id=%s
             GROUP BY rfm_type
             ORDER BY count DESC
-        """.format(
-            "AND m.ec_id=%s" % ec_id if ec_id else "",
-            "AND m.project_id=%s" % project_id if project_id else ""
-        )) or []
+        """, [ec_id, project_id]) or []
         
         # 计算各类型占比
         total = sum(s['count'] for s in stats)
@@ -639,23 +638,17 @@ def admin_rfm_trend(user):
             month_start = m['month'] + '-01'
             # 计算该月的RFM分布（简化版：按会员数和消费会员数估算）
             try:
-                total_members = db.get_total(f"""
+                total_members = db.get_total("""
                     SELECT COUNT(*) FROM business_members m
                     WHERE m.created_at < %s
-                    {} {}
-                """.format(
-                    "AND m.ec_id=%s" % ec_id if ec_id else "",
-                    "AND m.project_id=%s" % project_id if project_id else ""
-                ), [month_start + ' 23:59:59'] + ([ec_id] if ec_id else []) + ([project_id] if project_id else []))
+                    AND m.ec_id=%s AND m.project_id=%s
+                """, [month_start + ' 23:59:59', ec_id, project_id])
                 
-                active_members = db.get_total(f"""
+                active_members = db.get_total("""
                     SELECT COUNT(DISTINCT user_id) FROM business_orders
                     WHERE created_at >= %s AND created_at < %s AND pay_status='paid' AND deleted=0
-                    {} {}
-                """.format(
-                    "AND ec_id=%s" % ec_id if ec_id else "",
-                    "AND project_id=%s" % project_id if project_id else ""
-                ), [month_start, month_start[:7] + '-31 23:59:59'] + ([ec_id] if ec_id else []) + ([project_id] if project_id else []))
+                    AND ec_id=%s AND project_id=%s
+                """, [month_start, month_start[:7] + '-31 23:59:59', ec_id, project_id])
                 
                 # 计算活跃率
                 active_rate = round(active_members / total_members * 100, 1) if total_members > 0 else 0
@@ -2748,7 +2741,9 @@ def admin_issue_coupon(user, coupon_id):
 def admin_targeted_issue_coupon(user, coupon_id):
     """
     V30.0 定向发放优惠券：按会员等级/消费区间/签到活跃度筛选目标人群
+    V31.0 增强：新增直接传入 user_ids 列表支持（用于 RFM 分群批量操作）
     支持参数：
+      - user_ids: [uid1, uid2, ...] 直接指定用户列表（优先级最高）
       - level_list: ['gold','platinum','diamond']  会员等级列表
       - min_total_consume / max_total_consume: 消费区间
       - min_checkin_streak: 最低连续签到天数（活跃用户）
@@ -2768,6 +2763,68 @@ def admin_targeted_issue_coupon(user, coupon_id):
         return jsonify({'success': False, 'msg': '优惠券不存在或已失效'})
     if int(coupon.get('stock') or 0) <= 0 and not coupon.get('unlimited_stock'):
         return jsonify({'success': False, 'msg': '优惠券库存不足'})
+
+    # V31.0 新增：如果直接传了 user_ids，优先使用
+    direct_user_ids = data.get('user_ids')
+    if direct_user_ids and isinstance(direct_user_ids, list) and len(direct_user_ids) > 0:
+        # 限制最多5000个
+        direct_user_ids = [str(uid) for uid in direct_user_ids[:5000]]
+        if len(direct_user_ids) == 0:
+            return jsonify({'success': False, 'msg': '用户列表为空'})
+        placeholders = ','.join(['%s'] * len(direct_user_ids))
+        # 排除已持有该券的用户
+        target_users = db.get_all(
+            f"""SELECT m.user_id, m.user_name, m.phone, m.member_level
+                FROM business_members m
+                WHERE m.user_id IN ({placeholders})
+                AND m.user_id NOT IN (SELECT user_id FROM business_user_coupons WHERE coupon_id=%s)
+                LIMIT %s""",
+            direct_user_ids + [coupon_id, max_count]
+        ) or []
+        est_count = len(target_users)
+        if dry_run:
+            sample = [{'user_id': u['user_id'], 'user_name': u.get('user_name',''), 'level': u.get('member_level','')}
+                      for u in target_users[:10]]
+            return jsonify({'success': True, 'data': {
+                'estimated_count': est_count,
+                'issued_count': est_count,
+                'sample_users': sample,
+                'message': f'将向 {est_count} 名选定会员发放优惠券'
+            }})
+        if not target_users:
+            return jsonify({'success': False, 'msg': '所选用户均已持有该券'})
+        import uuid as _uuid
+        count = 0
+        expire_days = int(coupon.get('expire_days') or 30)
+        for u in target_users:
+            coupon_code = _uuid.uuid4().hex[:12].upper()
+            try:
+                db.execute(
+                    """INSERT INTO business_user_coupons
+                       (coupon_id, user_id, coupon_code, ec_id, project_id, expire_at)
+                       VALUES (%s, %s, %s, %s, %s, DATE_ADD(NOW(), INTERVAL %s DAY))""",
+                    [coupon_id, u['user_id'], coupon_code, ec_id, project_id, expire_days]
+                )
+                try:
+                    from business_common.notification import send_notification
+                    send_notification(
+                        user_id=u['user_id'],
+                        title='您收到一张优惠券',
+                        content=f"恭喜！您获得了「{coupon.get('coupon_name', '优惠券')}」，有效期{expire_days}天，快去使用吧！",
+                        notify_type='coupon',
+                        ec_id=ec_id, project_id=project_id
+                    )
+                except Exception:
+                    pass
+                count += 1
+            except Exception:
+                pass
+        log_admin_action('targeted_issue_coupon', {
+            'coupon_id': coupon_id, 'mode': 'direct_user_ids',
+            'target_count': est_count, 'success_count': count
+        })
+        return jsonify({'success': True, 'msg': f'发放完成，成功发放 {count} 张',
+                        'data': {'success_count': count, 'issued_count': count, 'total_target': est_count}})
 
     # 构建会员筛选条件
     where = "1=1"
@@ -4491,6 +4548,526 @@ def admin_list_group_orders(user, activity_no):
     except Exception as e:
         logging.error(f"拼团订单列表查询失败: {e}")
         return jsonify({'success': True, 'data': {'items': [], 'total': 0}})
+
+
+# ============ V33.0 发票管理 ============
+
+@app.route('/api/admin/invoices', methods=['GET'])
+@require_admin
+def admin_list_invoices(user):
+    """V33.0: 管理端发票列表"""
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    
+    status = request.args.get('status')
+    invoice_type = request.args.get('invoice_type')
+    date_from = request.args.get('date_from')
+    date_to = request.args.get('date_to')
+    keyword = request.args.get('keyword', '').strip()
+    page = max(1, int(request.args.get('page', 1)))
+    page_size = min(int(request.args.get('page_size', 15)), 50)
+    
+    where_clauses = ["i.deleted=0"]
+    params = []
+    
+    if ec_id:
+        where_clauses.append("i.ec_id=%s")
+        params.append(ec_id)
+    if project_id:
+        where_clauses.append("i.project_id=%s")
+        params.append(project_id)
+    if status:
+        where_clauses.append("i.invoice_status=%s")
+        params.append(status)
+    if invoice_type:
+        where_clauses.append("i.invoice_type=%s")
+        params.append(invoice_type)
+    if date_from:
+        where_clauses.append("i.created_at >= %s")
+        params.append(date_from)
+    if date_to:
+        where_clauses.append("i.created_at <= %s")
+        params.append(date_to + ' 23:59:59')
+    if keyword:
+        where_clauses.append("(i.invoice_no LIKE %s OR i.order_no LIKE %s OR t.title_name LIKE %s)")
+        params.extend([f'%{keyword}%', f'%{keyword}%', f'%{keyword}%'])
+    
+    where_sql = " AND ".join(where_clauses)
+    
+    try:
+        total = db.get_total(f"SELECT COUNT(*) FROM business_invoices i LEFT JOIN business_invoice_titles t ON i.title_id=t.id WHERE {where_sql}", params)
+        offset = (page - 1) * page_size
+        
+        items = db.get_all(f"""
+            SELECT i.*, t.title_type, t.title_name, t.tax_no
+            FROM business_invoices i
+            LEFT JOIN business_invoice_titles t ON i.title_id = t.id
+            WHERE {where_sql}
+            ORDER BY i.created_at DESC
+            LIMIT %s OFFSET %s
+        """, params + [page_size, offset])
+        
+        return jsonify({'success': True, 'data': {
+            'items': items or [],
+            'total': total,
+            'page': page,
+            'page_size': page_size,
+            'pages': (total + page_size - 1) // page_size if total else 0
+        }})
+    except Exception as e:
+        logging.error(f"发票列表查询失败: {e}")
+        return jsonify({'success': True, 'data': {'items': [], 'total': 0}})
+
+
+@app.route('/api/admin/invoices/<int:invoice_id>', methods=['GET'])
+@require_admin
+def admin_get_invoice_detail(user, invoice_id):
+    """V33.0: 管理端获取发票详情"""
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    
+    invoice = db.get_one(
+        """SELECT i.*, t.title_type, t.title_name, t.tax_no, t.bank_name, t.bank_account, t.address, t.phone,
+                  o.actual_amount, o.pay_time, o.user_name as buyer_name
+           FROM business_invoices i
+           LEFT JOIN business_invoice_titles t ON i.title_id = t.id
+           LEFT JOIN business_orders o ON i.order_id = o.id
+           WHERE i.id=%s AND i.deleted=0""",
+        [invoice_id]
+    )
+    
+    if not invoice:
+        return jsonify({'success': False, 'msg': '发票不存在'})
+    
+    return jsonify({'success': True, 'data': invoice})
+
+
+@app.route('/api/admin/invoices/<int:invoice_id>/approve', methods=['POST'])
+@require_admin
+def admin_approve_invoice(user, invoice_id):
+    """V33.0: 审核通过发票"""
+    ec_id = user.get('ec_id')
+    user_name = user.get('user_name')
+    
+    invoice = db.get_one(
+        "SELECT * FROM business_invoices WHERE id=%s AND invoice_status='pending' AND deleted=0",
+        [invoice_id]
+    )
+    
+    if not invoice:
+        return jsonify({'success': False, 'msg': '发票不存在或状态不允许审核'})
+    
+    try:
+        db.execute(
+            "UPDATE business_invoices SET invoice_status='approved', updated_at=NOW() WHERE id=%s",
+            [invoice_id]
+        )
+        log_admin_action('approve_invoice', {'invoice_id': invoice_id})
+        return jsonify({'success': True, 'msg': '审核通过'})
+    except Exception as e:
+        logging.error(f"审核发票失败: {e}")
+        return jsonify({'success': False, 'msg': '操作失败'})
+
+
+@app.route('/api/admin/invoices/<int:invoice_id>/reject', methods=['POST'])
+@require_admin
+def admin_reject_invoice(user, invoice_id):
+    """V33.0: 驳回发票"""
+    ec_id = user.get('ec_id')
+    user_name = user.get('user_name')
+    data = request.get_json() or {}
+    reason = data.get('reason', '不符合开票要求')
+    
+    invoice = db.get_one(
+        "SELECT * FROM business_invoices WHERE id=%s AND invoice_status='pending' AND deleted=0",
+        [invoice_id]
+    )
+    
+    if not invoice:
+        return jsonify({'success': False, 'msg': '发票不存在或状态不允许驳回'})
+    
+    try:
+        db.execute(
+            "UPDATE business_invoices SET invoice_status='rejected', remark=CONCAT(IFNULL(remark,''), ' 驳回原因:', %s), updated_at=NOW() WHERE id=%s",
+            [reason, invoice_id]
+        )
+        log_admin_action('reject_invoice', {'invoice_id': invoice_id, 'reason': reason})
+        return jsonify({'success': True, 'msg': '已驳回'})
+    except Exception as e:
+        logging.error(f"驳回发票失败: {e}")
+        return jsonify({'success': False, 'msg': '操作失败'})
+
+
+@app.route('/api/admin/invoices/<int:invoice_id>/issue', methods=['POST'])
+@require_admin
+def admin_issue_invoice(user, invoice_id):
+    """V33.0: 开具发票"""
+    ec_id = user.get('ec_id')
+    user_name = user.get('user_name')
+    data = request.get_json() or {}
+    pdf_url = data.get('pdf_url', '')
+    
+    invoice = db.get_one(
+        "SELECT * FROM business_invoices WHERE id=%s AND invoice_status IN ('pending','approved') AND deleted=0",
+        [invoice_id]
+    )
+    
+    if not invoice:
+        return jsonify({'success': False, 'msg': '发票不存在或状态不允许开具'})
+    
+    try:
+        db.execute(
+            "UPDATE business_invoices SET invoice_status='issued', issued_at=NOW(), issued_by=%s, pdf_url=%s, updated_at=NOW() WHERE id=%s",
+            [user_name, pdf_url, invoice_id]
+        )
+        # 更新订单发票状态
+        db.execute(
+            "UPDATE business_orders SET invoice_status='issued' WHERE id=%s",
+            [invoice['order_id']]
+        )
+        log_admin_action('issue_invoice', {'invoice_id': invoice_id})
+        return jsonify({'success': True, 'msg': '发票开具成功', 'data': {'pdf_url': pdf_url}})
+    except Exception as e:
+        logging.error(f"开具发票失败: {e}")
+        return jsonify({'success': False, 'msg': '操作失败'})
+
+
+@app.route('/api/admin/invoices/<int:invoice_id>/cancel', methods=['POST'])
+@require_admin
+def admin_cancel_invoice(user, invoice_id):
+    """V33.0: 作废发票"""
+    ec_id = user.get('ec_id')
+    user_name = user.get('user_name')
+    data = request.get_json() or {}
+    reason = data.get('reason', '管理员作废')
+    
+    invoice = db.get_one(
+        "SELECT * FROM business_invoices WHERE id=%s AND invoice_status!='cancelled' AND deleted=0",
+        [invoice_id]
+    )
+    
+    if not invoice:
+        return jsonify({'success': False, 'msg': '发票不存在或已作废'})
+    
+    try:
+        db.execute(
+            "UPDATE business_invoices SET invoice_status='cancelled', remark=CONCAT(IFNULL(remark,''), ' 作废原因:', %s), updated_at=NOW() WHERE id=%s",
+            [reason, invoice_id]
+        )
+        db.execute(
+            "UPDATE business_orders SET invoice_status='cancelled' WHERE id=%s",
+            [invoice['order_id']]
+        )
+        log_admin_action('cancel_invoice', {'invoice_id': invoice_id, 'reason': reason})
+        return jsonify({'success': True, 'msg': '发票已作废'})
+    except Exception as e:
+        logging.error(f"作废发票失败: {e}")
+        return jsonify({'success': False, 'msg': '操作失败'})
+
+
+@app.route('/api/admin/invoices/statistics', methods=['GET'])
+@require_admin
+def admin_invoice_statistics(user):
+    """V33.0: 管理端发票统计"""
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    date_from = request.args.get('date_from')
+    date_to = request.args.get('date_to')
+    
+    where_clauses = ["deleted=0"]
+    params = []
+    
+    if ec_id:
+        where_clauses.append("ec_id=%s")
+        params.append(ec_id)
+    if project_id:
+        where_clauses.append("project_id=%s")
+        params.append(project_id)
+    if date_from:
+        where_clauses.append("created_at >= %s")
+        params.append(date_from)
+    if date_to:
+        where_clauses.append("created_at <= %s")
+        params.append(date_to + ' 23:59:59')
+    
+    where_sql = " AND ".join(where_clauses)
+    
+    try:
+        # 总体统计
+        total_stats = db.get_one(f"""
+            SELECT COUNT(*) as total_count, COALESCE(SUM(amount),0) as total_amount, COALESCE(SUM(tax_amount),0) as total_tax
+            FROM business_invoices WHERE {where_sql}
+        """, params)
+        
+        # 按状态统计
+        by_status = db.get_all(f"""
+            SELECT invoice_status, COUNT(*) as count, COALESCE(SUM(amount),0) as amount
+            FROM business_invoices WHERE {where_sql}
+            GROUP BY invoice_status
+        """, params)
+        
+        # 按类型统计
+        by_type = db.get_all(f"""
+            SELECT invoice_type, COUNT(*) as count, COALESCE(SUM(amount),0) as amount
+            FROM business_invoices WHERE {where_sql}
+            GROUP BY invoice_type
+        """, params)
+        
+        return jsonify({'success': True, 'data': {
+            'total_count': int(total_stats.get('total_count', 0) or 0),
+            'total_amount': float(total_stats.get('total_amount', 0) or 0),
+            'total_tax': float(total_stats.get('total_tax', 0) or 0),
+            'by_status': {s['invoice_status']: {'count': s['count'], 'amount': float(s['amount'])} for s in by_status},
+            'by_type': {s['invoice_type']: {'count': s['count'], 'amount': float(s['amount'])} for s in by_type}
+        }})
+    except Exception as e:
+        logging.error(f"发票统计查询失败: {e}")
+        return jsonify({'success': True, 'data': {'total_count': 0, 'total_amount': 0, 'total_tax': 0, 'by_status': {}, 'by_type': {}}})
+
+
+# ============ V33.0 任务队列管理 ============
+
+@app.route('/api/admin/tasks', methods=['GET'])
+@require_admin
+def admin_list_tasks(user):
+    """V33.0: 管理端任务列表"""
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    
+    task_type = request.args.get('task_type')
+    status = request.args.get('status')
+    page = max(1, int(request.args.get('page', 1)))
+    page_size = min(int(request.args.get('page_size', 15)), 50)
+    
+    where_clauses = ["deleted=0"]
+    params = []
+    
+    if ec_id:
+        where_clauses.append("ec_id=%s")
+        params.append(ec_id)
+    if project_id:
+        where_clauses.append("project_id=%s")
+        params.append(project_id)
+    if task_type:
+        where_clauses.append("task_type=%s")
+        params.append(task_type)
+    if status:
+        where_clauses.append("status=%s")
+        params.append(status)
+    
+    where_sql = " AND ".join(where_clauses)
+    
+    try:
+        total = db.get_total(f"SELECT COUNT(*) FROM business_tasks WHERE {where_sql}", params)
+        offset = (page - 1) * page_size
+        
+        items = db.get_all(f"""
+            SELECT * FROM business_tasks
+            WHERE {where_sql}
+            ORDER BY priority DESC, created_at DESC
+            LIMIT %s OFFSET %s
+        """, params + [page_size, offset])
+        
+        return jsonify({'success': True, 'data': {
+            'items': items or [],
+            'total': total,
+            'page': page,
+            'page_size': page_size,
+            'pages': (total + page_size - 1) // page_size if total else 0
+        }})
+    except Exception as e:
+        logging.error(f"任务列表查询失败: {e}")
+        return jsonify({'success': True, 'data': {'items': [], 'total': 0}})
+
+
+@app.route('/api/admin/tasks/statistics', methods=['GET'])
+@require_admin
+def admin_task_statistics(user):
+    """V33.0: 管理端任务统计"""
+    ec_id = user.get('ec_id')
+    
+    try:
+        by_status = db.get_all("""
+            SELECT status, COUNT(*) as count FROM business_tasks WHERE deleted=0 GROUP BY status
+        """)
+        
+        by_type = db.get_all("""
+            SELECT task_type, COUNT(*) as total, SUM(CASE WHEN status='completed' THEN 1 ELSE 0 END) as success,
+                   SUM(CASE WHEN status='failed' THEN 1 ELSE 0 END) as failed
+            FROM business_tasks WHERE deleted=0 GROUP BY task_type
+        """)
+        
+        return jsonify({'success': True, 'data': {
+            'by_status': {s['status']: s['count'] for s in by_status},
+            'by_type': [{
+                'task_type': t['task_type'],
+                'total': t['total'],
+                'success': int(t['success'] or 0),
+                'failed': int(t['failed'] or 0)
+            } for t in by_type]
+        }})
+    except Exception as e:
+        logging.error(f"任务统计查询失败: {e}")
+        return jsonify({'success': True, 'data': {'by_status': {}, 'by_type': []}})
+
+
+@app.route('/api/admin/tasks/<task_id>/retry', methods=['POST'])
+@require_admin
+def admin_retry_task(user, task_id):
+    """V33.0: 重试任务"""
+    task = db.get_one("SELECT * FROM business_tasks WHERE task_id=%s AND status='failed' AND deleted=0", [task_id])
+    
+    if not task:
+        return jsonify({'success': False, 'msg': '任务不存在或状态不允许重试'})
+    
+    try:
+        db.execute(
+            "UPDATE business_tasks SET status='pending', retry_count=retry_count+1, error_message=NULL, updated_at=NOW() WHERE task_id=%s",
+            [task_id]
+        )
+        log_admin_action('retry_task', {'task_id': task_id})
+        return jsonify({'success': True, 'msg': '任务已加入重试队列'})
+    except Exception as e:
+        logging.error(f"重试任务失败: {e}")
+        return jsonify({'success': False, 'msg': '操作失败'})
+
+
+@app.route('/api/admin/tasks/<task_id>/cancel', methods=['POST'])
+@require_admin
+def admin_cancel_task(user, task_id):
+    """V33.0: 取消任务"""
+    task = db.get_one("SELECT * FROM business_tasks WHERE task_id=%s AND status IN ('pending','running') AND deleted=0", [task_id])
+    
+    if not task:
+        return jsonify({'success': False, 'msg': '任务不存在或状态不允许取消'})
+    
+    try:
+        db.execute("UPDATE business_tasks SET status='cancelled', updated_at=NOW() WHERE task_id=%s", [task_id])
+        log_admin_action('cancel_task', {'task_id': task_id})
+        return jsonify({'success': True, 'msg': '任务已取消'})
+    except Exception as e:
+        logging.error(f"取消任务失败: {e}")
+        return jsonify({'success': False, 'msg': '操作失败'})
+
+
+@app.route('/api/admin/backups', methods=['GET'])
+@require_admin
+def admin_list_backups(user):
+    """V33.0: 管理端备份列表"""
+    backup_type = request.args.get('backup_type')
+    status = request.args.get('status')
+    page = max(1, int(request.args.get('page', 1)))
+    page_size = min(int(request.args.get('page_size', 15)), 50)
+    
+    where_clauses = ["deleted=0"]
+    params = []
+    
+    if backup_type:
+        where_clauses.append("backup_type=%s")
+        params.append(backup_type)
+    if status:
+        where_clauses.append("status=%s")
+        params.append(status)
+    
+    where_sql = " AND ".join(where_clauses)
+    
+    try:
+        total = db.get_total(f"SELECT COUNT(*) FROM business_backups WHERE {where_sql}", params)
+        offset = (page - 1) * page_size
+        
+        items = db.get_all(f"""
+            SELECT * FROM business_backups
+            WHERE {where_sql}
+            ORDER BY created_at DESC
+            LIMIT %s OFFSET %s
+        """, params + [page_size, offset])
+        
+        # 格式化文件大小
+        for item in items:
+            if item.get('file_size'):
+                size = item['file_size']
+                for unit in ['B', 'KB', 'MB', 'GB']:
+                    if size < 1024:
+                        item['file_size_formatted'] = f"{size:.2f}{unit}"
+                        break
+                    size /= 1024
+        
+        return jsonify({'success': True, 'data': {
+            'items': items or [],
+            'total': total,
+            'page': page,
+            'page_size': page_size,
+            'pages': (total + page_size - 1) // page_size if total else 0
+        }})
+    except Exception as e:
+        logging.error(f"备份列表查询失败: {e}")
+        return jsonify({'success': True, 'data': {'items': [], 'total': 0}})
+
+
+@app.route('/api/admin/backups/create', methods=['POST'])
+@require_admin
+def admin_create_backup(user):
+    """V33.0: 手动创建备份"""
+    user_name = user.get('user_name')
+    
+    try:
+        from business_common.backup_service import backup_service
+        result = backup_service.create_backup(
+            backup_type='full',
+            description=f'手动备份 by {user_name}'
+        )
+        log_admin_action('create_backup', {'type': 'full'})
+        return jsonify(result)
+    except Exception as e:
+        logging.error(f"创建备份失败: {e}")
+        return jsonify({'success': False, 'msg': f'创建失败: {str(e)}'})
+
+
+@app.route('/api/admin/backups/<backup_id>/restore', methods=['POST'])
+@require_admin
+def admin_restore_backup(user, backup_id):
+    """V33.0: 恢复备份"""
+    user_name = user.get('user_name')
+    data = request.get_json() or {}
+    force = data.get('force', False)
+    
+    try:
+        from business_common.backup_service import backup_service
+        result = backup_service.restore_backup(backup_id=backup_id, force=force)
+        if result.get('success'):
+            log_admin_action('restore_backup', {'backup_id': backup_id})
+        return jsonify(result)
+    except Exception as e:
+        logging.error(f"恢复备份失败: {e}")
+        return jsonify({'success': False, 'msg': f'恢复失败: {str(e)}'})
+
+
+@app.route('/api/admin/backups/<backup_id>/verify', methods=['POST'])
+@require_admin
+def admin_verify_backup(user, backup_id):
+    """V33.0: 验证备份"""
+    try:
+        from business_common.backup_service import backup_service
+        result = backup_service.verify_backup(backup_id)
+        return jsonify(result)
+    except Exception as e:
+        logging.error(f"验证备份失败: {e}")
+        return jsonify({'success': False, 'msg': f'验证失败: {str(e)}'})
+
+
+@app.route('/api/admin/backups/<backup_id>', methods=['DELETE'])
+@require_admin
+def admin_delete_backup(user, backup_id):
+    """V33.0: 删除备份"""
+    try:
+        from business_common.backup_service import backup_service
+        result = backup_service.delete_backup(backup_id)
+        if result.get('success'):
+            log_admin_action('delete_backup', {'backup_id': backup_id})
+        return jsonify(result)
+    except Exception as e:
+        logging.error(f"删除备份失败: {e}")
+        return jsonify({'success': False, 'msg': f'删除失败: {str(e}')
 
 
 @app.route('/')
