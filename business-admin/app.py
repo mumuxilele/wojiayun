@@ -536,7 +536,7 @@ def admin_rfm_overview(user):
         }})
     except Exception as e:
         logging.warning(f"RFM概览查询失败: {e}")
-        return jsonify({'success': True, 'data': {'stats': [], 'total': 0, 'overview': {}})
+        return jsonify({'success': True, 'data': {'stats': [], 'total': 0, 'overview': {}}})
 
 
 @app.route('/api/admin/statistics/rfm-list', methods=['GET'])
