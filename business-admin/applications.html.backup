@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>申请单管理</title>
+    <link rel="stylesheet" href="../business-common/list-style.css">
+    <style>
+        .actions .link { margin-right: 10px; color: var(--el-color-primary); cursor: pointer; }
+        .actions .link:hover { color: var(--el-color-primary-light); }
+        .actions .link.danger { color: var(--el-color-danger); }
+        .priority-star { color: #e6a23c; }
+        /* 弹窗 */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.45); z-index: 200; }
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: var(--el-bg-white); border-radius: 4px; width: 640px; max-width: 95vw; max-height: 85vh; flex-direction: column; z-index: 201; box-shadow: 0 4px 20px rgba(0,0,0,.18); }
+        .modal.show { display: flex; }
+        .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--el-border-color-light); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        .modal-title { font-size: 16px; font-weight: 600; color: var(--el-text-primary); }
+        .modal-close { background: none; border: none; width: 32px; height: 32px; border-radius: 4px; cursor: pointer; font-size: 16px; color: var(--el-text-secondary); display: flex; align-items: center; justify-content: center; }
+        .modal-close:hover { background: var(--el-bg-light); }
+        .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+        .modal-footer { padding: 12px 20px; border-top: 1px solid var(--el-border-color-light); display: flex; justify-content: flex-end; gap: 10px; flex-shrink: 0; }
+        .detail-row { display: flex; margin-bottom: 12px; line-height: 1.6; }
+        .detail-label { color: var(--el-text-secondary); min-width: 90px; flex-shrink: 0; }
+        .detail-value { color: var(--el-text-primary); flex: 1; word-break: break-all; }
+        .detail-section { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--el-border-color-light); }
+        .detail-section-title { font-size: 14px; font-weight: 600; color: var(--el-text-primary); margin-bottom: 12px; }
+        .form-item { margin-bottom: 16px; }
+        .form-label { font-size: 13px; color: var(--el-text-secondary); margin-bottom: 6px; display: block; }
+        .form-label.required::before { content: '* '; color: var(--el-color-danger); }
+        .form-input, .form-select, .form-textarea { width: 100%; padding: 8px 12px; border: 1px solid var(--el-border-color); border-radius: 4px; font-size: 14px; font-family: inherit; outline: none; }
+        .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--el-color-primary); }
+        .form-textarea { resize: vertical; min-height: 80px; }
+        /* 批量操作栏 */
+        #batchBar { display: none; align-items: center; gap: 8px; margin-left: auto; }
+        #batchBar.show { display: inline-flex; }
+    </style>
+</head>
+<body class="wy-design-list">
+    <!-- 顶部区域 -->
+    <div class="wy-design-list_top">
+        <div class="wy-design-list_top_title">
+            <h1 class="wy-design-list_title">📋 申请单管理</h1>
+            <div class="wy-design-list_space"></div>
+            <div class="wy-design-list_btn-group">
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
+                        <span>搜索</span>
+                    </button>
+                </div>
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
+                        <span>重置</span>
+                    </button>
+                </div>
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--small" onclick="exportApps()">
+                        <span>📥 导出</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 筛选区域 -->
+    <div class="wy-design-list_filter">
+        <div class="wy-design-list_other">
+            <div class="el-input el-input--small" style="width: 200px;">
+                <input type="text" id="keyword" placeholder="搜索标题/申请人/单号" class="el-input__inner">
+            </div>
+        </div>
+        <div class="wy-design-list_other">
+            <select id="statusFilter" class="el-input__inner" style="width: 130px;">
+                <option value="">全部状态</option>
+                <option value="pending">待处理</option>
+                <option value="processing">处理中</option>
+                <option value="completed">已完成</option>
+                <option value="rejected">已拒绝</option>
+                <option value="cancelled">已撤销</option>
+            </select>
+        </div>
+        <div class="wy-design-list_other">
+            <select id="typeFilter" class="el-input__inner" style="width: 120px;">
+                <option value="">全部类型</option>
+                <option value="repair">报修</option>
+                <option value="booking">预约</option>
+                <option value="complaint">投诉</option>
+                <option value="consult">咨询</option>
+                <option value="other">其他</option>
+            </select>
+        </div>
+        <div id="batchBar">
+            <span id="selectedCount" style="color: var(--el-color-primary); font-size: 13px;">已选 0 条</span>
+            <select id="batchStatus" class="el-input__inner" style="width: 120px;">
+                <option value="processing">改为处理中</option>
+                <option value="completed">改为已完成</option>
+                <option value="rejected">改为已拒绝</option>
+            </select>
+            <button type="button" class="el-button el-button--primary el-button--small" onclick="batchUpdateStatus()">
+                <span>批量修改</span>
+            </button>
+            <button type="button" class="el-button el-button--small" style="color: var(--el-color-danger); border-color: var(--el-color-danger);" onclick="batchDelete()">
+                <span>批量删除</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 表格区域 -->
+    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
+        <div class="wy-design-table_bar">
+            <i class="wy-design-table_set el-icon-setting" title="列设置"></i>
+            <span class="wy-design-table_total">已选择 <em id="selectCount">0</em> 个</span>
+            <div class="wy-pages">
+                <div class="wy-pages_total">共<em id="totalCount">0</em>条/<em id="totalPages">0</em>页</div>
+                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
+                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
+            </div>
+        </div>
+        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
+            <thead class="el-table__header">
+                <tr>
+                    <th style="width:40px"><div class="cell"><input type="checkbox" id="checkAll" onchange="toggleCheckAll(this)"></div></th>
+                    <th><div class="cell">申请单号</div></th>
+                    <th><div class="cell">类型</div></th>
+                    <th><div class="cell">标题</div></th>
+                    <th><div class="cell">申请人</div></th>
+                    <th><div class="cell">联系电话</div></th>
+                    <th><div class="cell">状态</div></th>
+                    <th><div class="cell">优先级</div></th>
+                    <th><div class="cell">提交时间</div></th>
+                    <th><div class="cell">操作</div></th>
+                </tr>
+            </thead>
+            <tbody class="el-table__body" id="listBody">
+                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 查看详情弹窗 -->
+    <div class="modal-overlay" id="viewOverlay" onclick="if(event.target===this)closeView()"></div>
+    <div class="modal" id="viewModal">
+        <div class="modal-header">
+            <span class="modal-title">申请单详情</span>
+            <button class="modal-close" onclick="closeView()">✕</button>
+        </div>
+        <div class="modal-body" id="viewBody">加载中...</div>
+        <div class="modal-footer">
+            <button class="el-button el-button--small" onclick="closeView()">关闭</button>
+            <button class="el-button el-button--primary el-button--small" id="viewEditBtn" onclick="openEditFromView()">去处理</button>
+        </div>
+    </div>
+
+    <!-- 处理申请弹窗 -->
+    <div class="modal-overlay" id="editOverlay" onclick="if(event.target===this)closeEdit()"></div>
+    <div class="modal" id="editModal">
+        <div class="modal-header">
+            <span class="modal-title" id="editModalTitle">处理申请</span>
+            <button class="modal-close" onclick="closeEdit()">✕</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="editAppId">
+            <div class="form-item">
+                <label class="form-label required">处理状态</label>
+                <select class="form-select" id="editStatus">
+                    <option value="processing">处理中</option>
+                    <option value="completed">已完成</option>
+                    <option value="rejected">已拒绝</option>
+                </select>
+            </div>
+            <div class="form-item">
+                <label class="form-label">处理结果/备注</label>
+                <textarea class="form-textarea" id="editResult" placeholder="请输入处理结果或备注说明" rows="4"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="el-button el-button--small" onclick="closeEdit()">取消</button>
+            <button class="el-button el-button--primary el-button--small" onclick="submitEdit()">确认提交</button>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('admin_token') || new URLSearchParams(location.search).get('access_token') || '';
+        const isdev = new URLSearchParams(location.search).get('isdev') || '0';
+        let currentPage = 1;
+        let totalPages = 1;
+
+        const TYPE_MAP = { repair: '报修', booking: '预约', complaint: '投诉', consult: '咨询', other: '其他' };
+        const STATUS_MAP = { pending: '待处理', processing: '处理中', completed: '已完成', rejected: '已拒绝', cancelled: '已撤销' };
+        const STATUS_TAG = { pending: 'warning', processing: 'primary', completed: 'success', rejected: 'danger', cancelled: 'info' };
+
+        function authUrl(url) {
+            const sep = url.includes('?') ? '&' : '?';
+            return url + sep + 'access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+        }
+
+        async function loadList(page) {
+            currentPage = page || 1;
+            const keyword = document.getElementById('keyword').value;
+            const status = document.getElementById('statusFilter').value;
+            const appType = document.getElementById('typeFilter').value;
+
+            let url = '/api/admin/applications?page=' + currentPage + '&page_size=20';
+            if (keyword) url += '&keyword=' + encodeURIComponent(keyword);
+            if (status) url += '&status=' + status;
+            if (appType) url += '&app_type=' + appType;
+
+            try {
+                const res = await fetch(authUrl(url));
+                const data = await res.json();
+                if (data.success && data.data) {
+                    const total = data.data.total || 0;
+                    totalPages = Math.ceil(total / 20) || 1;
+                    document.getElementById('totalCount').textContent = total;
+                    document.getElementById('totalPages').textContent = totalPages;
+                    document.getElementById('prevBtn').classList.toggle('disabled', currentPage <= 1);
+                    document.getElementById('nextBtn').classList.toggle('disabled', currentPage >= totalPages);
+
+                    const items = data.data.items || [];
+                    if (items.length === 0) {
+                        document.getElementById('listBody').innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">暂无数据</td></tr>';
+                        return;
+                    }
+                    document.getElementById('listBody').innerHTML = items.map(item => {
+                        const stars = item.priority > 1 ? '<span class="priority-star">' + '★'.repeat(item.priority) + '</span>' : '-';
+                        return `<tr>
+                            <td><div class="cell"><input type="checkbox" class="row-check" value="${item.id}" onchange="updateBatchBar()"></div></td>
+                            <td><div class="cell" style="font-family:monospace;font-size:12px">${item.app_no || ''}</div></td>
+                            <td><div class="cell">${TYPE_MAP[item.app_type] || item.app_type || '-'}</div></td>
+                            <td><div class="cell">${item.title || '-'}</div></td>
+                            <td><div class="cell">${item.user_name || '-'}</div></td>
+                            <td><div class="cell">${item.user_phone || '-'}</div></td>
+                            <td><div class="cell"><span class="el-tag el-tag--${STATUS_TAG[item.status] || 'info'} el-tag--small">${STATUS_MAP[item.status] || item.status}</span></div></td>
+                            <td><div class="cell">${stars}</div></td>
+                            <td><div class="cell">${(item.created_at || '').substring(0, 16) || '-'}</div></td>
+                            <td><div class="cell actions">
+                                <a class="link" onclick="viewApp(${item.id})">查看</a>
+                                <a class="link" onclick="openEdit(${item.id}, '${item.app_no || ''}')">处理</a>
+                                <a class="link danger" onclick="deleteApp(${item.id})">删除</a>
+                            </div></td>
+                        </tr>`;
+                    }).join('');
+                }
+            } catch (e) {
+                document.getElementById('listBody').innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载失败</td></tr>';
+            }
+        }
+
+        function changePage(delta) { loadList(currentPage + delta); }
+        function resetSearch() {
+            document.getElementById('keyword').value = '';
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('typeFilter').value = '';
+            loadList(1);
+        }
+
+        // ========== 查看详情 ==========
+        let currentViewId = null;
+        async function viewApp(id) {
+            currentViewId = id;
+            document.getElementById('viewBody').innerHTML = '<div style="text-align:center;padding:30px;color:#909399">加载中...</div>';
+            document.getElementById('viewOverlay').style.display = 'block';
+            document.getElementById('viewModal').classList.add('show');
+
+            try {
+                const res = await fetch(authUrl('/api/admin/applications/' + id));
+                const data = await res.json();
+                if (!data.success || !data.data) {
+                    document.getElementById('viewBody').innerHTML = '<div style="text-align:center;padding:30px;color:#f00">获取详情失败</div>';
+                    return;
+                }
+                const item = data.data;
+                const status = item.status || 'pending';
+                const canProcess = ['pending', 'processing'].includes(status);
+                document.getElementById('viewEditBtn').style.display = canProcess ? '' : 'none';
+
+                let html = `
+                    <div class="detail-row"><span class="detail-label">申请单号</span><span class="detail-value" style="font-family:monospace">${item.app_no || '-'}</span></div>
+                    <div class="detail-row"><span class="detail-label">类型</span><span class="detail-value">${TYPE_MAP[item.app_type] || item.app_type || '-'}</span></div>
+                    <div class="detail-row"><span class="detail-label">标题</span><span class="detail-value"><strong>${item.title || '-'}</strong></span></div>
+                    <div class="detail-row"><span class="detail-label">状态</span><span class="detail-value"><span class="el-tag el-tag--${STATUS_TAG[status] || 'info'} el-tag--small">${STATUS_MAP[status] || status}</span></span></div>
+                    <div class="detail-row"><span class="detail-label">申请人</span><span class="detail-value">${item.user_name || '-'}</span></div>
+                    <div class="detail-row"><span class="detail-label">联系电话</span><span class="detail-value">${item.user_phone || '-'}</span></div>
+                    <div class="detail-row"><span class="detail-label">提交时间</span><span class="detail-value">${item.created_at || '-'}</span></div>
+                    <div class="detail-row"><span class="detail-label">更新时间</span><span class="detail-value">${item.updated_at || '-'}</span></div>`;
+
+                if (item.content) {
+                    html += `<div class="detail-section"><div class="detail-section-title">申请内容</div><div style="line-height:1.8;color:var(--el-text-primary)">${item.content.replace(/\n/g, '<br>')}</div></div>`;
+                }
+                if (item.result) {
+                    html += `<div class="detail-section"><div class="detail-section-title">处理结果</div><div style="line-height:1.8;color:var(--el-text-primary)">${item.result.replace(/\n/g, '<br>')}</div></div>`;
+                }
+                document.getElementById('viewBody').innerHTML = html;
+            } catch (e) {
+                document.getElementById('viewBody').innerHTML = '<div style="text-align:center;padding:30px;color:#f00">加载失败</div>';
+            }
+        }
+
+        function closeView() {
+            document.getElementById('viewOverlay').style.display = 'none';
+            document.getElementById('viewModal').classList.remove('show');
+        }
+
+        function openEditFromView() {
+            closeView();
+            openEdit(currentViewId, '');
+        }
+
+        // ========== 处理申请 ==========
+        function openEdit(id, appNo) {
+            document.getElementById('editAppId').value = id;
+            document.getElementById('editModalTitle').textContent = '处理申请' + (appNo ? ' - ' + appNo : '');
+            document.getElementById('editStatus').value = 'processing';
+            document.getElementById('editResult').value = '';
+            document.getElementById('editOverlay').style.display = 'block';
+            document.getElementById('editModal').classList.add('show');
+            setTimeout(() => document.getElementById('editResult').focus(), 100);
+        }
+
+        function closeEdit() {
+            document.getElementById('editOverlay').style.display = 'none';
+            document.getElementById('editModal').classList.remove('show');
+        }
+
+        async function submitEdit() {
+            const id = document.getElementById('editAppId').value;
+            const status = document.getElementById('editStatus').value;
+            const result = document.getElementById('editResult').value.trim();
+            try {
+                const res = await fetch(authUrl('/api/admin/applications/' + id), {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status, result })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('处理成功');
+                    closeEdit();
+                    loadList(currentPage);
+                } else {
+                    alert(data.msg || '操作失败');
+                }
+            } catch (e) { alert('操作失败，请重试'); }
+        }
+
+        // ========== 批量操作 ==========
+        function getCheckedIds() {
+            return Array.from(document.querySelectorAll('.row-check:checked')).map(el => parseInt(el.value));
+        }
+
+        function toggleCheckAll(checkbox) {
+            document.querySelectorAll('.row-check').forEach(c => c.checked = checkbox.checked);
+            updateBatchBar();
+        }
+
+        function updateBatchBar() {
+            const ids = getCheckedIds();
+            const bar = document.getElementById('batchBar');
+            const countEl = document.getElementById('selectedCount');
+            const selectCount = document.getElementById('selectCount');
+            if (ids.length > 0) {
+                bar.classList.add('show');
+                countEl.textContent = '已选 ' + ids.length + ' 条';
+                selectCount.textContent = ids.length;
+            } else {
+                bar.classList.remove('show');
+                selectCount.textContent = 0;
+            }
+            // 更新全选框状态
+            const all = document.querySelectorAll('.row-check');
+            const checked = document.querySelectorAll('.row-check:checked');
+            const allCheck = document.getElementById('checkAll');
+            if (allCheck) {
+                allCheck.indeterminate = checked.length > 0 && checked.length < all.length;
+                allCheck.checked = all.length > 0 && checked.length === all.length;
+            }
+        }
+
+        async function batchUpdateStatus() {
+            const ids = getCheckedIds();
+            if (!ids.length) { alert('请先选择要操作的申请单'); return; }
+            const newStatus = document.getElementById('batchStatus').value;
+            const statusLabel = {processing:'处理中',completed:'已完成',rejected:'已拒绝'}[newStatus];
+            if (!confirm(`确定将选中的 ${ids.length} 条申请单状态改为"${statusLabel}"吗？`)) return;
+            try {
+                const res = await fetch(authUrl('/api/admin/applications/batch'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'status', ids, status: newStatus })
+                });
+                const data = await res.json();
+                if (data.success) { alert(data.msg || '批量操作成功'); loadList(currentPage); }
+                else { alert(data.msg || '操作失败'); }
+            } catch(e) { alert('操作失败'); }
+        }
+
+        async function batchDelete() {
+            const ids = getCheckedIds();
+            if (!ids.length) { alert('请先选择要删除的申请单'); return; }
+            if (!confirm(`确定要删除选中的 ${ids.length} 条申请单吗？此操作不可恢复！`)) return;
+            try {
+                const res = await fetch(authUrl('/api/admin/applications/batch'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'delete', ids })
+                });
+                const data = await res.json();
+                if (data.success) { alert(data.msg || '批量删除成功'); loadList(currentPage); }
+                else { alert(data.msg || '操作失败'); }
+            } catch(e) { alert('操作失败'); }
+        }
+
+        function exportApps() {
+            const status = document.getElementById('statusFilter').value;
+            const appType = document.getElementById('typeFilter').value;
+            let url = authUrl('/api/admin/export/applications');
+            if (status) url += '&status=' + status;
+            if (appType) url += '&app_type=' + appType;
+            window.open(url, '_blank');
+        }
+
+        // ========== 删除 ==========
+        async function deleteApp(id) {
+            if (!confirm('确定要删除这条申请单吗？')) return;
+            try {
+                const res = await fetch(authUrl('/api/admin/applications/' + id), { method: 'DELETE' });
+                const data = await res.json();
+                if (data.success) { alert('删除成功'); loadList(currentPage); }
+                else { alert(data.msg || '删除失败'); }
+            } catch (e) { alert('删除失败'); }
+        }
+
+        // Enter 搜索
+        document.getElementById('keyword').addEventListener('keydown', e => { if (e.key === 'Enter') loadList(1); });
+
+        loadList(1);
+    </script>
+</body>
+</html>

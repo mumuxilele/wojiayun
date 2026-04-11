@@ -2,82 +2,85 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>商品商城 - 社区服务</title>
+    <link rel="stylesheet" href="../business-common/list-style.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; min-height: 100vh; }
+        /* 页面特有样式 */
+        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
+        .actions .link:hover { text-decoration: underline; }
+        .actions .link.danger { color: var(--el-color-danger); }
+        /* 弹窗样式保留 */
         
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; position: sticky; top: 0; z-index: 100; }
-        .header-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-        .header a { color: white; text-decoration: none; font-size: 18px; }
-        .header h2 { font-size: 18px; flex: 1; }
-        .search-box { display: flex; gap: 8px; }
-        .search-box input { flex: 1; padding: 8px 12px; border: none; border-radius: 20px; font-size: 14px; outline: none; }
-        .search-box button { padding: 8px 16px; border: none; border-radius: 20px; background: white; color: #667eea; font-size: 13px; font-weight: 600; cursor: pointer; }
-        
-        .category-bar { display: flex; overflow-x: auto; background: white; padding: 10px 15px; gap: 8px; white-space: nowrap; -webkit-overflow-scrolling: touch; }
-        .category-bar::-webkit-scrollbar { display: none; }
-        .cat-tag { padding: 6px 14px; border-radius: 20px; font-size: 13px; background: #f5f5f5; color: #666; cursor: pointer; flex-shrink: 0; }
-        .cat-tag.active { background: #667eea; color: white; }
-        
-        .sort-bar { display: flex; background: white; padding: 8px 15px; border-bottom: 1px solid #f0f0f0; gap: 5px; }
-        .sort-tag { padding: 4px 12px; border-radius: 12px; font-size: 12px; background: #f5f5f5; color: #666; cursor: pointer; }
-        .sort-tag.active { background: #667eea; color: white; }
-        
-        .product-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 10px 15px; }
-        .product-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); cursor: pointer; }
-        .product-card:active { transform: scale(0.98); }
-        .product-img { width: 100%; height: 150px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 40px; overflow: hidden; }
-        .product-img img { width: 100%; height: 100%; object-fit: cover; }
-        .product-info { padding: 10px; }
-        .product-name { font-size: 14px; color: #333; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .product-desc { font-size: 11px; color: #999; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .product-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
-        .product-price { font-size: 16px; font-weight: 700; color: #f5576c; }
-        .product-price::before { content: '¥'; font-size: 12px; }
-        .product-sales { font-size: 11px; color: #bbb; }
-        .product-stock { font-size: 10px; color: #52c41a; }
-        .product-stock.low { color: #f5222d; }
-        .add-cart-btn { padding: 4px 10px; border: none; border-radius: 12px; background: #667eea; color: white; font-size: 12px; cursor: pointer; }
-        
-        .empty { text-align: center; padding: 40px; color: #bbb; font-size: 14px; }
-        .loading { text-align: center; padding: 20px; color: #999; font-size: 13px; }
-        
-        .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.75); color: white; padding: 10px 20px; border-radius: 20px; font-size: 13px; z-index: 1000; display: none; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.45); z-index: 200; }
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: var(--el-bg-white); border-radius: 4px; width: 580px; max-width: 95vw; max-height: 85vh; flex-direction: column; z-index: 201; box-shadow: 0 4px 20px rgba(0,0,0,.18); }
+        .modal.show { display: flex; }
+        .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--el-border-color-light); display: flex; justify-content: space-between; align-items: center; }
+        .modal-title { font-size: 16px; font-weight: 600; color: var(--el-text-primary); }
+        .modal-close { background: none; border: none; width: 32px; height: 32px; border-radius: 4px; cursor: pointer; font-size: 16px; color: var(--el-text-secondary); display: flex; align-items: center; justify-content: center; }
+        .modal-close:hover { background: var(--el-bg-light); }
+        .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+        .modal-footer { padding: 12px 20px; border-top: 1px solid var(--el-border-color-light); display: flex; justify-content: flex-end; gap: 10px; }
     </style>
 </head>
-<body>
-    <div class="header">
-        <div class="header-top">
-            <a href="index.html" id="backLink">←</a>
-            <h2>🏪 商品商城</h2>
-            <a href="cart.html" id="cartLink">🛍️</a>
+<body class="wy-design-list">
+    <!-- 顶部区域 -->
+    <div class="wy-design-list_top">
+        <div class="wy-design-list_top_title">
+            <h1 class="wy-design-list_title">商品商城 - 社区服务</h1>
+            <div class="wy-design-list_space"></div>
+            <div class="wy-design-list_btn-group">
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
+                        <span>搜索</span>
+                    </button>
+                </div>
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
+                        <span>重置</span>
+                    </button>
+                </div>
+            </div>
         </div>
-        <div class="search-box">
-            <input type="text" id="searchInput" placeholder="搜索商品..." onkeydown="if(event.key==='Enter')doSearch()">
-            <button onclick="doSearch()">搜索</button>
+    </div>
+
+    <!-- 筛选区域 -->
+    <div class="wy-design-list_filter">
+        <div class="wy-design-list_other">
+            <div class="el-input el-input--small" style="width: 200px;">
+                <input type="text" id="searchInput" placeholder="搜索商品..." class="el-input__inner">
+            </div>
         </div>
     </div>
-    
-    <div class="category-bar" id="categoryBar">
-        <div class="cat-tag active" data-cat="">全部</div>
+
+    <!-- 表格区域 -->
+    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
+        <div class="wy-design-table_bar">
+            <i class="wy-design-table_set el-icon-setting" title="列设置"></i>
+            <span class="wy-design-table_total">共 <em id="totalCount">0</em> 条</span>
+            <div class="wy-pages">
+                <div class="wy-pages_total">第<em id="currentPage">1</em>/<em id="totalPages">1</em>页</div>
+                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
+                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
+            </div>
+        </div>
+        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
+            <thead class="el-table__header">
+                <tr>
+                    <th><div class="cell">名称</div></th>
+                    <th><div class="cell">操作</div></th>
+                </tr>
+            </thead>
+            <tbody class="el-table__body" id="listBody">
+                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</td></tr>
+            </tbody>
+        </table>
     </div>
+
     
-    <div class="sort-bar">
-        <div class="sort-tag active" data-sort="default">综合</div>
-        <div class="sort-tag" data-sort="sales">销量</div>
-        <div class="sort-tag" data-sort="price_asc">价格↑</div>
-        <div class="sort-tag" data-sort="price_desc">价格↓</div>
-        <div class="sort-tag" data-sort="newest">最新</div>
-    </div>
-    
-    <div class="product-grid" id="productGrid"><div class="loading">加载中...</div></div>
-    
-    <div class="toast" id="toast"></div>
 
     <script>
-        var urlParams = new URLSearchParams(location.search);
+    var urlParams = new URLSearchParams(location.search);
         var token = urlParams.get('access_token');
         var isdev = urlParams.get('isdev') || '0';
         if (token) {

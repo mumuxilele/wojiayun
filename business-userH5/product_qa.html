@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>商品问答</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; min-height: 100vh; padding-bottom: 80px; }
+
+        .header { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 15px; display: flex; align-items: center; position: sticky; top: 0; z-index: 50; }
+        .header h1 { font-size: 18px; flex: 1; text-align: center; }
+        .back { color: white; font-size: 22px; text-decoration: none; padding: 4px 8px; }
+
+        /* 统计卡片 */
+        .stats-card { background: white; margin: 12px; border-radius: 12px; padding: 16px; display: flex; justify-content: space-around; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 24px; font-weight: 700; color: #667eea; }
+        .stat-label { font-size: 12px; color: #999; margin-top: 4px; }
+
+        /* 商品信息 */
+        .product-card { background: white; margin: 0 12px 12px; border-radius: 12px; padding: 14px; display: flex; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .product-img { width: 70px; height: 70px; border-radius: 8px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
+        .product-img img { width: 100%; height: 100%; object-fit: cover; }
+        .product-img-placeholder { font-size: 32px; color: #ccc; }
+        .product-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        .product-name { font-size: 15px; font-weight: 600; color: #333; line-height: 1.4; margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .product-price { font-size: 18px; font-weight: 700; color: #f44336; }
+        .product-price::before { content: '¥'; font-size: 13px; }
+
+        /* Tab切换 */
+        .tabs { background: white; display: flex; border-bottom: 1px solid #f0f0f0; position: sticky; top: 56px; z-index: 40; }
+        .tab { flex: 1; text-align: center; padding: 14px 0; font-size: 14px; color: #666; cursor: pointer; position: relative; transition: all 0.2s; }
+        .tab.active { color: #667eea; font-weight: 600; }
+        .tab.active::after { content: ''; position: absolute; bottom: 0; left: 20%; right: 20%; height: 3px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 3px 3px 0 0; }
+        .tab-badge { display: inline-block; background: #ff4d4f; color: white; font-size: 10px; padding: 1px 5px; border-radius: 10px; margin-left: 4px; min-width: 16px; text-align: center; }
+
+        /* 问答列表 */
+        .qa-list { padding: 0 12px; }
+        .qa-item { background: white; border-radius: 12px; margin-bottom: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .qa-question { padding: 14px; }
+        .qa-header { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 10px; }
+        .qa-badge { background: linear-gradient(135deg, #667eea, #764ba2); color: white; font-size: 11px; padding: 2px 8px; border-radius: 10px; flex-shrink: 0; }
+        .qa-time { font-size: 11px; color: #bbb; margin-left: auto; }
+        .qa-content { font-size: 14px; color: #333; line-height: 1.6; word-break: break-all; }
+        .qa-actions { display: flex; gap: 10px; margin-top: 10px; }
+        .qa-action-btn { font-size: 12px; color: #667eea; background: #f0f2ff; padding: 4px 10px; border-radius: 12px; border: none; cursor: pointer; }
+        .qa-action-btn:active { opacity: 0.8; }
+
+        /* 商家回复 */
+        .qa-answer { background: #fafafa; padding: 12px 14px; border-top: 1px dashed #eee; }
+        .answer-header { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+        .answer-badge { background: #52c41a; color: white; font-size: 10px; padding: 2px 6px; border-radius: 8px; }
+        .answer-time { font-size: 11px; color: #bbb; margin-left: auto; }
+        .answer-content { font-size: 13px; color: #555; line-height: 1.6; }
+        .answer-followup { margin-top: 8px; padding: 10px; background: #fff7e6; border-radius: 8px; border-left: 3px solid #faad14; }
+        .followup-label { font-size: 11px; color: #fa8c16; margin-bottom: 4px; }
+        .followup-content { font-size: 13px; color: #333; line-height: 1.5; }
+
+        /* 追问输入 */
+        .followup-form { margin-top: 10px; display: none; }
+        .followup-form.show { display: block; }
+        .followup-input { width: 100%; border: 1px solid #e0e0e0; border-radius: 8px; padding: 10px; font-size: 13px; resize: none; min-height: 60px; }
+        .followup-input:focus { border-color: #667eea; outline: none; }
+        .followup-submit { margin-top: 8px; display: flex; gap: 8px; justify-content: flex-end; }
+        .btn-cancel { padding: 6px 14px; border: 1px solid #e0e0e0; border-radius: 8px; background: white; font-size: 13px; cursor: pointer; }
+        .btn-submit { padding: 6px 14px; border: none; border-radius: 8px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; font-size: 13px; cursor: pointer; }
+
+        /* 提问表单 */
+        .ask-form { background: white; margin: 12px; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .ask-title { font-size: 14px; font-weight: 600; color: #333; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+        .ask-input { width: 100%; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; font-size: 14px; min-height: 100px; resize: none; }
+        .ask-input:focus { border-color: #667eea; outline: none; }
+        .ask-hint { font-size: 11px; color: #999; margin-top: 8px; }
+        .ask-submit { margin-top: 12px; width: 100%; height: 44px; border: none; border-radius: 22px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; font-size: 15px; font-weight: 600; cursor: pointer; }
+
+        /* 我的提问Tab */
+        .my-qa-list { padding: 12px; }
+        .my-qa-item { background: white; border-radius: 12px; margin-bottom: 12px; padding: 14px; }
+        .my-qa-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .my-qa-status { font-size: 11px; padding: 2px 8px; border-radius: 10px; }
+        .status-pending { background: #fff7e6; color: #fa8c16; }
+        .status-answered { background: #f6ffed; color: #52c41a; }
+        .status-closed { background: #f5f5f5; color: #999; }
+        .my-qa-content { font-size: 14px; color: #333; line-height: 1.5; }
+        .my-qa-product { font-size: 12px; color: #999; margin-top: 8px; display: flex; align-items: center; gap: 6px; }
+
+        /* 空状态 */
+        .empty-state { text-align: center; padding: 60px 20px; color: #bbb; }
+        .empty-icon { font-size: 64px; margin-bottom: 16px; }
+        .empty-text { font-size: 14px; }
+
+        /* 底部提问按钮 */
+        .float-ask-btn { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: calc(100% - 48px); max-width: 400px; height: 48px; border-radius: 24px; border: none; background: linear-gradient(135deg, #667eea, #764ba2); color: white; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4); z-index: 100; }
+        .float-ask-btn:active { opacity: 0.9; transform: translateX(-50%) scale(0.98); }
+
+        /* 加载 */
+        .loading-wrap { display: flex; align-items: center; justify-content: center; padding: 60px 20px; flex-direction: column; gap: 12px; }
+        .loading-spinner { width: 40px; height: 40px; border: 3px solid #f0f0f0; border-top-color: #667eea; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Toast */
+        .toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); background: rgba(0,0,0,0.75); color: white; padding: 12px 24px; border-radius: 12px; font-size: 14px; opacity: 0; transition: all 0.25s; z-index: 500; pointer-events: none; }
+        .toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+        /* 关闭确认弹窗 */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; display: none; align-items: center; justify-content: center; }
+        .modal-overlay.show { display: flex; }
+        .modal-content { background: white; border-radius: 16px; padding: 24px; margin: 20px; max-width: 320px; width: calc(100% - 40px); text-align: center; }
+        .modal-title { font-size: 16px; font-weight: 600; color: #333; margin-bottom: 12px; }
+        .modal-desc { font-size: 13px; color: #666; line-height: 1.5; margin-bottom: 20px; }
+        .modal-btns { display: flex; gap: 10px; }
+        .modal-btn { flex: 1; height: 40px; border-radius: 20px; font-size: 14px; cursor: pointer; border: none; }
+        .modal-btn-cancel { background: #f5f5f5; color: #666; }
+        .modal-btn-confirm { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a class="back" onclick="history.back()">‹</a>
+        <h1>商品问答</h1>
+        <span style="width:40px"></span>
+    </div>
+
+    <!-- 商品信息 -->
+    <div class="product-card" id="productCard">
+        <div class="product-img" id="productImg">
+            <span class="product-img-placeholder">🛍️</span>
+        </div>
+        <div class="product-info">
+            <div class="product-name" id="productName">加载中...</div>
+            <div class="product-price" id="productPrice">0</div>
+        </div>
+    </div>
+
+    <!-- 统计 -->
+    <div class="stats-card" id="statsCard">
+        <div class="stat-item">
+            <div class="stat-value" id="totalCount">0</div>
+            <div class="stat-label">总提问</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="answeredCount">0</div>
+            <div class="stat-label">已回复</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="pendingCount">0</div>
+            <div class="stat-label">待回复</div>
+        </div>
+    </div>
+
+    <!-- Tab -->
+    <div class="tabs">
+        <div class="tab active" data-tab="all" onclick="switchTab('all')">全部问答</div>
+        <div class="tab" data-tab="my" onclick="switchTab('my')">我的提问</div>
+    </div>
+
+    <!-- 全部问答列表 -->
+    <div class="qa-list" id="allQaList">
+        <div class="loading-wrap" id="loadingWrap">
+            <div class="loading-spinner"></div>
+        </div>
+    </div>
+
+    <!-- 我的提问列表 -->
+    <div class="my-qa-list" id="myQaList" style="display:none">
+    </div>
+
+    <!-- 空状态 -->
+    <div class="empty-state" id="emptyState" style="display:none">
+        <div class="empty-icon">💬</div>
+        <div class="empty-text">暂无问答，来说点什么吧~</div>
+    </div>
+
+    <!-- 提问表单弹窗 -->
+    <div class="modal-overlay" id="askModal">
+        <div class="modal-content">
+            <div class="modal-title">发布提问</div>
+            <textarea class="ask-input" id="askInput" placeholder="请输入您想了解的问题..."></textarea>
+            <div class="ask-hint">⚠️ 提问前请先查看是否已有相似问题</div>
+            <div class="modal-btns" style="margin-top:16px">
+                <button class="modal-btn modal-btn-cancel" onclick="closeAskModal()">取消</button>
+                <button class="modal-btn modal-btn-confirm" onclick="submitQuestion()">提交</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 关闭确认弹窗 -->
+    <div class="modal-overlay" id="closeModal">
+        <div class="modal-content">
+            <div class="modal-title">关闭问题</div>
+            <div class="modal-desc">确定要关闭这个问题吗？关闭后将无法继续追问或回复。</div>
+            <div class="modal-btns">
+                <button class="modal-btn modal-btn-cancel" onclick="closeCloseModal()">取消</button>
+                <button class="modal-btn modal-btn-confirm" onclick="confirmClose()">确定关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部悬浮提问按钮 -->
+    <button class="float-ask-btn" onclick="openAskModal()">
+        <span>✏️</span>
+        <span>发布提问</span>
+    </button>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const urlParams = new URLSearchParams(location.search);
+        const productId = urlParams.get('product_id') || urlParams.get('id');
+        const token = urlParams.get('access_token') || localStorage.getItem('access_token') || '';
+        const API_BASE = location.origin;
+        const currentUserId = urlParams.get('user_id');
+
+        let currentTab = 'all';
+        let qaList = [];
+        let myQaList = [];
+        let currentCloseId = null;
+
+        function getHeaders() {
+            return { 'Content-Type': 'application/json', 'Token': token };
+        }
+
+        async function loadProductInfo() {
+            if (!productId) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/products/${productId}?access_token=${token}`);
+                const data = await res.json();
+                if (data.success && data.data) {
+                    const p = data.data;
+                    document.getElementById('productName').textContent = p.product_name || '商品';
+                    document.getElementById('productPrice').textContent = parseFloat(p.price || 0).toFixed(2);
+
+                    // 图片
+                    if (p.images) {
+                        let images = [];
+                        try { images = typeof p.images === 'string' ? JSON.parse(p.images) : p.images; } catch(e) {}
+                        if (images.length > 0) {
+                            document.getElementById('productImg').innerHTML = `<img src="${images[0]}" onerror="this.parentNode.innerHTML='<span class=product-img-placeholder>🛍️</span>'">`;
+                        }
+                    }
+                }
+            } catch(e) {}
+        }
+
+        async function loadQAList() {
+            if (!productId) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/user/products/${productId}/qa?page_size=50&access_token=${token}`);
+                const data = await res.json();
+
+                if (data.success) {
+                    qaList = data.data?.items || [];
+                    renderStats(data.data?.stats || {});
+                    renderQAList();
+                } else {
+                    document.getElementById('loadingWrap').innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-text">加载失败</div></div>';
+                }
+            } catch(e) {
+                document.getElementById('loadingWrap').innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-text">网络错误</div></div>';
+            }
+        }
+
+        async function loadMyQAList() {
+            if (!token) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/user/qa/my?page_size=50&access_token=${token}`);
+                const data = await res.json();
+
+                if (data.success) {
+                    myQaList = data.data?.items || [];
+                    renderMyQAList();
+                }
+            } catch(e) {}
+        }
+
+        function renderStats(stats) {
+            document.getElementById('totalCount').textContent = stats.total || 0;
+            document.getElementById('answeredCount').textContent = stats.answered || 0;
+            document.getElementById('pendingCount').textContent = stats.pending || 0;
+        }
+
+        function renderQAList() {
+            const container = document.getElementById('allQaList');
+
+            if (qaList.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">💬</div>
+                        <div class="empty-text">暂无问答，来说点什么吧~</div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = qaList.map(qa => `
+                <div class="qa-item">
+                    <div class="qa-question">
+                        <div class="qa-header">
+                            <span class="qa-badge">问</span>
+                            <span class="qa-time">${formatTime(qa.created_at)}</span>
+                        </div>
+                        <div class="qa-content">${escapeHtml(qa.content)}</div>
+                        <div class="qa-actions">
+                            ${qa.status !== 'closed' && token ? `<button class="qa-action-btn" onclick="showFollowupForm(${qa.id})">追问</button>` : ''}
+                            ${qa.is_mine && qa.status !== 'closed' ? `<button class="qa-action-btn" onclick="askClose(${qa.id})">关闭</button>` : ''}
+                        </div>
+                        <div class="followup-form" id="followup-form-${qa.id}">
+                            <textarea class="followup-input" id="followup-input-${qa.id}" placeholder="请输入追问内容..."></textarea>
+                            <div class="followup-submit">
+                                <button class="btn-cancel" onclick="hideFollowupForm(${qa.id})">取消</button>
+                                <button class="btn-submit" onclick="submitFollowup(${qa.id})">提交</button>
+                            </div>
+                        </div>
+                    </div>
+                    ${qa.answer ? `
+                    <div class="qa-answer">
+                        <div class="answer-header">
+                            <span class="answer-badge">商家回复</span>
+                            <span class="answer-time">${formatTime(qa.answer.created_at)}</span>
+                        </div>
+                        <div class="answer-content">${escapeHtml(qa.answer.content)}</div>
+                        ${qa.answer.followup_content ? `
+                        <div class="answer-followup">
+                            <div class="followup-label">📌 追问</div>
+                            <div class="followup-content">${escapeHtml(qa.answer.followup_content)}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        function renderMyQAList() {
+            const container = document.getElementById('myQaList');
+
+            if (myQaList.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📝</div>
+                        <div class="empty-text">您还没有提问过任何问题</div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = myQaList.map(qa => `
+                <div class="my-qa-item">
+                    <div class="my-qa-header">
+                        <span class="my-qa-status ${getStatusClass(qa.status)}">${getStatusText(qa.status)}</span>
+                    </div>
+                    <div class="my-qa-content">${escapeHtml(qa.content)}</div>
+                    ${qa.product_name ? `
+                    <div class="my-qa-product">
+                        <span>🛍️</span>
+                        <span>${qa.product_name}</span>
+                    </div>
+                    ` : ''}
+                    ${qa.answer ? `
+                    <div class="qa-answer" style="margin-top:10px;padding:10px">
+                        <div class="answer-header">
+                            <span class="answer-badge">商家回复</span>
+                        </div>
+                        <div class="answer-content">${escapeHtml(qa.answer.content)}</div>
+                    </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+
+            if (tab === 'all') {
+                document.getElementById('allQaList').style.display = 'block';
+                document.getElementById('myQaList').style.display = 'none';
+                renderQAList();
+            } else {
+                document.getElementById('allQaList').style.display = 'none';
+                document.getElementById('myQaList').style.display = 'block';
+                loadMyQAList();
+            }
+        }
+
+        function openAskModal() {
+            if (!token) {
+                showToast('请先登录后提问');
+                return;
+            }
+            document.getElementById('askModal').classList.add('show');
+            document.getElementById('askInput').focus();
+        }
+
+        function closeAskModal() {
+            document.getElementById('askModal').classList.remove('show');
+            document.getElementById('askInput').value = '';
+        }
+
+        async function submitQuestion() {
+            const content = document.getElementById('askInput').value.trim();
+            if (!content) {
+                showToast('请输入问题内容');
+                return;
+            }
+            if (content.length < 5) {
+                showToast('问题内容至少5个字');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/user/qa?access_token=${token}`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({
+                        product_id: productId,
+                        content: content
+                    })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    showToast('提问成功，等待商家回复');
+                    closeAskModal();
+                    loadQAList();
+                    switchTab('my');
+                } else {
+                    showToast(data.msg || '提交失败');
+                }
+            } catch(e) {
+                showToast('网络错误');
+            }
+        }
+
+        function showFollowupForm(qaId) {
+            document.getElementById(`followup-form-${qaId}`).classList.add('show');
+        }
+
+        function hideFollowupForm(qaId) {
+            document.getElementById(`followup-form-${qaId}`).classList.remove('show');
+            document.getElementById(`followup-input-${qaId}`).value = '';
+        }
+
+        async function submitFollowup(qaId) {
+            const content = document.getElementById(`followup-input-${qaId}`).value.trim();
+            if (!content) {
+                showToast('请输入追问内容');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/user/qa/${qaId}/followup?access_token=${token}`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ content: content })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    showToast('追问成功');
+                    hideFollowupForm(qaId);
+                    loadQAList();
+                } else {
+                    showToast(data.msg || '追问失败');
+                }
+            } catch(e) {
+                showToast('网络错误');
+            }
+        }
+
+        function askClose(qaId) {
+            currentCloseId = qaId;
+            document.getElementById('closeModal').classList.add('show');
+        }
+
+        function closeCloseModal() {
+            document.getElementById('closeModal').classList.remove('show');
+            currentCloseId = null;
+        }
+
+        async function confirmClose() {
+            if (!currentCloseId) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/user/qa/${currentCloseId}/close?access_token=${token}`, {
+                    method: 'POST',
+                    headers: getHeaders()
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    showToast('问题已关闭');
+                    closeCloseModal();
+                    loadQAList();
+                } else {
+                    showToast(data.msg || '关闭失败');
+                }
+            } catch(e) {
+                showToast('网络错误');
+            }
+        }
+
+        function formatTime(timeStr) {
+            if (!timeStr) return '';
+            const d = new Date(timeStr);
+            const now = new Date();
+            const diff = now - d;
+            if (diff < 60000) return '刚刚';
+            if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前';
+            if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前';
+            if (diff < 604800000) return Math.floor(diff / 86400000) + '天前';
+            return timeStr.substring(0, 10);
+        }
+
+        function getStatusClass(status) {
+            const map = { pending: 'status-pending', answered: 'status-answered', closed: 'status-closed' };
+            return map[status] || 'status-pending';
+        }
+
+        function getStatusText(status) {
+            const map = { pending: '待回复', answered: '已回复', closed: '已关闭' };
+            return map[status] || '待回复';
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2000);
+        }
+
+        // 初始化
+        loadProductInfo();
+        loadQAList();
+    </script>
+</body>
+</html>

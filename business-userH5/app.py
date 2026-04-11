@@ -5,19 +5,30 @@
 """
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
+from datetime import datetime, timedelta
 import sys, os, time, json, logging
+
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from business_common import config, db, auth, utils, error_handler, rate_limiter, notification, payment_service
+from business_common import config, db, auth, utils, error_handler, rate_limiter, notification, payment_service, push_service, user_settings_service
 from business_common.cache_service import cache_get, cache_set, cache_delete
-
+from business_common.order_service import OrderService
 from business_common.logistics_service import logistics
 from business_common.search_service import search
+from business_common.cart_recommendation_service import cart_recommendation
+from business_common.user_behavior_service import user_behavior_service as user_behavior
+from business_common.product_spec_service import spec_service
+from business_common.product_qa_service import product_qa
+from business_common.points_mall import PointsMallService
+
 
 app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
+
+ORDER_EXPIRE_MINUTES = OrderService.ORDER_EXPIRE_MINUTES
+
 
 # 注册全局错误处理器
 error_handler.register_error_handlers(app)
@@ -224,6 +235,314 @@ def cancel_application(user, app_id):
     cache_delete(f"user_stats_{user['user_id']}")
     return jsonify({'success': True, 'msg': '申请已撤销'})
 
+# ============ 购物车 V32.0 ============
+
+from business_common.cart_service import cart_service
+
+
+@app.route('/api/cart', methods=['GET'])
+@require_login
+def get_cart(user):
+    """V32.0: 获取购物车详情"""
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    cart_data = cart_service.get_cart(user['user_id'], ec_id, project_id)
+    return jsonify({'success': True, 'data': cart_data})
+
+
+@app.route('/api/cart/add', methods=['POST'])
+@require_login
+@rate_limiter.rate_limit(limit=30, window_seconds=60)
+def add_to_cart(user):
+    """V32.0: 添加商品到购物车"""
+    data = request.get_json() or {}
+    product_id = data.get('product_id')
+    quantity = int(data.get('quantity', 1))
+    sku_id = data.get('sku_id')
+    session_id = data.get('session_id')  # 游客会话ID
+
+    if not product_id:
+        return jsonify({'success': False, 'msg': '请选择商品'})
+
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+
+    result = cart_service.add_to_cart(
+        user_id=user['user_id'],
+        product_id=product_id,
+        quantity=quantity,
+        sku_id=sku_id,
+        ec_id=ec_id,
+        project_id=project_id
+    )
+
+    # V32.0: 游客购物车合并
+    if session_id and result.get('success'):
+        cart_service.merge_cart(user['user_id'], session_id, ec_id, project_id)
+
+    return jsonify(result)
+
+
+@app.route('/api/cart/update', methods=['POST'])
+@require_login
+def update_cart_item(user):
+    """V32.0: 更新购物车商品数量"""
+    data = request.get_json() or {}
+    cart_id = data.get('cart_id')
+    quantity = int(data.get('quantity', 1))
+
+    if not cart_id:
+        return jsonify({'success': False, 'msg': '缺少购物车项ID'})
+
+    result = cart_service.update_quantity(user['user_id'], cart_id, quantity)
+    return jsonify(result)
+
+
+@app.route('/api/cart/remove', methods=['POST'])
+@require_login
+def remove_from_cart(user):
+    """V32.0: 从购物车移除商品"""
+    data = request.get_json() or {}
+    cart_id = data.get('cart_id')
+
+    if not cart_id:
+        return jsonify({'success': False, 'msg': '缺少购物车项ID'})
+
+    result = cart_service.remove_from_cart(user['user_id'], cart_id)
+    return jsonify(result)
+
+
+@app.route('/api/cart/clear', methods=['POST'])
+@require_login
+def clear_cart(user):
+    """V32.0: 清空购物车"""
+    result = cart_service.clear_cart(user['user_id'])
+    return jsonify(result)
+
+
+@app.route('/api/cart/select', methods=['POST'])
+@require_login
+def select_cart_items(user):
+    """V32.0: 选择/取消选择购物车商品"""
+    data = request.get_json() or {}
+    cart_ids = data.get('cart_ids', [])
+    selected = data.get('selected', True)
+
+    if not isinstance(cart_ids, list):
+        cart_ids = [cart_ids]
+
+    result = cart_service.select_items(user['user_id'], cart_ids, selected)
+    return jsonify(result)
+
+
+@app.route('/api/cart/quick-buy', methods=['POST'])
+@require_login
+@rate_limiter.rate_limit(limit=10, window_seconds=60)
+def quick_buy(user):
+    """V32.0: 立即购买（跳过购物车）"""
+    data = request.get_json() or {}
+    product_id = data.get('product_id')
+    quantity = int(data.get('quantity', 1))
+    sku_id = data.get('sku_id')
+    address_id = data.get('address_id')
+
+    if not product_id:
+        return jsonify({'success': False, 'msg': '请选择商品'})
+
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+
+    result = cart_service.create_quick_order(
+        user_id=user['user_id'],
+        product_id=product_id,
+        quantity=quantity,
+        sku_id=sku_id,
+        ec_id=ec_id,
+        project_id=project_id,
+        address_id=address_id
+    )
+
+    return jsonify(result)
+
+
+@app.route('/api/cart/merge', methods=['POST'])
+@require_login
+def merge_cart(user):
+    """V32.0: 合并游客购物车到用户购物车"""
+    data = request.get_json() or {}
+    session_id = data.get('session_id')
+
+    if not session_id:
+        return jsonify({'success': True, 'msg': '无需合并', 'merged_count': 0})
+
+    result = cart_service.merge_cart(
+        user_id=user['user_id'],
+        session_id=session_id,
+        ec_id=user.get('ec_id'),
+        project_id=user.get('project_id')
+    )
+
+    return jsonify(result)
+
+
+# ============ V41.0: 路由别名兼容层 ============
+# 修复前后端路由不匹配问题，前端使用 /api/user/* 后端使用 /api/*
+# 为保证向后兼容，添加别名路由
+
+@app.route('/api/user/products', methods=['GET'])
+def get_products_user_alias():
+    """V41.0: 商品列表 - /api/user/products 别名 (兼容前端)"""
+    return get_products()
+
+
+@app.route('/api/user/cart', methods=['GET'])
+@require_login
+def get_cart_user_alias(user):
+    """V41.0: 获取购物车 - /api/user/cart 别名 (兼容前端)"""
+    return get_cart(user)
+
+
+@app.route('/api/user/cart/add', methods=['POST'])
+@require_login
+@rate_limiter.rate_limit(limit=30, window_seconds=60)
+def add_to_cart_user_alias(user):
+    """V41.0: 添加到购物车 - /api/user/cart/add 别名 (兼容前端)"""
+    return add_to_cart(user)
+
+
+@app.route('/api/user/cart/update', methods=['POST'])
+@require_login
+def update_cart_user_alias(user):
+    """V41.0: 更新购物车 - /api/user/cart/update 别名 (兼容前端)"""
+    return update_cart_item(user)
+
+
+@app.route('/api/user/cart/select-all', methods=['POST'])
+@require_login
+def select_all_cart_alias(user):
+    """V41.0: 全选购物车商品"""
+    data = request.get_json() or {}
+    selected = data.get('selected', True)
+    
+    # 获取所有未删除的购物车商品
+    cart_items = db.get_all(
+        "SELECT id FROM business_cart WHERE user_id=%s AND deleted=0",
+        [user['user_id']]
+    ) or []
+    
+    cart_ids = [item['id'] for item in cart_items]
+    if cart_ids:
+        result = cart_service.select_items(user['user_id'], cart_ids, bool(selected))
+    else:
+        result = {'success': True, 'msg': '购物车为空'}
+    return jsonify(result)
+
+
+@app.route('/api/user/cart/<int:cart_id>', methods=['PUT'])
+@require_login
+def update_cart_item_alias(user, cart_id):
+    """V41.0: 更新购物车商品 - 支持 /api/user/cart/{id} 路径"""
+    data = request.get_json() or {}
+    quantity = int(data.get('quantity', 1))
+    selected = data.get('selected')
+    
+    if quantity:
+        result = cart_service.update_quantity(user['user_id'], cart_id, quantity)
+    elif selected is not None:
+        result = cart_service.select_items(user['user_id'], [cart_id], bool(selected))
+    else:
+        return jsonify({'success': False, 'msg': '缺少更新参数'})
+    return jsonify(result)
+
+
+@app.route('/api/user/cart/<int:cart_id>', methods=['DELETE'])
+@require_login
+def remove_from_cart_alias(user, cart_id):
+    """V41.0: 删除购物车商品 - 支持 /api/user/cart/{id} DELETE 路径"""
+    result = cart_service.remove_from_cart(user['user_id'], cart_id)
+    return jsonify(result)
+
+
+@app.route('/api/user/cart/recommendations', methods=['GET'])
+@require_login
+def get_cart_recommendations(user):
+    """V41.0: 获取购物车智能推荐"""
+    ec_id = user.get('ec_id', 1)
+    project_id = user.get('project_id', 1)
+    
+    # 获取购物车商品ID用于排除
+    cart_items = db.get_all(
+        "SELECT product_id FROM business_cart WHERE user_id=%s AND deleted=0",
+        [user['user_id']]
+    ) or []
+    exclude_ids = [item['product_id'] for item in cart_items if item.get('product_id')]
+    
+    # 获取4种类型的推荐
+    cart_recommend = cart_recommendation.get_recommendations(
+        user['user_id'], ec_id, project_id, 'cart', exclude_ids
+    )
+    viewed_recommend = cart_recommendation.get_recommendations(
+        user['user_id'], ec_id, project_id, 'viewed', exclude_ids
+    )
+    purchased_recommend = cart_recommendation.get_recommendations(
+        user['user_id'], ec_id, project_id, 'purchased', exclude_ids
+    )
+    similar_recommend = cart_recommendation.get_recommendations(
+        user['user_id'], ec_id, project_id, 'similar', exclude_ids
+    )
+    
+    # 合并去重
+    seen = set(exclude_ids)
+    merged = []
+    for rec_list in [cart_recommend, viewed_recommend, purchased_recommend, similar_recommend]:
+        for item in rec_list:
+            if item['id'] not in seen and len(merged) < 12:
+                seen.add(item['id'])
+                merged.append(item)
+    
+    return jsonify({'success': True, 'data': merged or []})
+
+
+@app.route('/api/user/behavior/track', methods=['POST'])
+@require_login
+def track_user_behavior(user):
+    """V41.0: 记录用户行为"""
+    data = request.get_json() or {}
+    behavior_type = data.get('behavior_type', 'browse_product')
+    target_type = data.get('target_type', 'product')
+    target_id = data.get('target_id')
+    duration = data.get('duration', 0)
+    
+    if not target_id:
+        return jsonify({'success': False, 'msg': '缺少目标ID'})
+    
+    try:
+        # 获取目标名称
+        target_name = ''
+        if target_type == 'product':
+            product = db.get_one("SELECT product_name FROM business_products WHERE id=%s", [target_id])
+            target_name = product['product_name'] if product else ''
+        elif target_type == 'shop':
+            shop = db.get_one("SELECT shop_name FROM business_shops WHERE id=%s", [target_id])
+            target_name = shop['shop_name'] if shop else ''
+        
+        user_behavior.track_behavior(
+            user_id=user['user_id'],
+            behavior_type=behavior_type,
+            target_type=target_type,
+            target_id=int(target_id),
+            target_name=target_name,
+            ec_id=user.get('ec_id', 1),
+            project_id=user.get('project_id', 1),
+            duration=duration,
+            extra_data=data.get('extra_data')
+        )
+        return jsonify({'success': True, 'msg': '记录成功'})
+    except Exception as e:
+        logging.warning(f"记录行为失败: {e}")
+        return jsonify({'success': False, 'msg': '记录失败'})
+
+
 # ============ 订单 ============
 
 @app.route('/api/user/orders', methods=['GET'])
@@ -239,19 +558,23 @@ def get_user_orders(user):
     total  = db.get_total("SELECT COUNT(*) FROM business_orders WHERE " + where, params)
     offset = (page - 1) * page_size
     items  = db.get_all(
-        "SELECT id,order_no,order_type,shop_id,total_amount,actual_amount,order_status,pay_status,created_at "
+        f"SELECT id,order_no,order_type,shop_id,total_amount,actual_amount,order_status,pay_status,created_at, "
+        f"COALESCE(expire_time, DATE_ADD(created_at, INTERVAL {ORDER_EXPIRE_MINUTES} MINUTE)) AS expire_time "
         "FROM business_orders WHERE " + where + " ORDER BY created_at DESC LIMIT %s OFFSET %s",
         params + [page_size, offset]
     )
+
     return jsonify({'success': True, 'data': {'items': items, 'total': total, 'page': page, 'page_size': page_size}})
 
 @app.route('/api/user/orders/<order_id>', methods=['GET'])
 @require_login
 def get_order_detail(user, order_id):
     order = db.get_one(
-        "SELECT * FROM business_orders WHERE id=%s AND user_id=%s AND deleted=0",
+        f"SELECT *, COALESCE(expire_time, DATE_ADD(created_at, INTERVAL {ORDER_EXPIRE_MINUTES} MINUTE)) AS expire_time "
+        "FROM business_orders WHERE id=%s AND user_id=%s AND deleted=0",
         [order_id, user['user_id']]
     )
+
     if not order:
         return jsonify({'success': False, 'msg': '订单不存在'})
     # V15: 查询是否已评价
@@ -374,6 +697,121 @@ def apply_refund(user, order_id):
     except Exception as e:
         logging.error(f"申请退款失败: {e}")
         return jsonify({'success': False, 'msg': '申请失败，请稍后重试'})
+
+# ============ 订单增强 V32.0 ============
+
+from business_common.order_enhance_service import order_enhance
+
+
+@app.route('/api/user/orders/<order_id>/update', methods=['POST'])
+@require_login
+def update_order(user, order_id):
+    """V32.0: 修改订单（收货信息）"""
+    data = request.get_json() or {}
+    result = order_enhance.update_order(
+        order_id=order_id,
+        user_id=user['user_id'],
+        update_data=data,
+        ec_id=user.get('ec_id'),
+        project_id=user.get('project_id')
+    )
+    return jsonify(result)
+
+
+@app.route('/api/user/orders/<order_id>/partial-refund', methods=['POST'])
+@require_login
+@rate_limiter.rate_limit(limit=5, window_seconds=60)
+def apply_partial_refund(user, order_id):
+    """V32.0: 申请部分退款"""
+    data = request.get_json() or {}
+    refund_items = data.get('items', [])
+    reason = data.get('reason', '')
+
+    if not refund_items:
+        return jsonify({'success': False, 'msg': '请选择要退款的商品'})
+
+    result = order_enhance.partial_refund(
+        order_id=order_id,
+        user_id=user['user_id'],
+        refund_items=refund_items,
+        reason=reason,
+        ec_id=user.get('ec_id'),
+        project_id=user.get('project_id')
+    )
+    return jsonify(result)
+
+
+@app.route('/api/user/orders/<order_id>/notes', methods=['GET'])
+@require_login
+def get_order_notes(user, order_id):
+    """V32.0: 获取订单留言"""
+    result = order_enhance.get_order_notes(
+        order_id=order_id,
+        user_id=user['user_id'],
+        ec_id=user.get('ec_id'),
+        project_id=user.get('project_id')
+    )
+    return jsonify(result)
+
+
+@app.route('/api/user/orders/<order_id>/notes', methods=['POST'])
+@require_login
+@rate_limiter.rate_limit(limit=10, window_seconds=60)
+def add_order_note(user, order_id):
+    """V32.0: 添加订单留言"""
+    data = request.get_json() or {}
+    content = data.get('content', '').strip()
+
+    if not content:
+        return jsonify({'success': False, 'msg': '留言内容不能为空'})
+
+    result = order_enhance.add_order_note(
+        order_id=order_id,
+        user_id=user['user_id'],
+        note_type='user_question',
+        content=content,
+        ec_id=user.get('ec_id'),
+        project_id=user.get('project_id')
+    )
+    return jsonify(result)
+
+
+@app.route('/api/user/orders/<order_id>/cancel-with-reason', methods=['POST'])
+@require_login
+def cancel_order_with_reason(user, order_id):
+    """V32.0: 取消订单（带原因）"""
+    data = request.get_json() or {}
+    reason = data.get('reason', '').strip()
+
+    if not reason:
+        return jsonify({'success': False, 'msg': '请填写取消原因'})
+
+    result = order_enhance.cancel_with_reason(
+        order_id=order_id,
+        user_id=user['user_id'],
+        reason=reason,
+        ec_id=user.get('ec_id'),
+        project_id=user.get('project_id')
+    )
+    return jsonify(result)
+
+
+@app.route('/api/user/orders/<order_id>/detail-enhanced', methods=['GET'])
+@require_login
+def get_order_detail_enhanced(user, order_id):
+    """V32.0: 获取订单详情增强版（包含物流、留言等）"""
+    order = order_enhance.get_order_detail_enhanced(
+        order_id=order_id,
+        user_id=user['user_id'],
+        ec_id=user.get('ec_id'),
+        project_id=user.get('project_id')
+    )
+
+    if not order:
+        return jsonify({'success': False, 'msg': '订单不存在'})
+
+    return jsonify({'success': True, 'data': order})
+
 
 # ============ 场馆预约 ============
 
@@ -566,7 +1004,16 @@ def get_user_member(user):
     """获取当前用户的会员积分信息"""
     uid = user['user_id']
     member = db.get_one(
-        "SELECT user_id, user_name, phone, member_level, points, total_points, balance FROM business_members WHERE user_id=%s",
+        """
+        SELECT m.user_id, m.user_name, m.phone, m.member_level, m.points, m.total_points, m.balance,
+               COALESCE(ml.level_name, m.member_level) AS display_level_name,
+               COALESCE(ml.discount_rate, 1.00) AS discount_rate,
+               COALESCE(ml.points_rate, 1.00) AS points_rate
+        FROM business_members m
+        LEFT JOIN business_member_levels ml ON m.member_level = ml.level_code
+        WHERE m.user_id=%s
+        LIMIT 1
+        """,
         [uid]
     )
     # 若会员不存在则自动初始化
@@ -579,12 +1026,34 @@ def get_user_member(user):
                 "VALUES (%s,%s,%s,0,0,0,'bronze',%s,%s)",
                 [uid, user.get('user_name', ''), user.get('phone', ''), ec_id, project_id]
             )
-            member = {'user_id': uid, 'user_name': user.get('user_name', ''), 'phone': user.get('phone', ''),
-                      'member_level': 'bronze', 'points': 0, 'total_points': 0, 'balance': 0}
+            member = {
+                'user_id': uid,
+                'user_name': user.get('user_name', ''),
+                'phone': user.get('phone', ''),
+                'member_level': 'bronze',
+                'display_level_name': '青铜会员',
+                'discount_rate': 1.00,
+                'points_rate': 1.00,
+                'points': 0,
+                'total_points': 0,
+                'balance': 0
+            }
         except Exception as e:
             logging.warning('auto create member failed: %s', e)
-            member = {'user_id': uid, 'points': 0, 'total_points': 0, 'balance': 0, 'member_level': 'bronze'}
+            member = {
+                'user_id': uid,
+                'user_name': user.get('user_name', ''),
+                'phone': user.get('phone', ''),
+                'points': 0,
+                'total_points': 0,
+                'balance': 0,
+                'member_level': 'bronze',
+                'display_level_name': '青铜会员',
+                'discount_rate': 1.00,
+                'points_rate': 1.00
+            }
     return jsonify({'success': True, 'data': member})
+
 
 @app.route('/api/user/points/logs', methods=['GET'])
 @require_login
@@ -831,7 +1300,7 @@ def get_recommendations(user):
 
 @app.route('/api/products/<product_id>', methods=['GET'])
 def get_product_detail(product_id):
-    """获取商品详情，包含SKU规格，V27.0增加浏览足迹自动记录"""
+    """获取商品详情，包含SKU规格，V27.0增加浏览足迹自动记录，V37.0增加会员价"""
     product = db.get_one(
         "SELECT p.*, s.shop_name, s.address as shop_address, s.phone as shop_phone "
         "FROM business_products p "
@@ -874,6 +1343,31 @@ def get_product_detail(product_id):
             ])
         except Exception as e:
             logging.warning(f"记录商品浏览足迹失败: {e}")
+        
+        # V37.0: 计算会员价
+        try:
+            member = db.get_one(
+                "SELECT member_level, member_grade FROM business_members WHERE user_id=%s",
+                [user['user_id']]
+            )
+            if member:
+                level_info = db.get_one(
+                    "SELECT level_name, discount_rate FROM business_member_levels WHERE level_code=%s",
+                    [member.get('member_level', 'L1')]
+                )
+                if level_info and level_info.get('discount_rate'):
+                    discount_rate = float(level_info['discount_rate'])
+                    if discount_rate < 1.0:  # 会员有折扣
+                        regular_price = float(product.get('price', 0))
+                        member_price = round(regular_price * discount_rate, 2)
+                        product['member_price'] = member_price
+                        product['member_discount'] = discount_rate
+                        product['member_level_name'] = level_info['level_name']
+                        product['member_grade'] = member.get('member_grade', level_info['level_name'])
+                        product['member_savings'] = round(regular_price - member_price, 2)
+                        product['is_member_price_active'] = True
+        except Exception as e:
+            logging.warning(f"计算会员价失败: {e}")
     
     # P1增强：获取商品SKU列表
 
@@ -884,6 +1378,17 @@ def get_product_detail(product_id):
             [product_id]
         )
         product['skus'] = skus or []
+        
+        # V37.0: 为每个SKU计算会员价
+        if user and product.get('is_member_price_active'):
+            for sku in product['skus']:
+                try:
+                    sku_regular_price = float(sku.get('price', 0))
+                    sku_member_price = round(sku_regular_price * discount_rate, 2)
+                    sku['member_price'] = sku_member_price
+                    sku['member_savings'] = round(sku_regular_price - sku_member_price, 2)
+                except:
+                    pass
     except Exception as e:
         product['skus'] = []
     
@@ -1129,7 +1634,7 @@ def create_review(user):
     user_name = '匿名用户' if is_anonymous else user.get('user_name', '')
 
     try:
-        db.execute(
+        review_id = db.execute(
             """INSERT INTO business_reviews
                (user_id, user_name, target_type, target_id, target_name, rating, content, images, is_anonymous, ec_id, project_id, moderation_status, moderation_result)
                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
@@ -1137,6 +1642,32 @@ def create_review(user):
              target_name, rating, content, json.dumps(images), is_anonymous,
              user.get('ec_id'), user.get('project_id'), moderation_status, moderation_json]
         )
+        
+        reward_result = {'success': True, 'points': 0, 'growth': 0}
+        growth_task_result = {'success': True, 'completed_tasks': []}
+        
+        try:
+            from business_common.review_reward_service import review_reward_service
+            reward_result = review_reward_service.grant_reward(
+                user['user_id'],
+                review_id,
+                int(target_id) if target_type == 'order' else 0,
+                rating,
+                user.get('ec_id'),
+                user.get('project_id')
+            )
+        except Exception as reward_error:
+            logging.warning(f"评价奖励发放失败: {reward_error}")
+        
+        try:
+            from business_common.growth_task_service import growth_task_service
+            growth_task_result = growth_task_service.on_review(
+                user['user_id'],
+                user.get('ec_id'),
+                user.get('project_id')
+            ) or {'success': True, 'completed_tasks': []}
+        except Exception as growth_error:
+            logging.warning(f"评价成长任务更新失败: {growth_error}")
         
         # P0修复：提交评价后自动更新目标对象的评分缓存
         if target_type in ('venue', 'shop'):
@@ -1164,7 +1695,26 @@ def create_review(user):
             except Exception as e:
                 logging.warning(f"更新评分缓存失败: {e}")
         
-        return jsonify({'success': True, 'msg': '评价提交成功'})
+        reward_parts = []
+        if reward_result.get('points', 0) > 0:
+            reward_parts.append(f"{reward_result['points']}积分")
+        if reward_result.get('growth', 0) > 0:
+            reward_parts.append(f"{reward_result['growth']}成长值")
+        reward_msg = f"，获得{' + '.join(reward_parts)}" if reward_parts else ''
+        completed_tasks = growth_task_result.get('completed_tasks') or []
+        task_msg = f"，同步完成{len(completed_tasks)}项成长任务" if completed_tasks else ''
+        
+        return jsonify({
+            'success': True,
+            'msg': f'评价提交成功{reward_msg}{task_msg}',
+            'data': {
+                'review_id': review_id,
+                'reward': reward_result,
+                'growth_tasks': growth_task_result,
+                'moderation_status': moderation_status
+            }
+        })
+
     except Exception as e:
         logging.warning(f"提交评价失败: {e}")
         return jsonify({'success': False, 'msg': '评价提交失败'})
@@ -2256,157 +2806,6 @@ def health_detailed():
             }
         })
 
-# ============ 购物车功能 ============
-
-@app.route('/api/user/cart', methods=['GET'])
-@require_login
-def get_cart(user):
-    """获取购物车列表"""
-    uid = user['user_id']
-    try:
-        items = db.get_all(
-            """SELECT c.id, c.product_id, c.quantity, c.selected,
-                      p.product_name, p.price, p.images, p.description, p.status as product_status,
-                      s.shop_name
-               FROM business_cart c
-               LEFT JOIN business_products p ON c.product_id = p.id
-               LEFT JOIN business_shops s ON p.shop_id = s.id
-               WHERE c.user_id=%s
-               ORDER BY c.created_at DESC""",
-            [uid]
-        )
-        # 计算总价（仅选中项）
-        total = sum(
-            float(item.get('price') or 0) * int(item.get('quantity') or 1)
-            for item in (items or [])
-            if item.get('selected') and item.get('product_status') == 'active'
-        )
-        return jsonify({'success': True, 'data': {
-            'items': items or [],
-            'total': round(total, 2),
-            'count': len(items or [])
-        }})
-    except Exception as e:
-        logging.warning(f"获取购物车失败: {e}")
-        return jsonify({'success': True, 'data': {'items': [], 'total': 0, 'count': 0}})
-
-
-@app.route('/api/user/cart', methods=['POST'])
-@require_login
-@rate_limiter.rate_limit(limit=30, window_seconds=60)
-def add_to_cart(user):
-    """添加商品到购物车，支持SKU规格"""
-    data = request.get_json() or {}
-    product_id = data.get('product_id')
-    quantity = max(1, int(data.get('quantity', 1)))
-    sku_id = data.get('sku_id')  # P1增强：支持SKU规格
-
-    if not product_id:
-        return jsonify({'success': False, 'msg': '请选择商品'})
-
-    product = db.get_one(
-        "SELECT id, product_name, price, status FROM business_products WHERE id=%s AND deleted=0",
-        [product_id]
-    )
-    if not product:
-        return jsonify({'success': False, 'msg': '商品不存在'})
-    if product.get('status') != 'active':
-        return jsonify({'success': False, 'msg': '商品已下架'})
-
-    # P1增强：检查SKU库存
-    actual_price = product.get('price', 0)
-    sku_name = ''
-    if sku_id:
-        sku = db.get_one(
-            "SELECT id, sku_name, specs, price, stock FROM business_product_skus WHERE id=%s AND product_id=%s AND status=1 AND deleted=0",
-            [sku_id, product_id]
-        )
-        if not sku:
-            return jsonify({'success': False, 'msg': 'SKU规格不存在'})
-        if sku.get('stock', 0) < quantity:
-            return jsonify({'success': False, 'msg': f"库存不足（当前库存 {sku.get('stock', 0)}）"})
-        actual_price = sku.get('price', product.get('price', 0))
-        sku_name = sku.get('sku_name', '')
-    else:
-        # 无规格时检查商品库存
-        current_stock = int(product.get('stock') or 0)
-        if current_stock < quantity:
-            return jsonify({'success': False, 'msg': f"库存不足（当前库存 {current_stock}）"})
-
-    try:
-        # 检查是否已在购物车（同商品同规格）
-        existing = db.get_one(
-            "SELECT id, quantity FROM business_cart WHERE user_id=%s AND product_id=%s AND (sku_id=%s OR (sku_id IS NULL AND %s IS NULL))",
-            [user['user_id'], product_id, sku_id, sku_id]
-        )
-        if existing:
-            new_qty = min(int(existing.get('quantity') or 1) + quantity, 99)
-            db.execute(
-                "UPDATE business_cart SET quantity=%s, updated_at=NOW() WHERE id=%s",
-                [new_qty, existing['id']]
-            )
-        else:
-            db.execute(
-                """INSERT INTO business_cart (user_id, product_id, sku_id, sku_name, quantity, selected, ec_id, project_id)
-                   VALUES (%s, %s, %s, %s, %s, 1, %s, %s)""",
-                [user['user_id'], product_id, sku_id, sku_name, quantity, user.get('ec_id'), user.get('project_id')]
-            )
-        return jsonify({'success': True, 'msg': '已加入购物车'})
-    except Exception as e:
-        logging.warning(f"加入购物车失败: {e}")
-        return jsonify({'success': False, 'msg': '加入购物车失败'})
-
-
-@app.route('/api/user/cart/<cart_id>', methods=['PUT'])
-@require_login
-def update_cart_item(user, cart_id):
-    """更新购物车商品数量/选中状态"""
-    data = request.get_json() or {}
-    quantity = data.get('quantity')
-    selected = data.get('selected')
-
-    updates = []
-    params = []
-    if quantity is not None:
-        quantity = max(1, min(99, int(quantity)))
-        updates.append("quantity=%s"); params.append(quantity)
-    if selected is not None:
-        updates.append("selected=%s"); params.append(1 if selected else 0)
-
-    if not updates:
-        return jsonify({'success': False, 'msg': '没有要更新的字段'})
-
-    updates.append("updated_at=NOW()")
-    params.extend([cart_id, user['user_id']])
-    db.execute(
-        "UPDATE business_cart SET " + ", ".join(updates) + " WHERE id=%s AND user_id=%s",
-        params
-    )
-    return jsonify({'success': True, 'msg': '更新成功'})
-
-
-@app.route('/api/user/cart/<cart_id>', methods=['DELETE'])
-@require_login
-def remove_from_cart(user, cart_id):
-    """从购物车移除商品"""
-    db.execute(
-        "DELETE FROM business_cart WHERE id=%s AND user_id=%s",
-        [cart_id, user['user_id']]
-    )
-    return jsonify({'success': True, 'msg': '已从购物车移除'})
-
-
-@app.route('/api/user/cart/select-all', methods=['POST'])
-@require_login
-def cart_select_all(user):
-    """全选/取消全选购物车"""
-    data = request.get_json() or {}
-    selected = 1 if data.get('selected', True) else 0
-    db.execute(
-        "UPDATE business_cart SET selected=%s WHERE user_id=%s",
-        [selected, user['user_id']]
-    )
-    return jsonify({'success': True, 'msg': '操作成功'})
 
 
 # ============ 下单功能 ============
@@ -2415,13 +2814,16 @@ def cart_select_all(user):
 @require_login
 @rate_limiter.rate_limit(limit=10, window_seconds=60)
 def create_order(user):
-    """P13优化：创建订单（支持从购物车下单或直接下单）"""
+    """P13优化：创建订单（支持从购物车下单或直接下单）
+    V37.0增强：支持积分抵扣"""
     data = request.get_json() or {}
     order_type = data.get('order_type', 'product')  # product / service
     items = data.get('items', [])   # [{product_id, quantity}]
     cart_ids = data.get('cart_ids', [])  # 从购物车下单时传购物车ID列表
     coupon_code = data.get('coupon_code', '').strip()
     remark = data.get('remark', '').strip()
+    # V37.0: 积分抵扣
+    use_points = abs(int(data.get('use_points', 0)))
 
     uid = user['user_id']
 
@@ -2494,6 +2896,27 @@ def create_order(user):
         except Exception as e:
             logging.warning(f"优惠券应用失败: {e}")
 
+    # V37.0: 积分抵扣处理
+    points_deduction = 0
+    if use_points > 0 and actual_amount > 0:
+        try:
+            # 获取用户积分
+            member = db.get_one(
+                "SELECT points FROM business_members WHERE user_id=%s",
+                [uid]
+            )
+            if member:
+                user_points = int(member.get('points', 0))
+                # 积分兑换比例：100积分=1元
+                points_rate = 100
+                max_points_use = min(user_points, points_rate * actual_amount)
+                use_points = min(use_points, max_points_use)
+                points_deduction = use_points / points_rate
+                actual_amount = max(0, actual_amount - points_deduction)
+                logging.info(f"[Order] 积分抵扣: use_points={use_points}, deduction={points_deduction:.2f}")
+        except Exception as e:
+            logging.warning(f"积分抵扣处理失败: {e}")
+
     # V9.0：收货地址集成
     address_id = data.get('address_id')
     address_snapshot = None
@@ -2539,16 +2962,22 @@ def create_order(user):
                 return jsonify({'success': False, 'msg': f"商品库存不足: {item['product_name']}（当前库存 {current_stock}，需要 {quantity}）"})
 
         # 创建订单
+        now = datetime.now()
+        expire_time = now + timedelta(minutes=ORDER_EXPIRE_MINUTES)
         cursor.execute(
             """INSERT INTO business_orders
                (order_no, order_type, user_id, user_name, user_phone, total_amount, actual_amount,
-                discount_amount, order_status, pay_status, remark, shipping_address, ec_id, project_id)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'pending','unpaid',%s,%s,%s,%s)""",
+                discount_amount, points_deduction, order_status, pay_status, remark, shipping_address, ec_id, project_id,
+                created_at, updated_at, expire_time)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,'pending','unpaid',%s,%s,%s,%s,%s,%s,%s)""",
             [order_no, order_type, uid, user.get('user_name', ''), user.get('phone'),
              round(total_amount, 2), round(actual_amount, 2), round(coupon_discount, 2),
-             remark, address_snapshot or '', user.get('ec_id'), user.get('project_id')]
+             round(points_deduction, 2),
+             remark, address_snapshot or '', user.get('ec_id'), user.get('project_id'),
+             now, now, expire_time]
         )
         order_id = cursor.lastrowid
+
 
         # 保存订单明细并扣减库存（使用带条件的UPDATE确保不会超卖）
         for item in order_items:
@@ -2569,7 +2998,9 @@ def create_order(user):
                 return jsonify({'success': False, 'msg': f"商品库存不足: {item['product_name']}"})
             
             # 更新本地缓存的库存（用于后续校验，但实际校验已在SQL层面完成）
-            locked_products[item['product_id']]['stock'] = current_stock - quantity
+            latest_stock = int(locked_products[item['product_id']].get('stock') or 0)
+            locked_products[item['product_id']]['stock'] = latest_stock - item['quantity']
+
 
         # 标记优惠券已使用
         if used_coupon_id:
@@ -2577,6 +3008,23 @@ def create_order(user):
                 "UPDATE business_user_coupons SET status='used', used_at=NOW() WHERE id=%s",
                 [used_coupon_id]
             )
+
+        # V37.0: 扣除用户积分
+        if use_points > 0 and points_deduction > 0:
+            cursor.execute(
+                "UPDATE business_members SET points=points-%s WHERE user_id=%s",
+                [use_points, uid]
+            )
+            # 记录积分变动日志
+            cursor.execute(
+                """INSERT INTO business_points_log
+                   (user_id, points, change_type, change_reason, balance_before, balance_after, order_no,
+                    ec_id, project_id, created_at)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())""",
+                [uid, -use_points, 'order_deduction', f'订单抵扣', user_points - use_points, user_points - use_points,
+                 order_no, user.get('ec_id'), user.get('project_id')]
+            )
+            logging.info(f"[Order] 积分已扣除: user_id={uid}, points={use_points}, order_no={order_no}")
 
         # 清除购物车（已下单的商品）
         if cart_ids:
@@ -2587,13 +3035,31 @@ def create_order(user):
             )
 
         conn.commit()
+
+        try:
+            push_service.send_message(
+                template_code='order_created',
+                user_id=uid,
+                params={
+                    'order_no': order_no,
+                    'amount': f"{round(actual_amount, 2):.2f}",
+                    'expire_time': expire_time.strftime('%Y-%m-%d %H:%M:%S')
+                },
+                ec_id=user.get('ec_id'),
+                project_id=user.get('project_id')
+            )
+        except Exception as push_err:
+            logging.warning(f"下单提醒发送失败: {push_err}")
+
         return jsonify({'success': True, 'msg': '下单成功', 'data': {
             'order_id': order_id,
             'order_no': order_no,
             'total_amount': round(total_amount, 2),
             'actual_amount': round(actual_amount, 2),
-            'discount_amount': round(coupon_discount, 2)
+            'discount_amount': round(coupon_discount, 2),
+            'expire_time': expire_time.strftime('%Y-%m-%d %H:%M:%S')
         }})
+
     except Exception as e:
         conn.rollback()
         logging.error(f"创建订单失败: {e}")
@@ -2663,7 +3129,48 @@ def get_user_profile(user):
     return jsonify({'success': True, 'data': data})
 
 
+@app.route('/api/user/notification-preferences', methods=['GET'])
+@require_login
+def get_notification_preferences(user):
+    """获取用户通知偏好"""
+    data = user_settings_service.get_notification_preferences(
+        user_id=user['user_id'],
+        ec_id=user.get('ec_id'),
+        project_id=user.get('project_id')
+    )
+    return jsonify({'success': True, 'data': data})
+
+
+@app.route('/api/user/notification-preferences', methods=['PUT'])
+@require_login
+def update_notification_preferences(user):
+    """更新用户通知偏好"""
+    payload = request.get_json() or {}
+    allowed_fields = {
+        'notif_order', 'notif_coupon', 'notif_system',
+        'channel_in_app', 'channel_wechat', 'channel_sms', 'channel_email',
+        'wechat_openid', 'email'
+    }
+    data = {k: payload.get(k) for k in allowed_fields if k in payload}
+    if not data:
+        latest = user_settings_service.get_notification_preferences(
+            user_id=user['user_id'],
+            ec_id=user.get('ec_id'),
+            project_id=user.get('project_id')
+        )
+        return jsonify({'success': True, 'msg': '未检测到变更字段', 'data': latest})
+
+    result = user_settings_service.update_notification_preferences(
+        user_id=user['user_id'],
+        data=data,
+        ec_id=user.get('ec_id'),
+        project_id=user.get('project_id')
+    )
+    return jsonify(result)
+
+
 # ============ 用户收货地址管理 ============
+
 
 @app.route('/api/user/addresses', methods=['GET'])
 @require_login
@@ -3741,6 +4248,408 @@ def query_logistics_by_no():
     return jsonify(result)
 
 
+# ============ V42.0 商品多规格属性 ============
+
+@app.route('/api/user/products/<int:product_id>/specs', methods=['GET'])
+def get_product_specs(product_id):
+    """V42.0: 获取商品规格组及SKU矩阵"""
+    groups = spec_service.get_spec_groups(product_id)
+    matrix = spec_service.generate_sku_matrix(product_id)
+    price_range = spec_service.get_sku_price_range(product_id)
+    return jsonify({
+        'success': True,
+        'data': {
+            'groups': groups,
+            'matrix': matrix,
+            'price_range': price_range
+        }
+    })
+
+
+@app.route('/api/user/products/<int:product_id>/specs', methods=['POST'])
+@require_login
+def create_product_spec(user, product_id):
+    """V42.0: 添加商品规格组（管理员/商家）"""
+    data = request.get_json() or {}
+    spec_name = data.get('spec_name', '').strip()
+    values = data.get('values', [])
+
+    if not spec_name:
+        return jsonify({'success': False, 'msg': '规格名称不能为空'})
+
+    result = spec_service.add_spec_group(product_id, spec_name, values)
+    return jsonify(result)
+
+
+@app.route('/api/user/products/<int:product_id>/sku/create', methods=['POST'])
+@require_login
+def create_sku(user, product_id):
+    """V42.0: 创建或更新SKU"""
+    data = request.get_json() or {}
+    specs = data.get('specs', {})
+    price = float(data.get('price', 0))
+    stock = int(data.get('stock', 0))
+    sku_code = data.get('sku_code')
+
+    result = spec_service.create_or_update_sku(product_id, specs, price, stock, sku_code)
+    return jsonify(result)
+
+
+@app.route('/api/user/skus/<int:sku_id>', methods=['PUT'])
+@require_login
+def update_sku(user, sku_id):
+    """V42.0: 更新SKU价格/库存"""
+    data = request.get_json() or {}
+    price = data.get('price')
+    stock = data.get('stock')
+
+    result = spec_service.update_sku_price_and_stock(sku_id, price, stock)
+    return jsonify(result)
+
+
+# ============ V42.0 商品问答系统 ============
+
+@app.route('/api/user/products/<int:product_id>/qa', methods=['GET'])
+def get_product_qa(product_id):
+    """V42.0: 获取商品问答列表"""
+    page = int(request.args.get('page', 1))
+    page_size = min(int(request.args.get('page_size', 20)), 50)
+
+    result = product_qa.get_product_qa_list(product_id, page, page_size)
+    return jsonify({'success': True, 'data': result})
+
+
+@app.route('/api/user/products/<int:product_id>/qa/stats', methods=['GET'])
+def get_product_qa_stats(product_id):
+    """V42.0: 获取商品问答统计"""
+    stats = product_qa.get_product_qa_stats(product_id)
+    return jsonify({'success': True, 'data': stats})
+
+
+@app.route('/api/user/qa/<int:qa_id>', methods=['GET'])
+@require_login
+def get_qa_detail(user, qa_id):
+    """V42.0: 获取问答详情"""
+    detail = product_qa.get_qa_detail(qa_id, user['user_id'])
+    if not detail:
+        return jsonify({'success': False, 'msg': '问答不存在'})
+    return jsonify({'success': True, 'data': detail})
+
+
+@app.route('/api/user/qa', methods=['POST'])
+@require_login
+@rate_limiter.rate_limit(limit=20, window_seconds=60)
+def create_question(user):
+    """V42.0: 提交商品提问"""
+    data = request.get_json() or {}
+    product_id = data.get('product_id')
+    question = data.get('question', '').strip()
+
+    if not product_id:
+        return jsonify({'success': False, 'msg': '请指定商品'})
+    if not question:
+        return jsonify({'success': False, 'msg': '请填写问题内容'})
+
+    result = product_qa.create_question(
+        user_id=user['user_id'],
+        user_name=user.get('user_name', '匿名用户'),
+        product_id=product_id,
+        question=question,
+        ec_id=user.get('ec_id', 1),
+        project_id=user.get('project_id', 1)
+    )
+    return jsonify(result)
+
+
+@app.route('/api/user/qa/<int:qa_id>/answer', methods=['POST'])
+@require_login
+def answer_question(user, qa_id):
+    """V42.0: 回复问答（商家回复或追问追问回复）"""
+    data = request.get_json() or {}
+    answer = data.get('answer', '').strip()
+
+    if not answer:
+        return jsonify({'success': False, 'msg': '请填写回复内容'})
+
+    result = product_qa.answer_question(
+        question_id=qa_id,
+        answer=answer,
+        replier_id=user.get('user_id'),
+        replier_name=user.get('user_name', '商家'),
+        is_staff=(user.get('staff_id') is not None)
+    )
+    return jsonify(result)
+
+
+@app.route('/api/user/qa/<int:qa_id>/followup', methods=['POST'])
+@require_login
+def add_followup(user, qa_id):
+    """V42.0: 追加追问"""
+    data = request.get_json() or {}
+    content = data.get('content', '').strip()
+
+    if not content:
+        return jsonify({'success': False, 'msg': '请填写追问内容'})
+
+    result = product_qa.add_followup(
+        question_id=qa_id,
+        user_id=user['user_id'],
+        user_name=user.get('user_name', '匿名用户'),
+        content=content
+    )
+    return jsonify(result)
+
+
+@app.route('/api/user/qa/<int:qa_id>/close', methods=['POST'])
+@require_login
+def close_qa(user, qa_id):
+    """V42.0: 关闭问答"""
+    result = product_qa.close_question(qa_id, user['user_id'])
+    return jsonify(result)
+
+
+@app.route('/api/user/qa/my', methods=['GET'])
+@require_login
+def get_my_questions(user):
+    """V42.0: 获取我的提问列表"""
+    page = int(request.args.get('page', 1))
+    page_size = min(int(request.args.get('page_size', 20)), 50)
+    result = product_qa.get_user_questions(user['user_id'], page, page_size)
+    return jsonify({'success': True, 'data': result})
+
+
+# ============ V42.0 积分商城 ============
+
+@app.route('/api/user/points-mall', methods=['GET'])
+@require_login
+def get_points_mall(user):
+    """V42.0: 获取积分商品列表"""
+    page = int(request.args.get('page', 1))
+    page_size = min(int(request.args.get('page_size', 20)), 50)
+    category = request.args.get('category')
+    status = request.args.get('status', 'active')
+
+    result = PointsMallService.get_products(
+        ec_id=user.get('ec_id'),
+        project_id=user.get('project_id'),
+        page=page,
+        page_size=page_size,
+        category=category,
+        status=status
+    )
+    return jsonify({'success': True, 'data': result})
+
+
+@app.route('/api/user/points-mall/<int:goods_id>', methods=['GET'])
+@require_login
+def get_points_goods(user, goods_id):
+    """V42.0: 获取积分商品详情"""
+    goods = PointsMallService.get_product_detail(goods_id)
+    if not goods:
+        return jsonify({'success': False, 'msg': '商品不存在'})
+    return jsonify({'success': True, 'data': goods})
+
+
+@app.route('/api/user/points-mall/exchange', methods=['POST'])
+@require_login
+@rate_limiter.rate_limit(limit=10, window_seconds=60)
+def exchange_points_goods(user):
+    """V42.0: 积分兑换商品"""
+    data = request.get_json() or {}
+    goods_id = data.get('goods_id')
+    quantity = int(data.get('quantity', 1))
+    address_snapshot = data.get('address_snapshot', '')
+    phone = data.get('phone', '')
+
+    if not goods_id:
+        return jsonify({'success': False, 'msg': '请选择要兑换的商品'})
+
+    result = PointsMallService.exchange_goods(
+        user_id=user['user_id'],
+        user_name=user.get('user_name', ''),
+        goods_id=goods_id,
+        quantity=quantity,
+        address_snapshot=address_snapshot,
+        phone=phone,
+        ec_id=user.get('ec_id'),
+        project_id=user.get('project_id')
+    )
+    return jsonify(result)
+
+
+@app.route('/api/user/points-mall/exchanges', methods=['GET'])
+@require_login
+def get_points_exchanges(user):
+    """V42.0: 获取积分兑换记录"""
+    page = int(request.args.get('page', 1))
+    page_size = min(int(request.args.get('page_size', 20)), 50)
+
+    try:
+        total = db.get_total(
+            "SELECT COUNT(*) FROM business_points_exchanges WHERE user_id=%s",
+            [user['user_id']]
+        )
+        offset = (page - 1) * page_size
+        items = db.get_all(
+            """SELECT e.*, g.goods_name, g.goods_image
+               FROM business_points_exchanges e
+               LEFT JOIN business_points_goods g ON e.goods_id = g.id
+               WHERE e.user_id=%s
+               ORDER BY e.created_at DESC
+               LIMIT %s OFFSET %s""",
+            [user['user_id'], page_size, offset]
+        ) or []
+        return jsonify({'success': True, 'data': {
+            'items': items,
+            'total': total,
+            'page': page,
+            'page_size': page_size,
+            'pages': (total + page_size - 1) // page_size if total else 0
+        }})
+    except Exception as e:
+        logging.error(f"获取兑换记录失败: {e}")
+        return jsonify({'success': True, 'data': {'items': [], 'total': 0, 'page': page, 'page_size': page_size, 'pages': 0}})
+
+
+# ============ V42.0 限时秒杀倒计时 ============
+
+@app.route('/api/user/seckill/countdown', methods=['GET'])
+def get_seckill_countdown(user=None):
+    """V42.0: 获取秒杀倒计时信息（供前端展示）"""
+    try:
+        from datetime import datetime
+        from business_common.seckill_service import SeckillService
+
+        activities = db.get_all("""
+            SELECT id, promo_name, promo_type, description,
+                   start_time, end_time, total_stock,
+                   (SELECT COALESCE(SUM(quantity), 0) FROM business_seckill_orders
+                    WHERE activity_id=business_promotions.id AND status != 'cancelled') as sold_count,
+                   status
+            FROM business_promotions
+            WHERE promo_type='seckill' AND status='active'
+              AND end_time >= NOW()
+            ORDER BY start_time ASC
+            LIMIT 5
+        """) or []
+
+        now = datetime.now()
+        result = []
+        for act in activities:
+            start = act.get('start_time', now)
+            end = act.get('end_time', now)
+
+            if now < start:
+                phase = 'waiting'  # 即将开始
+                remaining = int((start - now).total_seconds())
+            elif now > end:
+                phase = 'ended'   # 已结束
+                remaining = 0
+            else:
+                phase = 'ongoing'  # 进行中
+                remaining = int((end - now).total_seconds())
+
+            result.append({
+                'id': act['id'],
+                'name': act['promo_name'],
+                'description': act.get('description', ''),
+                'start_time': str(start),
+                'end_time': str(end),
+                'total_stock': act.get('total_stock', 0),
+                'sold_count': act.get('sold_count', 0),
+                'remaining_stock': max(0, (act.get('total_stock') or 0) - (act.get('sold_count') or 0)),
+                'phase': phase,
+                'remaining_seconds': remaining
+            })
+
+        return jsonify({'success': True, 'data': result})
+    except Exception as e:
+        logging.error(f"获取秒杀倒计时失败: {e}")
+        return jsonify({'success': True, 'data': []})
+
+
+@app.route('/api/user/products/<int:product_id>/reviews', methods=['GET'])
+def get_product_reviews(product_id):
+    """V42.0: 获取商品评价列表"""
+    page = int(request.args.get('page', 1))
+    page_size = min(int(request.args.get('page_size', 20)), 50)
+    rating = request.args.get('rating')  # 可选：筛选星级
+
+    where = "target_type='product' AND target_id=%s AND deleted=0"
+    params = [product_id]
+    if rating:
+        where += " AND rating=%s"
+        params.append(int(rating))
+
+    total = db.get_total(f"SELECT COUNT(*) FROM business_reviews WHERE {where}", params)
+    offset = (page - 1) * page_size
+    reviews = db.get_all(f"""
+        SELECT r.*,
+               CASE WHEN r.images IS NOT NULL AND r.images != '' THEN 1 ELSE 0 END as has_images
+        FROM business_reviews r
+        WHERE {where}
+        ORDER BY r.created_at DESC
+        LIMIT %s OFFSET %s
+    """, params + [page_size, offset]) or []
+
+    return jsonify({'success': True, 'data': {
+        'reviews': reviews,
+        'total': total,
+        'page': page,
+        'page_size': page_size,
+        'pages': (total + page_size - 1) // page_size if total else 0
+    }})
+
+
+@app.route('/api/user/member/card', methods=['GET'])
+@require_login
+def get_member_card(user):
+    """V42.0: 获取会员数字卡信息"""
+    uid = user['user_id']
+    member = db.get_one("""
+        SELECT m.*, ml.level_name, ml.discount_rate, ml.privileges
+        FROM business_members m
+        LEFT JOIN business_member_levels ml ON m.member_level = ml.level_code
+        WHERE m.user_id=%s
+    """, [uid])
+
+    if not member:
+        return jsonify({'success': False, 'msg': '会员不存在'})
+
+    # 生成会员卡号（脱敏展示）
+    card_no = f"{member['user_id']:010d}"
+
+    # 获取最近消费
+    recent_order = db.get_one("""
+        SELECT actual_amount, created_at FROM business_orders
+        WHERE user_id=%s AND order_status='completed'
+        ORDER BY created_at DESC LIMIT 1
+    """, [uid])
+
+    # 获取权益列表
+    privileges = []
+    try:
+        privileges = json.loads(member.get('privileges') or '[]')
+    except:
+        privileges = []
+
+    return jsonify({'success': True, 'data': {
+        'card_no': card_no,
+        'member_name': member.get('user_name', ''),
+        'phone': member.get('phone', ''),
+        'level': member.get('member_level', 'L1'),
+        'level_name': member.get('level_name', '普通会员'),
+        'points': member.get('points', 0),
+        'total_points': member.get('total_points', 0),
+        'balance': member.get('balance', 0),
+        'discount_rate': float(member.get('discount_rate') or 1.0),
+        'privileges': privileges,
+        'join_date': str(member.get('created_at', ''))[:10] if member.get('created_at') else '',
+        'last_consume': str(recent_order['created_at'])[:10] if recent_order else None,
+        'last_amount': float(recent_order['actual_amount'] or 0) if recent_order else 0
+    }})
+
+
 @app.route('/<path:filename>')
 def static_files(filename):
     return send_from_directory('.', filename)
@@ -4025,6 +4934,791 @@ def confirm_points_exchange_received(user, exchange_id):
     except Exception as e:
         logging.error(f"确认收货失败: {e}")
         return jsonify({'success': False, 'msg': '操作失败'})
+
+
+# ============ V33.0 发票管理 ============
+
+@app.route('/api/user/invoice/titles', methods=['GET'])
+@require_login
+def get_invoice_titles(user):
+    """V33.0: 获取用户的发票抬头列表"""
+    uid = user.get('user_id')
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    
+    try:
+        titles = db.get_all(
+            """SELECT id, title_type, title_name, tax_no, bank_name, bank_account,
+                      address, phone, is_default, created_at
+               FROM business_invoice_titles
+               WHERE user_id=%s AND deleted=0
+               ORDER BY is_default DESC, created_at DESC""",
+            [uid]
+        )
+        return jsonify({'success': True, 'data': titles or []})
+    except Exception as e:
+        logging.warning(f"发票抬头查询失败: {e}")
+        return jsonify({'success': True, 'data': []})
+
+
+@app.route('/api/user/invoice/titles', methods=['POST'])
+@require_login
+@rate_limiter.rate_limit(limit=20, window_seconds=60)
+def create_invoice_title(user):
+    """V33.0: 创建发票抬头"""
+    uid = user.get('user_id')
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    data = request.get_json() or {}
+    
+    title_type = data.get('title_type', 'personal')
+    title_name = data.get('title_name', '').strip()
+    tax_no = data.get('tax_no', '')
+    bank_name = data.get('bank_name', '')
+    bank_account = data.get('bank_account', '')
+    address = data.get('address', '')
+    phone = data.get('phone', '')
+    is_default = data.get('is_default', False)
+    
+    if not title_name:
+        return jsonify({'success': False, 'msg': '请填写发票抬头'})
+    
+    if title_type == 'enterprise' and not tax_no:
+        return jsonify({'success': False, 'msg': '企业抬头必须填写税号'})
+    
+    try:
+        # 如果设置为默认，先取消其他默认
+        if is_default:
+            db.execute(
+                "UPDATE business_invoice_titles SET is_default=0 WHERE user_id=%s AND deleted=0",
+                [uid]
+            )
+        
+        title_id = db.execute(
+            """INSERT INTO business_invoice_titles
+               (user_id, title_type, title_name, tax_no, bank_name, bank_account, address, phone, is_default, ec_id, project_id)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+            [uid, title_type, title_name, tax_no, bank_name, bank_account, address, phone, 1 if is_default else 0, ec_id, project_id]
+        )
+        
+        return jsonify({'success': True, 'msg': '发票抬头创建成功', 'data': {'title_id': title_id}})
+    except Exception as e:
+        logging.error(f"创建发票抬头失败: {e}")
+        return jsonify({'success': False, 'msg': '创建失败'})
+
+
+@app.route('/api/user/invoice/titles/<int:title_id>', methods=['PUT'])
+@require_login
+def update_invoice_title(user, title_id):
+    """V33.0: 更新发票抬头"""
+    uid = user.get('user_id')
+    data = request.get_json() or {}
+    
+    # 检查抬头是否存在
+    title = db.get_one(
+        "SELECT * FROM business_invoice_titles WHERE id=%s AND user_id=%s AND deleted=0",
+        [title_id, uid]
+    )
+    if not title:
+        return jsonify({'success': False, 'msg': '发票抬头不存在'})
+    
+    # 构建更新字段
+    update_fields = []
+    params = []
+    
+    allowed = ['title_type', 'title_name', 'tax_no', 'bank_name', 'bank_account', 'address', 'phone', 'is_default']
+    for field in allowed:
+        if field in data:
+            if field == 'is_default' and data[field]:
+                db.execute("UPDATE business_invoice_titles SET is_default=0 WHERE user_id=%s AND deleted=0", [uid])
+            update_fields.append(f"{field}=%s")
+            params.append(data[field])
+    
+    if not update_fields:
+        return jsonify({'success': False, 'msg': '没有需要更新的字段'})
+    
+    params.extend([title_id])
+    
+    try:
+        db.execute(
+            f"UPDATE business_invoice_titles SET {', '.join(update_fields)}, updated_at=NOW() WHERE id=%s",
+            params
+        )
+        return jsonify({'success': True, 'msg': '更新成功'})
+    except Exception as e:
+        logging.error(f"更新发票抬头失败: {e}")
+        return jsonify({'success': False, 'msg': '更新失败'})
+
+
+@app.route('/api/user/invoice/titles/<int:title_id>', methods=['DELETE'])
+@require_login
+def delete_invoice_title(user, title_id):
+    """V33.0: 删除发票抬头"""
+    uid = user.get('user_id')
+    
+    title = db.get_one(
+        "SELECT * FROM business_invoice_titles WHERE id=%s AND user_id=%s AND deleted=0",
+        [title_id, uid]
+    )
+    if not title:
+        return jsonify({'success': False, 'msg': '发票抬头不存在'})
+    
+    try:
+        db.execute("UPDATE business_invoice_titles SET deleted=1 WHERE id=%s", [title_id])
+        return jsonify({'success': True, 'msg': '删除成功'})
+    except Exception as e:
+        logging.error(f"删除发票抬头失败: {e}")
+        return jsonify({'success': False, 'msg': '删除失败'})
+
+
+@app.route('/api/user/invoices', methods=['GET'])
+@require_login
+def get_user_invoices(user):
+    """V33.0: 获取用户的发票列表"""
+    uid = user.get('user_id')
+    status = request.args.get('status')
+    page = max(1, int(request.args.get('page', 1)))
+    page_size = min(max(1, int(request.args.get('page_size', 20))), 50)
+    
+    where = "user_id=%s AND deleted=0"
+    params = [uid]
+    if status:
+        where += " AND invoice_status=%s"
+        params.append(status)
+    
+    total = db.get_total(f"SELECT COUNT(*) FROM business_invoices WHERE {where}", params)
+    offset = (page - 1) * page_size
+    
+    items = db.get_all(
+        f"""SELECT i.*, t.title_type, t.title_name, t.tax_no
+            FROM business_invoices i
+            LEFT JOIN business_invoice_titles t ON i.title_id = t.id
+            WHERE {where}
+            ORDER BY i.created_at DESC
+            LIMIT %s OFFSET %s""",
+        params + [page_size, offset]
+    )
+    
+    return jsonify({'success': True, 'data': {
+        'items': items or [],
+        'total': total,
+        'page': page,
+        'page_size': page_size,
+        'pages': (total + page_size - 1) // page_size if total else 0
+    }})
+
+
+@app.route('/api/user/invoices/<int:invoice_id>', methods=['GET'])
+@require_login
+def get_user_invoice_detail(user, invoice_id):
+    """V33.0: 获取发票详情"""
+    uid = user.get('user_id')
+    
+    invoice = db.get_one(
+        """SELECT i.*, t.title_type, t.title_name, t.tax_no, t.bank_name, t.bank_account, t.address, t.phone,
+                  o.actual_amount, o.pay_time
+           FROM business_invoices i
+           LEFT JOIN business_invoice_titles t ON i.title_id = t.id
+           LEFT JOIN business_orders o ON i.order_id = o.id
+           WHERE i.id=%s AND i.user_id=%s AND i.deleted=0""",
+        [invoice_id, uid]
+    )
+    
+    if not invoice:
+        return jsonify({'success': False, 'msg': '发票不存在'})
+    
+    return jsonify({'success': True, 'data': invoice})
+
+
+@app.route('/api/user/orders/<int:order_id>/invoice/apply', methods=['POST'])
+@require_login
+@rate_limiter.rate_limit(limit=10, window_seconds=60)
+def apply_invoice_from_order(user, order_id):
+    """V33.0: 申请发票（从订单）"""
+    uid = user.get('user_id')
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    data = request.get_json() or {}
+    
+    title_id = data.get('title_id')
+    invoice_type = data.get('invoice_type', 'electronic')
+    content = data.get('content', '商品明细')
+    remark = data.get('remark', '')
+    
+    if not title_id:
+        return jsonify({'success': False, 'msg': '请选择发票抬头'})
+    
+    # 验证订单
+    order = db.get_one(
+        "SELECT * FROM business_orders WHERE id=%s AND user_id=%s AND deleted=0",
+        [order_id, uid]
+    )
+    if not order:
+        return jsonify({'success': False, 'msg': '订单不存在'})
+    
+    if order.get('pay_status') != 'paid':
+        return jsonify({'success': False, 'msg': '仅已支付订单可申请发票'})
+    
+    # 检查是否已申请
+    existing = db.get_one(
+        "SELECT id FROM business_invoices WHERE order_id=%s AND deleted=0 AND invoice_status != 'cancelled'",
+        [order_id]
+    )
+    if existing:
+        return jsonify({'success': False, 'msg': '该订单已申请过发票'})
+    
+    # 验证抬头
+    title = db.get_one(
+        "SELECT * FROM business_invoice_titles WHERE id=%s AND user_id=%s AND deleted=0",
+        [title_id, uid]
+    )
+    if not title:
+        return jsonify({'success': False, 'msg': '发票抬头不存在'})
+    
+    # 计算金额
+    amount = order.get('actual_amount', 0)
+    tax_rate = 0.06
+    tax_amount = amount * tax_rate
+    
+    # 生成发票号
+    import uuid
+    invoice_no = f"INV{datetime.now().strftime('%Y%m%d')}{uuid.uuid4().hex[:8].upper()}"
+    
+    try:
+        invoice_id = db.execute(
+            """INSERT INTO business_invoices
+               (invoice_no, order_id, order_no, user_id, title_id, title_type, title_name, tax_no,
+                invoice_type, invoice_status, amount, tax_amount, tax_rate, content, remark, ec_id, project_id)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+            [invoice_no, order_id, order.get('order_no'), uid, title_id, title['title_type'],
+             title['title_name'], title.get('tax_no'), invoice_type, 'pending', amount, tax_amount,
+             tax_rate, content, remark, ec_id, project_id]
+        )
+        
+        return jsonify({
+            'success': True,
+            'msg': '发票申请成功',
+            'data': {'invoice_id': invoice_id, 'invoice_no': invoice_no}
+        })
+    except Exception as e:
+        logging.error(f"申请发票失败: {e}")
+        return jsonify({'success': False, 'msg': '申请失败'})
+
+
+@app.route('/api/user/invoices/<int:invoice_id>/cancel', methods=['POST'])
+@require_login
+def cancel_invoice(user, invoice_id):
+    """V33.0: 取消发票申请"""
+    uid = user.get('user_id')
+    data = request.get_json() or {}
+    reason = data.get('reason', '用户取消')
+    
+    invoice = db.get_one(
+        "SELECT * FROM business_invoices WHERE id=%s AND user_id=%s AND invoice_status='pending' AND deleted=0",
+        [invoice_id, uid]
+    )
+    
+    if not invoice:
+        return jsonify({'success': False, 'msg': '发票不存在或状态不允许取消'})
+    
+    try:
+        db.execute(
+            "UPDATE business_invoices SET invoice_status='cancelled', remark=CONCAT(IFNULL(remark,''), ' 取消原因:', %s) WHERE id=%s",
+            [reason, invoice_id]
+        )
+        return jsonify({'success': True, 'msg': '发票申请已取消'})
+    except Exception as e:
+        logging.error(f"取消发票失败: {e}")
+        return jsonify({'success': False, 'msg': '操作失败'})
+
+
+# ============ V38.0 成长任务 ============
+
+@app.route('/api/user/growth/tasks', methods=['GET'])
+@require_login
+def get_growth_tasks(user):
+    """V38.0: 获取用户成长任务列表"""
+    uid = user.get('user_id')
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    
+    try:
+        from business_common.growth_task_service import growth_task_service
+        result = growth_task_service.get_user_task_summary(uid, ec_id, project_id)
+        return jsonify({'success': True, 'data': result})
+    except Exception as e:
+        logging.warning(f"获取成长任务失败: {e}")
+        return jsonify({'success': True, 'data': {
+            'total_tasks': 0, 'completed_tasks': 0, 'remaining_tasks': 0,
+            'completion_rate': 0, 'tasks': []
+        }})
+
+
+@app.route('/api/user/growth/tasks/claim/<int:task_id>', methods=['POST'])
+@require_login
+def claim_growth_task_reward(user, task_id):
+    """V38.0: 领取成长任务奖励"""
+    uid = user.get('user_id')
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    
+    try:
+        from business_common.growth_task_service import growth_task_service
+        # 领取奖励时会触发成长值和积分发放
+        result = growth_task_service.increment_task_progress(uid, 'order', ec_id, project_id, 0)
+        return jsonify({'success': True, 'msg': '奖励已发放', 'data': result})
+    except Exception as e:
+        logging.error(f"领取奖励失败: {e}")
+        return jsonify({'success': False, 'msg': '操作失败'})
+
+
+# ============ V38.0 评价积分奖励 ============
+
+@app.route('/api/user/review/reward/rules', methods=['GET'])
+@require_login
+def get_review_reward_rules(user):
+    """V38.0: 获取评价积分奖励规则"""
+    try:
+        from business_common.review_reward_service import review_reward_service
+        rules = review_reward_service.get_reward_rules_display()
+        return jsonify({'success': True, 'data': rules})
+    except Exception as e:
+        logging.warning(f"获取奖励规则失败: {e}")
+        # 返回默认规则
+        return jsonify({'success': True, 'data': [
+            {'rating': 5, 'label': '5星好评', 'points': 20, 'growth': 10},
+            {'rating': 4, 'label': '4星好评', 'points': 10, 'growth': 5},
+            {'rating': 3, 'label': '3星中评', 'points': 5, 'growth': 2},
+            {'rating': 2, 'label': '2星差评', 'points': 0, 'growth': 0},
+            {'rating': 1, 'label': '1星差评', 'points': 0, 'growth': 0},
+        ]})
+
+
+@app.route('/api/user/review/reward/stats', methods=['GET'])
+@require_login
+def get_review_reward_stats(user):
+    """V38.0: 获取用户评价奖励统计"""
+    uid = user.get('user_id')
+    
+    try:
+        from business_common.review_reward_service import review_reward_service
+        stats = review_reward_service.get_user_reward_stats(uid)
+        return jsonify({'success': True, 'data': stats})
+    except Exception as e:
+        logging.warning(f"获取评价统计失败: {e}")
+        return jsonify({'success': True, 'data': {
+            'total_reviews': 0, 'rewarded_reviews': 0,
+            'total_points_earned': 0, 'total_growth_earned': 0, 'avg_rating': 0
+        }})
+
+
+# ============ V38.0 最优折扣计算 ============
+
+@app.route('/api/user/discount/optimal', methods=['GET'])
+@require_login
+def get_optimal_discount(user):
+    """V38.0: 计算最优优惠券+积分组合"""
+    uid = user.get('user_id')
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    
+    order_amount = float(request.args.get('amount', 0))
+    if order_amount <= 0:
+        return jsonify({'success': False, 'msg': '请提供订单金额'})
+    
+    # 获取用户积分
+    member = db.get_one("SELECT points FROM business_members WHERE user_id=%s", [uid])
+    user_points = member.get('points', 0) if member else 0
+    
+    try:
+        from business_common.discount_calculator_service import discount_calculator
+        result = discount_calculator.calculate_optimal_discount(
+            uid, order_amount, user_points, ec_id, project_id
+        )
+        return jsonify({'success': True, 'data': result})
+    except Exception as e:
+        logging.warning(f"计算最优折扣失败: {e}")
+        return jsonify({'success': True, 'data': {
+            'order_amount': order_amount,
+            'user_points': user_points,
+            'optimal_plan': {
+                'use_points': 0, 'points_deduction': 0,
+                'total_discount': 0, 'final_amount': order_amount
+            }
+        }})
+
+
+@app.route('/api/user/discount/preview', methods=['POST'])
+@require_login
+def preview_discount(user):
+    """V38.0: 预览折扣计算"""
+    data = request.get_json() or {}
+    
+    order_amount = float(data.get('amount', 0))
+    use_points = int(data.get('use_points', 0))
+    coupon = data.get('coupon')
+    
+    if order_amount <= 0:
+        return jsonify({'success': False, 'msg': '订单金额必须大于0'})
+    
+    try:
+        from business_common.discount_calculator_service import discount_calculator
+        result = discount_calculator.calculate_preview(order_amount, coupon, use_points)
+        return jsonify({'success': True, 'data': result})
+    except Exception as e:
+        logging.warning(f"预览折扣失败: {e}")
+        return jsonify({'success': True, 'data': {
+            'order_amount': order_amount,
+            'use_points': use_points,
+            'points_deduction': use_points / 100,
+            'final_amount': order_amount,
+            'total_discount': use_points / 100,
+        }})
+
+
+# ============ V38.0 分享追踪 ============
+
+@app.route('/api/user/share/record', methods=['POST'])
+@require_login
+def record_share(user):
+    """V38.0: 记录分享行为"""
+    uid = user.get('user_id')
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    data = request.get_json() or {}
+    
+    share_type = data.get('share_type', 'product')
+    target_id = int(data.get('target_id', 0))
+    target_title = data.get('title', '')
+    channel = data.get('channel', 'link')
+    
+    if not target_id:
+        return jsonify({'success': False, 'msg': '请提供分享目标'})
+    
+    try:
+        from business_common.share_service import share_service
+        result = share_service.record_share(
+            uid, share_type, target_id, target_title, channel, ec_id, project_id
+        )
+        
+        # 如果是分享商品，触发成长任务
+        if share_type == 'product':
+            try:
+                from business_common.growth_task_service import growth_task_service
+                growth_task_service.on_share(uid, ec_id, project_id)
+            except:
+                pass
+        
+        return jsonify({'success': True, 'data': result})
+    except Exception as e:
+        logging.warning(f"记录分享失败: {e}")
+        return jsonify({'success': True, 'data': {
+            'share_id': 0,
+            'share_url': f'/product/{target_id}'
+        }})
+
+
+@app.route('/api/user/share/click', methods=['POST'])
+def record_share_click():
+    """V38.0: 记录分享链接点击（无需登录）"""
+    data = request.get_json() or {}
+    share_token = data.get('share_token', '')
+    
+    if not share_token:
+        return jsonify({'success': False, 'msg': '缺少分享标识'})
+    
+    try:
+        from business_common.share_service import share_service
+        result = share_service.record_click(share_token)
+        return jsonify({'success': True, 'data': result})
+    except Exception as e:
+        logging.warning(f"记录点击失败: {e}")
+        return jsonify({'success': True, 'data': {'source_user_id': 0}})
+
+
+@app.route('/api/user/share/stats', methods=['GET'])
+@require_login
+def get_share_stats(user):
+    """V38.0: 获取用户分享统计"""
+    uid = user.get('user_id')
+    
+    try:
+        from business_common.share_service import share_service
+        stats = share_service.get_user_share_stats(uid)
+        return jsonify({'success': True, 'data': stats})
+    except Exception as e:
+        logging.warning(f"获取分享统计失败: {e}")
+        return jsonify({'success': True, 'data': {
+            'total_shares': 0, 'total_clicks': 0, 'total_converts': 0,
+            'total_convert_amount': 0, 'click_rate': 0, 'convert_rate': 0
+        }})
+
+
+@app.route('/api/user/share/history', methods=['GET'])
+@require_login
+def get_share_history(user):
+    """V38.0: 获取分享历史"""
+    uid = user.get('user_id')
+    limit = min(int(request.args.get('limit', 20)), 50)
+    
+    try:
+        from business_common.share_service import share_service
+        history = share_service.get_share_history(uid, limit)
+        return jsonify({'success': True, 'data': history})
+    except Exception as e:
+        logging.warning(f"获取分享历史失败: {e}")
+        return jsonify({'success': True, 'data': []})
+
+
+@app.route('/api/user/share/poster/config', methods=['GET'])
+@require_login
+def get_share_poster_config(user):
+    """V38.0: 获取分享海报配置"""
+    uid = user.get('user_id')
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    
+    share_type = request.args.get('type', 'product')
+    target_id = int(request.args.get('target_id', 0))
+    share_url = (request.args.get('share_url') or '').strip()
+    
+    if not target_id:
+        return jsonify({'success': False, 'msg': '请提供目标ID'})
+    
+    try:
+        from business_common.share_service import share_service
+        config = share_service.generate_poster_config(
+            share_type, target_id, uid, ec_id, project_id, share_url=share_url or None
+        )
+
+        return jsonify({'success': True, 'data': config})
+    except Exception as e:
+        logging.warning(f"获取海报配置失败: {e}")
+        return jsonify({'success': True, 'data': {
+            'width': 750, 'height': 1000, 'elements': []
+        }})
+
+
+# ============ V29.0 申请审批系统 (用户端) ============
+
+@app.route('/api/user/application/types', methods=['GET'])
+@require_login
+def get_application_types_list(user):
+    """V29.0: 获取申请类型列表"""
+    from business_common.application_service import ApplicationService
+    category = request.args.get('category')
+    types = ApplicationService.get_application_types(category=category)
+    return jsonify({'success': True, 'data': {'items': types}})
+
+
+@app.route('/api/user/application/types/<type_code>', methods=['GET'])
+@require_login
+def get_application_type_detail(user, type_code):
+    """V29.0: 获取申请类型详情"""
+    from business_common.application_service import ApplicationService
+    app_type = ApplicationService.get_application_type(type_code)
+    if not app_type:
+        return jsonify({'success': False, 'msg': '申请类型不存在'})
+    return jsonify({'success': True, 'data': app_type})
+
+
+@app.route('/api/user/applications/v2', methods=['POST'])
+@require_login
+@rate_limiter.rate_limit(limit=10, window_seconds=60)
+def create_application_v2(user):
+    """V29.0: 创建申请（支持8种业务类型）"""
+    from business_common.application_service import ApplicationService
+    
+    data = request.get_json() or {}
+    type_code = data.get('type_code')
+    title = data.get('title', '').strip()
+    form_data = data.get('form_data', {})
+    remark = data.get('remark', '').strip()
+    attachments = data.get('attachments', [])
+    
+    if not type_code:
+        return jsonify({'success': False, 'msg': '请选择申请类型'})
+    if not title:
+        return jsonify({'success': False, 'msg': '请输入申请标题'})
+    
+    result = ApplicationService.create_application(
+        user_id=user.get('user_id'),
+        user_name=user.get('user_name', ''),
+        user_phone=user.get('phone', ''),
+        type_code=type_code,
+        title=title,
+        form_data=form_data,
+        ec_id=user.get('ec_id'),
+        project_id=user.get('project_id'),
+        attachments=attachments,
+        remark=remark
+    )
+    return jsonify(result)
+
+
+@app.route('/api/user/applications/v2', methods=['GET'])
+@require_login
+def get_user_applications_v2(user):
+    """V29.0: 获取用户申请列表（支持筛选和搜索）"""
+    from business_common.application_service import ApplicationService
+    
+    type_code = request.args.get('type_code')
+    status = request.args.get('status')
+    keyword = request.args.get('keyword', '').strip()
+    page = max(1, int(request.args.get('page', 1)))
+    page_size = min(int(request.args.get('page_size', 20)), 50)
+    
+    result = ApplicationService.get_user_applications(
+        user_id=user.get('user_id'),
+        type_code=type_code,
+        status=status,
+        keyword=keyword if keyword else None,
+        page=page,
+        page_size=page_size
+    )
+    return jsonify({'success': True, 'data': result})
+
+
+@app.route('/api/user/applications/v2/<int:app_id>', methods=['GET'])
+@require_login
+def get_application_detail_v2(user, app_id):
+    """V29.0: 获取申请详情"""
+    from business_common.application_service import ApplicationService
+    
+    app = ApplicationService.get_application_detail(
+        app_id=app_id,
+        user_id=user.get('user_id'),
+        is_staff=False
+    )
+    
+    if not app:
+        return jsonify({'success': False, 'msg': '申请不存在'})
+    
+    return jsonify({'success': True, 'data': app})
+
+
+@app.route('/api/user/applications/v2/<int:app_id>/cancel', methods=['POST'])
+@require_login
+def cancel_application_v2(user, app_id):
+    """V29.0: 取消申请"""
+    from business_common.application_service import ApplicationService
+    
+    result = ApplicationService.cancel_application(
+        app_id=app_id,
+        user_id=user.get('user_id')
+    )
+    return jsonify(result)
+
+
+@app.route('/api/user/applications/v2/<int:app_id>/favorite', methods=['POST'])
+@require_login
+def set_application_favorite(user, app_id):
+    """V29.0: 设置/取消常用申请"""
+    from business_common.application_service import ApplicationService
+    
+    data = request.get_json() or {}
+    is_favorite = 1 if data.get('is_favorite') else 0
+    
+    result = ApplicationService.set_favorite(
+        app_id=app_id,
+        user_id=user.get('user_id'),
+        is_favorite=is_favorite
+    )
+    return jsonify(result)
+
+
+@app.route('/api/user/applications/v2/<int:app_id>/copy', methods=['POST'])
+@require_login
+def copy_application_v2(user, app_id):
+    """V29.0: 复制申请（一键复用）"""
+    from business_common.application_service import ApplicationService
+    
+    result = ApplicationService.copy_application(
+        app_id=app_id,
+        user_id=user.get('user_id')
+    )
+    return jsonify(result)
+
+
+@app.route('/api/user/applications/v2/favorites', methods=['GET'])
+@require_login
+def get_favorite_applications(user):
+    """V29.0: 获取常用申请列表"""
+    items = db.get_all(
+        """SELECT id, app_no, app_type, title, form_data, created_at
+           FROM business_applications
+           WHERE user_id=%s AND is_favorite=1 AND deleted=0
+           ORDER BY updated_at DESC
+           LIMIT 20""",
+        [user.get('user_id')]
+    ) or []
+    
+    # 获取类型名称
+    type_map = {}
+    types = db.get_all("SELECT type_code, type_name, icon FROM business_application_types WHERE is_active=1")
+    for t in types or []:
+        type_map[t['type_code']] = {'name': t['type_name'], 'icon': t['icon']}
+    
+    for item in items:
+        type_info = type_map.get(item.get('app_type'), {})
+        item['type_name'] = type_info.get('name', item.get('app_type'))
+        item['type_icon'] = type_info.get('icon', '')
+        if item.get('form_data'):
+            try:
+                item['form_data'] = json.loads(item['form_data'])
+            except:
+                item['form_data'] = {}
+    
+    return jsonify({'success': True, 'data': {'items': items}})
+
+
+@app.route('/api/user/applications/v2/check-lift', methods=['POST'])
+@require_login
+def check_lift_availability(user):
+    """V29.0: 检查货梯可用性"""
+    data = request.get_json() or {}
+    lift_no = data.get('lift_no')
+    use_date = data.get('use_date')
+    start_time = data.get('start_time')
+    end_time = data.get('end_time')
+    
+    if not all([lift_no, use_date, start_time, end_time]):
+        return jsonify({'success': False, 'msg': '缺少必要参数'})
+    
+    # 查询同一货梯同一时间段的已批准申请
+    existing = db.get_all(
+        """SELECT id, start_time, end_time FROM (
+            SELECT id,
+                JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.start_time')) as start_time,
+                JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.end_time')) as end_time
+            FROM business_applications
+            WHERE app_type='cargo_lift' 
+              AND status IN ('pending', 'approved', 'processing')
+              AND JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.lift_no')) = %s
+              AND JSON_UNQUOTE(JSON_EXTRACT(form_data, '$.use_date')) = %s
+              AND ec_id=%s AND project_id=%s
+        ) t WHERE (start_time <= %s AND end_time > %s) OR (start_time < %s AND end_time >= %s)""",
+        [lift_no, use_date, user.get('ec_id'), user.get('project_id'), 
+         end_time, start_time, end_time, start_time]
+    )
+    
+    if existing:
+        return jsonify({
+            'success': True,
+            'data': {
+                'available': False,
+                'msg': '该时间段货梯已被预约',
+                'conflicts': existing
+            }
+        })
+    
+    return jsonify({
+        'success': True,
+        'data': {
+            'available': True,
+            'msg': '该时间段可用'
+        }
+    })
 
 
 if __name__ == '__main__':

@@ -1,247 +1,97 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>场地管理 - 管理后台</title>
-<style>
-/* ==================== 基础样式 ==================== */
-*{margin:0;padding:0;box-sizing:border-box}
-
-:root {
-    --primary-color: #1890ff;
-    --primary-light: #40a9ff;
-    --primary-dark: #096dd9;
-    --success-color: #52c41a;
-    --warning-color: #faad14;
-    --danger-color: #ff4d4f;
-    --info-color: #909399;
-    --text-primary: #303133;
-    --text-regular: #606266;
-    --text-secondary: #909399;
-    --border-color: #ebeef5;
-    --bg-white: #ffffff;
-    --bg-light: #f5f7fa;
-    --bg-striped: #fafafa;
-}
-
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg-light);min-height:100vh;font-size:14px;color:var(--text-regular)}
-
-/* ==================== 页面布局 ==================== */
-.header{background:#001529;color:white;padding:0 20px;display:flex;align-items:center;height:56px;position:fixed;top:0;left:0;right:0;z-index:100}
-.header h1{font-size:18px;font-weight:600}
-.header-right{margin-left:auto;display:flex;align-items:center;gap:15px}
-.layout{display:flex;padding-top:56px;min-height:100vh}
-.sidebar{width:200px;background:white;border-right:1px solid var(--border-color);position:fixed;top:56px;left:0;bottom:0;overflow-y:auto}
-.sidebar-item{padding:14px 20px;cursor:pointer;color:var(--text-regular);font-size:14px;border-left:3px solid transparent;transition:all .2s}
-.sidebar-item:hover{background:var(--bg-light)}
-.sidebar-item.active{background:#e6f7ff;color:var(--primary-color);border-left-color:var(--primary-color)}
-.main{flex:1;margin-left:200px;padding:20px}
-
-/* ==================== 卡片 ==================== */
-.card{background:var(--bg-white);border-radius:4px;padding:20px;margin-bottom:16px;box-shadow:0 2px 12px 0 rgba(0,0,0,.1);border:1px solid var(--border-color)}
-.card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
-.card-title{font-size:16px;font-weight:600;color:var(--text-primary)}
-
-/* ==================== 搜索栏 ==================== */
-.search-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
-.search-input{padding:8px 12px;border:1px solid var(--border-color);border-radius:4px;font-size:14px;min-width:160px;transition:border-color .2s}
-.search-input:hover{border-color:#c0c4cc}
-.search-input:focus{border-color:var(--primary-color);outline:none}
-
-/* ==================== 按钮 ==================== */
-.btn{padding:9px 15px;border-radius:4px;font-size:14px;cursor:pointer;border:1px solid var(--border-color);background:var(--bg-white);color:var(--text-regular);transition:all .2s;user-select:none}
-.btn:hover{color:var(--primary-color);border-color:var(--primary-color)}
-.btn-primary{background:var(--primary-color);border-color:var(--primary-color);color:var(--bg-white)}
-.btn-primary:hover{background:var(--primary-light);border-color:var(--primary-light)}
-.btn-default{background:var(--bg-white);border-color:var(--border-color);color:var(--text-regular)}
-.btn-default:hover{color:var(--primary-color);border-color:var(--primary-color)}
-.btn-danger{background:var(--danger-color);border-color:var(--danger-color);color:var(--bg-white)}
-.btn-danger:hover{background:#ff7875;border-color:#ff7875}
-.btn-success{background:var(--success-color);border-color:var(--success-color);color:var(--bg-white)}
-.btn-success:hover{background:#73d13d;border-color:#73d13d}
-.btn-sm{padding:5px 10px;font-size:12px}
-
-/* ==================== Element UI 表格 ==================== */
-.el-table{width:100%;border:1px solid var(--border-color);border-radius:4px;background-color:var(--bg-white);color:var(--text-regular);font-size:14px;border-collapse:collapse}
-
-/* 表头 */
-.el-table__header th{padding:12px 10px;background-color:var(--bg-light);color:var(--text-primary);font-weight:500;text-align:left;border-bottom:1px solid var(--border-color);border-right:1px solid var(--border-color)}
-.el-table__header th:last-child{border-right:none}
-
-/* 表体 */
-.el-table__body td{padding:12px 10px;border-bottom:1px solid var(--border-color);border-right:1px solid var(--border-color)}
-.el-table__body td:last-child{border-right:none}
-
-/* 行悬停 */
-.el-table__body tr:hover>td{background-color:var(--bg-light)}
-
-/* 斑马纹 */
-.el-table--striped .el-table__body tr:nth-child(2n) td{background-color:var(--bg-striped)}
-.el-table--striped .el-table__body tr:nth-child(2n):hover td{background-color:var(--bg-light)}
-
-/* 空状态 */
-.empty{text-align:center;padding:40px;color:var(--info-color)}
-
-/* ==================== Element UI 标签 ==================== */
-.el-tag{display:inline-block;padding:0 8px;height:22px;line-height:20px;font-size:12px;border-radius:4px;border:1px solid;white-space:nowrap}
-.el-tag--success{background-color:#f6ffed;border-color:#b7eb8f;color:var(--success-color)}
-.el-tag--warning{background-color:#fffbe6;border-color:#ffe58f;color:var(--warning-color)}
-.el-tag--danger{background-color:#fff1f0;border-color:#ffa39e;color:var(--danger-color)}
-.el-tag--info{background-color:#f4f4f5;border-color:#d3d3d3;color:var(--info-color)}
-.el-tag--primary{background-color:#e6f7ff;border-color:#91d5ff;color:var(--primary-color)}
-
-/* ==================== Element UI 分页 ==================== */
-.el-pagination{white-space:nowrap;padding:16px 0;text-align:right;user-select:none}
-.el-pagination__total{margin-right:16px;color:var(--text-regular);font-size:13px}
-.el-pagination button,.el-pager li{background:var(--bg-white);border:1px solid var(--border-color);border-radius:4px;cursor:pointer;min-width:30px;height:28px;line-height:28px;padding:0 6px;display:inline-block;vertical-align:top;text-align:center;margin:0 2px;font-size:13px;color:var(--text-regular)}
-.el-pager li:hover{color:var(--primary-color);border-color:var(--primary-color)}
-.el-pager li.active{background-color:var(--primary-color);border-color:var(--primary-color);color:var(--bg-white)}
-
-/* ==================== 其他组件 ==================== */
-.action-btns{display:flex;gap:6px;flex-wrap:wrap}
-.desc-text{font-size:13px;color:#666;line-height:1.6;max-width:180px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-
-/* 统计卡片 */
-.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px}
-.stat-card{background:var(--bg-white);border-radius:4px;padding:20px;text-align:center;box-shadow:0 2px 12px 0 rgba(0,0,0,.1);border:1px solid var(--border-color)}
-.stat-num{font-size:28px;font-weight:600;color:var(--primary-color)}
-.stat-label{font-size:13px;color:var(--text-secondary);margin-top:4px}
-
-/* Tab 栏 */
-.tab-bar{display:flex;border-bottom:1px solid var(--border-color);margin-bottom:16px}
-.tab-item{padding:10px 20px;cursor:pointer;font-size:14px;color:var(--text-secondary);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s}
-.tab-item:hover{color:var(--primary-color)}
-.tab-item.active{color:var(--primary-color);border-bottom-color:var(--primary-color);font-weight:600}
-
-/* 弹窗 */
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>场地管理 - 管理后台</title>
+    <link rel="stylesheet" href="../business-common/list-style.css">
+    <style>
+        /* 页面特有样式 */
+        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
+        .actions .link:hover { text-decoration: underline; }
+        .actions .link.danger { color: var(--el-color-danger); }
+        /* 弹窗样式保留 */
+        /* 弹窗 */
 .modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:200}
-.modal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg-white);border-radius:4px;width:720px;max-width:92vw;max-height:90vh;overflow-y:auto;z-index:201;box-shadow:0 2px 12px rgba(0,0,0,.15)}
-.modal-header{padding:16px 20px;border-bottom:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center}
-.modal-title{font-size:16px;font-weight:600;color:var(--text-primary)}
-.modal-close{width:32px;height:32px;border-radius:4px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--text-secondary);transition:all .2s}
-.modal-close:hover{background:var(--bg-light);color:var(--text-primary)}
-.modal-body{padding:20px}
-.modal-footer{padding:12px 20px;border-top:1px solid var(--border-color);display:flex;justify-content:flex-end;gap:10px}
-
-/* 表单 */
-.form-row{display:flex;gap:16px;margin-bottom:16px}
-.form-item{flex:1}
-.form-label{font-size:13px;color:var(--text-secondary);margin-bottom:6px;display:block}
-.form-input{width:100%;padding:8px 12px;border:1px solid var(--border-color);border-radius:4px;font-size:14px;transition:border-color .2s}
-.form-input:hover{border-color:#c0c4cc}
-.form-input:focus{border-color:var(--primary-color);outline:none}
-.form-select{width:100%;padding:8px 12px;border:1px solid var(--border-color);border-radius:4px;font-size:14px;background:var(--bg-white);cursor:pointer}
-.form-textarea{width:100%;padding:8px 12px;border:1px solid var(--border-color);border-radius:4px;font-size:14px;min-height:80px;resize:vertical}
-
-/* 图片上传 */
-.img-upload{display:flex;gap:10px;flex-wrap:wrap}
-.img-item{width:90px;height:90px;border-radius:4px;border:1px dashed var(--border-color);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;position:relative;flex-shrink:0}
-.img-item img{width:100%;height:100%;object-fit:cover}
-.img-item .del{position:absolute;top:2px;right:2px;width:20px;height:20px;background:rgba(0,0,0,.5);color:var(--bg-white);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1}
-.img-add{font-size:28px;color:#bbb}
-
-/* 价格输入 */
-.price-input-group{display:flex;align-items:center}
-.price-input-group .form-input{border-radius:4px 0 0 4px}
-.price-input-group span{padding:8px 12px;background:var(--bg-light);border:1px solid var(--border-color);border-left:none;border-radius:0 4px 4px 0;color:var(--text-secondary);font-size:14px}
-
-/* 嵌入模式 */
-body.embed-mode .header{display:none}
-body.embed-mode .sidebar{display:none}
-body.embed-mode .layout{padding-top:0}
-body.embed-mode .main{margin-left:0}
-</style>
+    </style>
 </head>
-<body>
-<div class="header">
-  <h1>🏢 社区服务管理后台</h1>
-  <div class="header-right"><span id="userName">管理员</span><span class="logout" style="cursor:pointer;color:rgba(255,255,255,.65)" onclick="location.reload()">退出</span></div>
-</div>
-<div class="layout">
-  <div class="sidebar">
-    <div class="sidebar-item active" onclick="switchPage('venues', this)">🏟️ 场地管理</div>
-    <div class="sidebar-item" onclick="switchPage('bookings', this)">📅 预约管理</div>
-    <div class="sidebar-item" onclick="switchPage('statistics', this)">📊 数据统计</div>
-  </div>
-  <div class="main">
-    <!-- 场地管理 -->
-    <div id="pageVenues">
-      <div class="card">
-        <div class="card-header"><span class="card-title">🏟️ 场地列表</span><button class="btn btn-primary" onclick="openVenueModal()">+ 新增场地</button></div>
-        <div class="search-bar">
-          <input type="text" class="search-input" id="kw" placeholder="场地名称/编码" onkeyup="ev&&ev.key==='Enter'&&loadVenues()">
-          <select class="search-input" id="st" style="width:120px" onchange="loadVenues()">
-            <option value="">全部状态</option><option value="open">开放</option><option value="closed">关闭</option><option value="maintenance">维护中</option>
-          </select>
-          <button class="btn btn-default" onclick="loadVenues()">🔍 搜索</button>
-          <button class="btn btn-default" onclick="document.getElementById('kw').value='';document.getElementById('st').value='';loadVenues()">重置</button>
+<body class="wy-design-list">
+    <!-- 顶部区域 -->
+    <div class="wy-design-list_top">
+        <div class="wy-design-list_top_title">
+            <h1 class="wy-design-list_title">场地管理 - 管理后台</h1>
+            <div class="wy-design-list_space"></div>
+            <div class="wy-design-list_btn-group">
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
+                        <span>搜索</span>
+                    </button>
+                </div>
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
+                        <span>重置</span>
+                    </button>
+                </div>
+            </div>
         </div>
-        <table class="el-table el-table--border el-table--striped">
-          <thead class="el-table__header"><tr><th>ID</th><th>场地名称</th><th>类型</th><th>价格/时</th><th>容纳</th><th>状态</th><th>简介</th><th>操作</th></tr></thead>
-          <tbody class="el-table__body" id="vTbl"><tr><td colspan="8" class="empty">加载中...</td></tr></tbody>
-        </table>
-        <div class="el-pagination" id="vPager"></div>
-      </div>
     </div>
-    <!-- 预约管理 -->
-    <div id="pageBookings" style="display:none">
-      <!-- 核销码验证区 -->
-      <div class="card" style="margin-bottom:16px">
-        <div class="card-header"><span class="card-title">🔍 核销码验证</span></div>
-        <div style="display:flex;gap:10px;align-items:center">
-          <input type="text" class="search-input" id="verifyInput" placeholder="输入6位核销码" maxlength="10" style="width:200px;text-transform:uppercase;letter-spacing:3px;font-size:16px;font-weight:600" onkeyup="if(event.key==='Enter')verifyCode()">
-          <button class="btn btn-primary" onclick="verifyCode()">✅ 立即核销</button>
-          <span id="verifyResult" style="font-size:13px"></span>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-header"><span class="card-title">📅 场地预约管理</span></div>
-        <div class="search-bar">
-          <select class="search-input" id="bkVenue" style="width:150px" onchange="loadBookings()"><option value="">全部场地</option></select>
-          <input type="date" class="search-input" id="bkDate" style="width:140px" onchange="loadBookings()">
-          <select class="search-input" id="bkStatus" style="width:120px" onchange="loadBookings()">
-            <option value="">全部状态</option><option value="pending">待确认</option><option value="confirmed">已确认</option><option value="completed">已完成</option><option value="cancelled">已取消</option>
-          </select>
-          <input type="text" class="search-input" id="bkKeyword" placeholder="预约人/核销码" style="width:140px">
-          <button class="btn btn-default" onclick="loadBookings()">🔍 筛选</button>
-          <button class="btn btn-default" onclick="resetBookingFilter()">重置</button>
-        </div>
-        <table class="el-table el-table--border el-table--striped">
-          <thead class="el-table__header"><tr><th>核销码</th><th>场地</th><th>预约人</th><th>日期</th><th>时段</th><th>时长</th><th>金额</th><th>预约状态</th><th>支付</th><th>操作</th></tr></thead>
-          <tbody class="el-table__body" id="bkTbl"><tr><td colspan="10" class="empty">加载中...</td></tr></tbody>
-        </table>
-        <div class="el-pagination" id="bkPager"></div>
-      </div>
-    </div>
-    <!-- 数据统计 -->
-    <div id="pageStatistics" style="display:none">
-      <div class="stat-grid">
-        <div class="stat-card"><div class="stat-num" id="sTotal">0</div><div class="stat-label">总预约数</div></div>
-        <div class="stat-card"><div class="stat-num" id="sPending">0</div><div class="stat-label">待确认</div></div>
-        <div class="stat-card"><div class="stat-num" id="sCompleted">0</div><div class="stat-label">已完成</div></div>
-        <div class="stat-card"><div class="stat-num" id="sIncome">¥0</div><div class="stat-label">总收入</div></div>
-      </div>
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">📊 预约明细报表</span>
-          <div style="display:flex;gap:10px;align-items:center">
-            <input type="date" class="search-input" id="dFrom" style="width:140px" onchange="loadStats()">
-            <span style="color:#999">至</span>
-            <input type="date" class="search-input" id="dTo" style="width:140px" onchange="loadStats()">
-            <button class="btn btn-default" onclick="loadStats()">查询</button>
-          </div>
-        </div>
-        <table class="el-table el-table--border el-table--striped">
-          <thead class="el-table__header"><tr><th>日期</th><th>场地</th><th>预约人</th><th>时段</th><th>金额</th><th>状态</th></tr></thead>
-          <tbody class="el-table__body" id="stTbl"><tr><td colspan="6" class="empty">加载中...</td></tr></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
 
-<!-- 场地弹窗 -->
+    <!-- 筛选区域 -->
+    <div class="wy-design-list_filter">
+        <div class="wy-design-list_other">
+            <div class="el-input el-input--small" style="width: 200px;">
+                <input type="text" id="kw" placeholder="场地名称/编码" class="el-input__inner">
+            </div>
+        </div>
+        <div class="wy-design-list_other">
+            <select id="filter1" class="el-input__inner" style="width: 130px;">
+                
+            <option value="">全部状态</option><option value="open">开放</option><option value="closed">关闭</option><option value="maintenance">维护中</option>
+          
+            </select>
+        </div>
+        <div class="wy-design-list_other">
+            <select id="filter2" class="el-input__inner" style="width: 130px;">
+                
+            <option value="">全部状态</option><option value="pending">待确认</option><option value="confirmed">已确认</option><option value="completed">已完成</option><option value="cancelled">已取消</option>
+          
+            </select>
+        </div>
+    </div>
+
+    <!-- 表格区域 -->
+    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
+        <div class="wy-design-table_bar">
+            <i class="wy-design-table_set el-icon-setting" title="列设置"></i>
+            <span class="wy-design-table_total">共 <em id="totalCount">0</em> 条</span>
+            <div class="wy-pages">
+                <div class="wy-pages_total">第<em id="currentPage">1</em>/<em id="totalPages">1</em>页</div>
+                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
+                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
+            </div>
+        </div>
+        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
+            <thead class="el-table__header">
+                <tr>
+                    <th><div class="cell">ID</div></th>
+                    <th><div class="cell">场地名称</div></th>
+                    <th><div class="cell">类型</div></th>
+                    <th><div class="cell">价格/时</div></th>
+                    <th><div class="cell">容纳</div></th>
+                    <th><div class="cell">状态</div></th>
+                    <th><div class="cell">简介</div></th>
+                    <th><div class="cell">操作</div></th>
+                    <th><div class="cell">核销码</div></th>
+                    <th><div class="cell">场地</div></th>
+                </tr>
+            </thead>
+            <tbody class="el-table__body" id="listBody">
+                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    
 <div class="modal-overlay" id="vOverlay" onclick="if(event.target===this)closeVM()"></div>
 <div class="modal" id="vModal">
   <div class="modal-header">
@@ -300,8 +150,10 @@ body.embed-mode .main{margin-left:0}
   </div>
 </div>
 
-<script>
-var UP={};var CP={venues:1,bookings:1};
+
+
+    <script>
+    var UP={};var CP={venues:1,bookings:1};
 var urlP=new URLSearchParams(location.search);
 var TOKEN=urlP.get('access_token');
 var ISDEV=urlP.get('isdev')||'0';
@@ -499,7 +351,7 @@ function verifyCode(){
       resultEl.innerHTML='<span style="color:#52c41a;font-weight:600">✅ 核销成功！</span>'
         +' <span style="color:#333">'+(b.venue_name||'')+'</span>'
         +' <span style="color:#666">'+(b.book_date||'')+' '+(b.start_time||'').substr(0,5)+'~'+(b.end_time||'').substr(0,5)+'</span>'
-        +' <span style="color:#1890ff">'+(b.user_name||'')+'</span>';
+        +' <span style="color:#00d1a0">'+(b.user_name||'')+'</span>';
       document.getElementById('verifyInput').value='';
       loadBookings();
     }else{
@@ -528,7 +380,7 @@ function loadStats(){
       document.getElementById('stTbl').innerHTML=d.data.items.map(function(b){
         return '<tr><td>'+(b.book_date||'')+'</td><td>'+(b.venue_name||'')+'</td><td>'+(b.user_name||'')+'</td><td>'+(b.start_time||'').substr(0,5)+'~'+(b.end_time||'').substr(0,5)+'</td><td style="color:#f57c00">¥'+(parseFloat(b.total_price||0)).toFixed(2)+'</td><td><span class="el-tag el-tag--'+(ST[b.status]||'info')+'">'+(SM[b.status]||b.status)+'</span></td></tr>';
       }).join('');
-    }else document.getElementById('stTbl').innerHTML='<tr><td colspan="6" class="empty">暂无数据</td></tr>';
+    }else document.getElementById('stTbl').innerHTML='<tr><td colspan="6" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">暂无数据</td></tr>';
   });
 }
 
@@ -549,6 +401,6 @@ function renderPager(elId,total,current,fn){
 
 // init
 loadVenues();
-</script>
+    </script>
 </body>
 </html>

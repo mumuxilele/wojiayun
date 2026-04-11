@@ -22,6 +22,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f5;
 .item-info{flex:1;min-width:0}
 .item-name{font-size:14px;color:#333;font-weight:500;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .item-shop{font-size:11px;color:#999;margin-bottom:8px}
+.item-spec{font-size:11px;color:#888;background:#f5f5f5;border-radius:4px;padding:1px 6px;display:inline-block;margin:2px 0 4px}
 .item-bottom{display:flex;align-items:center;justify-content:space-between}
 .item-price{font-size:16px;color:#f57c00;font-weight:700}
 .qty-ctrl{display:flex;align-items:center;gap:8px}
@@ -51,6 +52,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f5;
 .coupon-row input{flex:1;border:1px solid #e0e0e0;border-radius:8px;padding:8px 12px;font-size:13px;outline:none}
 .coupon-apply{padding:8px 14px;background:#667eea;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer}
 .coupon-applied{font-size:12px;color:#52c41a}
+
+/* V41.0: 猜你喜欢推荐区域 */
+.recommend-section{background:white;margin:10px;border-radius:12px;padding:16px}
+.recommend-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.recommend-title{font-size:15px;font-weight:600;color:#333;display:flex;align-items:center;gap:6px}
+.recommend-title::before{content:'✨';font-size:16px}
+.recommend-more{font-size:12px;color:#667eea;cursor:pointer}
+.recommend-grid{display:flex;gap:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:5px}
+.recommend-grid::-webkit-scrollbar{display:none}
+.recommend-card{min-width:110px;background:#fafafa;border-radius:8px;overflow:hidden;cursor:pointer}
+.recommend-card-img{width:100%;height:90px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:30px;overflow:hidden}
+.recommend-card-img img{width:100%;height:100%;object-fit:cover}
+.recommend-card-info{padding:8px}
+.recommend-card-name{font-size:12px;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
+.recommend-card-price{font-size:14px;color:#f5576c;font-weight:600}
+.recommend-card-price::before{content:'¥';font-size:10px}
+.recommend-card-add{width:100%;margin-top:6px;padding:4px 0;background:#667eea;color:white;border:none;border-radius:4px;font-size:11px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -81,6 +99,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f5;
         <div class="total-price">¥<span id="totalPrice">0.00</span></div>
     </div>
     <button class="checkout-btn" id="checkoutBtn" onclick="checkout()">结算(<span id="selectedCount">0</span>)</button>
+</div>
+
+<!-- V41.0: 猜你喜欢推荐区域 -->
+<div class="recommend-section" id="recommendSection" style="display:none">
+    <div class="recommend-header">
+        <div class="recommend-title">猜你喜欢</div>
+        <div class="recommend-more" onclick="goTo('products.html')">查看更多 ›</div>
+    </div>
+    <div class="recommend-grid" id="recommendGrid">
+        <!-- 推荐商品由 JS 动态填充 -->
+    </div>
 </div>
 
 <script>
@@ -125,7 +154,7 @@ function renderCart() {
     var couponRow = document.getElementById('couponRow');
 
     if (cartItems.length === 0) {
-        content.innerHTML = '<div class="empty"><div class="empty-icon">🛒</div><div class="empty-text">购物车空空如也</div><button class="go-shop-btn" onclick="goTo(\'orders.html\')">去逛逛</button></div>';
+        content.innerHTML = '<div class="empty"><div class="empty-icon">🛒</div><div class="empty-text">购物车空空如也</div><button class="go-shop-btn" onclick="goTo(\'products.html\')">去逛逛</button></div>';
         footer.style.display = 'none';
         couponRow.style.display = 'none';
         return;
@@ -140,6 +169,7 @@ function renderCart() {
             + '<div class="item-img">' + imgHtml + '</div>'
             + '<div class="item-info">'
             + '<div class="item-name">' + (item.product_name || '') + '</div>'
+            + (item.sku_name ? '<div class="item-spec">规格：' + item.sku_name + '</div>' : '')
             + '<div class="item-shop">' + (item.shop_name || '') + '</div>'
             + '<div class="item-bottom">'
             + '<div class="item-price">¥' + parseFloat(item.price || 0).toFixed(2) + '</div>'
@@ -268,6 +298,58 @@ function checkout() {
 }
 
 loadCart();
+
+// V41.0: 加载猜你喜欢推荐
+function loadRecommendations() {
+    fetch(apiUrl('/api/user/cart/recommendations'))
+    .then(r => r.json())
+    .then(d => {
+        if (d.success && d.data && d.data.length > 0) {
+            renderRecommendations(d.data);
+            document.getElementById('recommendSection').style.display = 'block';
+        }
+    })
+    .catch(function(e) { console.log('推荐加载失败', e); });
+}
+
+function renderRecommendations(items) {
+    var grid = document.getElementById('recommendGrid');
+    var html = '';
+    items.forEach(function(item) {
+        var img = item.images ? (JSON.parse(item.images)[0] || '') : '';
+        html += '<div class="recommend-card" onclick="goTo(\'product_detail.html?id=' + item.id + '\')">'
+            + '<div class="recommend-card-img">'
+            + (img ? '<img src="' + img + '" onerror="this.parentElement.innerHTML=\'🛍️\'">' : '🛍️')
+            + '</div>'
+            + '<div class="recommend-card-info">'
+            + '<div class="recommend-card-name">' + (item.product_name || '') + '</div>'
+            + '<div class="recommend-card-price">' + parseFloat(item.price || 0).toFixed(2) + '</div>'
+            + '<button class="recommend-card-add" onclick="event.stopPropagation();addToCartQuick(' + item.id + ',' + (item.price || 0) + ')">+ 加购</button>'
+            + '</div>'
+            + '</div>';
+    });
+    grid.innerHTML = html;
+}
+
+function addToCartQuick(productId, price) {
+    fetch(apiUrl('/api/user/cart/add'), {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({product_id: productId, quantity: 1})
+    }).then(r => r.json()).then(d => {
+        if (d.success) {
+            alert('已加入购物车');
+            loadCart(); // 刷新购物车
+        } else {
+            alert(d.msg || '加购失败');
+        }
+    });
+}
+
+// 页面加载完成后获取推荐
+if (token) {
+    setTimeout(loadRecommendations, 500);
+}
 </script>
 </body>
 </html>

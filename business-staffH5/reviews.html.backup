@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>评价管理</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f5;min-height:100vh;padding-bottom:30px}
+.header{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:15px;display:flex;align-items:center;position:sticky;top:0;z-index:50}
+.header h1{font-size:18px;flex:1;text-align:center}
+.back{color:white;font-size:20px;text-decoration:none;padding:4px 8px}
+
+/* ---- 统计卡片 ---- */
+.stat-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:12px}
+.stat-card{background:white;border-radius:12px;padding:14px;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,.06)}
+.stat-num{font-size:28px;font-weight:700;color:#333;margin-bottom:4px}
+.stat-num.orange{color:#f57c00}
+.stat-num.green{color:#52c41a}
+.stat-num.red{color:#f44336}
+.stat-label{font-size:12px;color:#999}
+
+/* ---- 评分总览 ---- */
+.rating-overview{background:white;margin:0 10px 10px;border-radius:12px;padding:14px 15px}
+.rating-title{font-size:14px;font-weight:600;color:#333;margin-bottom:12px}
+.rating-big{display:flex;align-items:center;gap:16px;margin-bottom:12px}
+.big-num{font-size:40px;font-weight:700;color:#f57c00}
+.stars-wrap{display:flex;flex-direction:column;gap:4px}
+.star-row{display:flex;align-items:center;gap:6px;font-size:12px}
+.star-label{width:20px;color:#999}
+.star-bar-bg{flex:1;height:6px;background:#f0f0f0;border-radius:3px}
+.star-bar{height:6px;border-radius:3px;background:linear-gradient(90deg,#ffd700,#f57c00)}
+.star-count{width:24px;color:#bbb;text-align:right}
+
+/* ---- 过滤器 ---- */
+.filter-wrap{background:white;margin:0 0 10px;padding:0 12px;overflow-x:auto;white-space:nowrap;border-bottom:1px solid #f0f0f0}
+.filter-wrap::-webkit-scrollbar{display:none}
+.filter-item{display:inline-block;padding:11px 14px;font-size:13px;color:#666;cursor:pointer;border-bottom:2px solid transparent}
+.filter-item.active{color:#667eea;border-bottom-color:#667eea;font-weight:600}
+
+.filter-bar{display:flex;gap:8px;padding:10px 12px;background:white;margin-bottom:10px}
+.filter-select{flex:1;border:1px solid #e8e8e8;border-radius:8px;padding:8px 10px;font-size:13px;color:#333;background:white}
+.search-input{flex:2;border:1px solid #e8e8e8;border-radius:8px;padding:8px 10px;font-size:13px;outline:none}
+
+/* ---- 评价卡片 ---- */
+.review-list{padding:0 10px}
+.review-card{background:white;border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.05)}
+.rc-head{display:flex;align-items:center;gap:10px;padding:12px 15px;border-bottom:1px solid #f5f5f5}
+.rc-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;color:white;font-size:14px;font-weight:600;flex-shrink:0}
+.rc-user-info{flex:1;min-width:0}
+.rc-user-name{font-size:14px;color:#333;font-weight:500}
+.rc-meta{font-size:12px;color:#bbb;margin-top:2px}
+.rc-rating{display:flex;gap:2px;flex-shrink:0}
+.star{font-size:16px;line-height:1}
+.rc-type-badge{font-size:11px;padding:2px 8px;border-radius:10px;background:#f0f4ff;color:#667eea;flex-shrink:0}
+
+.rc-body{padding:10px 15px}
+.rc-target{font-size:12px;color:#999;margin-bottom:6px}
+.rc-content{font-size:14px;color:#333;line-height:1.6;word-break:break-all}
+.rc-images{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.rc-img{width:60px;height:60px;border-radius:6px;object-fit:cover;cursor:pointer}
+
+.rc-reply{background:#f8f8f8;margin:0 15px 10px;border-radius:8px;padding:10px 12px}
+.rc-reply-label{font-size:12px;color:#667eea;font-weight:500;margin-bottom:4px}
+.rc-reply-text{font-size:13px;color:#555;line-height:1.6}
+
+.rc-actions{display:flex;justify-content:flex-end;gap:8px;padding:10px 15px;border-top:1px solid #f5f5f5}
+.act-btn{padding:6px 14px;border-radius:16px;font-size:12px;cursor:pointer;border:none;font-weight:500}
+.act-reply{background:#f0f4ff;color:#667eea}
+.act-reply:active{background:#667eea;color:white}
+.act-delete{background:#fff2f0;color:#f44336}
+.act-delete:active{background:#f44336;color:white}
+.act-replied{background:#f6ffed;color:#52c41a;cursor:default}
+
+/* ---- 回复弹窗 ---- */
+.mask{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:none}
+.mask.show{display:block}
+.reply-modal{position:fixed;bottom:0;left:0;right:0;background:white;border-radius:16px 16px 0 0;padding:20px 15px;z-index:101;transform:translateY(100%);transition:transform .3s}
+.reply-modal.show{transform:translateY(0)}
+.modal-title{font-size:16px;font-weight:600;color:#333;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.modal-close{font-size:22px;color:#bbb;cursor:pointer;padding:0 4px}
+.modal-user{font-size:13px;color:#666;margin-bottom:10px;background:#f5f5f5;border-radius:8px;padding:8px 12px}
+.reply-textarea{width:100%;border:1px solid #e8e8e8;border-radius:10px;padding:12px;font-size:14px;line-height:1.6;resize:none;height:100px;outline:none;font-family:inherit}
+.reply-textarea:focus{border-color:#667eea}
+.char-count{text-align:right;font-size:12px;color:#bbb;margin-top:4px;margin-bottom:12px}
+.modal-btns{display:flex;gap:10px}
+.btn-cancel{flex:1;padding:12px;border:1px solid #e8e8e8;border-radius:10px;font-size:15px;color:#666;background:white;cursor:pointer}
+.btn-submit{flex:2;padding:12px;background:linear-gradient(135deg,#667eea,#764ba2);border:none;border-radius:10px;font-size:15px;color:white;font-weight:600;cursor:pointer}
+.btn-submit:disabled{background:#ccc;cursor:not-allowed}
+
+.empty{text-align:center;padding:50px 20px;color:#bbb;font-size:14px}
+.empty-icon{font-size:52px;margin-bottom:10px}
+.loading{text-align:center;padding:40px;color:#bbb;font-size:14px}
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.9);background:rgba(0,0,0,.75);color:white;padding:10px 20px;border-radius:8px;font-size:14px;z-index:999;opacity:0;transition:all .2s;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+</style>
+</head>
+<body>
+<div class="header">
+  <a class="back" href="index.html" onclick="history.back();return false">&#8592;</a>
+  <h1>评价管理</h1>
+</div>
+
+<!-- 统计卡片 -->
+<div class="stat-cards">
+  <div class="stat-card"><div class="stat-num" id="statTotal">-</div><div class="stat-label">总评价数</div></div>
+  <div class="stat-card"><div class="stat-num orange" id="statAvg">-</div><div class="stat-label">平均评分</div></div>
+  <div class="stat-card"><div class="stat-num green" id="statToday">-</div><div class="stat-label">今日新增</div></div>
+  <div class="stat-card"><div class="stat-num red" id="statUnreplied">-</div><div class="stat-label">待回复</div></div>
+</div>
+
+<!-- 评分总览 -->
+<div class="rating-overview" id="ratingOverview" style="display:none">
+  <div class="rating-title">⭐ 评分分布</div>
+  <div class="rating-big">
+    <div class="big-num" id="bigAvg">4.5</div>
+    <div class="stars-wrap" id="starBars"></div>
+  </div>
+</div>
+
+<!-- 过滤器 -->
+<div class="filter-wrap">
+  <span class="filter-item active" onclick="filterByStatus('')">全部</span>
+  <span class="filter-item" onclick="filterByStatus('unreplied')">待回复</span>
+  <span class="filter-item" onclick="filterByStatus('replied')">已回复</span>
+  <span class="filter-item" onclick="filterByStatus('low')">差评(1-2星)</span>
+</div>
+<div class="filter-bar">
+  <select class="filter-select" id="ratingFilter" onchange="loadReviews()">
+    <option value="">全部评分</option>
+    <option value="5">⭐⭐⭐⭐⭐ 5星</option>
+    <option value="4">⭐⭐⭐⭐ 4星</option>
+    <option value="3">⭐⭐⭐ 3星</option>
+    <option value="2">⭐⭐ 2星</option>
+    <option value="1">⭐ 1星</option>
+  </select>
+  <select class="filter-select" id="typeFilter" onchange="loadReviews()">
+    <option value="">全部类型</option>
+    <option value="order">订单评价</option>
+    <option value="product">商品评价</option>
+    <option value="venue">场地评价</option>
+    <option value="shop">门店评价</option>
+  </select>
+  <input class="search-input" id="searchInput" placeholder="搜索评价内容..." onkeydown="if(event.key==='Enter')loadReviews()">
+</div>
+
+<!-- 评价列表 -->
+<div class="review-list" id="reviewList"><div class="loading">加载中...</div></div>
+<div style="text-align:center;padding:10px" id="loadMoreWrap" style="display:none">
+  <span id="loadMoreBtn" onclick="loadMore()" style="color:#667eea;font-size:14px;cursor:pointer;padding:8px 20px;display:inline-block"></span>
+</div>
+
+<!-- 回复弹窗 -->
+<div class="mask" id="mask" onclick="closeMask()"></div>
+<div class="reply-modal" id="replyModal">
+  <div class="modal-title">
+    <span>回复评价</span>
+    <span class="modal-close" onclick="closeReplyModal()">✕</span>
+  </div>
+  <div class="modal-user" id="modalUserInfo"></div>
+  <textarea class="reply-textarea" id="replyText" placeholder="输入回复内容，让顾客感受到您的用心服务..." maxlength="300"
+    oninput="document.getElementById('charCount').textContent=this.value.length+'/300'"></textarea>
+  <div class="char-count"><span id="charCount">0/300</span></div>
+  <div class="modal-btns">
+    <button class="btn-cancel" onclick="closeReplyModal()">取消</button>
+    <button class="btn-submit" id="replySubmitBtn" onclick="submitReply()">提交回复</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const TOKEN = new URLSearchParams(location.search).get('access_token') || '';
+const API = (p) => p + (p.includes('?') ? '&' : '?') + 'access_token=' + TOKEN;
+
+let page = 1, totalPages = 1;
+let statusFilter = '';
+let currentReplyId = null;
+
+function showToast(msg, duration=1800) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function renderStars(rating, size='16px') {
+  let s = '';
+  for(let i=1;i<=5;i++) s += `<span class="star" style="font-size:${size};color:${i<=rating?'#ffd700':'#e0e0e0'}">${i<=rating?'★':'☆'}</span>`;
+  return s;
+}
+
+const TYPE_MAP = { order:'订单', product:'商品', venue:'场地', shop:'门店' };
+
+function renderCard(r) {
+  const replied = r.reply_content && r.reply_content.trim();
+  const replyBtn = replied
+    ? `<button class="act-btn act-replied">已回复</button>`
+    : `<button class="act-btn act-reply" onclick="openReplyModal(${r.id},'${(r.user_name||'用户').replace(/'/g,'')}','${(r.content||'').replace(/'/g,'').slice(0,50)}')">回复</button>`;
+
+  return `<div class="review-card" id="rc-${r.id}">
+    <div class="rc-head">
+      <div class="rc-avatar">${(r.is_anonymous ? '匿' : (r.user_name||'用')[0]).toUpperCase()}</div>
+      <div class="rc-user-info">
+        <div class="rc-user-name">${r.is_anonymous ? '匿名用户' : (r.user_name||'用户')}</div>
+        <div class="rc-meta">${(r.created_at||'').slice(0,16)}</div>
+      </div>
+      <div class="rc-rating">${renderStars(r.rating)}</div>
+      <div class="rc-type-badge">${TYPE_MAP[r.target_type]||r.target_type||'评价'}</div>
+    </div>
+    <div class="rc-body">
+      ${r.target_name ? `<div class="rc-target">📌 ${r.target_name}</div>` : ''}
+      <div class="rc-content">${r.content || '<span style="color:#bbb">（无文字评价）</span>'}</div>
+      ${r.images ? renderImages(r.images) : ''}
+    </div>
+    ${replied ? `<div class="rc-reply"><div class="rc-reply-label">🗣️ 商家回复</div><div class="rc-reply-text">${r.reply_content}</div></div>` : ''}
+    <div class="rc-actions">
+      ${replyBtn}
+      <button class="act-btn act-delete" onclick="deleteReview(${r.id})">删除</button>
+    </div>
+  </div>`;
+}
+
+function renderImages(images) {
+  try {
+    const arr = typeof images === 'string' ? JSON.parse(images) : images;
+    if (!arr || !arr.length) return '';
+    return '<div class="rc-images">' + arr.map(img => `<img class="rc-img" src="${img}" onerror="this.style.display='none'">`).join('') + '</div>';
+  } catch(e) { return ''; }
+}
+
+async function loadStats() {
+  try {
+    const res = await fetch(API('/api/staff/reviews/statistics')).then(r=>r.json());
+    if (!res.success) return;
+    const d = res.data;
+    document.getElementById('statTotal').textContent = d.total_reviews ?? 0;
+    document.getElementById('statAvg').textContent = (d.avg_rating || 0).toFixed(1) + '★';
+    document.getElementById('statToday').textContent = d.today_new ?? 0;
+    document.getElementById('statUnreplied').textContent = d.unreplied ?? 0;
+
+    // 渲染评分分布
+    if (d.total_reviews > 0) {
+      const dist = d.rating_distribution || {};
+      const total = d.total_reviews || 1;
+      let barsHtml = '';
+      for (let s=5; s>=1; s--) {
+        const cnt = dist[s] || 0;
+        const pct = Math.round(cnt/total*100);
+        barsHtml += `<div class="star-row">
+          <span class="star-label">${s}★</span>
+          <div class="star-bar-bg"><div class="star-bar" style="width:${pct}%"></div></div>
+          <span class="star-count">${cnt}</span>
+        </div>`;
+      }
+      document.getElementById('bigAvg').textContent = (d.avg_rating||0).toFixed(1);
+      document.getElementById('starBars').innerHTML = barsHtml;
+      document.getElementById('ratingOverview').style.display = 'block';
+    }
+  } catch(e) {}
+}
+
+async function loadReviews(reset=true) {
+  if (reset) { page = 1; document.getElementById('reviewList').innerHTML = '<div class="loading">加载中...</div>'; }
+  const rating = document.getElementById('ratingFilter').value;
+  const type   = document.getElementById('typeFilter').value;
+  const kw     = document.getElementById('searchInput').value.trim();
+
+  let url = `/api/staff/reviews?page=${page}&page_size=15`;
+  if (rating) url += '&rating=' + rating;
+  if (type)   url += '&target_type=' + type;
+  if (kw)     url += '&keyword=' + encodeURIComponent(kw);
+  if (statusFilter === 'unreplied') url += '&unreplied=1';
+  if (statusFilter === 'replied')   url += '&replied=1';
+  if (statusFilter === 'low')       url += '&max_rating=2';
+
+  try {
+    const res = await fetch(API(url)).then(r=>r.json());
+    const d = res.data || {};
+    const items = d.items || [];
+    totalPages = Math.ceil((d.total||0) / 15);
+
+    if (reset) {
+      if (!items.length) {
+        document.getElementById('reviewList').innerHTML = '<div class="empty"><div class="empty-icon">💬</div><div>暂无评价记录</div></div>';
+        document.getElementById('loadMoreWrap').style.display = 'none';
+        return;
+      }
+      document.getElementById('reviewList').innerHTML = items.map(renderCard).join('');
+    } else {
+      document.getElementById('reviewList').insertAdjacentHTML('beforeend', items.map(renderCard).join(''));
+    }
+
+    const lm = document.getElementById('loadMoreWrap');
+    const btn = document.getElementById('loadMoreBtn');
+    if (page < totalPages) {
+      lm.style.display = 'block';
+      btn.textContent = `加载更多（第${page}/${totalPages}页）`;
+    } else {
+      lm.style.display = page > 1 ? 'block' : 'none';
+      btn.textContent = '已加载全部';
+      btn.onclick = null;
+    }
+  } catch(e) {
+    document.getElementById('reviewList').innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><div>加载失败，请重试</div></div>';
+  }
+}
+
+function loadMore() {
+  if (page < totalPages) { page++; loadReviews(false); }
+}
+
+function filterByStatus(s) {
+  statusFilter = s;
+  document.querySelectorAll('.filter-item').forEach(el => el.classList.remove('active'));
+  event.target.classList.add('active');
+  loadReviews();
+}
+
+// ---- 回复弹窗 ----
+function openReplyModal(id, userName, contentPreview) {
+  currentReplyId = id;
+  document.getElementById('modalUserInfo').innerHTML = `<b>${userName}</b>：${contentPreview}${contentPreview.length>=50?'...':''}`;
+  document.getElementById('replyText').value = '';
+  document.getElementById('charCount').textContent = '0/300';
+  document.getElementById('replyModal').classList.add('show');
+  document.getElementById('mask').classList.add('show');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('replyText').focus(), 300);
+}
+function closeReplyModal() {
+  document.getElementById('replyModal').classList.remove('show');
+  closeMask();
+}
+function closeMask() {
+  document.getElementById('mask').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+async function submitReply() {
+  const content = document.getElementById('replyText').value.trim();
+  if (!content) { showToast('请输入回复内容'); return; }
+  const btn = document.getElementById('replySubmitBtn');
+  btn.disabled = true;
+  btn.textContent = '提交中...';
+  try {
+    const res = await fetch(API('/api/staff/reviews/' + currentReplyId + '/reply'), {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({reply_content: content})
+    }).then(r=>r.json());
+    if (res.success) {
+      showToast('回复成功！');
+      closeReplyModal();
+      // 局部更新卡片，避免整页刷新
+      setTimeout(() => loadReviews(), 500);
+    } else {
+      showToast(res.msg || '回复失败');
+    }
+  } catch(e) {
+    showToast('网络异常');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '提交回复';
+  }
+}
+
+async function deleteReview(id) {
+  if (!confirm('确认删除该评价？此操作不可恢复。')) return;
+  try {
+    const res = await fetch(API('/api/staff/reviews/' + id), {method:'DELETE'}).then(r=>r.json());
+    if (res.success) {
+      showToast('已删除');
+      const card = document.getElementById('rc-' + id);
+      if (card) card.style.opacity = '0.3';
+      setTimeout(() => { if (card) card.remove(); }, 400);
+    } else {
+      showToast(res.msg || '删除失败');
+    }
+  } catch(e) { showToast('操作失败'); }
+}
+
+// 初始化
+loadStats();
+loadReviews();
+</script>
+</body>
+</html>

@@ -4,254 +4,86 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>数据统计 - 管理后台</title>
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link rel="stylesheet" href="../business-common/list-style.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        :root {
-            --primary-color: #1890ff;
-            --success-color: #52c41a;
-            --warning-color: #faad14;
-            --danger-color: #ff4d4f;
-            --text-primary: #303133;
-            --text-regular: #606266;
-            --text-secondary: #909399;
-            --border-color: #ebeef5;
-            --bg-white: #ffffff;
-            --bg-light: #f5f7fa;
-        }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg-light); font-size: 14px; color: var(--text-regular); min-height: 100vh; }
-        .layout { display: flex; min-height: 100vh; }
-        .sidebar { width: 200px; background: #2c3e50; min-height: 100vh; position: fixed; top: 0; left: 0; z-index: 100; }
-        .sidebar-header { padding: 16px 20px; border-bottom: 1px solid #3d4f5f; }
-        .sidebar-header h5 { color: white; font-size: 16px; font-weight: 600; }
-        .sidebar a { color: #ecf0f1; text-decoration: none; padding: 12px 20px; display: block; font-size: 14px; transition: all .2s; }
-        .sidebar a:hover { background: #34495e; }
-        .sidebar a.active { background: #34495e; border-left: 3px solid var(--primary-color); }
-        .main { flex: 1; margin-left: 200px; padding: 24px; }
-        .page-title { font-size: 18px; font-weight: 600; color: var(--text-primary); margin-bottom: 24px; }
-        .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-        .stat-card { border-radius: 8px; color: white; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,.1); }
-        .stat-card.blue { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .stat-card.green { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
-        .stat-card.orange { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-        .stat-card.cyan { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-        .stat-card .stat-content { display: flex; justify-content: space-between; align-items: center; }
-        .stat-card .stat-icon { font-size: 32px; opacity: 0.8; }
-        .stat-card .stat-num { font-size: 28px; font-weight: 700; }
-        .stat-card .stat-label { opacity: 0.9; font-size: 13px; margin-top: 4px; }
-        .stat-card .stat-sub { opacity: 0.75; font-size: 12px; margin-top: 6px; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-        .grid-full { margin-bottom: 16px; }
-        .card { background: var(--bg-white); border-radius: 8px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,.06); border: 1px solid var(--border-color); }
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-        .card-title { font-size: 15px; font-weight: 600; color: var(--text-primary); }
-        .chart-box { width: 100%; }
-        .el-table { width: 100%; border: 1px solid var(--border-color); background-color: var(--bg-white); font-size: 13px; border-collapse: collapse; }
-        .el-table th { padding: 10px 12px; background-color: var(--bg-light); color: var(--text-primary); font-weight: 500; text-align: left; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); }
-        .el-table th:last-child { border-right: none; }
-        .el-table td { padding: 10px 12px; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); }
-        .el-table td:last-child { border-right: none; }
-        .el-table tr:hover > td { background-color: var(--bg-light); }
-        .stat-list { display: flex; flex-direction: column; gap: 12px; }
-        .stat-list-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-color); }
-        .stat-list-item:last-child { border-bottom: none; }
-        .stat-list-item strong { font-weight: 600; color: var(--primary-color); font-size: 16px; }
-        .loading { text-align: center; padding: 30px; color: var(--text-secondary); }
-        .refresh-btn { background: none; border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 12px; cursor: pointer; font-size: 12px; color: var(--text-secondary); transition: all .2s; }
-        .refresh-btn:hover { color: var(--primary-color); border-color: var(--primary-color); }
-        .days-btn-group { display: flex; gap: 4px; }
-        .days-btn { background: none; border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 10px; cursor: pointer; font-size: 12px; color: var(--text-secondary); }
-        .days-btn.active { background: var(--primary-color); border-color: var(--primary-color); color: white; }
-        @media (max-width: 1200px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } .grid-3 { grid-template-columns: 1fr 1fr; } }
-        @media (max-width: 768px) { .sidebar { display: none; } .main { margin-left: 0; } .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+        /* 页面特有样式 */
+        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
+        .actions .link:hover { text-decoration: underline; }
+        .actions .link.danger { color: var(--el-color-danger); }
+        /* 弹窗样式保留 */
+        
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.45); z-index: 200; }
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: var(--el-bg-white); border-radius: 4px; width: 580px; max-width: 95vw; max-height: 85vh; flex-direction: column; z-index: 201; box-shadow: 0 4px 20px rgba(0,0,0,.18); }
+        .modal.show { display: flex; }
+        .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--el-border-color-light); display: flex; justify-content: space-between; align-items: center; }
+        .modal-title { font-size: 16px; font-weight: 600; color: var(--el-text-primary); }
+        .modal-close { background: none; border: none; width: 32px; height: 32px; border-radius: 4px; cursor: pointer; font-size: 16px; color: var(--el-text-secondary); display: flex; align-items: center; justify-content: center; }
+        .modal-close:hover { background: var(--el-bg-light); }
+        .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+        .modal-footer { padding: 12px 20px; border-top: 1px solid var(--el-border-color-light); display: flex; justify-content: flex-end; gap: 10px; }
     </style>
 </head>
-<body>
-    <div class="layout">
-        <div class="sidebar">
-            <div class="sidebar-header"><h5>管理后台</h5></div>
-            <a href="index.html">🏠 首页</a>
-            <a href="statistics.html" class="active">📊 数据统计</a>
-            <a href="venues.html">🏟️ 场地管理</a>
-            <a href="applications.html">📋 申请单</a>
-            <a href="orders.html">🧾 订单</a>
-            <a href="shops.html">🏪 门店</a>
-            <a href="points.html">💎 积分管理</a>
-            <a href="coupons.html">🎫 优惠券</a>
-            <a href="users.html">👥 用户管理</a>
-        </div>
-        <div class="main">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
-                <h4 class="page-title" style="margin-bottom:0">📊 数据统计</h4>
-                <button class="refresh-btn" onclick="refreshAll()">🔄 刷新数据</button>
-            </div>
-
-            <!-- 核心指标卡 -->
-            <div class="stat-grid">
-                <div class="stat-card blue">
-                    <div class="stat-content">
-                        <div>
-                            <div class="stat-num" id="todayOrders">-</div>
-                            <div class="stat-label">今日订单</div>
-                            <div class="stat-sub">累计 <span id="totalOrders">-</span> 笔</div>
-                        </div>
-                        <div class="stat-icon">🛒</div>
-                    </div>
+<body class="wy-design-list">
+    <!-- 顶部区域 -->
+    <div class="wy-design-list_top">
+        <div class="wy-design-list_top_title">
+            <h1 class="wy-design-list_title">数据统计 - 管理后台</h1>
+            <div class="wy-design-list_space"></div>
+            <div class="wy-design-list_btn-group">
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
+                        <span>搜索</span>
+                    </button>
                 </div>
-                <div class="stat-card green">
-                    <div class="stat-content">
-                        <div>
-                            <div class="stat-num" id="todayApps">-</div>
-                            <div class="stat-label">今日申请</div>
-                            <div class="stat-sub">待处理 <span id="pendingApps">-</span> 条</div>
-                        </div>
-                        <div class="stat-icon">📝</div>
-                    </div>
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
+                        <span>重置</span>
+                    </button>
                 </div>
-                <div class="stat-card orange">
-                    <div class="stat-content">
-                        <div>
-                            <div class="stat-num" id="todayIncome">-</div>
-                            <div class="stat-label">今日收入(元)</div>
-                            <div class="stat-sub">总收入 <span id="totalIncome">-</span> 元</div>
-                        </div>
-                        <div class="stat-icon">💰</div>
-                    </div>
-                </div>
-                <div class="stat-card cyan">
-                    <div class="stat-content">
-                        <div>
-                            <div class="stat-num" id="venueBookings">-</div>
-                            <div class="stat-label">场地预约(总)</div>
-                            <div class="stat-sub">待确认 <span id="pendingBookings">-</span> 笔</div>
-                        </div>
-                        <div class="stat-icon">🏟️</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- V10 新增指标卡 -->
-            <div class="stat-grid" style="margin-bottom:20px">
-                <div class="stat-card" style="background:linear-gradient(135deg,#43e97b,#38f9d7)">
-                    <div class="stat-content">
-                        <div>
-                            <div class="stat-num" id="todayCheckins">-</div>
-                            <div class="stat-label">今日签到人次</div>
-                            <div class="stat-sub">本月 <span id="monthCheckins">-</span> 次</div>
-                        </div>
-                        <div class="stat-icon">✅</div>
-                    </div>
-                </div>
-                <div class="stat-card" style="background:linear-gradient(135deg,#fa709a,#fee140)">
-                    <div class="stat-content">
-                        <div>
-                            <div class="stat-num" id="usedCouponsToday">-</div>
-                            <div class="stat-label">今日券使用</div>
-                            <div class="stat-sub">存量 <span id="activeCoupons">-</span> 张</div>
-                        </div>
-                        <div class="stat-icon">🎫</div>
-                    </div>
-                </div>
-                <div class="stat-card" style="background:linear-gradient(135deg,#a18cd1,#fbc2eb)">
-                    <div class="stat-content">
-                        <div>
-                            <div class="stat-num" id="totalMembers">-</div>
-                            <div class="stat-label">注册会员</div>
-                            <div class="stat-sub">今日新增 <span id="todayMembers">-</span> 人</div>
-                        </div>
-                        <div class="stat-icon">👥</div>
-                    </div>
-                </div>
-                <div class="stat-card" style="background:linear-gradient(135deg,#ff9a9e,#fad0c4)">
-                    <div class="stat-content">
-                        <div>
-                            <div class="stat-num" id="lowStockProducts" style="color:#ff4d4f">-</div>
-                            <div class="stat-label">⚠️ 库存预警</div>
-                            <div class="stat-sub">库存≤5件的商品数</div>
-                        </div>
-                        <div class="stat-icon">📦</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 趋势折线图（全宽） -->
-            <div class="grid-full">
-                <div class="card">
-                    <div class="card-header">
-                        <span class="card-title">📈 近期趋势</span>
-                        <div class="days-btn-group">
-                            <button class="days-btn active" id="btn7" onclick="switchTrend(7)">近7天</button>
-                            <button class="days-btn" id="btn14" onclick="switchTrend(14)">近14天</button>
-                            <button class="days-btn" id="btn30" onclick="switchTrend(30)">近30天</button>
-                        </div>
-                    </div>
-                    <div class="chart-box" id="trendChart" style="height:280px"></div>
-                </div>
-            </div>
-
-            <!-- 饼图区域 -->
-            <div class="grid-2">
-                <div class="card">
-                    <div class="card-header">
-                        <span class="card-title">申请单状态分布</span>
-                    </div>
-                    <div class="chart-box" id="appStatusChart" style="height:260px"></div>
-                </div>
-                <div class="card">
-                    <div class="card-header">
-                        <span class="card-title">申请单类型分布</span>
-                    </div>
-                    <div class="chart-box" id="appTypeChart" style="height:260px"></div>
-                </div>
-            </div>
-
-            <!-- 预约状态 + 积分概览 -->
-            <div class="grid-2">
-                <div class="card">
-                    <div class="card-header">
-                        <span class="card-title">🏟️ 预约状态分布</span>
-                    </div>
-                    <div class="chart-box" id="bookingStatusChart" style="height:260px"></div>
-                </div>
-                <div class="card">
-                    <div class="card-header">
-                        <span class="card-title">👑 会员等级分布</span>
-                    </div>
-                    <div class="chart-box" id="memberLevelChart" style="height:260px"></div>
-                </div>
-            </div>
-
-            <!-- 积分概览 + 场地热度排行 -->
-            <div class="grid-2">
-                <div class="card">
-                    <div class="card-header">
-                        <span class="card-title">💎 积分概览</span>
-                    </div>
-                    <div class="stat-list" id="pointsStats">
-                        <div class="loading">加载中...</div>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-header">
-                        <span class="card-title">🔥 场地热度排行</span>
-                    </div>
-                    <div id="venueHotList" class="loading">加载中...</div>
-                </div>
-            </div>
-
-            <!-- 场地列表 -->
-            <div class="card">
-                <div class="card-header">
-                    <span class="card-title">🏟️ 场地列表</span>
-                </div>
-                <div id="venueStats" class="loading">加载中...</div>
             </div>
         </div>
     </div>
 
+    <!-- 筛选区域 -->
+    <div class="wy-design-list_filter">
+        <div class="wy-design-list_other">
+            <div class="el-input el-input--small" style="width: 200px;">
+                <input type="text" id="keyword" placeholder="搜索关键词" class="el-input__inner">
+            </div>
+        </div>
+    </div>
+
+    <!-- 表格区域 -->
+    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
+        <div class="wy-design-table_bar">
+            <i class="wy-design-table_set el-icon-setting" title="列设置"></i>
+            <span class="wy-design-table_total">共 <em id="totalCount">0</em> 条</span>
+            <div class="wy-pages">
+                <div class="wy-pages_total">第<em id="currentPage">1</em>/<em id="totalPages">1</em>页</div>
+                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
+                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
+            </div>
+        </div>
+        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
+            <thead class="el-table__header">
+                <tr>
+                    <th><div class="cell">场地名称</div></th>
+                    <th><div class="cell">类型</div></th>
+                    <th><div class="cell">价格(元/时)</div></th>
+                    <th><div class="cell">容量</div></th>
+                    <th><div class="cell">状态</div></th>
+                </tr>
+            </thead>
+            <tbody class="el-table__body" id="listBody">
+                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    
+
     <script>
-        const token = new URLSearchParams(location.search).get('access_token') || localStorage.getItem('admin_token') || '';
+    const token = new URLSearchParams(location.search).get('access_token') || localStorage.getItem('admin_token') || '';
         const isDev = new URLSearchParams(location.search).get('isdev') || '0';
 
         function authUrl(url) {
@@ -343,7 +175,7 @@
                 const resp = await fetch(authUrl('/api/admin/applications/stats/by-status'));
                 const data = await resp.json();
                 const STATUS_MAP = { pending: '待处理', processing: '处理中', completed: '已完成', rejected: '已拒绝', cancelled: '已撤销' };
-                const COLOR_MAP = { pending: '#faad14', processing: '#1890ff', completed: '#52c41a', rejected: '#ff4d4f', cancelled: '#909399' };
+                const COLOR_MAP = { pending: '#faad14', processing: '#00d1a0', completed: '#52c41a', rejected: '#ff4d4f', cancelled: '#909399' };
 
                 const pieData = Object.entries(data.success ? (data.data || {}) : {})
                     .map(([k, v]) => ({ name: STATUS_MAP[k] || k, value: v, itemStyle: { color: COLOR_MAP[k] } }))
@@ -412,7 +244,7 @@
                 chart.setOption({
                     tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
                     legend: { bottom: 0, itemWidth: 12, itemHeight: 12, textStyle: { fontSize: 12 } },
-                    color: ['#faad14', '#1890ff', '#52c41a'],
+                    color: ['#faad14', '#00d1a0', '#52c41a'],
                     series: [{
                         type: 'pie', radius: ['40%', '70%'], center: ['50%', '45%'],
                         label: { show: true, fontSize: 12 },
@@ -459,7 +291,7 @@
                         <div class="stat-list-item"><span>注册会员数</span><strong>${d.total_members ?? '-'}</strong></div>
                         <div class="stat-list-item"><span>流通积分总量</span><strong style="color:#f57c00">${d.total_points ?? '-'}</strong></div>
                         <div class="stat-list-item"><span>今日积分变动</span><strong style="color:#52c41a">+${d.today_points ?? 0}</strong></div>
-                        <div class="stat-list-item"><span>本月积分变动</span><strong style="color:#1890ff">${d.month_points ?? 0}</strong></div>`;
+                        <div class="stat-list-item"><span>本月积分变动</span><strong style="color:#00d1a0">${d.month_points ?? 0}</strong></div>`;
                 } else {
                     el.innerHTML = '<div class="loading">加载失败</div>';
                 }

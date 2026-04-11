@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订单管理 - 员工端</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; min-height: 100vh; padding-bottom: 20px; }
+        .header { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; padding: 15px; display: flex; align-items: center; }
+        .header h1 { font-size: 18px; flex: 1; text-align: center; }
+        .back { color: white; text-decoration: none; font-size: 14px; padding: 4px 8px; }
+        /* 搜索栏 */
+        .search-bar { background: white; padding: 10px 15px; border-bottom: 1px solid #f0f0f0; }
+        .search-input { width: 100%; padding: 8px 12px; border: 1px solid #e0e0e0; border-radius: 20px; font-size: 13px; background: #f9f9f9; }
+        /* 筛选 */
+        .filter { display: flex; gap: 8px; padding: 10px 15px; background: white; overflow-x: auto; border-bottom: 1px solid #f0f0f0; }
+        .filter-item { padding: 6px 12px; border-radius: 15px; font-size: 12px; white-space: nowrap; background: #f0f0f0; color: #666; cursor: pointer; flex-shrink: 0; }
+        .filter-item.active { background: #11998e; color: white; }
+        .list { padding: 10px; }
+        .item { background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; }
+        .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .order-no { font-size: 13px; color: #333; font-weight: 500; }
+        .order-amount { font-size: 16px; color: #f57c00; font-weight: 600; margin-bottom: 4px; }
+        .order-status { font-size: 12px; padding: 3px 8px; border-radius: 10px; }
+        .status-pending { background: #fff3e0; color: #f57c00; }
+        .status-paid { background: #e3f2fd; color: #1976d2; }
+        .status-shipped { background: #ede7f6; color: #7b1fa2; }
+        .status-completed { background: #e8f5e9; color: #388e3c; }
+        .status-cancelled { background: #f5f5f5; color: #999; }
+        .status-refunding { background: #fce4ec; color: #c62828; }
+        .status-refunded { background: #f3e5f5; color: #6a1b9a; }
+        .order-info { font-size: 12px; color: #999; margin-top: 6px; display: flex; flex-wrap: wrap; gap: 8px; }
+        .order-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+        .action-btn { padding: 6px 14px; border-radius: 16px; font-size: 12px; border: none; cursor: pointer; font-weight: 500; }
+        .btn-ship { background: #e3f2fd; color: #1565c0; }
+        .btn-complete { background: #e8f5e9; color: #2e7d32; }
+        .btn-refund-approve { background: #e8f5e9; color: #2e7d32; }
+        .btn-refund-reject { background: #ffebee; color: #c62828; }
+        .btn-view { background: #f5f5f5; color: #555; }
+        .empty { text-align: center; padding: 60px 20px; color: #999; }
+        .login-tip { text-align: center; padding: 40px; color: #999; }
+        /* 分页 */
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 12px; padding: 15px; }
+        .page-btn { padding: 6px 16px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 13px; background: white; cursor: pointer; color: #333; }
+        .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .page-info { font-size: 13px; color: #999; }
+        /* 发货弹窗 */
+        .modal-mask { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.5); z-index: 100; }
+        .modal-mask.show { display: flex; align-items: flex-end; }
+        .modal { background: white; border-radius: 16px 16px 0 0; padding: 20px; width: 100%; }
+        .modal h3 { font-size: 16px; margin-bottom: 15px; color: #333; }
+        .modal input, .modal select { width: 100%; padding: 10px 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; margin-bottom: 12px; }
+        .modal-btns { display: flex; gap: 10px; }
+        .modal-btns button { flex: 1; padding: 12px; border-radius: 8px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; }
+        .btn-cancel-modal { background: #f5f5f5; color: #555; }
+        .btn-confirm { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; }
+        .order-goods { font-size: 12px; color: #666; margin-top: 4px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="index.html" class="back" onclick="return goBack()">← 返回</a>
+        <h1>订单管理</h1>
+        <span style="width:50px"></span>
+    </div>
+    <div class="search-bar">
+        <input class="search-input" id="searchInput" type="text" placeholder="搜索订单号、用户名..." oninput="onSearch()">
+    </div>
+    <div class="filter">
+        <div class="filter-item active" data-status="">全部</div>
+        <div class="filter-item" data-status="pending">待支付</div>
+        <div class="filter-item" data-status="paid">待发货</div>
+        <div class="filter-item" data-status="shipped">已发货</div>
+        <div class="filter-item" data-status="completed">已完成</div>
+        <div class="filter-item" data-status="refunding">退款中</div>
+        <div class="filter-item" data-status="cancelled">已取消</div>
+    </div>
+    <div class="list" id="list"><div class="empty">加载中...</div></div>
+    <div class="pagination" id="pagination" style="display:none">
+        <button class="page-btn" id="btnPrev" onclick="changePage(-1)">← 上一页</button>
+        <span class="page-info" id="pageInfo"></span>
+        <button class="page-btn" id="btnNext" onclick="changePage(1)">下一页 →</button>
+    </div>
+
+    <!-- 发货弹窗 -->
+    <div class="modal-mask" id="shipModal">
+        <div class="modal">
+            <h3>📦 确认发货</h3>
+            <select id="logisticsCompany">
+                <option value="">请选择物流公司</option>
+                <option value="顺丰速运">顺丰速运</option>
+                <option value="圆通速递">圆通速递</option>
+                <option value="中通快递">中通快递</option>
+                <option value="韵达快递">韵达快递</option>
+                <option value="申通快递">申通快递</option>
+                <option value="邮政EMS">邮政EMS</option>
+                <option value="京东物流">京东物流</option>
+                <option value="极兔速递">极兔速递</option>
+                <option value="其他">其他</option>
+            </select>
+            <input id="trackingNo" type="text" placeholder="请输入运单号（可选）">
+            <div class="modal-btns">
+                <button class="btn-cancel-modal" onclick="closeShipModal()">取消</button>
+                <button class="btn-confirm" onclick="confirmShip()">确认发货</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(location.search);
+        let token = urlParams.get('access_token');
+        let isdev = urlParams.get('isdev') || '0';
+        
+        if (token) {
+            localStorage.setItem('staff_token', token);
+            localStorage.setItem('staff_isdev', isdev);
+        } else {
+            token = localStorage.getItem('staff_token');
+            isdev = localStorage.getItem('staff_isdev') || '0';
+        }
+
+        if (!token) {
+            document.body.innerHTML = '<div class="login-tip"><h2>请先登录</h2></div>';
+            throw new Error('No token');
+        }
+
+        function goBack() {
+            location.href = 'index.html?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+            return false;
+        }
+
+        function api(url, method, body) {
+            const sep = url.includes('?') ? '&' : '?';
+            return fetch(url + sep + 'access_token=' + encodeURIComponent(token) + '&isdev=' + isdev, {
+                method: method || 'GET',
+                headers: body ? { 'Content-Type': 'application/json' } : {},
+                body: body ? JSON.stringify(body) : undefined
+            }).then(r => r.json());
+        }
+
+        let currentStatus = '';
+        let currentPage = 1;
+        let totalPages = 1;
+        let searchTimer = null;
+        let shipOrderId = null;
+
+        const STATUS_TEXT = {
+            pending: '待支付', paid: '待发货', shipped: '已发货',
+            completed: '已完成', cancelled: '已取消',
+            refunding: '退款中', refunded: '已退款'
+        };
+
+        function getStatusText(s) { return STATUS_TEXT[s] || s; }
+        function getStatusClass(s) { return 'order-status status-' + (s || 'pending'); }
+
+        function onSearch() {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => { currentPage = 1; loadList(); }, 400);
+        }
+
+        function changePage(delta) {
+            const np = currentPage + delta;
+            if (np < 1 || np > totalPages) return;
+            currentPage = np;
+            loadList();
+        }
+
+        // 渲染操作按钮
+        function renderActions(o) {
+            const status = o.order_status || o.status || 'pending';
+            const id = o.id;
+            let btns = '';
+            if (status === 'paid') {
+                btns += '<button class="action-btn btn-ship" onclick="openShipModal(' + id + ')">📦 发货</button>';
+            }
+            if (status === 'shipped') {
+                btns += '<button class="action-btn btn-complete" onclick="completeOrder(' + id + ')">✅ 确认完成</button>';
+            }
+            if (status === 'refunding') {
+                btns += '<button class="action-btn btn-refund-approve" onclick="handleRefund(' + id + ',\'approve\')">✅ 同意退款</button>';
+                btns += '<button class="action-btn btn-refund-reject" onclick="handleRefund(' + id + ',\'reject\')">❌ 拒绝退款</button>';
+            }
+            btns += '<button class="action-btn btn-view" onclick="viewOrder(' + id + ')">查看详情</button>';
+            return btns;
+        }
+
+        async function loadList() {
+            const keyword = document.getElementById('searchInput').value.trim();
+            let url = '/api/staff/orders?page=' + currentPage + '&page_size=15' +
+                (currentStatus ? '&status=' + currentStatus : '') +
+                (keyword ? '&keyword=' + encodeURIComponent(keyword) : '');
+            document.getElementById('list').innerHTML = '<div class="empty">加载中...</div>';
+            try {
+                const data = await api(url);
+                if (data.success && data.data && data.data.items && data.data.items.length > 0) {
+                    document.getElementById('list').innerHTML = data.data.items.map(o => {
+                        const status = o.order_status || o.status || 'pending';
+                        const amount = parseFloat(o.actual_amount || o.total_amount || 0).toFixed(2);
+                        const goods = o.goods_name ? '<div class="order-goods">商品: ' + o.goods_name + '</div>' : '';
+                        const logistics = o.tracking_no ? '<span>物流: ' + (o.logistics_company || '') + ' ' + o.tracking_no + '</span>' : '';
+                        return '<div class="item">' +
+                            '<div class="item-header">' +
+                                '<span class="order-no">📦 ' + (o.order_no || '') + '</span>' +
+                                '<span class="' + getStatusClass(status) + '">' + getStatusText(status) + '</span>' +
+                            '</div>' +
+                            '<div class="order-amount">¥' + amount + '</div>' +
+                            goods +
+                            '<div class="order-info">' +
+                                '<span>👤 ' + (o.user_name || '-') + '</span>' +
+                                '<span>🕐 ' + (o.created_at || o.create_time || '') + '</span>' +
+                                logistics +
+                            '</div>' +
+                            '<div class="order-actions">' + renderActions(o) + '</div>' +
+                        '</div>';
+                    }).join('');
+
+                    totalPages = data.data.pages || 1;
+                    if (totalPages > 1) {
+                        document.getElementById('pagination').style.display = 'flex';
+                        document.getElementById('pageInfo').textContent = currentPage + ' / ' + totalPages + ' 页，共 ' + data.data.total + ' 条';
+                        document.getElementById('btnPrev').disabled = currentPage <= 1;
+                        document.getElementById('btnNext').disabled = currentPage >= totalPages;
+                    } else {
+                        document.getElementById('pagination').style.display = 'none';
+                    }
+                } else {
+                    document.getElementById('list').innerHTML = '<div class="empty">暂无订单</div>';
+                    document.getElementById('pagination').style.display = 'none';
+                }
+            } catch(e) {
+                document.getElementById('list').innerHTML = '<div class="empty">加载失败</div>';
+            }
+        }
+
+        // 发货
+        function openShipModal(orderId) {
+            shipOrderId = orderId;
+            document.getElementById('trackingNo').value = '';
+            document.getElementById('logisticsCompany').value = '';
+            document.getElementById('shipModal').classList.add('show');
+        }
+
+        function closeShipModal() {
+            document.getElementById('shipModal').classList.remove('show');
+            shipOrderId = null;
+        }
+
+        async function confirmShip() {
+            if (!shipOrderId) return;
+            const company = document.getElementById('logisticsCompany').value;
+            const trackingNo = document.getElementById('trackingNo').value.trim();
+            try {
+                const data = await api('/api/staff/orders/' + shipOrderId + '/status', 'POST', {
+                    status: 'shipped',
+                    logistics_company: company,
+                    tracking_no: trackingNo
+                });
+                if (data.success) {
+                    closeShipModal();
+                    alert('发货成功！');
+                    loadList();
+                } else {
+                    alert(data.msg || '发货失败');
+                }
+            } catch(e) {
+                alert('操作失败，请稍后重试');
+            }
+        }
+
+        // 确认完成
+        async function completeOrder(orderId) {
+            if (!confirm('确认将订单标记为已完成？')) return;
+            try {
+                const data = await api('/api/staff/orders/' + orderId + '/status', 'POST', { status: 'completed' });
+                if (data.success) {
+                    alert('操作成功');
+                    loadList();
+                } else {
+                    alert(data.msg || '操作失败');
+                }
+            } catch(e) {
+                alert('操作失败，请稍后重试');
+            }
+        }
+
+        // 退款处理
+        async function handleRefund(orderId, action) {
+            const actionText = action === 'approve' ? '同意退款' : '拒绝退款';
+            if (!confirm('确认' + actionText + '？')) return;
+            const reason = action === 'reject' ? prompt('请输入拒绝原因：') : '';
+            try {
+                const data = await api('/api/staff/orders/' + orderId + '/refund', 'POST', {
+                    action: action,
+                    reason: reason || ''
+                });
+                if (data.success) {
+                    alert(actionText + '成功');
+                    loadList();
+                } else {
+                    alert(data.msg || '操作失败');
+                }
+            } catch(e) {
+                alert('操作失败，请稍后重试');
+            }
+        }
+
+        // 查看详情
+        async function viewOrder(orderId) {
+            try {
+                const data = await api('/api/staff/orders/' + orderId);
+                if (!data.success || !data.data) {
+                    alert('获取订单详情失败');
+                    return;
+                }
+                const o = data.data;
+                const STATUS_TEXT_MAP = {pending:'待支付',paid:'待发货',shipped:'已发货',completed:'已完成',cancelled:'已取消',refunding:'退款中',refunded:'已退款'};
+                const PAY_TEXT = {unpaid:'未支付',paid:'已支付',refunded:'已退款',partial_refund:'部分退款'};
+                let detail = '【订单详情】\n';
+                detail += '订单号: ' + (o.order_no || '-') + '\n';
+                detail += '用户: ' + (o.user_name || '-') + '  ' + (o.user_phone || '') + '\n';
+                detail += '商品: ' + (o.goods_name || '-') + '\n';
+                detail += '总金额: ¥' + parseFloat(o.total_amount || 0).toFixed(2) + '\n';
+                detail += '实付: ¥' + parseFloat(o.actual_amount || 0).toFixed(2) + '\n';
+                detail += '支付状态: ' + (PAY_TEXT[o.pay_status] || o.pay_status || '-') + '\n';
+                detail += '订单状态: ' + (STATUS_TEXT_MAP[o.order_status] || o.order_status || '-') + '\n';
+                if (o.tracking_no) detail += '物流: ' + (o.logistics_company || '') + ' ' + o.tracking_no + '\n';
+                if (o.address_info) detail += '收货地址: ' + o.address_info + '\n';
+                if (o.remark) detail += '备注: ' + o.remark + '\n';
+                detail += '创建时间: ' + (o.created_at || '-');
+                alert(detail);
+            } catch(e) {
+                alert('加载失败，请稍后重试');
+            }
+        }
+
+        document.querySelectorAll('.filter-item').forEach(el => {
+            el.addEventListener('click', () => {
+                document.querySelectorAll('.filter-item').forEach(e => e.classList.remove('active'));
+                el.classList.add('active');
+                currentStatus = el.dataset.status;
+                currentPage = 1;
+                loadList();
+            });
+        });
+
+        // 点击遮罩关闭弹窗
+        document.getElementById('shipModal').addEventListener('click', function(e) {
+            if (e.target === this) closeShipModal();
+        });
+
+        loadList();
+    </script>
+</body>
+</html>

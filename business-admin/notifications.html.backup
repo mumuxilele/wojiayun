@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>通知管理 - 管理中心</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f2f5; }
+        .toolbar { background: white; padding: 16px 20px; border-bottom: 1px solid #f0f0f0; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+        .toolbar select, .toolbar input { padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 13px; outline: none; }
+        .toolbar input { width: 200px; }
+        .toolbar select:focus, .toolbar input:focus { border-color: #1890ff; }
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; }
+        .btn-primary { background: #1890ff; color: white; }
+        .btn-primary:hover { background: #40a9ff; }
+        .btn-reset { background: #f0f0f0; color: #666; }
+        .btn-reset:hover { background: #d9d9d9; }
+        .btn-success { background: #52c41a; color: white; }
+        .btn-success:hover { background: #73d13d; }
+        .toolbar-stats { margin-left: auto; font-size: 13px; color: #999; }
+        .toolbar-stats .unread { color: #ff4d4f; font-weight: 600; }
+        
+        .content { padding: 20px; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+        th { background: #fafafa; padding: 12px 16px; text-align: left; font-weight: 500; color: #666; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+        td { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; font-size: 13px; color: #333; }
+        tr:hover { background: #fafafa; }
+        
+        .tag { padding: 3px 8px; border-radius: 4px; font-size: 12px; white-space: nowrap; }
+        .tag-system { background: #e6f7ff; color: #1890ff; }
+        .tag-order { background: #fff7e6; color: #fa8c16; }
+        .tag-application { background: #f6ffed; color: #52c41a; }
+        .tag-booking { background: #fff0f6; color: #eb2f96; }
+        .tag-points { background: #fff7e6; color: #faad14; }
+        .tag-coupon { background: #f9f0ff; color: #722ed1; }
+        .tag-promotion { background: #e6fffb; color: #13c2c2; }
+        
+        .read-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+        .read-dot.unread { background: #ff4d4f; }
+        .read-dot.read { background: #d9d9d9; }
+        
+        .content-preview { max-width: 350px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        
+        .pagination { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; }
+        .pagination-info { font-size: 13px; color: #999; }
+        .pagination-btns { display: flex; gap: 6px; }
+        .page-btn { padding: 6px 12px; border: 1px solid #d9d9d9; background: white; border-radius: 4px; cursor: pointer; font-size: 13px; color: #666; }
+        .page-btn.active { background: #1890ff; color: white; border-color: #1890ff; }
+        .page-btn:disabled { color: #d9d9d9; cursor: not-allowed; }
+        
+        .empty { text-align: center; padding: 60px; color: #bbb; }
+        
+        /* 发送通知弹窗 */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.45); display: none; align-items: center; justify-content: center; z-index: 999; }
+        .modal-overlay.show { display: flex; }
+        .modal { background: white; border-radius: 8px; width: 500px; }
+        .modal-header { padding: 16px 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h3 { font-size: 16px; font-weight: 600; }
+        .modal-close { font-size: 20px; cursor: pointer; color: #999; background: none; border: none; }
+        .modal-body { padding: 20px; }
+        .modal-footer { padding: 12px 20px; border-top: 1px solid #f0f0f0; text-align: right; }
+        
+        .form-group { margin-bottom: 16px; }
+        .form-label { font-size: 13px; color: #666; margin-bottom: 6px; display: block; }
+        .form-label .required { color: #ff4d4f; }
+        .form-input { width: 100%; padding: 10px 12px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 14px; outline: none; }
+        .form-input:focus { border-color: #1890ff; }
+        .form-select { width: 100%; padding: 10px 12px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 14px; outline: none; background: white; }
+        textarea.form-input { min-height: 100px; resize: vertical; }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <select id="filterType" onchange="loadNotifications()">
+            <option value="">全部类型</option>
+            <option value="system">系统通知</option>
+            <option value="order">订单通知</option>
+            <option value="application">申请通知</option>
+            <option value="booking">预约通知</option>
+            <option value="points">积分通知</option>
+            <option value="coupon">优惠券通知</option>
+        </select>
+        <select id="filterRead" onchange="loadNotifications()">
+            <option value="">全部状态</option>
+            <option value="false">未读</option>
+            <option value="true">已读</option>
+        </select>
+        <input type="text" id="filterKeyword" placeholder="搜索用户ID/标题/内容" onkeydown="if(event.key==='Enter')loadNotifications()">
+        <button class="btn btn-primary" onclick="loadNotifications()">查询</button>
+        <button class="btn btn-reset" onclick="resetFilter()">重置</button>
+        <button class="btn btn-success" onclick="showSendModal()">📨 发送通知</button>
+        <span class="toolbar-stats" id="toolbarStats"></span>
+    </div>
+    
+    <div class="content">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:40px">状态</th>
+                    <th>用户ID</th>
+                    <th>标题</th>
+                    <th>内容</th>
+                    <th>类型</th>
+                    <th>创建时间</th>
+                </tr>
+            </thead>
+            <tbody id="notifTable">
+                <tr><td colspan="6" class="empty">加载中...</td></tr>
+            </tbody>
+        </table>
+        <div class="pagination" id="pagination"></div>
+    </div>
+    
+    <!-- 发送通知弹窗 -->
+    <div class="modal-overlay" id="sendModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>发送系统通知</h3>
+                <button class="modal-close" onclick="closeSendModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <div class="form-label">用户ID <span class="required">*</span></div>
+                    <input type="text" class="form-input" id="sendUserId" placeholder="输入接收通知的用户ID">
+                </div>
+                <div class="form-group">
+                    <div class="form-label">通知类型</div>
+                    <select class="form-select" id="sendType">
+                        <option value="system">系统通知</option>
+                        <option value="promotion">促销活动</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <div class="form-label">标题 <span class="required">*</span></div>
+                    <input type="text" class="form-input" id="sendTitle" placeholder="通知标题" maxlength="200">
+                </div>
+                <div class="form-group">
+                    <div class="form-label">内容 <span class="required">*</span></div>
+                    <textarea class="form-input" id="sendContent" placeholder="通知内容" maxlength="2000"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-reset" onclick="closeSendModal()">取消</button>
+                <button class="btn btn-primary" onclick="sendNotification()">发送</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    const API = localStorage.getItem('apiBase') || '';
+    let currentPage = 1;
+    let totalPages = 1;
+    
+    function getToken() {
+        return localStorage.getItem('access_token') || new URLSearchParams(location.search).get('access_token') || '';
+    }
+    
+    function resetFilter() {
+        document.getElementById('filterType').value = '';
+        document.getElementById('filterRead').value = '';
+        document.getElementById('filterKeyword').value = '';
+        currentPage = 1;
+        loadNotifications();
+    }
+    
+    async function loadNotifications() {
+        const type = document.getElementById('filterType').value;
+        const isRead = document.getElementById('filterRead').value;
+        const keyword = document.getElementById('filterKeyword').value;
+        
+        // 管理端需要直接查询数据库，使用管理端接口
+        let url = `${API}/api/admin/notifications?page=${currentPage}&page_size=20`;
+        if (type) url += `&notify_type=${type}`;
+        if (isRead) url += `&is_read=${isRead}`;
+        if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
+        
+        try {
+            const res = await fetch(url, { headers: { 'Token': getToken() } });
+            const json = await res.json();
+            if (json.success) {
+                const { items, total, pages, unread_count } = json.data;
+                totalPages = pages || 1;
+                const statsEl = document.getElementById('toolbarStats');
+                statsEl.innerHTML = `共${total}条` + (unread_count > 0 ? ` | <span class="unread">${unread_count}条未读</span>` : '');
+                renderTable(items || []);
+                renderPagination(total, pages);
+            } else {
+                // 如果接口不存在，显示提示
+                document.getElementById('notifTable').innerHTML = '<tr><td colspan="6" class="empty">需要先执行数据库迁移 (migrate_v5.py) 创建通知表</td></tr>';
+            }
+        } catch (e) {
+            document.getElementById('notifTable').innerHTML = '<tr><td colspan="6" class="empty">加载失败</td></tr>';
+        }
+    }
+    
+    function renderTable(items) {
+        if (items.length === 0) {
+            document.getElementById('notifTable').innerHTML = '<tr><td colspan="6" class="empty">暂无通知数据</td></tr>';
+            return;
+        }
+        const typeLabels = { system:'系统', order:'订单', application:'申请', booking:'预约', points:'积分', coupon:'优惠券', promotion:'促销' };
+        
+        document.getElementById('notifTable').innerHTML = items.map(n => `
+            <tr>
+                <td><span class="read-dot ${n.is_read ? 'read' : 'unread'}"></span></td>
+                <td>${n.user_id || '-'}</td>
+                <td style="font-weight:500">${n.title || ''}</td>
+                <td class="content-preview" title="${(n.content||'').replace(/"/g,'&quot;')}">${n.content || ''}</td>
+                <td><span class="tag tag-${n.notify_type || 'system'}">${typeLabels[n.notify_type] || '系统'}</span></td>
+                <td>${(n.created_at || '').substring(0, 16).replace('T', ' ')}</td>
+            </tr>
+        `).join('');
+    }
+    
+    function renderPagination(total, pages) {
+        const pg = document.getElementById('pagination');
+        if (pages <= 1) { pg.innerHTML = `<span class="pagination-info">共${total}条</span>`; return; }
+        let btns = '';
+        for (let i = 1; i <= pages; i++) {
+            if (i === 1 || i === pages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                btns += `<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+            } else if (btns[btns.length-1] !== '...') {
+                btns += '<button class="page-btn" disabled>...</button>';
+            }
+        }
+        pg.innerHTML = `
+            <span class="pagination-info">共${total}条 / ${pages}页</span>
+            <div class="pagination-btns">
+                <button class="page-btn" ${currentPage<=1?'disabled':''} onclick="goPage(${currentPage-1})">上一页</button>
+                ${btns}
+                <button class="page-btn" ${currentPage>=pages?'disabled':''} onclick="goPage(${currentPage+1})">下一页</button>
+            </div>`;
+    }
+    
+    function goPage(p) { currentPage = p; loadNotifications(); }
+    
+    function showSendModal() { document.getElementById('sendModal').classList.add('show'); }
+    function closeSendModal() { document.getElementById('sendModal').classList.remove('show'); }
+    
+    async function sendNotification() {
+        const user_id = document.getElementById('sendUserId').value.trim();
+        const title = document.getElementById('sendTitle').value.trim();
+        const content = document.getElementById('sendContent').value.trim();
+        const notify_type = document.getElementById('sendType').value;
+        
+        if (!user_id) { alert('请输入用户ID'); return; }
+        if (!title) { alert('请输入标题'); return; }
+        if (!content) { alert('请输入内容'); return; }
+        
+        try {
+            const res = await fetch(`${API}/api/admin/notifications/send`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Token': getToken() },
+                body: JSON.stringify({ user_id, title, content, notify_type })
+            });
+            const json = await res.json();
+            if (json.success) {
+                closeSendModal();
+                document.getElementById('sendUserId').value = '';
+                document.getElementById('sendTitle').value = '';
+                document.getElementById('sendContent').value = '';
+                loadNotifications();
+            } else {
+                alert(json.msg || '发送失败');
+            }
+        } catch (e) {
+            alert('网络错误');
+        }
+    }
+    
+    loadNotifications();
+    </script>
+</body>
+</html>

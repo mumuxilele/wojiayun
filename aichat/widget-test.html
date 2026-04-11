@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Widget SDK 测试</title>
+    <!-- ADP Widget SDK -->
+    <script type="module" src="/widget/adp-widget.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .widget-container {
+            margin: 20px 0;
+            padding: 20px;
+            background: #fafafa;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+        .log-area {
+            margin-top: 20px;
+            padding: 15px;
+            background: #1e1e1e;
+            color: #0f0;
+            border-radius: 8px;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .log-item {
+            margin: 5px 0;
+            padding: 5px;
+            border-bottom: 1px solid #333;
+        }
+        .log-item.error {
+            color: #f44;
+        }
+        .log-item.success {
+            color: #0f0;
+        }
+        .log-item.info {
+            color: #0af;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Widget SDK 集成测试</h1>
+        
+        <div class="widget-container" id="widgetContainer">
+            <!-- Widget 将在这里渲染 -->
+        </div>
+        
+        <div class="log-area" id="logArea">
+            <div class="log-item info">初始化中...</div>
+        </div>
+    </div>
+
+    <script type="module">
+        // 日志函数
+        function log(message, type = 'info') {
+            const logArea = document.getElementById('logArea');
+            const logItem = document.createElement('div');
+            logItem.className = `log-item ${type}`;
+            logItem.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logArea.appendChild(logItem);
+            logArea.scrollTop = logArea.scrollHeight;
+            console.log(message);
+        }
+
+        // 模拟的 Widget 数据（来自腾讯云文档示例）
+        const mockWidgetData = {
+            widget_id: 'test-widget-001',
+            widget_run_id: 'run-' + Date.now(),
+            view: {
+                type: "Card",
+                children: [
+                    {
+                        type: "Text",
+                        content: "📋 工单信息"
+                    },
+                    {
+                        type: "Divider"
+                    },
+                    {
+                        type: "Column",
+                        children: [
+                            {
+                                type: "Text",
+                                content: "房间号：101"
+                            },
+                            {
+                                type: "Text",
+                                content: "问题描述：灯泡损坏"
+                            },
+                            {
+                                type: "Text",
+                                content: "报修时间：2026-04-09"
+                            }
+                        ]
+                    },
+                    {
+                        type: "Divider"
+                    },
+                    {
+                        type: "Button",
+                        label: "确认提交",
+                        variant: "primary",
+                        onClickAction: {
+                            type: "sys.chat",
+                            payload: {
+                                text: "确认提交工单"
+                            }
+                        }
+                    },
+                    {
+                        type: "Button",
+                        label: "取消",
+                        variant: "default",
+                        onClickAction: {
+                            type: "cancel"
+                        }
+                    }
+                ]
+            },
+            state: {}
+        };
+
+        // 初始化 Widget
+        function initWidget() {
+            log('开始初始化 Widget SDK...', 'info');
+            
+            const container = document.getElementById('widgetContainer');
+            
+            try {
+                // 创建 adp-widget 元素
+                const adpWidget = document.createElement('adp-widget');
+                
+                // 设置 widget-json 属性（直接传递 view 对象）
+                const widgetConfig = mockWidgetData.view;
+                adpWidget.setAttribute('widget-json', JSON.stringify(widgetConfig));
+                
+                log('Widget 配置: ' + JSON.stringify(widgetConfig, null, 2), 'info');
+                
+                // 监听 widget-action 事件
+                adpWidget.addEventListener('widget-action', (e) => {
+                    log('Widget Action 触发: ' + JSON.stringify(e.detail, null, 2), 'success');
+                    console.log('Widget Action:', e.detail);
+                });
+
+                // 监听渲染完成事件
+                adpWidget.addEventListener('widget-rendered', (e) => {
+                    if (e.detail && e.detail.success) {
+                        log('Widget 渲染成功!', 'success');
+                    } else {
+                        log('Widget 渲染失败: ' + (e.detail?.error?.message || '未知错误'), 'error');
+                    }
+                });
+
+                // 清空容器并添加 widget
+                container.innerHTML = '';
+                container.appendChild(adpWidget);
+                
+                log('Widget 元素已添加到 DOM', 'info');
+                
+            } catch (e) {
+                log('初始化失败: ' + e.message, 'error');
+                console.error('初始化失败:', e);
+            }
+        }
+
+        // 等待 SDK 加载完成后初始化
+        log('等待 SDK 加载...', 'info');
+        
+        // 检查 customElements 是否已定义
+        if (customElements.get('adp-widget')) {
+            log('adp-widget 组件已注册', 'success');
+            initWidget();
+        } else {
+            log('等待 adp-widget 组件注册...', 'info');
+            customElements.whenDefined('adp-widget').then(() => {
+                log('adp-widget 组件已注册', 'success');
+                initWidget();
+            });
+        }
+        
+        // 超时检测
+        setTimeout(() => {
+            if (!customElements.get('adp-widget')) {
+                log('⚠️ adp-widget 组件未在 5 秒内注册，请检查 SDK 加载', 'error');
+            }
+        }, 5000);
+    </script>
+</body>
+</html>

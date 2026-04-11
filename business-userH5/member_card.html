@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>会员数字卡</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #1a1a2e; min-height: 100vh; }
+
+        .header { background: transparent; color: white; padding: 15px; display: flex; align-items: center; position: sticky; top: 0; z-index: 50; }
+        .header h1 { font-size: 18px; flex: 1; text-align: center; }
+        .back { color: white; font-size: 22px; text-decoration: none; padding: 4px 8px; }
+
+        /* 卡片主体 */
+        .card-container { padding: 20px 16px; }
+
+        .member-card {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            border-radius: 24px;
+            padding: 28px 24px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* 背景装饰 */
+        .card-bg-circle {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.1;
+        }
+        .card-bg-circle.c1 { width: 200px; height: 200px; background: #667eea; top: -80px; right: -60px; }
+        .card-bg-circle.c2 { width: 150px; height: 150px; background: #764ba2; bottom: -50px; left: -30px; }
+        .card-bg-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(255,255,255,0.02) 10px,
+                rgba(255,255,255,0.02) 20px
+            );
+        }
+
+        /* 卡片头部 */
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; position: relative; z-index: 1; }
+        .card-logo { display: flex; align-items: center; gap: 8px; }
+        .card-logo-icon { width: 40px; height: 40px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+        .card-logo-text { font-size: 16px; font-weight: 700; color: white; }
+        .card-level-badge {
+            background: linear-gradient(135deg, #ffd700, #ffb347);
+            color: #1a1a2e;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 6px 14px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* 会员号 */
+        .card-number-section { margin-bottom: 30px; position: relative; z-index: 1; }
+        .card-label { font-size: 11px; color: rgba(255,255,255,0.5); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+        .card-number { font-size: 22px; font-weight: 600; color: white; letter-spacing: 4px; font-family: 'Courier New', monospace; }
+
+        /* 会员信息 */
+        .card-info { display: flex; justify-content: space-between; position: relative; z-index: 1; }
+        .card-info-item { text-align: left; }
+        .card-info-label { font-size: 11px; color: rgba(255,255,255,0.5); letter-spacing: 1px; margin-bottom: 4px; }
+        .card-info-value { font-size: 16px; font-weight: 600; color: white; }
+
+        /* 会员等级进度 */
+        .level-progress { margin-top: 30px; position: relative; z-index: 1; }
+        .level-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .level-title { font-size: 12px; color: rgba(255,255,255,0.7); }
+        .level-range { font-size: 11px; color: rgba(255,255,255,0.5); }
+        .progress-bar { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #667eea, #764ba2, #f093fb); border-radius: 3px; transition: width 0.5s ease; }
+        .progress-label { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11px; color: rgba(255,255,255,0.5); }
+
+        /* 二维码区域 */
+        .qrcode-section { background: white; border-radius: 16px; padding: 24px; margin-top: 20px; text-align: center; }
+        .qrcode-title { font-size: 13px; color: #666; margin-bottom: 16px; }
+        .qrcode-box { width: 160px; height: 160px; background: #f5f5f5; margin: 0 auto; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+        .qrcode-placeholder { font-size: 60px; color: #ddd; }
+        .qrcode-hint { font-size: 11px; color: #999; margin-top: 12px; }
+
+        /* 会员权益 */
+        .benefits-section { margin-top: 20px; }
+        .section-title { font-size: 16px; font-weight: 600; color: white; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+        .benefit-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+        .benefit-item { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+        .benefit-item:not(:last-child) { border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .benefit-icon { width: 36px; height: 36px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+        .benefit-content { flex: 1; }
+        .benefit-name { font-size: 14px; color: white; font-weight: 500; }
+        .benefit-desc { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+
+        /* 积分区域 */
+        .points-section { margin-top: 20px; }
+        .points-card { background: linear-gradient(135deg, rgba(102,126,234,0.3), rgba(118,75,162,0.3)); border: 1px solid rgba(102,126,234,0.3); border-radius: 16px; padding: 20px; }
+        .points-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .points-title { font-size: 14px; color: rgba(255,255,255,0.8); }
+        .points-more { font-size: 12px; color: rgba(255,255,255,0.5); text-decoration: none; }
+        .points-value { font-size: 36px; font-weight: 700; color: #ffd700; margin-bottom: 4px; }
+        .points-unit { font-size: 14px; color: rgba(255,255,255,0.6); }
+        .points-history { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+        .points-tag { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); font-size: 11px; padding: 4px 10px; border-radius: 12px; }
+
+        /* 成长值区域 */
+        .growth-section { margin-top: 20px; }
+        .growth-card { background: rgba(255,255,255,0.05); border-radius: 16px; padding: 20px; }
+        .growth-header { display: flex; justify-content: space-between; margin-bottom: 14px; }
+        .growth-title { font-size: 14px; color: rgba(255,255,255,0.8); }
+        .growth-value { font-size: 16px; font-weight: 600; color: #667eea; }
+        .growth-bar { height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
+        .growth-fill { height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 4px; }
+
+        /* 快捷操作 */
+        .quick-actions { margin-top: 20px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+        .action-item { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 14px 8px; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .action-item:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
+        .action-icon { font-size: 24px; margin-bottom: 6px; }
+        .action-name { font-size: 11px; color: rgba(255,255,255,0.7); }
+
+        /* Toast */
+        .toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); background: rgba(0,0,0,0.75); color: white; padding: 12px 24px; border-radius: 12px; font-size: 14px; opacity: 0; transition: all 0.25s; z-index: 500; pointer-events: none; }
+        .toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+        /* 加载状态 */
+        .loading-wrap { display: flex; align-items: center; justify-content: center; min-height: 60vh; flex-direction: column; gap: 16px; }
+        .loading-spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1); border-top-color: #667eea; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { color: rgba(255,255,255,0.6); font-size: 14px; }
+
+        /* 未登录提示 */
+        .login-tip { text-align: center; padding: 60px 20px; }
+        .login-icon { font-size: 64px; margin-bottom: 16px; }
+        .login-text { color: rgba(255,255,255,0.6); font-size: 14px; margin-bottom: 20px; }
+        .login-btn { display: inline-block; padding: 12px 32px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-radius: 24px; font-size: 14px; font-weight: 600; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a class="back" onclick="history.back()">‹</a>
+        <h1>会员数字卡</h1>
+        <span style="width:40px"></span>
+    </div>
+
+    <!-- 加载状态 -->
+    <div class="loading-wrap" id="loadingWrap">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">加载中...</div>
+    </div>
+
+    <!-- 未登录 -->
+    <div class="login-tip" id="loginTip" style="display:none">
+        <div class="login-icon">🎫</div>
+        <div class="login-text">登录后查看您的会员数字卡</div>
+        <a class="login-btn" href="member.html">立即登录</a>
+    </div>
+
+    <!-- 卡片内容 -->
+    <div class="card-container" id="cardContent" style="display:none">
+        <!-- 会员卡 -->
+        <div class="member-card">
+            <div class="card-bg-circle c1"></div>
+            <div class="card-bg-circle c2"></div>
+            <div class="card-bg-lines"></div>
+
+            <div class="card-header">
+                <div class="card-logo">
+                    <div class="card-logo-icon">🏪</div>
+                    <div class="card-logo-text">我家云会员</div>
+                </div>
+                <div class="card-level-badge" id="levelBadge">VIP</div>
+            </div>
+
+            <div class="card-number-section">
+                <div class="card-label">会员编号</div>
+                <div class="card-number" id="memberNumber">000000000000</div>
+            </div>
+
+            <div class="card-info">
+                <div class="card-info-item">
+                    <div class="card-info-label">会员姓名</div>
+                    <div class="card-info-value" id="memberName">--</div>
+                </div>
+                <div class="card-info-item">
+                    <div class="card-info-label">手机号码</div>
+                    <div class="card-info-value" id="memberPhone">--</div>
+                </div>
+                <div class="card-info-item">
+                    <div class="card-info-label">注册时间</div>
+                    <div class="card-info-value" id="memberDate">--</div>
+                </div>
+            </div>
+
+            <div class="level-progress">
+                <div class="level-header">
+                    <span class="level-title" id="levelTitle">距离下一等级</span>
+                    <span class="level-range" id="levelRange">0 / 0</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="levelProgress" style="width: 0%"></div>
+                </div>
+                <div class="progress-label">
+                    <span id="currentLevel">当前: 普通会员</span>
+                    <span id="nextLevel">下一: 铜牌会员</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 二维码 -->
+        <div class="qrcode-section">
+            <div class="qrcode-title">会员码 · 消费时请出示</div>
+            <div class="qrcode-box" id="qrcodeBox">
+                <span class="qrcode-placeholder">📱</span>
+            </div>
+            <div class="qrcode-hint">向商家出示此码完成会员身份验证</div>
+        </div>
+
+        <!-- 会员权益 -->
+        <div class="benefits-section">
+            <div class="section-title">
+                <span>✨</span>
+                <span>会员权益</span>
+            </div>
+            <div class="benefit-card" id="benefitCard">
+                <!-- 动态渲染 -->
+            </div>
+        </div>
+
+        <!-- 积分 -->
+        <div class="points-section">
+            <div class="points-card">
+                <div class="points-header">
+                    <span class="points-title">我的积分</span>
+                    <a class="points-more" href="points.html">积分明细 ›</a>
+                </div>
+                <div class="points-value" id="pointsValue">0</div>
+                <div class="points-unit">可用积分</div>
+                <div class="points-history" id="pointsHistory">
+                    <!-- 动态渲染 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 成长值 -->
+        <div class="growth-section">
+            <div class="growth-card">
+                <div class="growth-header">
+                    <span class="growth-title">成长值</span>
+                    <span class="growth-value" id="growthValue">0</span>
+                </div>
+                <div class="growth-bar">
+                    <div class="growth-fill" id="growthFill" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 快捷操作 -->
+        <div class="quick-actions">
+            <div class="action-item" onclick="goTo('member.html')">
+                <div class="action-icon">👤</div>
+                <div class="action-name">会员中心</div>
+            </div>
+            <div class="action-item" onclick="goTo('orders.html')">
+                <div class="action-icon">📦</div>
+                <div class="action-name">我的订单</div>
+            </div>
+            <div class="action-item" onclick="goTo('coupons.html')">
+                <div class="action-icon">🎫</div>
+                <div class="action-name">优惠券</div>
+            </div>
+            <div class="action-item" onclick="shareCard()">
+                <div class="action-icon">📤</div>
+                <div class="action-name">分享</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const urlParams = new URLSearchParams(location.search);
+        const token = urlParams.get('access_token') || localStorage.getItem('access_token') || '';
+        const API_BASE = location.origin;
+
+        let memberData = null;
+
+        async function loadMemberCard() {
+            if (!token) {
+                document.getElementById('loadingWrap').style.display = 'none';
+                document.getElementById('loginTip').style.display = 'block';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/user/member/card?access_token=${token}`);
+                const data = await res.json();
+
+                document.getElementById('loadingWrap').style.display = 'none';
+
+                if (data.success && data.data) {
+                    memberData = data.data;
+                    renderCard();
+                } else {
+                    // 尝试获取基本信息
+                    loadBasicInfo();
+                }
+            } catch(e) {
+                loadBasicInfo();
+            }
+        }
+
+        async function loadBasicInfo() {
+            try {
+                // 获取会员基本信息
+                const res = await fetch(`${API_BASE}/api/user/member?access_token=${token}`);
+                const data = await res.json();
+
+                if (data.success && data.data) {
+                    memberData = {
+                        member_number: data.data.id || '000000000000',
+                        user_name: data.data.user_name || 'VIP会员',
+                        phone: data.data.phone || '',
+                        member_level: data.data.member_level || 1,
+                        member_grade: data.data.member_grade || '普通会员',
+                        points: data.data.points || 0,
+                        growth_value: data.data.growth_value || 0,
+                        total_points: data.data.total_points || 0,
+                        created_at: data.data.created_at || ''
+                    };
+                    renderCard();
+                } else {
+                    document.getElementById('cardContent').style.display = 'block';
+                    document.getElementById('memberNumber').textContent = '000000000000';
+                    document.getElementById('memberName').textContent = 'VIP会员';
+                }
+            } catch(e) {
+                document.getElementById('cardContent').style.display = 'block';
+            }
+        }
+
+        function renderCard() {
+            document.getElementById('cardContent').style.display = 'block';
+
+            const m = memberData;
+
+            // 会员号
+            const memberNum = String(m.member_number || m.id || '000000000000').padStart(12, '0');
+            document.getElementById('memberNumber').textContent = memberNum;
+
+            // 等级
+            document.getElementById('levelBadge').textContent = m.member_grade || 'VIP';
+
+            // 姓名
+            document.getElementById('memberName').textContent = m.user_name || 'VIP会员';
+
+            // 手机
+            if (m.phone) {
+                const phone = String(m.phone);
+                document.getElementById('memberPhone').textContent = phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2');
+            }
+
+            // 注册时间
+            if (m.created_at) {
+                document.getElementById('memberDate').textContent = m.created_at.substring(0, 10);
+            }
+
+            // 等级进度
+            renderLevelProgress();
+
+            // 积分
+            document.getElementById('pointsValue').textContent = (m.points || 0).toLocaleString();
+
+            // 积分历史标签
+            renderPointsTags();
+
+            // 成长值
+            const growth = m.growth_value || 0;
+            document.getElementById('growthValue').textContent = growth;
+            // 假设满10000升级
+            const growthPercent = Math.min(100, (growth / 10000) * 100);
+            document.getElementById('growthFill').style.width = growthPercent + '%';
+
+            // 权益
+            renderBenefits();
+
+            // 二维码（生成简单的会员码）
+            renderQRCode();
+        }
+
+        function renderLevelProgress() {
+            const level = memberData.member_level || 1;
+            const growth = memberData.growth_value || 0;
+
+            const levels = [
+                { name: '普通会员', min: 0, max: 100 },
+                { name: '铜牌会员', min: 100, max: 500 },
+                { name: '银牌会员', min: 500, max: 1000 },
+                { name: '金牌会员', min: 1000, max: 3000 },
+                { name: '钻石会员', min: 3000, max: 10000 },
+                { name: '黑金会员', min: 10000, max: 999999 }
+            ];
+
+            const currentIdx = Math.min(level - 1, levels.length - 1);
+            const current = levels[currentIdx];
+            const next = levels[Math.min(currentIdx + 1, levels.length - 1)];
+
+            document.getElementById('currentLevel').textContent = `当前: ${current.name}`;
+            document.getElementById('nextLevel').textContent = `下一: ${next.name}`;
+
+            let progress = 0;
+            let range = `0 / ${next.min}`;
+
+            if (currentIdx === levels.length - 1) {
+                progress = 100;
+                range = '已满级';
+            } else {
+                const rangeStart = current.min;
+                const rangeEnd = next.min;
+                progress = Math.min(100, ((growth - rangeStart) / (rangeEnd - rangeStart)) * 100);
+                range = `${growth} / ${next.min}`;
+            }
+
+            document.getElementById('levelRange').textContent = range;
+            document.getElementById('levelProgress').style.width = progress + '%';
+            document.getElementById('levelTitle').textContent = currentIdx === levels.length - 1 ? '已达成最高等级' : '距离下一等级';
+        }
+
+        function renderPointsTags() {
+            const tags = [
+                { icon: '🛒', text: '购物得积分' },
+                { icon: '✏️', text: '评价得积分' },
+                { icon: '🔄', text: '签到得积分' },
+                { icon: '📤', text: '分享得积分' }
+            ];
+
+            document.getElementById('pointsHistory').innerHTML = tags.map(t =>
+                `<span class="points-tag">${t.icon} ${t.text}</span>`
+            ).join('');
+        }
+
+        function renderBenefits() {
+            const level = memberData.member_level || 1;
+            const benefits = [
+                { icon: '💰', name: '会员专享价', desc: '全场商品会员专属折扣', unlocked: true },
+                { icon: '🎫', name: '优惠券礼包', desc: `每月${3 + level}张优惠券`, unlocked: level >= 1 },
+                { icon: '🚀', name: '优先发货', desc: '订单优先处理', unlocked: level >= 2 },
+                { icon: '🎁', name: '生日礼包', desc: '生日当月双倍积分', unlocked: level >= 2 },
+                { icon: '💎', name: '专属客服', desc: '7x24小时专属服务', unlocked: level >= 3 },
+                { icon: '🏆', name: 'VIP专属活动', desc: '参与会员专享活动', unlocked: level >= 4 }
+            ];
+
+            document.getElementById('benefitCard').innerHTML = benefits.map(b => `
+                <div class="benefit-item" style="${b.unlocked ? '' : 'opacity:0.4'}">
+                    <div class="benefit-icon">${b.icon}</div>
+                    <div class="benefit-content">
+                        <div class="benefit-name">${b.name} ${b.unlocked ? '✓' : '🔒'}</div>
+                        <div class="benefit-desc">${b.desc}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderQRCode() {
+            // 简单的会员码展示（实际应该调用API生成二维码）
+            const memberNum = document.getElementById('memberNumber').textContent;
+            const qrbox = document.getElementById('qrcodeBox');
+
+            // 使用Canvas生成简单二维码占位
+            qrbox.innerHTML = `
+                <div style="width:140px;height:140px;background:white;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#666;text-align:center;padding:10px;">
+                    <div>
+                        <div style="font-size:14px;font-weight:600;color:#333;margin-bottom:8px">我家云会员</div>
+                        <div style="font-family:monospace;font-size:10px;letter-spacing:1px">${memberNum}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function goTo(page) {
+            const params = new URLSearchParams(location.search);
+            location.href = `${page}?${params.toString()}`;
+        }
+
+        async function shareCard() {
+            if (!navigator.share) {
+                // 复制链接
+                try {
+                    await navigator.clipboard.writeText(location.href);
+                    showToast('分享链接已复制');
+                } catch(e) {
+                    showToast('分享功能暂不可用');
+                }
+                return;
+            }
+
+            try {
+                await navigator.share({
+                    title: '我家云会员卡',
+                    text: '我在我家云发现了专属会员权益，快来看看吧！',
+                    url: location.href
+                });
+            } catch(e) {}
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2000);
+        }
+
+        loadMemberCard();
+    </script>
+</body>
+</html>

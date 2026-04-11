@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>反馈管理 - 管理中心</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f2f5; }
+        .toolbar { background: white; padding: 16px 20px; border-bottom: 1px solid #f0f0f0; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+        .toolbar select, .toolbar input { padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 13px; outline: none; }
+        .toolbar input { width: 200px; }
+        .toolbar select:focus, .toolbar input:focus { border-color: #1890ff; }
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; }
+        .btn-primary { background: #1890ff; color: white; }
+        .btn-primary:hover { background: #40a9ff; }
+        .btn-reset { background: #f0f0f0; color: #666; }
+        .btn-reset:hover { background: #d9d9d9; }
+        .toolbar-stats { margin-left: auto; font-size: 13px; color: #999; }
+        
+        .content { padding: 20px; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+        th { background: #fafafa; padding: 12px 16px; text-align: left; font-weight: 500; color: #666; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+        td { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; font-size: 13px; color: #333; }
+        tr:hover { background: #fafafa; }
+        
+        .tag { padding: 3px 8px; border-radius: 4px; font-size: 12px; white-space: nowrap; }
+        .tag-suggestion { background: #e6f7ff; color: #1890ff; }
+        .tag-bug { background: #fff2f0; color: #ff4d4f; }
+        .tag-complaint { background: #fff7e6; color: #fa8c16; }
+        .tag-praise { background: #f6ffed; color: #52c41a; }
+        .status { padding: 3px 8px; border-radius: 4px; font-size: 12px; }
+        .status-pending { background: #fff7e6; color: #fa8c16; }
+        .status-replied { background: #f6ffed; color: #52c41a; }
+        .status-closed { background: #f0f0f0; color: #999; }
+        
+        .content-preview { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .reply-preview { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #52c41a; }
+        .has-reply { color: #52c41a; font-weight: 500; }
+        .no-reply { color: #bbb; }
+        
+        .actions { white-space: nowrap; }
+        .actions a { color: #1890ff; margin-right: 10px; text-decoration: none; cursor: pointer; font-size: 13px; }
+        .actions a:hover { text-decoration: underline; }
+        .actions a.danger { color: #ff4d4f; }
+        
+        .pagination { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; }
+        .pagination-info { font-size: 13px; color: #999; }
+        .pagination-btns { display: flex; gap: 6px; }
+        .page-btn { padding: 6px 12px; border: 1px solid #d9d9d9; background: white; border-radius: 4px; cursor: pointer; font-size: 13px; color: #666; }
+        .page-btn.active { background: #1890ff; color: white; border-color: #1890ff; }
+        .page-btn:disabled { color: #d9d9d9; cursor: not-allowed; }
+        
+        .empty { text-align: center; padding: 60px; color: #bbb; }
+        
+        /* 回复弹窗 */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.45); display: none; align-items: center; justify-content: center; z-index: 999; }
+        .modal-overlay.show { display: flex; }
+        .modal { background: white; border-radius: 8px; width: 560px; max-height: 80vh; overflow-y: auto; }
+        .modal-header { padding: 16px 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h3 { font-size: 16px; font-weight: 600; }
+        .modal-close { font-size: 20px; cursor: pointer; color: #999; background: none; border: none; }
+        .modal-body { padding: 20px; }
+        .modal-footer { padding: 12px 20px; border-top: 1px solid #f0f0f0; text-align: right; }
+        
+        .detail-row { margin-bottom: 14px; }
+        .detail-label { font-size: 12px; color: #999; margin-bottom: 4px; }
+        .detail-value { font-size: 14px; color: #333; line-height: 1.6; }
+        .detail-content { background: #fafafa; padding: 12px; border-radius: 6px; font-size: 14px; line-height: 1.8; color: #333; }
+        
+        textarea.reply-input { width: 100%; padding: 12px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 14px; min-height: 100px; resize: vertical; outline: none; margin-top: 8px; }
+        textarea.reply-input:focus { border-color: #1890ff; }
+        .btn-lg { padding: 10px 24px; font-size: 14px; border-radius: 6px; }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <select id="filterType" onchange="loadFeedback()">
+            <option value="">全部类型</option>
+            <option value="suggestion">建议</option>
+            <option value="bug">问题</option>
+            <option value="complaint">投诉</option>
+            <option value="praise">表扬</option>
+        </select>
+        <select id="filterStatus" onchange="loadFeedback()">
+            <option value="">全部状态</option>
+            <option value="pending">待处理</option>
+            <option value="replied">已回复</option>
+            <option value="closed">已关闭</option>
+        </select>
+        <input type="text" id="filterKeyword" placeholder="搜索标题/用户/内容" onkeydown="if(event.key==='Enter')loadFeedback()">
+        <button class="btn btn-primary" onclick="loadFeedback()">查询</button>
+        <button class="btn btn-reset" onclick="resetFilter()">重置</button>
+        <span class="toolbar-stats" id="toolbarStats"></span>
+    </div>
+    
+    <div class="content">
+        <table>
+            <thead>
+                <tr>
+                    <th>编号</th>
+                    <th>类型</th>
+                    <th>标题</th>
+                    <th>用户</th>
+                    <th>联系方式</th>
+                    <th>状态</th>
+                    <th>回复</th>
+                    <th>提交时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="feedbackTable">
+                <tr><td colspan="9" class="empty">加载中...</td></tr>
+            </tbody>
+        </table>
+        <div class="pagination" id="pagination"></div>
+    </div>
+    
+    <!-- 详情/回复弹窗 -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modalTitle">反馈详情</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-footer" id="modalFooter"></div>
+        </div>
+    </div>
+
+    <script>
+    const API = localStorage.getItem('apiBase') || '';
+    let currentPage = 1;
+    let totalPages = 1;
+    
+    function escapeHtml(text) {
+        if (text === null || text === undefined) return '';
+        return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+    
+    function getToken() {
+        return localStorage.getItem('access_token') || new URLSearchParams(location.search).get('access_token') || '';
+    }
+    
+    function resetFilter() {
+        document.getElementById('filterType').value = '';
+        document.getElementById('filterStatus').value = '';
+        document.getElementById('filterKeyword').value = '';
+        currentPage = 1;
+        loadFeedback();
+    }
+    
+    async function loadFeedback() {
+        const type = document.getElementById('filterType').value;
+        const status = document.getElementById('filterStatus').value;
+        const keyword = document.getElementById('filterKeyword').value;
+        
+        let url = `${API}/api/admin/feedback?page=${currentPage}&page_size=20`;
+        if (type) url += `&feedback_type=${type}`;
+        if (status) url += `&status=${status}`;
+        if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
+        
+        try {
+            const res = await fetch(url, { headers: { 'Token': getToken() } });
+            const json = await res.json();
+            if (json.success) {
+                const { items, total, pages } = json.data;
+                totalPages = pages || 1;
+                document.getElementById('toolbarStats').textContent = `共${total}条`;
+                renderTable(items || []);
+                renderPagination(total, pages);
+            }
+        } catch (e) {
+            document.getElementById('feedbackTable').innerHTML = '<tr><td colspan="9" class="empty">加载失败</td></tr>';
+        }
+    }
+    
+    function renderTable(items) {
+        if (items.length === 0) {
+            document.getElementById('feedbackTable').innerHTML = '<tr><td colspan="9" class="empty">暂无反馈数据</td></tr>';
+            return;
+        }
+        const typeLabels = { suggestion: '建议', bug: '问题', complaint: '投诉', praise: '表扬' };
+        const statusLabels = { pending: '待处理', replied: '已回复', closed: '已关闭' };
+        
+        document.getElementById('feedbackTable').innerHTML = items.map(fb => `
+            <tr>
+                <td>${fb.id}</td>
+                <td><span class="tag tag-${fb.feedback_type}">${typeLabels[fb.feedback_type] || fb.feedback_type}</span></td>
+                <td class="content-preview" title="${escapeHtml(fb.title||'')}">${escapeHtml(fb.title || '')}</td>
+                <td>${escapeHtml(fb.user_name || '-')}</td>
+                <td>${escapeHtml(fb.contact || '-')}</td>
+                <td><span class="status status-${fb.status}">${statusLabels[fb.status] || fb.status}</span></td>
+                <td class="reply-preview">${fb.reply ? '<span class="has-reply">已回复</span>' : '<span class="no-reply">未回复</span>'}</td>
+                <td>${(fb.created_at || '').substring(0, 16).replace('T', ' ')}</td>
+                <td class="actions">
+                    <a onclick="showDetail(${fb.id})">详情</a>
+                    <a onclick="showReply(${fb.id})">回复</a>
+                </td>
+            </tr>
+        `).join('');
+    }
+    
+    function renderPagination(total, pages) {
+        const pg = document.getElementById('pagination');
+        if (pages <= 1) { pg.innerHTML = `<span class="pagination-info">共${total}条</span>`; return; }
+        let btns = '';
+        for (let i = 1; i <= pages; i++) {
+            if (i === 1 || i === pages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                btns += `<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+            } else if (btns[btns.length-1] !== '...') {
+                btns += '<button class="page-btn" disabled>...</button>';
+            }
+        }
+        pg.innerHTML = `
+            <span class="pagination-info">共${total}条 / ${pages}页</span>
+            <div class="pagination-btns">
+                <button class="page-btn" ${currentPage<=1?'disabled':''} onclick="goPage(${currentPage-1})">上一页</button>
+                ${btns}
+                <button class="page-btn" ${currentPage>=pages?'disabled':''} onclick="goPage(${currentPage+1})">下一页</button>
+            </div>`;
+    }
+    
+    function goPage(p) { currentPage = p; loadFeedback(); }
+    
+    async function showDetail(fbId) {
+        // 获取列表中该条数据
+        const rows = document.querySelectorAll('#feedbackTable tr');
+        let fbData = null;
+        // 从列表获取基本信息
+        try {
+            const type = document.getElementById('filterType').value;
+            const status = document.getElementById('filterStatus').value;
+            const keyword = document.getElementById('filterKeyword').value;
+            let url = `${API}/api/admin/feedback?page=1&page_size=100`;
+            if (type) url += `&feedback_type=${type}`;
+            if (status) url += `&status=${status}`;
+            if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
+            const res = await fetch(url, { headers: { 'Token': getToken() } });
+            const json = await res.json();
+            if (json.success) {
+                fbData = (json.data.items || []).find(f => f.id === fbId);
+            }
+        } catch (e) {}
+        
+        if (!fbData) { alert('获取详情失败'); return; }
+        
+        const typeLabels = { suggestion: '建议', bug: '问题', complaint: '投诉', praise: '表扬' };
+        const statusLabels = { pending: '待处理', replied: '已回复', closed: '已关闭' };
+        
+        document.getElementById('modalTitle').textContent = '反馈详情';
+        document.getElementById('modalBody').innerHTML = `
+            <div class="detail-row"><div class="detail-label">反馈类型</div><div class="detail-value"><span class="tag tag-${fbData.feedback_type}">${typeLabels[fbData.feedback_type]}</span></div></div>
+            <div class="detail-row"><div class="detail-label">标题</div><div class="detail-value">${escapeHtml(fbData.title)}</div></div>
+            <div class="detail-row"><div class="detail-label">详细内容</div><div class="detail-content">${escapeHtml(fbData.content || '')}</div></div>
+            <div class="detail-row"><div class="detail-label">用户</div><div class="detail-value">${escapeHtml(fbData.user_name || '-')} ${fbData.contact ? ' | ' + escapeHtml(fbData.contact) : ''}</div></div>
+            <div class="detail-row"><div class="detail-label">状态</div><div class="detail-value"><span class="status status-${fbData.status}">${statusLabels[fbData.status]}</span></div></div>
+            ${fbData.reply ? `
+            <div class="detail-row">
+                <div class="detail-label">回复内容 (${escapeHtml(fbData.replied_by || '管理员')} · ${fbData.replied_at || ''})</div>
+                <div class="detail-content" style="background:#f6ffed;border-left:3px solid #52c41a">${escapeHtml(fbData.reply)}</div>
+            </div>` : ''}
+            <div class="detail-row"><div class="detail-label">提交时间</div><div class="detail-value">${fbData.created_at || '-'}</div></div>
+        `;
+        document.getElementById('modalFooter').innerHTML = `<button class="btn btn-lg btn-reset" onclick="closeModal()">关闭</button>`;
+        document.getElementById('detailModal').classList.add('show');
+    }
+    
+    function showReply(fbId) {
+        document.getElementById('modalTitle').textContent = '回复反馈';
+        document.getElementById('modalBody').innerHTML = `
+            <textarea class="reply-input" id="replyText" placeholder="请输入回复内容..."></textarea>
+        `;
+        document.getElementById('modalFooter').innerHTML = `
+            <button class="btn btn-lg btn-reset" onclick="closeModal()">取消</button>
+            <button class="btn btn-lg btn-primary" onclick="submitReply(${fbId})">提交回复</button>
+        `;
+        document.getElementById('detailModal').classList.add('show');
+        setTimeout(() => document.getElementById('replyText').focus(), 100);
+    }
+    
+    async function submitReply(fbId) {
+        const reply = document.getElementById('replyText').value.trim();
+        if (!reply) { alert('请输入回复内容'); return; }
+        
+        try {
+            const res = await fetch(`${API}/api/admin/feedback/${fbId}/reply`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Token': getToken() },
+                body: JSON.stringify({ reply: reply, status: 'replied' })
+            });
+            const json = await res.json();
+            if (json.success) {
+                closeModal();
+                loadFeedback();
+            } else {
+                alert(json.msg || '回复失败');
+            }
+        } catch (e) {
+            alert('网络错误');
+        }
+    }
+    
+    function closeModal() {
+        document.getElementById('detailModal').classList.remove('show');
+    }
+    
+    loadFeedback();
+    </script>
+</body>
+</html>

@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>走访台账</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif; 
+            background: #F8F9FA; 
+            min-height: 100vh;
+            padding: 0 20px;
+        }
+        
+        /* 页面标题 */
+        .page-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1D2129;
+            padding: 16px 0;
+        }
+        
+        /* 搜索框 */
+        .search-bar {
+            background: #FFFFFF;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        }
+        .search-input {
+            width: 100%;
+            height: 40px;
+            padding: 0 12px;
+            border: 1px solid #E5E6EB;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #1D2129;
+            background: #F8F9FA;
+            outline: none;
+        }
+        .search-input:focus {
+            border-color: #30c2b3;
+        }
+        .search-input::placeholder {
+            color: #86909C;
+        }
+        
+        /* 筛选栏 */
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+        .filter-item {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            white-space: nowrap;
+            background: #FFFFFF;
+            color: #4E5969;
+            border: 1px solid #E5E6EB;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .filter-item.active {
+            background: #30c2b3;
+            color: #FFFFFF;
+            border-color: #30c2b3;
+        }
+        
+        /* 列表卡片 */
+        .list-card {
+            background: #FFFFFF;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        }
+        .list-card:active {
+            background: #fafafa;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .company-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1D2129;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .category-tag {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #FFFFFF;
+            margin-left: 12px;
+            flex-shrink: 0;
+        }
+        .tag-租赁 { background: #30c2b3; }
+        .tag-服务 { background: #00B42A; }
+        .tag-物业 { background: #FF7D00; }
+        .tag-其他 { background: #86909C; }
+        
+        .card-info {
+            font-size: 14px;
+            color: #4E5969;
+            line-height: 1.8;
+        }
+        .card-info span {
+            margin-right: 16px;
+        }
+        .card-time {
+            font-size: 12px;
+            color: #86909C;
+            margin-top: 8px;
+        }
+        
+        /* 空状态 */
+        .empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: #86909C;
+        }
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        .empty-text {
+            font-size: 14px;
+        }
+        
+        /* 加载更多 */
+        .load-more {
+            text-align: center;
+            padding: 20px;
+            color: #86909C;
+            font-size: 14px;
+        }
+        
+        /* 浮动按钮 */
+        .fab {
+            position: fixed;
+            bottom: 30px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            background: #30c2b3;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 28px;
+            box-shadow: 0 4px 16px rgba(48,194,179,0.4);
+            cursor: pointer;
+            z-index: 100;
+        }
+        .fab:active {
+            background: #26A096;
+        }
+        
+        /* 弹窗 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+        }
+        .modal.show {
+            display: block;
+        }
+        .modal-content {
+            background: #FFFFFF;
+            border-radius: 16px 16px 0 0;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #E5E6EB;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 {
+            font-size: 17px;
+            font-weight: 600;
+            color: #1D2129;
+        }
+        .modal-close {
+            font-size: 24px;
+            color: #86909C;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-body {
+            padding: 20px;
+        }
+        
+        /* 表单 */
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-label {
+            display: block;
+            font-size: 16px;
+            color: #1D2129;
+            margin-bottom: 8px;
+        }
+        .form-label span {
+            color: #F53F3F;
+        }
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            height: 48px;
+            padding: 12px 0;
+            border: none;
+            border-bottom: 1px solid #E5E6EB;
+            font-size: 16px;
+            color: #1D2129;
+            background: transparent;
+            outline: none;
+        }
+        .form-input:focus, .form-select:focus {
+            border-bottom-color: #30c2b3;
+        }
+        .form-textarea {
+            min-height: 80px;
+            max-height: 160px;
+            padding: 12px;
+            border: none;
+            border-radius: 4px;
+            background: #FFFFFF;
+            resize: vertical;
+        }
+        .form-textarea:focus {
+            box-shadow: 0 0 0 1px #30c2b3;
+        }
+        .form-select {
+            background: transparent;
+            cursor: pointer;
+        }
+        
+        /* 客户搜索下拉 */
+        .customer-list {
+            display: none;
+            position: absolute;
+            z-index: 1000;
+            max-height: 200px;
+            overflow-y: auto;
+            background: #FFFFFF;
+            border: 1px solid #E5E6EB;
+            border-radius: 8px;
+            width: calc(100% - 40px);
+            margin-top: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .customer-item {
+            padding: 12px;
+            border-bottom: 1px solid #E5E6EB;
+            cursor: pointer;
+        }
+        .customer-item:last-child {
+            border-bottom: none;
+        }
+        .customer-item:active {
+            background: #F8F9FA;
+        }
+        .customer-name {
+            font-weight: 600;
+            color: #1D2129;
+        }
+        .customer-info {
+            font-size: 12px;
+            color: #86909C;
+            margin-top: 4px;
+        }
+        
+        /* 详情内容 */
+        .detail-content {
+            padding: 20px;
+        }
+        .detail-row {
+            display: flex;
+            padding: 12px 0;
+            border-bottom: 1px solid #E5E6EB;
+        }
+        .detail-label {
+            width: 80px;
+            color: #86909C;
+            font-size: 14px;
+        }
+        .detail-value {
+            flex: 1;
+            color: #1D2129;
+            font-size: 14px;
+        }
+        
+        /* 操作按钮 */
+        .action-btns {
+            display: flex;
+            gap: 12px;
+            padding: 16px 20px;
+            border-top: 1px solid #E5E6EB;
+        }
+        .action-btn {
+            flex: 1;
+            height: 44px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 15px;
+            line-height: 44px;
+            cursor: pointer;
+        }
+        .action-edit {
+            background: #30c2b3;
+            color: #FFFFFF;
+        }
+        .action-delete {
+            background: transparent;
+            border: 1px solid #F53F3F;
+            color: #F53F3F;
+        }
+        
+        /* 主按钮 */
+        .btn-primary {
+            width: 100%;
+            height: 48px;
+            border-radius: 8px;
+            border: none;
+            background: #30c2b3;
+            color: #FFFFFF;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 16px;
+        }
+        .btn-primary:active {
+            background: #26A096;
+        }
+        .btn-primary:disabled {
+            background: #C9CDD4;
+        }
+        
+        /* Toast提示 */
+        .toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.7);
+            color: #FFFFFF;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .toast.show {
+            opacity: 1;
+        }
+        .toast.success {
+            background: #00B42A;
+        }
+        .toast.error {
+            background: #F53F3F;
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #86909C;
+        }
+    </style>
+</head>
+<body>
+    <!-- 页面标题 -->
+    <div class="page-title">走访台账</div>
+    
+    <!-- 搜索框 -->
+    <div class="search-bar">
+        <input type="text" class="search-input" id="searchInput" placeholder="搜索走访人/事项/区域">
+    </div>
+    
+    <!-- 筛选栏 -->
+    <div class="filter-bar" id="filterBar">
+        <div class="filter-item active" data-category="">全部</div>
+        <div class="filter-item" data-category="租赁">租赁</div>
+        <div class="filter-item" data-category="服务">服务</div>
+        <div class="filter-item" data-category="物业">物业</div>
+        <div class="filter-item" data-category="其他">其他</div>
+    </div>
+    
+    <!-- 列表 -->
+    <div id="list">
+        <div class="loading">加载中...</div>
+    </div>
+    
+    <!-- 空状态 -->
+    <div class="empty" id="empty" style="display:none;">
+        <div class="empty-icon">📋</div>
+        <div class="empty-text">暂无走访记录</div>
+    </div>
+    
+    <!-- 加载更多 -->
+    <div class="load-more" id="loadMore" style="display:none;">加载更多</div>
+    
+    <!-- 新增按钮 -->
+    <div class="fab" onclick="showAddModal()">+</div>
+    
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+    
+    <!-- 新增/编辑弹窗 -->
+    <div class="modal" id="formModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">新增走访记录</h3>
+                <span class="modal-close" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="visitForm">
+                    <input type="hidden" id="visitId">
+                    <input type="hidden" id="customerID">
+                    <div class="form-group" style="position:relative;">
+                        <label class="form-label"><span>*</span>走访企业</label>
+                        <input type="text" class="form-input" id="companySearch" placeholder="输入客户名称搜索" autocomplete="off">
+                        <div class="customer-list" id="customerList"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><span>*</span>区域地址</label>
+                        <input type="text" class="form-input" id="region" placeholder="请输入区域地址" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><span>*</span>走访人</label>
+                        <input type="text" class="form-input" id="visitor" placeholder="请输入走访人账号" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><span>*</span>走访人姓名</label>
+                        <input type="text" class="form-input" id="visitorName" placeholder="请输入走访人姓名" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><span>*</span>沟通事项分类</label>
+                        <select class="form-select" id="category" required>
+                            <option value="">请选择分类</option>
+                            <option value="租赁">租赁</option>
+                            <option value="服务">服务</option>
+                            <option value="物业">物业</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><span>*</span>沟通事项</label>
+                        <textarea class="form-textarea" id="content" placeholder="请输入沟通事项内容" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><span>*</span>走访时间</label>
+                        <input type="datetime-local" class="form-input" id="visitTime" required>
+                    </div>
+                    <button type="submit" class="btn-primary">保存</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 详情弹窗 -->
+    <div class="modal" id="detailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>走访详情</h3>
+                <span class="modal-close" onclick="closeDetailModal()">&times;</span>
+            </div>
+            <div class="detail-content" id="detailContent"></div>
+            <div class="action-btns">
+                <div class="action-btn action-edit" onclick="editCurrent()">编辑</div>
+                <div class="action-btn action-delete" onclick="deleteCurrent()">删除</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://47.98.238.209:22313';
+        const USER_API = 'http://47.98.238.209:22307';
+        const TOKEN = 'visit_token_2024';
+        let currentUser = null;
+        let accessToken = '';
+        let isDev = '0';
+        
+        let currentPage = 1;
+        let pageSize = 10;
+        let currentCategory = '';
+        let currentDetail = null;
+        let customerSearchTimer = null;
+        
+        // Toast提示
+        function showToast(msg, type = '') {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = 'toast show ' + type;
+            setTimeout(() => {
+                toast.className = 'toast';
+            }, 2000);
+        }
+        
+        // 搜索客户
+        async function searchCustomers(keyword) {
+            const customerList = document.getElementById('customerList');
+            if (!keyword || keyword.length < 1) {
+                customerList.style.display = 'none';
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${USER_API}/rentCus/list?access_token=${encodeURIComponent(accessToken)}&isdev=${encodeURIComponent(isDev)}&current=1&rowCount=10&searchPhrase=${encodeURIComponent(keyword)}`);
+                const data = await res.json();
+                
+                if (data.success && data.data && data.data.rows) {
+                    const rows = data.data.rows;
+                    if (rows.length === 0) {
+                        customerList.innerHTML = '<div class="customer-item"><div class="customer-info">未找到客户</div></div>';
+                        customerList.style.display = 'block';
+                        return;
+                    }
+                    
+                    customerList.innerHTML = rows.map(c => `
+                        <div class="customer-item" onclick="selectCustomer('${c.id}', '${c.name}', '${c.phone || ''}', '${c.type}', '${c.performEvaluation || ''}')">
+                            <div class="customer-name">${c.name}</div>
+                            <div class="customer-info">
+                                手机：${c.phone || '-'} 
+                                <span style="color:${c.performEvaluationStatus === 3 ? '#F53F3F' : c.performEvaluationStatus === 2 ? '#FF7D00' : '#00B42A'};">
+                                    ${c.performEvaluation || '信用正常'}
+                                </span>
+                            </div>
+                        </div>
+                    `).join('');
+                    customerList.style.display = 'block';
+                } else {
+                    customerList.innerHTML = '<div class="customer-item"><div class="customer-info">搜索失败</div></div>';
+                    customerList.style.display = 'block';
+                }
+            } catch(e) {
+                console.error('搜索客户失败:', e);
+                customerList.style.display = 'none';
+            }
+        }
+        
+        // 选择客户
+        function selectCustomer(id, name, phone, type, eval) {
+            document.getElementById('customerID').value = id;
+            document.getElementById('companySearch').value = name;
+            document.getElementById('customerList').style.display = 'none';
+        }
+        
+        // 获取URL参数
+        function getUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            accessToken = params.get('access_token') || TOKEN;
+            isDev = params.get('isdev') || '0';
+        }
+        
+        // 获取用户信息
+        async function checkUserInfo() {
+            getUrlParams();
+            
+            try {
+                const res = await fetch(`${USER_API}/getUserInfo?access_token=${encodeURIComponent(accessToken)}&isdev=${encodeURIComponent(isDev)}`);
+                const data = await res.json();
+                
+                if (data.success === true) {
+                    currentUser = data.data;
+                    console.log('用户:', currentUser.userName || currentUser.empName);
+                }
+            } catch(e) {
+                console.error('获取用户信息失败:', e);
+            }
+        }
+        
+        // 加载列表
+        async function loadList(reset = false) {
+            if (reset) {
+                currentPage = 1;
+                document.getElementById('list').innerHTML = '<div class="loading">加载中...</div>';
+                document.getElementById('list').style.display = 'block';
+                document.getElementById('empty').style.display = 'none';
+                document.getElementById('loadMore').style.display = 'none';
+            }
+            
+            const searchKeyword = document.getElementById('searchInput').value.trim();
+            
+            try {
+                const params = new URLSearchParams({
+                    current: currentPage,
+                    rowCount: pageSize,
+                    access_token: accessToken,
+                    isdev: isDev
+                });
+                if (currentCategory) params.append('category', currentCategory);
+                if (searchKeyword) params.append('search', searchKeyword);
+                
+                const res = await fetch(`${API_BASE}/api/visits?${params}`);
+                const data = await res.json();
+                
+                if (data.success) {
+                    // 后端字段映射: staff_name -> visitor_name, visit_date -> visit_time
+                    const list = (data.data.rows || []).map(item => ({
+                        ...item,
+                        visitor_name: item.staff_name,
+                        visitor: item.staff_id,
+                        visit_time: item.visit_date
+                    }));
+                    renderList(list, reset);
+                    
+                    if (data.data.total <= currentPage * pageSize) {
+                        document.getElementById('loadMore').style.display = 'none';
+                    } else {
+                        document.getElementById('loadMore').style.display = 'block';
+                    }
+                } else {
+                    showToast(data.msg || '加载失败', 'error');
+                }
+            } catch(e) {
+                console.error('加载失败:', e);
+                document.getElementById('list').innerHTML = '<div class="empty"><div class="empty-text">加载失败，请刷新重试</div></div>';
+            }
+        }
+        
+        function renderList(list, reset) {
+            document.getElementById('list').style.display = 'block';
+            document.getElementById('empty').style.display = 'none';
+
+            if (list.length === 0) {
+                document.getElementById('list').style.display = 'none';
+                document.getElementById('empty').style.display = 'block';
+                document.getElementById('loadMore').style.display = 'none';
+                return;
+            }
+            
+            const html = list.map(item => `
+                <div class="list-card" data-id="${item.id}" data-item='${JSON.stringify(item).replace(/'/g, "&#39;")}'>
+                    <div class="card-header">
+                        <div class="company-name">${item.company_name}</div>
+                        <div class="category-tag tag-${item.category || '其他'}">${item.category || '其他'}</div>
+                    </div>
+                    <div class="card-info">
+                        <span>📍 ${item.region || '-'}</span>
+                        <span>👤 ${item.visitor_name || '-'}</span>
+                    </div>
+                    <div class="card-time">${item.visit_time || '-'}</div>
+                </div>
+            `).join('');
+            
+            if (reset) {
+                document.getElementById('list').innerHTML = html;
+            } else {
+                document.getElementById('list').innerHTML += html;
+            }
+        }
+        
+        // 筛选
+        document.getElementById('filterBar').addEventListener('click', function(e) {
+            if (e.target.classList.contains('filter-item')) {
+                document.querySelectorAll('.filter-item').forEach(el => el.classList.remove('active'));
+                e.target.classList.add('active');
+                currentCategory = e.target.dataset.category;
+                loadList(true);
+            }
+        });
+        
+        // 加载更多
+        document.getElementById('loadMore').addEventListener('click', function() {
+            currentPage++;
+            loadList();
+        });
+
+        // 列表点击事件
+        document.getElementById('list').addEventListener('click', function(e) {
+            const listCard = e.target.closest('.list-card');
+            if (listCard) {
+                const id = listCard.getAttribute('data-id');
+                if (id) {
+                    showDetail(id);
+                }
+            }
+        });
+        
+        // 显示详情
+        async function showDetail(id) {
+            // 从列表数据中获取详情
+            const card = document.querySelector(`.list-card[data-id="${id}"]`);
+            if (card) {
+                try {
+                    const item = JSON.parse(card.dataset.item.replace(/&quot;/g, '"').replace(/&#39;/g, "'"));
+                    currentDetail = item;
+                    document.getElementById('detailContent').innerHTML = `
+                        <div class="detail-row"><div class="detail-label">企业名称</div><div class="detail-value">${item.company_name}</div></div>
+                        <div class="detail-row"><div class="detail-label">区域地址</div><div class="detail-value">${item.region || '-'}</div></div>
+                        <div class="detail-row"><div class="detail-label">走访人</div><div class="detail-value">${item.visitor_name || '-'}</div></div>
+                        <div class="detail-row"><div class="detail-label">分类</div><div class="detail-value">${item.category || '-'}</div></div>
+                        <div class="detail-row"><div class="detail-label">沟通事项</div><div class="detail-value">${item.content || '-'}</div></div>
+                        <div class="detail-row"><div class="detail-label">走访时间</div><div class="detail-value">${item.visit_time || '-'}</div></div>
+                    `;
+                    document.getElementById('detailModal').classList.add('show');
+                } catch(e) {
+                    showToast('加载详情失败', 'error');
+                }
+            }
+        }
+        
+        function closeDetailModal() {
+            document.getElementById('detailModal').classList.remove('show');
+        }
+        
+        // 编辑
+        function editCurrent() {
+            if (!currentDetail) return;
+            closeDetailModal();
+            showEditModal(currentDetail);
+        }
+        
+        // 删除
+        async function deleteCurrent() {
+            if (!currentDetail) return;
+            if (!confirm('确定删除这条记录吗？')) return;
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/visits/${currentDetail.id}?access_token=${encodeURIComponent(accessToken)}&isdev=${encodeURIComponent(isDev)}`, {
+                    method: 'DELETE',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('删除成功', 'success');
+                    closeDetailModal();
+                    loadList(true);
+                } else {
+                    showToast(data.msg || '删除失败', 'error');
+                }
+            } catch(e) {
+                showToast('删除失败', 'error');
+            }
+        }
+        
+        // 新增弹窗
+        function showAddModal() {
+            document.getElementById('modalTitle').innerText = '新增走访记录';
+            document.getElementById('visitId').value = '';
+            document.getElementById('customerID').value = '';
+            document.getElementById('companySearch').value = '';
+            document.getElementById('visitForm').reset();
+            document.getElementById('formModal').classList.add('show');
+        }
+        
+        // 编辑弹窗
+        function showEditModal(item) {
+            document.getElementById('modalTitle').innerText = '编辑走访记录';
+            document.getElementById('visitId').value = item.id;
+            document.getElementById('customerID').value = item.customerID || '';
+            document.getElementById('companySearch').value = item.company_name;
+            document.getElementById('region').value = item.region;
+            document.getElementById('visitor').value = item.visitor;
+            document.getElementById('visitorName').value = item.visitor_name;
+            document.getElementById('category').value = item.category;
+            document.getElementById('content').value = item.content;
+            document.getElementById('visitTime').value = item.visit_time ? item.visit_time.substring(0, 16) : '';
+            document.getElementById('formModal').classList.add('show');
+        }
+        
+        function closeModal() {
+            document.getElementById('formModal').classList.remove('show');
+        }
+        
+        // 提交表单
+        document.getElementById('visitForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('visitId').value;
+            const companyName = document.getElementById('companySearch').value;
+            
+            if (!companyName) {
+                showToast('请选择走访企业', 'error');
+                return;
+            }
+            
+            const visitTimeVal = document.getElementById('visitTime').value;
+            const visitDate = visitTimeVal ? visitTimeVal.substring(0, 10) : '';
+            
+            // 后端字段映射
+            const data = {
+                companyName: companyName,
+                region: document.getElementById('region').value,
+                staffId: document.getElementById('visitor').value,
+                staffName: document.getElementById('visitorName').value,
+                category: document.getElementById('category').value,
+                content: document.getElementById('content').value,
+                visitDate: visitDate
+            };
+            
+            const url = id 
+                ? `${API_BASE}/api/visits/${id}?access_token=${encodeURIComponent(accessToken)}&isdev=${encodeURIComponent(isDev)}` 
+                : `${API_BASE}/api/visits?access_token=${encodeURIComponent(accessToken)}&isdev=${encodeURIComponent(isDev)}`;
+            const method = id ? 'PUT' : 'POST';
+            
+            showToast('保存中...', '');
+            
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000);
+                
+                const res = await fetch(url, {
+                    method: method,
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                
+                const result = await res.json();
+                
+                if (result.success) {
+                    showToast('保存成功', 'success');
+                    closeModal();
+                    loadList(true);
+                } else {
+                    showToast(result.msg || '保存失败', 'error');
+                }
+            } catch(e) {
+                console.error('保存失败:', e);
+                if (e.name === 'AbortError') {
+                    showToast('操作超时，请重试', 'error');
+                } else {
+                    showToast('保存失败: ' + e.message, 'error');
+                }
+            }
+        });
+        
+        // 初始化
+        checkUserInfo();
+        loadList();
+        
+        // 搜索框输入事件（防抖）
+        let searchTimer = null;
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => {
+                loadList(true);
+            }, 500);
+        });
+        
+        // 客户搜索事件
+        document.getElementById('companySearch').addEventListener('input', function(e) {
+            clearTimeout(customerSearchTimer);
+            customerSearchTimer = setTimeout(() => {
+                searchCustomers(e.target.value);
+            }, 300);
+        });
+        
+        // 点击外部关闭客户列表
+        document.addEventListener('click', function(e) {
+            const customerList = document.getElementById('customerList');
+            const companySearch = document.getElementById('companySearch');
+            if (!customerList.contains(e.target) && e.target !== companySearch) {
+                customerList.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

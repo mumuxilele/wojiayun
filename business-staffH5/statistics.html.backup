@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据统计 - 员工端</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; min-height: 100vh; }
+        .header { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; padding: 15px; display: flex; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .header h1 { font-size: 18px; flex: 1; }
+        .back { color: white; text-decoration: none; font-size: 14px; }
+        .time-tabs { display: flex; gap: 8px; padding: 12px 15px; background: white; margin-bottom: 10px; flex-wrap: wrap; }
+        .time-tab { padding: 6px 14px; border-radius: 20px; border: 1px solid #ddd; background: white; font-size: 13px; cursor: pointer; color: #666; }
+        .time-tab.active { background: #11998e; color: white; border-color: #11998e; }
+        .custom-date { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+        .custom-date input { padding: 6px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; }
+        .custom-date button { padding: 6px 12px; background: #11998e; color: white; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; }
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 0 15px 10px; }
+        .stat-card { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .stat-card.highlight { grid-column: span 2; }
+        .stat-value { font-size: 26px; font-weight: 600; color: #11998e; }
+        .stat-value.red { color: #f5222d; }
+        .stat-value.orange { color: #fa8c16; }
+        .stat-value.blue { color: #1890ff; }
+        .stat-label { font-size: 12px; color: #999; margin-top: 4px; }
+        .stat-change { font-size: 11px; margin-top: 2px; }
+        .stat-change.up { color: #f5222d; }
+        .stat-change.down { color: #52c41a; }
+        .section { background: white; margin: 0 15px 10px; border-radius: 12px; padding: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .section-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .chart-container { width: 100%; height: 220px; }
+        .chart-container.small { height: 180px; }
+        .performance-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .perf-item { text-align: center; padding: 10px; background: #f8f9fa; border-radius: 8px; }
+        .perf-value { font-size: 20px; font-weight: 600; color: #333; }
+        .perf-label { font-size: 11px; color: #999; margin-top: 4px; }
+        .rank-list { list-style: none; }
+        .rank-item { display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+        .rank-item:last-child { border-bottom: none; }
+        .rank-num { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; margin-right: 10px; flex-shrink: 0; }
+        .rank-num.top1 { background: #ffd700; color: white; }
+        .rank-num.top2 { background: #c0c0c0; color: white; }
+        .rank-num.top3 { background: #cd7f32; color: white; }
+        .rank-num.normal { background: #f0f0f0; color: #999; }
+        .rank-name { flex: 1; font-size: 13px; color: #333; }
+        .rank-value { font-size: 13px; color: #11998e; font-weight: 600; }
+        .loading { text-align: center; padding: 30px; color: #999; }
+        .login-tip { text-align: center; padding: 40px; color: #999; }
+        .empty-tip { text-align: center; padding: 20px; color: #ccc; font-size: 13px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="index.html" class="back" onclick="return goBack()">&larr; 返回</a>
+        <h1>数据统计</h1>
+        <span></span>
+    </div>
+
+    <div class="time-tabs">
+        <div class="time-tab active" data-range="today" onclick="switchRange('today', this)">今日</div>
+        <div class="time-tab" data-range="week" onclick="switchRange('week', this)">本周</div>
+        <div class="time-tab" data-range="month" onclick="switchRange('month', this)">本月</div>
+        <div class="time-tab" data-range="custom" onclick="switchRange('custom', this)">自定义</div>
+    </div>
+
+    <div id="customDatePanel" class="custom-date" style="display:none; padding: 0 15px 10px;">
+        <input type="date" id="dateFrom" />
+        <span style="color:#999;">至</span>
+        <input type="date" id="dateTo" />
+        <button onclick="loadCustomRange()">查询</button>
+    </div>
+
+    <div class="stats-grid" id="statsGrid">
+        <div class="stat-card">
+            <div class="stat-value" id="statOrders">--</div>
+            <div class="stat-label">订单数</div>
+            <div class="stat-change" id="statOrdersChange"></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value red" id="statIncome">--</div>
+            <div class="stat-label">收入金额</div>
+            <div class="stat-change" id="statIncomeChange"></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value orange" id="statApps">--</div>
+            <div class="stat-label">申请单</div>
+            <div class="stat-change" id="statAppsChange"></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value blue" id="statPending">--</div>
+            <div class="stat-label">待处理申请</div>
+        </div>
+    </div>
+
+    <!-- 个人绩效 -->
+    <div class="section">
+        <div class="section-title">我的绩效</div>
+        <div class="performance-grid" id="performanceGrid">
+            <div class="perf-item">
+                <div class="perf-value" id="myProcessed">--</div>
+                <div class="perf-label">已处理申请</div>
+            </div>
+            <div class="perf-item">
+                <div class="perf-value" id="myCompleted">--</div>
+                <div class="perf-label">已完成订单</div>
+            </div>
+            <div class="perf-item">
+                <div class="perf-value" id="myCompletionRate">--</div>
+                <div class="perf-label">完成率</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 收入趋势 -->
+    <div class="section">
+        <div class="section-title">收入趋势</div>
+        <div class="chart-container" id="incomeChart"></div>
+    </div>
+
+    <!-- 订单/申请趋势 -->
+    <div class="section">
+        <div class="section-title">订单 &amp; 申请趋势</div>
+        <div class="chart-container" id="trendChart"></div>
+    </div>
+
+    <!-- 申请状态分布 -->
+    <div class="section">
+        <div class="section-title">申请状态分布</div>
+        <div class="chart-container small" id="appStatusChart"></div>
+    </div>
+
+    <!-- 订单状态分布 -->
+    <div class="section">
+        <div class="section-title">订单状态分布</div>
+        <div class="chart-container small" id="orderStatusChart"></div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(location.search);
+        let token = urlParams.get('access_token');
+        let isdev = urlParams.get('isdev') || '0';
+
+        if (token) {
+            localStorage.setItem('staff_token', token);
+            localStorage.setItem('staff_isdev', isdev);
+        } else {
+            token = localStorage.getItem('staff_token');
+            isdev = localStorage.getItem('staff_isdev') || '0';
+        }
+
+        if (!token) {
+            document.body.innerHTML = '<div class="login-tip"><h2>请先登录</h2></div>';
+            throw new Error('No token');
+        }
+
+        function goBack() {
+            location.href = 'index.html?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+            return false;
+        }
+
+        let currentRange = 'today';
+        let trendChart, incomeChart, appStatusChart, orderStatusChart;
+
+        function switchRange(range, el) {
+            currentRange = range;
+            document.querySelectorAll('.time-tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            document.getElementById('customDatePanel').style.display = range === 'custom' ? 'flex' : 'none';
+            if (range !== 'custom') loadAll();
+        }
+
+        function loadCustomRange() {
+            const from = document.getElementById('dateFrom').value;
+            const to = document.getElementById('dateTo').value;
+            if (!from || !to) { alert('请选择日期范围'); return; }
+            loadAll(from, to);
+        }
+
+        async function apiGet(url) {
+            try {
+                const res = await fetch(url + '&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev);
+                return await res.json();
+            } catch(e) {
+                console.error(e);
+                return null;
+            }
+        }
+
+        function calcChange(current, previous) {
+            if (!previous || previous === 0) return current > 0 ? '+100%' : '';
+            const change = ((current - previous) / previous * 100).toFixed(1);
+            return change > 0 ? '+' + change + '%' : change + '%';
+        }
+
+        async function loadAll(dateFrom, dateTo) {
+            let params = '';
+            if (dateFrom) params += '&date_from=' + dateFrom;
+            if (dateTo) params += '&date_to=' + dateTo;
+
+            // 加载基础统计
+            const statsData = await apiGet('/api/staff/statistics?range=' + currentRange + params);
+            if (statsData && statsData.success && statsData.data) {
+                const s = statsData.data;
+                document.getElementById('statOrders').textContent = s.total_orders || 0;
+                document.getElementById('statIncome').textContent = '\u00a5' + (s.total_income || 0).toFixed(2);
+                document.getElementById('statApps').textContent = s.total_applications || 0;
+                document.getElementById('statPending').textContent = s.pending_applications || 0;
+
+                if (s.prev_orders !== undefined) {
+                    const changeText = calcChange(s.total_orders || 0, s.prev_orders);
+                    const el = document.getElementById('statOrdersChange');
+                    el.textContent = changeText ? '较上期 ' + changeText : '';
+                    el.className = 'stat-change ' + (changeText.startsWith('+') ? 'up' : 'down');
+                }
+                if (s.prev_income !== undefined) {
+                    const changeText = calcChange(s.total_income || 0, s.prev_income);
+                    const el = document.getElementById('statIncomeChange');
+                    el.textContent = changeText ? '较上期 ' + changeText : '';
+                    el.className = 'stat-change ' + (changeText.startsWith('+') ? 'up' : 'down');
+                }
+                if (s.prev_apps !== undefined) {
+                    const changeText = calcChange(s.total_applications || 0, s.prev_apps);
+                    const el = document.getElementById('statAppsChange');
+                    el.textContent = changeText ? '较上期 ' + changeText : '';
+                    el.className = 'stat-change ' + (changeText.startsWith('+') ? 'up' : 'down');
+                }
+
+                // 申请状态分布（饼图）
+                renderAppStatusChart(s.application_stats || []);
+                // 订单状态分布（饼图）
+                renderOrderStatusChart(s.order_stats || []);
+            }
+
+            // 加载趋势数据
+            const trendData = await apiGet('/api/staff/statistics/trend?range=' + currentRange + params);
+            if (trendData && trendData.success && trendData.data) {
+                renderTrendChart(trendData.data.trend || []);
+                renderIncomeChart(trendData.data.trend || []);
+            }
+
+            // 加载个人绩效
+            const perfData = await apiGet('/api/staff/statistics/performance?range=' + currentRange + params);
+            if (perfData && perfData.success && perfData.data) {
+                const p = perfData.data;
+                document.getElementById('myProcessed').textContent = p.processed_count || 0;
+                document.getElementById('myCompleted').textContent = p.completed_orders || 0;
+                document.getElementById('myCompletionRate').textContent = (p.completion_rate || 0) + '%';
+            }
+        }
+
+        function renderIncomeChart(trend) {
+            if (!incomeChart) {
+                incomeChart = echarts.init(document.getElementById('incomeChart'));
+            }
+            const dates = trend.map(t => t.date ? t.date.substring(5) : '');
+            const values = trend.map(t => t.income || 0);
+            incomeChart.setOption({
+                tooltip: { trigger: 'axis', formatter: '{b}<br/>收入: \u00a5{c}' },
+                grid: { top: 10, right: 10, bottom: 20, left: 45 },
+                xAxis: { type: 'category', data: dates, axisLabel: { fontSize: 11 } },
+                yAxis: { type: 'value', axisLabel: { fontSize: 11, formatter: v => v >= 1000 ? (v/1000).toFixed(1)+'k' : v } },
+                series: [{
+                    data: values,
+                    type: 'line',
+                    smooth: true,
+                    areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{offset: 0, color: 'rgba(17,153,142,0.3)'}, {offset: 1, color: 'rgba(17,153,142,0.02)'}]) },
+                    lineStyle: { color: '#11998e', width: 2 },
+                    itemStyle: { color: '#11998e' }
+                }]
+            });
+        }
+
+        function renderTrendChart(trend) {
+            if (!trendChart) {
+                trendChart = echarts.init(document.getElementById('trendChart'));
+            }
+            const dates = trend.map(t => t.date ? t.date.substring(5) : '');
+            trendChart.setOption({
+                tooltip: { trigger: 'axis' },
+                legend: { data: ['订单', '申请'], bottom: 0 },
+                grid: { top: 10, right: 10, bottom: 30, left: 35 },
+                xAxis: { type: 'category', data: dates, axisLabel: { fontSize: 11 } },
+                yAxis: { type: 'value', axisLabel: { fontSize: 11 } },
+                series: [
+                    { name: '订单', type: 'bar', data: trend.map(t => t.order_cnt || 0), itemStyle: { color: '#1890ff' }, barWidth: '30%' },
+                    { name: '申请', type: 'line', data: trend.map(t => t.app_cnt || 0), smooth: true, lineStyle: { color: '#fa8c16' }, itemStyle: { color: '#fa8c16' } }
+                ]
+            });
+        }
+
+        function renderAppStatusChart(stats) {
+            if (!appStatusChart) {
+                appStatusChart = echarts.init(document.getElementById('appStatusChart'));
+            }
+            const statusMap = { pending: '待处理', processing: '处理中', completed: '已完成', rejected: '已拒绝', cancelled: '已取消' };
+            const colorMap = { pending: '#faad14', processing: '#1890ff', completed: '#52c41a', rejected: '#f5222d', cancelled: '#999' };
+            appStatusChart.setOption({
+                tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+                series: [{
+                    type: 'pie', radius: ['40%', '65%'], center: ['50%', '50%'],
+                    data: stats.map(s => ({
+                        name: statusMap[s.status] || s.status,
+                        value: s.cnt,
+                        itemStyle: { color: colorMap[s.status] || '#ccc' }
+                    })),
+                    label: { fontSize: 11, formatter: '{b}\n{d}%' },
+                    emphasis: { itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.2)' } }
+                }]
+            });
+        }
+
+        function renderOrderStatusChart(stats) {
+            if (!orderStatusChart) {
+                orderStatusChart = echarts.init(document.getElementById('orderStatusChart'));
+            }
+            const statusMap = { pending: '待支付', paid: '已支付', processing: '处理中', shipped: '已发货', completed: '已完成', cancelled: '已取消', refunding: '退款中', refunded: '已退款' };
+            const colorMap = { pending: '#faad14', paid: '#1890ff', processing: '#722ed1', shipped: '#13c2c2', completed: '#52c41a', cancelled: '#999', refunding: '#fa8c16', refunded: '#f5222d' };
+            orderStatusChart.setOption({
+                tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+                series: [{
+                    type: 'pie', radius: ['40%', '65%'], center: ['50%', '50%'],
+                    data: stats.map(s => ({
+                        name: statusMap[s.status] || s.status,
+                        value: s.cnt,
+                        itemStyle: { color: colorMap[s.status] || '#ccc' }
+                    })),
+                    label: { fontSize: 11, formatter: '{b}\n{d}%' },
+                    emphasis: { itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.2)' } }
+                }]
+            });
+        }
+
+        // 初始化加载
+        loadAll();
+
+        // 窗口大小变化时重绘图表
+        window.addEventListener('resize', () => {
+            if (incomeChart) incomeChart.resize();
+            if (trendChart) trendChart.resize();
+            if (appStatusChart) appStatusChart.resize();
+            if (orderStatusChart) orderStatusChart.resize();
+        });
+    </script>
+</body>
+</html>

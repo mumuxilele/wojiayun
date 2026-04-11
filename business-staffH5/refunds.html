@@ -4,184 +4,72 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>退款管理 - 员工端</title>
+    <link rel="stylesheet" href="../business-common/list-style.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; min-height: 100vh; }
-        
-        .header { background: linear-gradient(135deg, #ff4d4f, #ff7875); color: white; padding: 15px; position: sticky; top: 0; z-index: 100; }
-        .header-top { display: flex; justify-content: space-between; align-items: center; }
-        .back-btn { color: white; font-size: 20px; text-decoration: none; padding: 5px 10px; }
-        .header h1 { font-size: 18px; }
-        .header-stats { display: flex; gap: 10px; margin-top: 12px; font-size: 12px; overflow-x: auto; }
-        .header-stat { background: rgba(255,255,255,0.2); padding: 8px 12px; border-radius: 8px; white-space: nowrap; }
-        .header-stat strong { font-size: 16px; display: block; margin-bottom: 2px; }
-        
-        .filter-bar { background: white; padding: 10px 15px; display: flex; gap: 8px; overflow-x: auto; border-bottom: 1px solid #eee; }
-        .filter-tag { padding: 6px 14px; border-radius: 15px; font-size: 13px; white-space: nowrap; background: #f0f0f0; color: #666; cursor: pointer; border: none; }
-        .filter-tag.active { background: #ff4d4f; color: white; }
-        
-        .refund-list { background: white; }
-        .refund-item { padding: 15px; border-bottom: 1px solid #f5f5f5; }
-        .refund-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
-        .refund-order-no { font-size: 13px; color: #999; }
-        .refund-amount { font-size: 16px; color: #ff4d4f; font-weight: 600; }
-        .refund-title { font-size: 14px; color: #333; margin-bottom: 8px; }
-        .refund-reason { font-size: 12px; color: #666; background: #f5f5f5; padding: 8px 10px; border-radius: 6px; margin-bottom: 10px; }
-        .refund-meta { display: flex; justify-content: space-between; font-size: 12px; color: #999; margin-bottom: 12px; }
-        .refund-actions { display: flex; gap: 10px; }
-        .action-btn { flex: 1; padding: 10px; border-radius: 6px; font-size: 14px; font-weight: 500; border: none; cursor: pointer; }
-        .btn-approve { background: #52c41a; color: white; }
-        .btn-reject { background: #f5f5f5; color: #666; }
-        .btn-view { background: #f0f5ff; color: #1890ff; }
-        
-        .status-badge { padding: 3px 8px; border-radius: 4px; font-size: 11px; }
-        .status-pending { background: #fff7e6; color: #fa8c16; }
-        .status-approved { background: #f6ffed; color: #52c41a; }
-        .status-rejected { background: #fff1f0; color: #ff4d4f; }
-        
-        .pagination { display: flex; justify-content: center; align-items: center; gap: 15px; padding: 15px; background: white; }
-        .page-btn { padding: 8px 16px; background: #f0f0f0; border-radius: 5px; font-size: 13px; border: none; cursor: pointer; }
-        .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .page-btn.primary { background: #ff4d4f; color: white; }
-        .page-info { font-size: 13px; color: #666; }
-        
+        /* 页面特有样式 */
+        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
+        .actions .link:hover { text-decoration: underline; }
+        .actions .link.danger { color: var(--el-color-danger); }
+        /* 弹窗样式保留 */
         /* 拒绝原因弹窗 */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; display: none; justify-content: center; align-items: center; padding: 20px; }
-        .modal-overlay.show { display: flex; }
-        .modal-card { background: white; border-radius: 16px; width: 100%; max-width: 350px; overflow: hidden; }
-        .modal-header { padding: 15px; text-align: center; font-size: 16px; font-weight: 600; border-bottom: 1px solid #f5f5f5; }
-        .modal-body { padding: 20px; }
-        .modal-textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; resize: none; height: 100px; outline: none; }
-        .modal-textarea:focus { border-color: #ff4d4f; }
-        .modal-actions { display: flex; gap: 10px; padding: 15px; border-top: 1px solid #f5f5f5; }
-        .modal-actions button { flex: 1; padding: 12px; border-radius: 8px; font-size: 15px; border: none; cursor: pointer; }
-        .modal-cancel { background: #f5f5f5; color: #666; }
-        .modal-confirm { background: #ff4d4f; color: white; }
-        
-        /* 详情弹窗 */
-        .detail-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 300; display: none; justify-content: center; align-items: center; padding: 20px; }
-        .detail-modal.show { display: flex; }
-        .detail-card { background: white; border-radius: 16px; width: 100%; max-width: 400px; max-height: 85vh; overflow-y: auto; }
-        .detail-header { padding: 20px; text-align: center; border-bottom: 1px solid #f5f5f5; }
-        .detail-close { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; background: #f5f5f5; border-radius: 50%; }
-        .detail-amount { font-size: 28px; color: #ff4d4f; font-weight: 700; }
-        .detail-status { margin-top: 5px; }
-        .detail-body { padding: 15px; }
-        .detail-section { margin-bottom: 15px; }
-        .detail-label { font-size: 12px; color: #999; margin-bottom: 5px; }
-        .detail-value { font-size: 14px; color: #333; }
-        .detail-products { background: #fafafa; padding: 10px; border-radius: 8px; }
-        .product-item { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
-        .product-item:last-child { border-bottom: none; }
-        .product-img { width: 50px; height: 50px; background: #f0f0f0; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
-        .product-info { flex: 1; }
-        .product-name { font-size: 13px; color: #333; margin-bottom: 3px; }
-        .product-spec { font-size: 11px; color: #999; }
-        .product-price { font-size: 13px; color: #ff4d4f; font-weight: 500; }
-        
-        .empty { text-align: center; padding: 50px 20px; color: #bbb; }
-        .empty-icon { font-size: 50px; margin-bottom: 10px; }
-        .loading { text-align: center; padding: 30px; color: #999; }
-        
-        .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.75); color: white; padding: 10px 20px; border-radius: 25px; font-size: 14px; z-index: 999; }
-        
-        /* 确认弹窗 */
-        .confirm-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 300; display: none; justify-content: center; align-items: center; padding: 20px; }
-        .confirm-modal.show { display: flex; }
-        .confirm-card { background: white; border-radius: 16px; width: 100%; max-width: 320px; padding: 25px; text-align: center; }
-        .confirm-icon { font-size: 50px; margin-bottom: 15px; }
-        .confirm-title { font-size: 17px; font-weight: 600; margin-bottom: 10px; }
-        .confirm-desc { font-size: 14px; color: #666; margin-bottom: 20px; }
-        .confirm-actions { display: flex; gap: 10px; }
-        .confirm-actions button { flex: 1; padding: 12px; border-radius: 8px; font-size: 15px; border: none; cursor: pointer; }
-        .confirm-cancel { background: #f5f5f5; color: #666; }
-        .confirm-ok { background: #52c41a; color: white; }
     </style>
 </head>
-<body>
-    <div class="header">
-        <div class="header-top">
-            <a href="index.html" class="back-btn">←</a>
-            <h1>退款管理</h1>
-            <div style="width:40px"></div>
-        </div>
-        <div class="header-stats">
-            <div class="header-stat"><strong id="statPending">0</strong>待处理</div>
-            <div class="header-stat"><strong id="statApproved">0</strong>已批准</div>
-            <div class="header-stat"><strong id="statRejected">0</strong>已拒绝</div>
-            <div class="header-stat"><strong id="statTotal">¥0</strong>退款总额</div>
-        </div>
-    </div>
-
-    <div class="filter-bar">
-        <button class="filter-tag active" data-status="">全部</button>
-        <button class="filter-tag" data-status="pending">待处理</button>
-        <button class="filter-tag" data-status="approved">已批准</button>
-        <button class="filter-tag" data-status="rejected">已拒绝</button>
-    </div>
-
-    <div class="refund-list" id="refundList">
-        <div class="loading">加载中...</div>
-    </div>
-
-    <div class="pagination" id="pagination" style="display:none">
-        <button class="page-btn" id="prevBtn" onclick="prevPage()">上一页</button>
-        <span class="page-info" id="pageInfo">1/1</span>
-        <button class="page-btn" id="nextBtn" onclick="nextPage()">下一页</button>
-    </div>
-
-    <!-- 拒绝原因弹窗 -->
-    <div class="modal-overlay" id="rejectModal">
-        <div class="modal-card">
-            <div class="modal-header">拒绝退款</div>
-            <div class="modal-body">
-                <textarea class="modal-textarea" id="rejectReason" placeholder="请输入拒绝原因（选填）..."></textarea>
-            </div>
-            <div class="modal-actions">
-                <button class="modal-cancel" onclick="closeRejectModal()">取消</button>
-                <button class="modal-confirm" onclick="confirmReject()">确认拒绝</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 详情弹窗 -->
-    <div class="detail-modal" id="detailModal" onclick="if(event.target===this)closeDetail()">
-        <div class="detail-card" style="position:relative">
-            <div class="detail-close" onclick="closeDetail()">×</div>
-            <div class="detail-header">
-                <div class="detail-amount" id="detailAmount">¥0.00</div>
-                <div class="detail-status" id="detailStatus"></div>
-            </div>
-            <div class="detail-body">
-                <div class="detail-section">
-                    <div class="detail-label">订单编号</div>
-                    <div class="detail-value" id="detailOrderNo">-</div>
+<body class="wy-design-list">
+    <!-- 顶部区域 -->
+    <div class="wy-design-list_top">
+        <div class="wy-design-list_top_title">
+            <h1 class="wy-design-list_title">退款管理 - 员工端</h1>
+            <div class="wy-design-list_space"></div>
+            <div class="wy-design-list_btn-group">
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
+                        <span>搜索</span>
+                    </button>
                 </div>
-                <div class="detail-section">
-                    <div class="detail-label">申请人</div>
-                    <div class="detail-value" id="detailUser">-</div>
-                </div>
-                <div class="detail-section">
-                    <div class="detail-label">申请时间</div>
-                    <div class="detail-value" id="detailTime">-</div>
-                </div>
-                <div class="detail-section">
-                    <div class="detail-label">退款原因</div>
-                    <div class="detail-value" id="detailReason">-</div>
-                </div>
-                <div class="detail-section">
-                    <div class="detail-label">退款商品</div>
-                    <div class="detail-products" id="detailProducts"></div>
-                </div>
-                <div class="detail-actions" id="detailActions" style="display:none; margin-top:15px">
-                    <button class="action-btn btn-approve" onclick="approveFromDetail()">批准退款</button>
-                    <button class="action-btn btn-reject" onclick="rejectFromDetail()">拒绝退款</button>
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
+                        <span>重置</span>
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 确认批准弹窗 -->
+    <!-- 筛选区域 -->
+    <div class="wy-design-list_filter">
+        <div class="wy-design-list_other">
+            <div class="el-input el-input--small" style="width: 200px;">
+                <input type="text" id="keyword" placeholder="搜索关键词" class="el-input__inner">
+            </div>
+        </div>
+    </div>
+
+    <!-- 表格区域 -->
+    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
+        <div class="wy-design-table_bar">
+            <i class="wy-design-table_set el-icon-setting" title="列设置"></i>
+            <span class="wy-design-table_total">共 <em id="totalCount">0</em> 条</span>
+            <div class="wy-pages">
+                <div class="wy-pages_total">第<em id="currentPage">1</em>/<em id="totalPages">1</em>页</div>
+                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
+                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
+            </div>
+        </div>
+        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
+            <thead class="el-table__header">
+                <tr>
+                    <th><div class="cell">名称</div></th>
+                    <th><div class="cell">操作</div></th>
+                </tr>
+            </thead>
+            <tbody class="el-table__body" id="listBody">
+                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    
     <div class="confirm-modal" id="confirmApproveModal">
         <div class="confirm-card">
             <div class="confirm-icon">✅</div>
@@ -194,8 +82,10 @@
         </div>
     </div>
 
+    
+
     <script>
-        var urlParams = new URLSearchParams(location.search);
+    var urlParams = new URLSearchParams(location.search);
         var token = urlParams.get('access_token') || localStorage.getItem('staff_token');
         var isdev = urlParams.get('isdev') || localStorage.getItem('staff_isdev') || '0';
         

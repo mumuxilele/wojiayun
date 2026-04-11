@@ -4,86 +4,88 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>订单管理 - 员工端</title>
+    <link rel="stylesheet" href="../business-common/list-style.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; min-height: 100vh; padding-bottom: 20px; }
-        .header { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; padding: 15px; display: flex; align-items: center; }
-        .header h1 { font-size: 18px; flex: 1; text-align: center; }
-        .back { color: white; text-decoration: none; font-size: 14px; padding: 4px 8px; }
-        /* 搜索栏 */
-        .search-bar { background: white; padding: 10px 15px; border-bottom: 1px solid #f0f0f0; }
-        .search-input { width: 100%; padding: 8px 12px; border: 1px solid #e0e0e0; border-radius: 20px; font-size: 13px; background: #f9f9f9; }
-        /* 筛选 */
-        .filter { display: flex; gap: 8px; padding: 10px 15px; background: white; overflow-x: auto; border-bottom: 1px solid #f0f0f0; }
-        .filter-item { padding: 6px 12px; border-radius: 15px; font-size: 12px; white-space: nowrap; background: #f0f0f0; color: #666; cursor: pointer; flex-shrink: 0; }
-        .filter-item.active { background: #11998e; color: white; }
-        .list { padding: 10px; }
-        .item { background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; }
-        .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .order-no { font-size: 13px; color: #333; font-weight: 500; }
-        .order-amount { font-size: 16px; color: #f57c00; font-weight: 600; margin-bottom: 4px; }
-        .order-status { font-size: 12px; padding: 3px 8px; border-radius: 10px; }
-        .status-pending { background: #fff3e0; color: #f57c00; }
-        .status-paid { background: #e3f2fd; color: #1976d2; }
-        .status-shipped { background: #ede7f6; color: #7b1fa2; }
-        .status-completed { background: #e8f5e9; color: #388e3c; }
-        .status-cancelled { background: #f5f5f5; color: #999; }
-        .status-refunding { background: #fce4ec; color: #c62828; }
-        .status-refunded { background: #f3e5f5; color: #6a1b9a; }
-        .order-info { font-size: 12px; color: #999; margin-top: 6px; display: flex; flex-wrap: wrap; gap: 8px; }
-        .order-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-        .action-btn { padding: 6px 14px; border-radius: 16px; font-size: 12px; border: none; cursor: pointer; font-weight: 500; }
-        .btn-ship { background: #e3f2fd; color: #1565c0; }
-        .btn-complete { background: #e8f5e9; color: #2e7d32; }
-        .btn-refund-approve { background: #e8f5e9; color: #2e7d32; }
-        .btn-refund-reject { background: #ffebee; color: #c62828; }
-        .btn-view { background: #f5f5f5; color: #555; }
-        .empty { text-align: center; padding: 60px 20px; color: #999; }
-        .login-tip { text-align: center; padding: 40px; color: #999; }
-        /* 分页 */
-        .pagination { display: flex; justify-content: center; align-items: center; gap: 12px; padding: 15px; }
-        .page-btn { padding: 6px 16px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 13px; background: white; cursor: pointer; color: #333; }
-        .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-        .page-info { font-size: 13px; color: #999; }
+        /* 页面特有样式 */
+        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
+        .actions .link:hover { text-decoration: underline; }
+        .actions .link.danger { color: var(--el-color-danger); }
+        /* 弹窗样式保留 */
         /* 发货弹窗 */
         .modal-mask { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.5); z-index: 100; }
-        .modal-mask.show { display: flex; align-items: flex-end; }
-        .modal { background: white; border-radius: 16px 16px 0 0; padding: 20px; width: 100%; }
-        .modal h3 { font-size: 16px; margin-bottom: 15px; color: #333; }
-        .modal input, .modal select { width: 100%; padding: 10px 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; margin-bottom: 12px; }
-        .modal-btns { display: flex; gap: 10px; }
-        .modal-btns button { flex: 1; padding: 12px; border-radius: 8px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; }
-        .btn-cancel-modal { background: #f5f5f5; color: #555; }
-        .btn-confirm { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; }
-        .order-goods { font-size: 12px; color: #666; margin-top: 4px; }
     </style>
 </head>
-<body>
-    <div class="header">
-        <a href="index.html" class="back" onclick="return goBack()">← 返回</a>
-        <h1>订单管理</h1>
-        <span style="width:50px"></span>
-    </div>
-    <div class="search-bar">
-        <input class="search-input" id="searchInput" type="text" placeholder="搜索订单号、用户名..." oninput="onSearch()">
-    </div>
-    <div class="filter">
-        <div class="filter-item active" data-status="">全部</div>
-        <div class="filter-item" data-status="pending">待支付</div>
-        <div class="filter-item" data-status="paid">待发货</div>
-        <div class="filter-item" data-status="shipped">已发货</div>
-        <div class="filter-item" data-status="completed">已完成</div>
-        <div class="filter-item" data-status="refunding">退款中</div>
-        <div class="filter-item" data-status="cancelled">已取消</div>
-    </div>
-    <div class="list" id="list"><div class="empty">加载中...</div></div>
-    <div class="pagination" id="pagination" style="display:none">
-        <button class="page-btn" id="btnPrev" onclick="changePage(-1)">← 上一页</button>
-        <span class="page-info" id="pageInfo"></span>
-        <button class="page-btn" id="btnNext" onclick="changePage(1)">下一页 →</button>
+<body class="wy-design-list">
+    <!-- 顶部区域 -->
+    <div class="wy-design-list_top">
+        <div class="wy-design-list_top_title">
+            <h1 class="wy-design-list_title">订单管理 - 员工端</h1>
+            <div class="wy-design-list_space"></div>
+            <div class="wy-design-list_btn-group">
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
+                        <span>搜索</span>
+                    </button>
+                </div>
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
+                        <span>重置</span>
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- 发货弹窗 -->
+    <!-- 筛选区域 -->
+    <div class="wy-design-list_filter">
+        <div class="wy-design-list_other">
+            <div class="el-input el-input--small" style="width: 200px;">
+                <input type="text" id="searchInput" placeholder="搜索订单号、用户名..." class="el-input__inner">
+            </div>
+        </div>
+        <div class="wy-design-list_other">
+            <select id="filter1" class="el-input__inner" style="width: 130px;">
+                
+                <option value="">请选择物流公司</option>
+                <option value="顺丰速运">顺丰速运</option>
+                <option value="圆通速递">圆通速递</option>
+                <option value="中通快递">中通快递</option>
+                <option value="韵达快递">韵达快递</option>
+                <option value="申通快递">申通快递</option>
+                <option value="邮政EMS">邮政EMS</option>
+                <option value="京东物流">京东物流</option>
+                <option value="极兔速递">极兔速递</option>
+                <option value="其他">其他</option>
+            
+            </select>
+        </div>
+    </div>
+
+    <!-- 表格区域 -->
+    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
+        <div class="wy-design-table_bar">
+            <i class="wy-design-table_set el-icon-setting" title="列设置"></i>
+            <span class="wy-design-table_total">共 <em id="totalCount">0</em> 条</span>
+            <div class="wy-pages">
+                <div class="wy-pages_total">第<em id="currentPage">1</em>/<em id="totalPages">1</em>页</div>
+                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
+                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
+            </div>
+        </div>
+        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
+            <thead class="el-table__header">
+                <tr>
+                    <th><div class="cell">名称</div></th>
+                    <th><div class="cell">操作</div></th>
+                </tr>
+            </thead>
+            <tbody class="el-table__body" id="listBody">
+                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    
     <div class="modal-mask" id="shipModal">
         <div class="modal">
             <h3>📦 确认发货</h3>
@@ -107,8 +109,10 @@
         </div>
     </div>
 
+    
+
     <script>
-        const urlParams = new URLSearchParams(location.search);
+    const urlParams = new URLSearchParams(location.search);
         let token = urlParams.get('access_token');
         let isdev = urlParams.get('isdev') || '0';
         
@@ -190,7 +194,7 @@
             let url = '/api/staff/orders?page=' + currentPage + '&page_size=15' +
                 (currentStatus ? '&status=' + currentStatus : '') +
                 (keyword ? '&keyword=' + encodeURIComponent(keyword) : '');
-            document.getElementById('list').innerHTML = '<div class="empty">加载中...</div>';
+            document.getElementById('list').innerHTML = '<div style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</div>';
             try {
                 const data = await api(url);
                 if (data.success && data.data && data.data.items && data.data.items.length > 0) {
@@ -290,7 +294,7 @@
             if (!confirm('确认' + actionText + '？')) return;
             const reason = action === 'reject' ? prompt('请输入拒绝原因：') : '';
             try {
-                const data = await api('/api/admin/orders/' + orderId + '/refund', 'POST', {
+                const data = await api('/api/staff/orders/' + orderId + '/refund', 'POST', {
                     action: action,
                     reason: reason || ''
                 });
@@ -306,8 +310,32 @@
         }
 
         // 查看详情
-        function viewOrder(orderId) {
-            alert('订单ID: ' + orderId + '\n（详情页功能待集成）');
+        async function viewOrder(orderId) {
+            try {
+                const data = await api('/api/staff/orders/' + orderId);
+                if (!data.success || !data.data) {
+                    alert('获取订单详情失败');
+                    return;
+                }
+                const o = data.data;
+                const STATUS_TEXT_MAP = {pending:'待支付',paid:'待发货',shipped:'已发货',completed:'已完成',cancelled:'已取消',refunding:'退款中',refunded:'已退款'};
+                const PAY_TEXT = {unpaid:'未支付',paid:'已支付',refunded:'已退款',partial_refund:'部分退款'};
+                let detail = '【订单详情】\n';
+                detail += '订单号: ' + (o.order_no || '-') + '\n';
+                detail += '用户: ' + (o.user_name || '-') + '  ' + (o.user_phone || '') + '\n';
+                detail += '商品: ' + (o.goods_name || '-') + '\n';
+                detail += '总金额: ¥' + parseFloat(o.total_amount || 0).toFixed(2) + '\n';
+                detail += '实付: ¥' + parseFloat(o.actual_amount || 0).toFixed(2) + '\n';
+                detail += '支付状态: ' + (PAY_TEXT[o.pay_status] || o.pay_status || '-') + '\n';
+                detail += '订单状态: ' + (STATUS_TEXT_MAP[o.order_status] || o.order_status || '-') + '\n';
+                if (o.tracking_no) detail += '物流: ' + (o.logistics_company || '') + ' ' + o.tracking_no + '\n';
+                if (o.address_info) detail += '收货地址: ' + o.address_info + '\n';
+                if (o.remark) detail += '备注: ' + o.remark + '\n';
+                detail += '创建时间: ' + (o.created_at || '-');
+                alert(detail);
+            } catch(e) {
+                alert('加载失败，请稍后重试');
+            }
         }
 
         document.querySelectorAll('.filter-item').forEach(el => {

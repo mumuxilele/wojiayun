@@ -7,34 +7,30 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; min-height: 100vh; }
-        
         .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 20px; display: flex; align-items: center; gap: 12px; }
         .back-btn { font-size: 20px; color: white; cursor: pointer; }
         .header h1 { font-size: 17px; }
-
-        /* 用户信息卡 */
         .user-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; display: flex; align-items: center; gap: 16px; }
         .avatar { width: 64px; height: 64px; border-radius: 50%; background: rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.5); }
         .user-info h2 { font-size: 18px; color: white; font-weight: 600; }
         .user-info p { font-size: 13px; color: rgba(255,255,255,0.8); margin-top: 4px; }
         .member-level { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-top: 4px; background: rgba(255,255,255,0.2); color: white; }
-
-        /* 数据卡片行 */
         .data-row { display: flex; background: white; margin: 0; }
         .data-item { flex: 1; padding: 16px 12px; text-align: center; border-right: 1px solid #f5f5f5; cursor: pointer; }
         .data-item:last-child { border-right: none; }
         .data-item:active { background: #f9f9f9; }
         .data-num { font-size: 20px; font-weight: 700; color: #333; }
         .data-label { font-size: 11px; color: #999; margin-top: 4px; }
-
-        /* 设置分组 */
         .settings-group { background: white; margin: 12px 0; }
         .group-title { font-size: 12px; color: #999; padding: 10px 16px 4px; letter-spacing: 0.5px; }
+        .group-desc { padding: 0 16px 8px; font-size: 12px; color: #999; line-height: 1.5; }
         .setting-item { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid #f5f5f5; cursor: pointer; }
         .setting-item:last-child { border-bottom: none; }
         .setting-item:active { background: #fafafa; }
         .setting-icon { width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-right: 12px; flex-shrink: 0; }
-        .setting-label { flex: 1; font-size: 15px; color: #333; }
+        .setting-label-wrap { flex: 1; }
+        .setting-label { font-size: 15px; color: #333; }
+        .setting-sub { font-size: 12px; color: #999; margin-top: 4px; }
         .setting-value { font-size: 13px; color: #999; margin-right: 6px; }
         .setting-arrow { color: #ccc; font-size: 16px; }
         .setting-switch { position: relative; }
@@ -43,22 +39,14 @@
         .switch-slider::after { content: ''; position: absolute; width: 20px; height: 20px; border-radius: 50%; background: white; top: 2px; left: 2px; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
         input:checked + .switch-slider { background: #667eea; }
         input:checked + .switch-slider::after { transform: translateX(20px); }
-
-        /* 缓存大小 */
         .cache-size { font-size: 12px; color: #f5222d; }
-
-        /* 危险按钮 */
-        .danger-item .setting-label { color: #f5222d; }
-
-        /* 版本信息 */
         .version-info { text-align: center; padding: 20px; color: #bbb; font-size: 12px; }
         .version-info .v-num { font-size: 14px; color: #999; font-weight: 500; }
-
-        /* Toast */
+        .tip-card { margin: 12px 16px 0; background: #f8faff; border: 1px solid #e8eeff; color: #5b6b96; border-radius: 12px; padding: 12px; font-size: 12px; line-height: 1.6; }
         .toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(0.9); background: rgba(0,0,0,0.75); color: white; padding: 10px 20px; border-radius: 8px; font-size: 14px; opacity: 0; transition: all 0.2s; z-index: 999; pointer-events: none; }
         .toast.show { opacity: 1; transform: translate(-50%,-50%) scale(1); }
-
-        /* 确认对话框 */
+        .loading-mask { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.75); z-index: 120; align-items: center; justify-content: center; color: #667eea; font-size: 14px; }
+        .loading-mask.show { display: flex; }
         .modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; display: none; align-items: flex-end; }
         .modal-mask.show { display: flex; }
         .modal-sheet { background: white; border-radius: 16px 16px 0 0; padding: 20px; width: 100%; }
@@ -76,7 +64,6 @@
         <h1>个人中心</h1>
     </div>
 
-    <!-- 用户信息卡 -->
     <div class="user-card">
         <div class="avatar" id="userAvatar">👤</div>
         <div class="user-info">
@@ -86,7 +73,6 @@
         </div>
     </div>
 
-    <!-- 数据概览 -->
     <div class="data-row">
         <div class="data-item" onclick="goTo('orders.html')">
             <div class="data-num" id="totalOrders">-</div>
@@ -106,114 +92,198 @@
         </div>
     </div>
 
-    <!-- 账户设置 -->
     <div class="settings-group">
         <div class="group-title">账户</div>
         <div class="setting-item" onclick="goTo('member.html')">
             <div class="setting-icon" style="background:#f0f2ff">💎</div>
-            <span class="setting-label">会员中心</span>
+            <div class="setting-label-wrap">
+                <div class="setting-label">会员中心</div>
+                <div class="setting-sub">查看等级权益和升级任务</div>
+            </div>
             <span class="setting-value" id="levelText">-</span>
             <span class="setting-arrow">›</span>
         </div>
         <div class="setting-item" onclick="goTo('addresses.html')">
             <div class="setting-icon" style="background:#fff7e6">📍</div>
-            <span class="setting-label">收货地址</span>
+            <div class="setting-label-wrap">
+                <div class="setting-label">收货地址</div>
+                <div class="setting-sub">管理常用配送地址</div>
+            </div>
             <span class="setting-arrow">›</span>
         </div>
         <div class="setting-item" onclick="goTo('my_coupons.html')">
             <div class="setting-icon" style="background:#fff0f6">🎫</div>
-            <span class="setting-label">我的优惠券</span>
+            <div class="setting-label-wrap">
+                <div class="setting-label">我的优惠券</div>
+                <div class="setting-sub">优惠券提醒会同步到服务器</div>
+            </div>
             <span class="setting-value" id="couponText"></span>
             <span class="setting-arrow">›</span>
         </div>
     </div>
 
-    <!-- 历史与足迹 -->
     <div class="settings-group">
         <div class="group-title">记录</div>
         <div class="setting-item" onclick="goTo('orders.html')">
             <div class="setting-icon" style="background:#e6fff7">📦</div>
-            <span class="setting-label">我的订单</span>
+            <div class="setting-label-wrap">
+                <div class="setting-label">我的订单</div>
+                <div class="setting-sub">查看待支付倒计时与物流状态</div>
+            </div>
             <span class="setting-arrow">›</span>
         </div>
         <div class="setting-item" onclick="goTo('applications.html')">
             <div class="setting-icon" style="background:#f6ffed">📋</div>
-            <span class="setting-label">我的申请</span>
+            <div class="setting-label-wrap">
+                <div class="setting-label">我的申请</div>
+                <div class="setting-sub">申请状态与处理进度</div>
+            </div>
             <span class="setting-arrow">›</span>
         </div>
         <div class="setting-item" onclick="goTo('bookings.html')">
             <div class="setting-icon" style="background:#fff0f6">📅</div>
-            <span class="setting-label">场馆预约记录</span>
+            <div class="setting-label-wrap">
+                <div class="setting-label">场馆预约记录</div>
+                <div class="setting-sub">查看预约和核销记录</div>
+            </div>
             <span class="setting-arrow">›</span>
         </div>
         <div class="setting-item" onclick="goTo('checkin.html')">
             <div class="setting-icon" style="background:#f0fff4">✅</div>
-            <span class="setting-label">签到记录</span>
+            <div class="setting-label-wrap">
+                <div class="setting-label">签到记录</div>
+                <div class="setting-sub">连续签到有额外奖励</div>
+            </div>
             <span class="setting-arrow">›</span>
         </div>
     </div>
 
-    <!-- 通知设置 -->
     <div class="settings-group">
-        <div class="group-title">通知</div>
+        <div class="group-title">通知内容</div>
+        <div class="group-desc">这些偏好会同步到服务器，换设备登录也会保留。</div>
         <div class="setting-item">
             <div class="setting-icon" style="background:#e6f7ff">🔔</div>
-            <span class="setting-label">订单状态通知</span>
+            <div class="setting-label-wrap">
+                <div class="setting-label">订单状态通知</div>
+                <div class="setting-sub">支付、发货、退款、超时取消等提醒</div>
+            </div>
             <label class="setting-switch">
-                <input type="checkbox" id="notifOrder" checked onchange="savePref('notif_order', this.checked)">
+                <input type="checkbox" id="notifOrder" onchange="savePref('notif_order', this.checked)">
                 <span class="switch-slider"></span>
             </label>
         </div>
         <div class="setting-item">
             <div class="setting-icon" style="background:#fff7e6">🎫</div>
-            <span class="setting-label">优惠券到期提醒</span>
+            <div class="setting-label-wrap">
+                <div class="setting-label">优惠券到期提醒</div>
+                <div class="setting-sub">券即将过期或发放成功时提醒</div>
+            </div>
             <label class="setting-switch">
-                <input type="checkbox" id="notifCoupon" checked onchange="savePref('notif_coupon', this.checked)">
+                <input type="checkbox" id="notifCoupon" onchange="savePref('notif_coupon', this.checked)">
                 <span class="switch-slider"></span>
             </label>
         </div>
         <div class="setting-item">
             <div class="setting-icon" style="background:#f6ffed">📢</div>
-            <span class="setting-label">系统公告</span>
+            <div class="setting-label-wrap">
+                <div class="setting-label">系统公告</div>
+                <div class="setting-sub">规则变更、维护通知、活动公告</div>
+            </div>
             <label class="setting-switch">
-                <input type="checkbox" id="notifSystem" checked onchange="savePref('notif_system', this.checked)">
+                <input type="checkbox" id="notifSystem" onchange="savePref('notif_system', this.checked)">
                 <span class="switch-slider"></span>
             </label>
         </div>
     </div>
 
-    <!-- 缓存与清理 -->
+    <div class="settings-group">
+        <div class="group-title">通知渠道</div>
+        <div class="group-desc">当前默认支持站内消息；微信、短信、邮件渠道可提前保存偏好，待企业配置后自动生效。</div>
+        <div class="setting-item">
+            <div class="setting-icon" style="background:#f0f5ff">📬</div>
+            <div class="setting-label-wrap">
+                <div class="setting-label">站内消息</div>
+                <div class="setting-sub">推荐保持开启，体验最稳定</div>
+            </div>
+            <label class="setting-switch">
+                <input type="checkbox" id="channelInApp" onchange="savePref('channel_in_app', this.checked)">
+                <span class="switch-slider"></span>
+            </label>
+        </div>
+        <div class="setting-item">
+            <div class="setting-icon" style="background:#f6ffed">💬</div>
+            <div class="setting-label-wrap">
+                <div class="setting-label">微信服务提醒</div>
+                <div class="setting-sub">企业完成微信通道配置后可触达</div>
+            </div>
+            <label class="setting-switch">
+                <input type="checkbox" id="channelWechat" onchange="savePref('channel_wechat', this.checked)">
+                <span class="switch-slider"></span>
+            </label>
+        </div>
+        <div class="setting-item">
+            <div class="setting-icon" style="background:#fff7e6">📱</div>
+            <div class="setting-label-wrap">
+                <div class="setting-label">短信提醒</div>
+                <div class="setting-sub">适合订单关键节点兜底通知</div>
+            </div>
+            <label class="setting-switch">
+                <input type="checkbox" id="channelSms" onchange="savePref('channel_sms', this.checked)">
+                <span class="switch-slider"></span>
+            </label>
+        </div>
+        <div class="setting-item">
+            <div class="setting-icon" style="background:#fff0f6">✉️</div>
+            <div class="setting-label-wrap">
+                <div class="setting-label">邮件提醒</div>
+                <div class="setting-sub">适合活动摘要与账单类通知</div>
+            </div>
+            <label class="setting-switch">
+                <input type="checkbox" id="channelEmail" onchange="savePref('channel_email', this.checked)">
+                <span class="switch-slider"></span>
+            </label>
+        </div>
+        <div class="tip-card">如果当前企业尚未配置微信、短信或邮件通道，系统会先记住你的偏好，待通道开通后自动生效；站内消息不受影响。</div>
+    </div>
+
     <div class="settings-group">
         <div class="group-title">存储</div>
         <div class="setting-item" onclick="clearCache()">
             <div class="setting-icon" style="background:#fff1f0">🗑️</div>
-            <span class="setting-label">清除缓存</span>
+            <div class="setting-label-wrap">
+                <div class="setting-label">清除缓存</div>
+                <div class="setting-sub">清除本地页面缓存，不影响账号数据</div>
+            </div>
             <span class="setting-value cache-size" id="cacheSize"></span>
             <span class="setting-arrow">›</span>
         </div>
     </div>
 
-    <!-- 帮助与关于 -->
     <div class="settings-group">
         <div class="group-title">关于</div>
         <div class="setting-item" onclick="goTo('feedback.html')">
             <div class="setting-icon" style="background:#f0f2ff">💬</div>
-            <span class="setting-label">意见反馈</span>
+            <div class="setting-label-wrap">
+                <div class="setting-label">意见反馈</div>
+                <div class="setting-sub">告诉我们哪里还不够好用</div>
+            </div>
             <span class="setting-arrow">›</span>
         </div>
         <div class="setting-item">
             <div class="setting-icon" style="background:#fafafa">ℹ️</div>
-            <span class="setting-label">当前版本</span>
-            <span class="setting-value">V31.0</span>
+            <div class="setting-label-wrap">
+                <div class="setting-label">当前版本</div>
+                <div class="setting-sub">已升级到通知偏好云同步与订单倒计时体验</div>
+            </div>
+            <span class="setting-value">V36.0</span>
         </div>
     </div>
 
     <div class="version-info">
         <div class="v-num">社区商业服务系统</div>
-        <div style="margin-top:4px">版本 V31.0 · Build 20260405</div>
+        <div style="margin-top:4px">版本 V36.0 · Build 20260405</div>
     </div>
 
-    <!-- 确认对话框 -->
     <div class="modal-mask" id="confirmModal">
         <div class="modal-sheet">
             <div class="modal-title" id="modalTitle">确认操作</div>
@@ -225,54 +295,108 @@
         </div>
     </div>
 
+    <div class="loading-mask" id="loadingMask">正在同步设置...</div>
     <div class="toast" id="toast"></div>
 
     <script>
     var urlParams = new URLSearchParams(location.search);
     var token = urlParams.get('access_token') || localStorage.getItem('user_token') || '';
     var isdev = urlParams.get('isdev') || localStorage.getItem('user_isdev') || '0';
+    var prefState = {
+        notif_order: true,
+        notif_coupon: true,
+        notif_system: true,
+        channel_in_app: true,
+        channel_wechat: false,
+        channel_sms: false,
+        channel_email: false
+    };
+
+    var prefMap = {
+        notif_order: 'notifOrder',
+        notif_coupon: 'notifCoupon',
+        notif_system: 'notifSystem',
+        channel_in_app: 'channelInApp',
+        channel_wechat: 'channelWechat',
+        channel_sms: 'channelSms',
+        channel_email: 'channelEmail'
+    };
+
+    function api(path) {
+        return path + (path.indexOf('?') >= 0 ? '&' : '?') + 'access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+    }
 
     function goTo(url) {
         var sep = url.indexOf('?') >= 0 ? '&' : '?';
         location.href = url + sep + 'access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
     }
 
-    // 加载用户信息
+    function showLoading(show) {
+        document.getElementById('loadingMask').classList.toggle('show', !!show);
+    }
+
+    function showToast(msg) {
+        var t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        clearTimeout(showToast._timer);
+        showToast._timer = setTimeout(function(){ t.classList.remove('show'); }, 2000);
+    }
+
+    function applyPrefsToUI() {
+        Object.keys(prefMap).forEach(function(key) {
+            var el = document.getElementById(prefMap[key]);
+            if (el) el.checked = !!prefState[key];
+        });
+    }
+
+    function normalizeLevelName(levelCode, levelName) {
+        if (levelName) return levelName;
+        var levelMap = {
+            bronze: '青铜会员',
+            silver: '白银会员',
+            gold: '黄金会员',
+            platinum: '铂金会员',
+            diamond: '钻石会员',
+            legend: '传奇会员',
+            L1: '普通会员',
+            L2: '铜牌会员',
+            L3: '银牌会员',
+            L4: '金牌会员',
+            L5: '钻石会员'
+        };
+        return levelMap[levelCode] || '普通会员';
+    }
+
     function loadUserInfo() {
-        fetch('/api/user/member?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev)
+        fetch(api('/api/user/member'))
         .then(function(r){ return r.json(); })
         .then(function(d) {
             if (!d.success || !d.data) return;
             var u = d.data;
             var name = u.user_name || '用户';
+            var levelName = normalizeLevelName(u.member_level, u.level_name || u.display_level_name);
             document.getElementById('userName').textContent = name;
             document.getElementById('userAvatar').textContent = name.charAt(0);
             document.getElementById('userPhone').textContent = u.phone ? u.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2') : '未绑定手机';
-            var levelMap = { bronze:'青铜会员', silver:'白银会员', gold:'黄金会员', platinum:'铂金会员', diamond:'钻石会员', legend:'传奇会员' };
-            var lv = u.member_level || 'bronze';
-            var lvLabel = levelMap[lv] || lv;
-            document.getElementById('memberLevel').textContent = lvLabel;
-            document.getElementById('levelText').textContent = lvLabel;
+            document.getElementById('memberLevel').textContent = levelName;
+            document.getElementById('levelText').textContent = levelName;
             document.getElementById('myPoints').textContent = u.points || 0;
         }).catch(function(){});
     }
 
-    // 加载统计数据
     function loadStats() {
-        fetch('/api/user/stats?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev)
+        fetch(api('/api/user/stats'))
         .then(function(r){ return r.json(); })
         .then(function(d) {
             if (!d.success || !d.data) return;
             var s = d.data;
             document.getElementById('totalOrders').textContent = s.orders || 0;
             document.getElementById('myCoupons').textContent = s.unused_coupons || 0;
-            if (s.unused_coupons > 0) {
-                document.getElementById('couponText').textContent = s.unused_coupons + '张可用';
-            }
+            document.getElementById('couponText').textContent = s.unused_coupons > 0 ? (s.unused_coupons + '张可用') : '';
         }).catch(function(){});
 
-        // 收藏数
-        fetch('/api/user/favorites?page=1&page_size=1&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev)
+        fetch(api('/api/user/favorites?page=1&page_size=1'))
         .then(function(r){ return r.json(); })
         .then(function(d) {
             if (d.success && d.data) {
@@ -281,65 +405,101 @@
         }).catch(function(){});
     }
 
-    // 计算缓存大小
     function calcCacheSize() {
         try {
             var total = 0;
             for (var key in localStorage) {
                 if (localStorage.hasOwnProperty(key)) {
-                    total += localStorage.getItem(key).length * 2; // UTF-16
+                    total += (localStorage.getItem(key) || '').length * 2;
                 }
             }
-            var kb = (total / 1024).toFixed(1);
-            document.getElementById('cacheSize').textContent = kb + ' KB';
+            document.getElementById('cacheSize').textContent = (total / 1024).toFixed(1) + ' KB';
         } catch(e) {}
     }
 
-    // 保存通知偏好
-    function savePref(key, value) {
-        localStorage.setItem('pref_' + key, value ? '1' : '0');
-        showToast(value ? '已开启' : '已关闭');
-    }
-
-    // 加载通知偏好
     function loadPrefs() {
-        ['notif_order', 'notif_coupon', 'notif_system'].forEach(function(key) {
-            var el = document.getElementById(key.replace('notif_', 'notif').replace('notif', 'notif'));
-            // map to element ids
-        });
-        var prefs = { notif_order: 'notifOrder', notif_coupon: 'notifCoupon', notif_system: 'notifSystem' };
-        Object.keys(prefs).forEach(function(key) {
-            var stored = localStorage.getItem('pref_' + key);
-            var el = document.getElementById(prefs[key]);
-            if (el && stored !== null) el.checked = stored === '1';
+        showLoading(true);
+        fetch(api('/api/user/notification-preferences'))
+        .then(function(r){ return r.json(); })
+        .then(function(d) {
+            if (d.success && d.data) {
+                Object.keys(prefState).forEach(function(key) {
+                    if (typeof d.data[key] !== 'undefined') {
+                        prefState[key] = !!d.data[key];
+                    }
+                });
+                localStorage.setItem('settings_pref_cache', JSON.stringify(prefState));
+            } else {
+                throw new Error(d.msg || '加载失败');
+            }
+        })
+        .catch(function() {
+            try {
+                var cached = JSON.parse(localStorage.getItem('settings_pref_cache') || '{}');
+                Object.keys(prefState).forEach(function(key) {
+                    if (typeof cached[key] !== 'undefined') prefState[key] = !!cached[key];
+                });
+                showToast('使用本地缓存展示设置');
+            } catch(e) {}
+        })
+        .finally(function() {
+            applyPrefsToUI();
+            showLoading(false);
         });
     }
 
-    // 清除缓存
+    function savePref(key, value) {
+        var previous = !!prefState[key];
+        prefState[key] = !!value;
+        applyPrefsToUI();
+        localStorage.setItem('settings_pref_cache', JSON.stringify(prefState));
+
+        fetch(api('/api/user/notification-preferences'), {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify((function(){ var data = {}; data[key] = !!value; return data; })())
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(d) {
+            if (!d.success) throw new Error(d.msg || '保存失败');
+            if (d.data) {
+                Object.keys(prefState).forEach(function(item) {
+                    if (typeof d.data[item] !== 'undefined') prefState[item] = !!d.data[item];
+                });
+                applyPrefsToUI();
+                localStorage.setItem('settings_pref_cache', JSON.stringify(prefState));
+            }
+            showToast(value ? '已开启并同步到云端' : '已关闭并同步到云端');
+        })
+        .catch(function() {
+            prefState[key] = previous;
+            applyPrefsToUI();
+            localStorage.setItem('settings_pref_cache', JSON.stringify(prefState));
+            showToast('同步失败，请稍后重试');
+        });
+    }
+
     function clearCache() {
-        showConfirm('清除缓存', '将清除本地搜索历史、状态缓存等数据，不会影响账号信息。', function() {
-            var keepsKeys = ['user_token', 'user_isdev', 'staff_token', 'staff_isdev'];
+        showConfirm('清除缓存', '将清除本地搜索历史、页面缓存等数据，不会影响账号和云端通知设置。', function() {
+            var keepKeys = ['user_token', 'user_isdev', 'staff_token', 'staff_isdev', 'settings_pref_cache'];
             var toDelete = [];
             for (var k in localStorage) {
-                if (localStorage.hasOwnProperty(k) && !keepsKeys.includes(k)) {
+                if (localStorage.hasOwnProperty(k) && keepKeys.indexOf(k) === -1) {
                     toDelete.push(k);
                 }
             }
             toDelete.forEach(function(k) { localStorage.removeItem(k); });
             calcCacheSize();
-            showToast('✅ 缓存已清除');
             closeModal();
-        }, '清除', false);
+            showToast('缓存已清除');
+        }, '清除');
     }
 
-    // 弹窗控制
-    function showConfirm(title, desc, onConfirm, confirmText, isDanger) {
+    function showConfirm(title, desc, onConfirm, confirmText) {
         document.getElementById('modalTitle').textContent = title;
         document.getElementById('modalDesc').textContent = desc;
         var btn = document.getElementById('modalConfirmBtn');
         btn.textContent = confirmText || '确认';
-        if (isDanger !== false) { btn.className = 'modal-btn modal-btn-danger'; }
-        else { btn.className = 'modal-btn modal-btn-danger'; }
         btn.onclick = onConfirm;
         document.getElementById('confirmModal').classList.add('show');
     }
@@ -348,19 +508,10 @@
         document.getElementById('confirmModal').classList.remove('show');
     }
 
-    function showToast(msg) {
-        var t = document.getElementById('toast');
-        t.textContent = msg;
-        t.classList.add('show');
-        setTimeout(function(){ t.classList.remove('show'); }, 2000);
-    }
-
-    // 点击遮罩关闭
     document.getElementById('confirmModal').addEventListener('click', function(e) {
         if (e.target === this) closeModal();
     });
 
-    // 初始化
     loadUserInfo();
     loadStats();
     calcCacheSize();

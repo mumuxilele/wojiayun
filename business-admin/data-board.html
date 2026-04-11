@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        :root { --primary: #1890ff; --success: #52c41a; --warning: #faad14; --danger: #ff4d4f; --border: #ebeef5; --bg: #f5f7fa; --text: #303133; --text2: #606266; --text3: #909399; }
+        :root { --primary: #00d1a0; --success: #52c41a; --warning: #faad14; --danger: #ff4d4f; --border: #ebeef5; --bg: #f5f7fa; --text: #303133; --text2: #606266; --text3: #909399; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg); font-size: 14px; color: var(--text2); }
         .layout { display: flex; min-height: 100vh; }
         .main { flex: 1; padding: 20px; }
@@ -200,7 +200,7 @@ function initCharts() {
             { type: 'value', name: '订单', axisLabel: '{value}' }
         ],
         series: [
-            { name: '收入', type: 'line', smooth: true, data: [], itemStyle: { color: '#1890ff' } },
+            { name: '收入', type: 'line', smooth: true, data: [], itemStyle: { color: '#00d1a0' } },
             { name: '订单数', type: 'line', smooth: true, yAxisIndex: 1, data: [], itemStyle: { color: '#52c41a' } }
         ]
     });

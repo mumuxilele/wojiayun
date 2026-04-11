@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>退款管理 - 社区商业服务</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --primary: #1890ff; --primary-light: #40a9ff;
+      --success: #52c41a; --warning: #faad14;
+      --danger: #ff4d4f; --info: #909399;
+      --text-primary: #303133; --text-regular: #606266; --text-secondary: #909399;
+      --border: #ebeef5; --bg-white: #fff; --bg-light: #f5f7fa;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg-light); font-size: 14px; color: var(--text-regular); }
+
+    /* Header */
+    .header { background: #001529; color: #fff; padding: 15px 20px; display: flex; align-items: center; gap: 16px; }
+    .header h1 { font-size: 18px; flex: 1; }
+    .back { color: #fff; text-decoration: none; font-size: 13px; opacity: .8; }
+    .back:hover { opacity: 1; }
+
+    /* 顶部统计卡片 */
+    .stat-row { display: flex; gap: 12px; padding: 16px 20px 0; }
+    .stat-card { flex: 1; background: var(--bg-white); border-radius: 6px; padding: 18px 20px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+    .stat-card .label { font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; }
+    .stat-card .value { font-size: 24px; font-weight: 600; }
+    .stat-card.pending .value { color: var(--warning); }
+    .stat-card.total .value { color: var(--primary); }
+    .stat-card.approved .value { color: var(--success); }
+    .stat-card.amount .value { color: #f57c00; }
+
+    /* 退款原因分析图 */
+    .chart-section { display: flex; gap: 12px; padding: 12px 20px; }
+    .chart-card { background: var(--bg-white); border-radius: 6px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+    .chart-card.wide { flex: 2; }
+    .chart-card.narrow { flex: 1; }
+    .chart-card .card-title { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 6px; }
+    canvas { max-height: 180px; }
+
+    /* 工具栏 */
+    .toolbar { background: var(--bg-white); padding: 14px 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; border-bottom: 1px solid var(--border); margin-top: 12px; }
+    .search-input { padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; width: 220px; font-size: 14px; }
+    .search-input:focus { border-color: var(--primary); outline: none; }
+    .select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; font-size: 14px; background: var(--bg-white); cursor: pointer; }
+    .btn { padding: 8px 15px; border-radius: 4px; font-size: 14px; cursor: pointer; border: 1px solid var(--border); background: var(--bg-white); color: var(--text-regular); transition: all .2s; }
+    .btn:hover { color: var(--primary); border-color: var(--primary); }
+    .btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-light); }
+    .btn-success { background: var(--success); border-color: var(--success); color: #fff; font-size: 12px; padding: 5px 10px; }
+    .btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; font-size: 12px; padding: 5px 10px; }
+    .btn-success:hover { background: #73d13d; }
+    .btn-danger:hover { background: #ff7875; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .spacer { flex: 1; }
+    .total-label { font-size: 13px; color: var(--text-secondary); }
+
+    /* 表格 */
+    .table-wrap { padding: 0 20px 20px; margin-top: 0; }
+    table { width: 100%; border-collapse: collapse; background: var(--bg-white); border-radius: 6px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+    thead th { padding: 12px 10px; background: var(--bg-light); color: var(--text-primary); font-weight: 500; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    tbody td { padding: 12px 10px; border-bottom: 1px solid var(--border); }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #f0f7ff; }
+    .empty { text-align: center; padding: 50px; color: var(--text-secondary); }
+
+    /* 标签 */
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; border: 1px solid; white-space: nowrap; }
+    .tag-warning { background: #fffbe6; border-color: #ffe58f; color: var(--warning); }
+    .tag-success { background: #f6ffed; border-color: #b7eb8f; color: var(--success); }
+    .tag-danger { background: #fff1f0; border-color: #ffa39e; color: var(--danger); }
+    .tag-info { background: #f4f4f5; border-color: #d3d3d3; color: var(--info); }
+    .tag-primary { background: #e6f7ff; border-color: #91d5ff; color: var(--primary); }
+
+    /* 金额 */
+    .amount { color: #f57c00; font-weight: 600; }
+
+    /* 分页 */
+    .pagination { display: flex; justify-content: center; align-items: center; gap: 8px; padding: 16px; background: var(--bg-white); margin: 0 20px 20px; border-radius: 0 0 6px 6px; border-top: 1px solid var(--border); }
+    .pagination button { border: 1px solid var(--border); background: var(--bg-white); border-radius: 4px; min-width: 32px; height: 30px; padding: 0 10px; cursor: pointer; font-size: 13px; transition: all .2s; }
+    .pagination button:hover:not(:disabled) { color: var(--primary); border-color: var(--primary); }
+    .pagination button.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .pagination button:disabled { opacity: .5; cursor: not-allowed; }
+    .pagination .pg-info { font-size: 13px; color: var(--text-secondary); }
+
+    /* 弹窗 */
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200; }
+    .overlay.show { display: flex; align-items: center; justify-content: center; }
+    .modal { background: var(--bg-white); border-radius: 8px; width: 500px; max-width: 95vw; box-shadow: 0 8px 32px rgba(0,0,0,.2); overflow: hidden; }
+    .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border); font-size: 16px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; justify-content: space-between; }
+    .modal-body { padding: 20px; }
+    .modal-footer { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+    .modal-close { cursor: pointer; font-size: 18px; color: var(--text-secondary); line-height: 1; }
+    .modal-close:hover { color: var(--text-primary); }
+    .form-item { margin-bottom: 16px; }
+    .form-item label { display: block; font-size: 13px; color: var(--text-regular); margin-bottom: 6px; }
+    .form-item textarea, .form-item input { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; font-size: 14px; font-family: inherit; }
+    .form-item textarea:focus, .form-item input:focus { border-color: var(--primary); outline: none; }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; background: var(--bg-light); border-radius: 6px; padding: 14px 16px; margin-bottom: 16px; }
+    .info-grid .row { font-size: 13px; }
+    .info-grid .row .k { color: var(--text-secondary); margin-bottom: 2px; }
+    .info-grid .row .v { color: var(--text-primary); font-weight: 500; }
+    .action-btns { display: flex; gap: 8px; }
+    
+    /* 退款趋势迷你图 */
+    .trend-bar { display: flex; align-items: flex-end; gap: 4px; height: 80px; padding: 0 4px; }
+    .trend-bar .bar-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .trend-bar .bar-fill { width: 100%; background: var(--primary); border-radius: 2px 2px 0 0; min-height: 2px; transition: all .3s; }
+    .trend-bar .bar-label { font-size: 9px; color: var(--text-secondary); white-space: nowrap; }
+
+    /* 加载中 */
+    .loading { text-align: center; padding: 50px; color: var(--text-secondary); }
+    .spinner { width: 24px; height: 24px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin .8s linear infinite; display: inline-block; margin-right: 8px; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Toast */
+    .toast { position: fixed; top: 70px; right: 20px; background: #333; color: #fff; padding: 10px 18px; border-radius: 6px; font-size: 14px; z-index: 999; opacity: 0; transition: opacity .3s; pointer-events: none; max-width: 300px; }
+    .toast.show { opacity: 1; }
+    .toast.success { background: var(--success); }
+    .toast.error { background: var(--danger); }
+    .toast.warning { background: var(--warning); color: #333; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <a href="index.html" class="back">← 返回首页</a>
+  <h1>💸 退款管理</h1>
+  <span style="font-size:12px;opacity:.6">实时审核 · 全链路退款管控</span>
+</div>
+
+<!-- 顶部统计 -->
+<div class="stat-row">
+  <div class="stat-card pending">
+    <div class="label">⏳ 待审核</div>
+    <div class="value" id="stat-pending">—</div>
+  </div>
+  <div class="stat-card total">
+    <div class="label">📋 本月申请</div>
+    <div class="value" id="stat-month">—</div>
+  </div>
+  <div class="stat-card approved">
+    <div class="label">✅ 已批准</div>
+    <div class="value" id="stat-approved">—</div>
+  </div>
+  <div class="stat-card amount">
+    <div class="label">💰 本月退款金额</div>
+    <div class="value" id="stat-amount">—</div>
+  </div>
+</div>
+
+<!-- 图表区域 -->
+<div class="chart-section" id="chart-section">
+  <div class="chart-card wide">
+    <div class="card-title">📈 近30天退款趋势</div>
+    <div class="trend-bar" id="trend-bars"><span class="loading"><span class="spinner"></span>加载中...</span></div>
+  </div>
+  <div class="chart-card narrow">
+    <div class="card-title">🔍 退款原因 TOP5</div>
+    <div id="reason-list" style="min-height:80px"><span class="loading" style="padding:10px 0;display:block;text-align:center"><span class="spinner"></span></span></div>
+  </div>
+</div>
+
+<!-- 工具栏 -->
+<div class="toolbar">
+  <input class="search-input" type="text" id="kw" placeholder="搜索订单号/用户名/手机号" oninput="debounceLoad()">
+  <select class="select" id="statusFilter" onchange="loadData(1)">
+    <option value="">全部状态</option>
+    <option value="refunding">待审核</option>
+    <option value="refunded">已退款</option>
+    <option value="paid">已拒绝（恢复已支付）</option>
+  </select>
+  <select class="select" id="dateFilter" onchange="loadData(1)">
+    <option value="7">最近7天</option>
+    <option value="30" selected>最近30天</option>
+    <option value="90">最近90天</option>
+    <option value="">全部</option>
+  </select>
+  <div class="spacer"></div>
+  <span class="total-label">共 <b id="total-count">0</b> 条</span>
+  <button class="btn btn-primary" onclick="loadData(1)">🔍 查询</button>
+  <button class="btn" onclick="exportCSV()">📥 导出CSV</button>
+</div>
+
+<!-- 列表 -->
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th style="width:40px"><input type="checkbox" id="check-all" onchange="toggleAll(this)"></th>
+        <th>订单号</th>
+        <th>用户</th>
+        <th>申请金额</th>
+        <th>退款原因</th>
+        <th>申请时间</th>
+        <th>状态</th>
+        <th>审核人</th>
+        <th style="width:150px">操作</th>
+      </tr>
+    </thead>
+    <tbody id="tbody">
+      <tr><td colspan="9" class="loading"><span class="spinner"></span>加载中...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 分页 -->
+<div class="pagination" id="pg"></div>
+
+<!-- 审核弹窗 -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span id="modal-title">退款审核</span>
+      <span class="modal-close" onclick="closeModal()">✕</span>
+    </div>
+    <div class="modal-body">
+      <div class="info-grid" id="modal-info"></div>
+      <div class="form-item" id="reason-wrap">
+        <label>审核备注 <span style="color:var(--danger)">（拒绝时必填）</span></label>
+        <textarea id="audit-reason" rows="3" placeholder="请填写审核意见，将通知给用户"></textarea>
+      </div>
+      <div id="modal-alert" style="display:none; padding:10px 12px; background:#fffbe6; border:1px solid #ffe58f; border-radius:4px; font-size:13px; color:#ad6800; margin-bottom:10px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">取消</button>
+      <button class="btn btn-danger" id="btn-reject" onclick="submitAudit('reject')">❌ 拒绝退款</button>
+      <button class="btn btn-success" id="btn-approve" onclick="submitAudit('approve')">✅ 批准退款</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '';
+let page = 1, total = 0, pages = 0;
+let currentOrderId = null;
+let debounceTimer = null;
+let selectedIds = new Set();
+
+// ======================== 工具函数 ========================
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast ' + type + ' show';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function debounceLoad() {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => loadData(1), 400);
+}
+
+function fmt(v) { return v || '—'; }
+function fmtDate(v) { return v ? v.replace('T',' ').slice(0,16) : '—'; }
+function fmtAmt(v) { return v != null ? '¥' + parseFloat(v).toFixed(2) : '—'; }
+
+function getToken() {
+  return localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token') || '';
+}
+
+async function apiFetch(url, opt={}) {
+  const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken(), ...(opt.headers||{}) };
+  const res = await fetch(API + url, { ...opt, headers });
+  if (res.status === 401) { location.href = 'index.html'; throw new Error('未登录'); }
+  return res.json();
+}
+
+// ======================== 统计数据 ========================
+async function loadStats() {
+  try {
+    const d = await apiFetch('/api/admin/statistics');
+    if (d.success && d.data) {
+      const s = d.data;
+      // 计算待审核数（复用主统计接口数据）
+      document.getElementById('stat-pending').textContent = s.refund_count != null ? s.refund_count : '—';
+      document.getElementById('stat-month').textContent = s.total_orders != null ? s.total_orders : '—';
+      document.getElementById('stat-approved').textContent = '—';
+      document.getElementById('stat-amount').textContent = s.refund_amount != null ? '¥' + parseFloat(s.refund_amount).toFixed(0) : '—';
+    }
+  } catch(e) { /* silent */ }
+}
+
+async function loadAnalysis() {
+  try {
+    const d = await apiFetch('/api/admin/statistics/refund-analysis');
+    if (!d.success) return;
+    // 趋势柱状图
+    const trend = d.data.trend || [];
+    renderTrendBars(trend);
+    // 退款原因
+    renderReasons(d.data.reasons || []);
+    // 更新统计卡中待审核数和已批准
+    const pendingRow = await apiFetch('/api/admin/orders?order_status=refunding&page_size=1');
+    if (pendingRow.success) {
+      document.getElementById('stat-pending').textContent = pendingRow.data.total || 0;
+    }
+    const approvedRow = await apiFetch('/api/admin/orders?order_status=refunded&page_size=1');
+    if (approvedRow.success) {
+      document.getElementById('stat-approved').textContent = approvedRow.data.total || 0;
+      // 计算金额
+      let amt = 0;
+      if (trend.length) { trend.forEach(t => amt += parseFloat(t.amount || 0)); }
+      document.getElementById('stat-amount').textContent = '¥' + amt.toFixed(0);
+      document.getElementById('stat-month').textContent = (approvedRow.data.total || 0) + (parseInt(document.getElementById('stat-pending').textContent)||0);
+    }
+  } catch(e) { /* silent */ }
+}
+
+function renderTrendBars(trend) {
+  const el = document.getElementById('trend-bars');
+  if (!trend.length) { el.innerHTML = '<span style="color:var(--text-secondary);font-size:13px;line-height:80px;margin:auto">暂无数据</span>'; return; }
+  // 取最近14条
+  const items = trend.slice(-14);
+  const maxCnt = Math.max(...items.map(t => t.cnt || 0), 1);
+  el.innerHTML = items.map(t => {
+    const pct = Math.max(((t.cnt || 0) / maxCnt * 100), 2);
+    const dt = (t.date || '').slice(5); // MM-DD
+    return `<div class="bar-item" title="${t.date}: ${t.cnt}笔 ${fmtAmt(t.amount)}">
+      <div class="bar-fill" style="height:${pct}%"></div>
+      <div class="bar-label">${dt}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderReasons(reasons) {
+  const el = document.getElementById('reason-list');
+  if (!reasons.length) { el.innerHTML = '<p style="text-align:center;color:var(--text-secondary);padding:20px 0;font-size:13px">暂无数据</p>'; return; }
+  const total = reasons.reduce((s, r) => s + (r.cnt || 0), 0);
+  el.innerHTML = reasons.slice(0,5).map(r => {
+    const pct = total ? Math.round((r.cnt / total) * 100) : 0;
+    return `<div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+        <span style="color:var(--text-primary);max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.reason || '未填写'}</span>
+        <span style="color:var(--text-secondary)">${r.cnt}笔 (${pct}%)</span>
+      </div>
+      <div style="background:var(--border);border-radius:2px;height:6px">
+        <div style="background:var(--primary);height:6px;border-radius:2px;width:${pct}%;transition:width .5s"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ======================== 列表 ========================
+async function loadData(p) {
+  if (p) page = p;
+  selectedIds.clear();
+  document.getElementById('check-all').checked = false;
+  
+  const kw = document.getElementById('kw').value.trim();
+  const status = document.getElementById('statusFilter').value;
+  const days = document.getElementById('dateFilter').value;
+  
+  let url = `/api/admin/orders?page=${page}&page_size=20`;
+  if (kw) url += '&keyword=' + encodeURIComponent(kw);
+  // 状态筛选
+  if (status) url += '&order_status=' + status;
+  else url += '&order_status=refunding,refunded';  // 默认只显示退款相关
+  if (days) url += '&days=' + days;
+
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '<tr><td colspan="9" class="loading"><span class="spinner"></span>加载中...</td></tr>';
+
+  try {
+    const d = await apiFetch(url);
+    if (!d.success) { tbody.innerHTML = `<tr><td colspan="9" class="empty">加载失败：${d.msg}</td></tr>`; return; }
+    const { items, total: tot, pages: pg } = d.data;
+    total = tot; pages = pg;
+    document.getElementById('total-count').textContent = total;
+    renderTable(items || []);
+    renderPagination();
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="9" class="empty">网络错误，请刷新重试</td></tr>`;
+  }
+}
+
+function renderTable(items) {
+  const tbody = document.getElementById('tbody');
+  if (!items.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="empty">🎉 暂无退款记录</td></tr>';
+    return;
+  }
+  tbody.innerHTML = items.map(o => {
+    const statusTag = getStatusTag(o.order_status);
+    const canAudit = o.order_status === 'refunding';
+    const actions = canAudit
+      ? `<div class="action-btns">
+           <button class="btn btn-success" onclick="openAudit(${o.id},'approve')">批准</button>
+           <button class="btn btn-danger" onclick="openAudit(${o.id},'reject')">拒绝</button>
+         </div>`
+      : `<span style="color:var(--text-secondary);font-size:12px">${o.order_status==='refunded'?'✅ 已退款':'—'}</span>`;
+    return `<tr>
+      <td><input type="checkbox" class="row-check" value="${o.id}" onchange="toggleSelect(this)"></td>
+      <td><a href="orders.html?id=${o.id}" style="color:var(--primary);text-decoration:none" target="_blank">${fmt(o.order_no)}</a></td>
+      <td><div>${fmt(o.user_name)}</div><div style="color:var(--text-secondary);font-size:12px">${fmt(o.user_phone)}</div></td>
+      <td class="amount">${fmtAmt(o.actual_amount)}</td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${o.refund_reason||''}">${fmt(o.refund_reason)}</td>
+      <td style="font-size:12px;white-space:nowrap">${fmtDate(o.updated_at)}</td>
+      <td>${statusTag}</td>
+      <td style="font-size:12px;color:var(--text-secondary)">${fmt(o.operator)}</td>
+      <td>${actions}</td>
+    </tr>`;
+  }).join('');
+}
+
+function getStatusTag(s) {
+  const map = {
+    refunding: '<span class="tag tag-warning">⏳ 待审核</span>',
+    refunded:  '<span class="tag tag-success">✅ 已退款</span>',
+    paid:      '<span class="tag tag-info">❌ 已拒绝</span>',
+    cancelled: '<span class="tag tag-danger">已取消</span>',
+  };
+  return map[s] || `<span class="tag tag-info">${s}</span>`;
+}
+
+function renderPagination() {
+  const pg = document.getElementById('pg');
+  if (pages <= 1) { pg.innerHTML = ''; return; }
+  let html = `<span class="pg-info">共 ${total} 条</span>`;
+  html += `<button onclick="loadData(${page-1})" ${page<=1?'disabled':''}>‹ 上一页</button>`;
+  const start = Math.max(1, page-2), end = Math.min(pages, page+2);
+  if (start > 1) html += `<button onclick="loadData(1)">1</button>${start>2?'<span>…</span>':''}`;
+  for (let i=start;i<=end;i++) html += `<button class="${i===page?'active':''}" onclick="loadData(${i})">${i}</button>`;
+  if (end < pages) html += `${end<pages-1?'<span>…</span>':''}<button onclick="loadData(${pages})">${pages}</button>`;
+  html += `<button onclick="loadData(${page+1})" ${page>=pages?'disabled':''}>下一页 ›</button>`;
+  pg.innerHTML = html;
+}
+
+// ======================== 批量操作 ========================
+function toggleAll(cb) {
+  document.querySelectorAll('.row-check').forEach(c => {
+    c.checked = cb.checked;
+    if (cb.checked) selectedIds.add(parseInt(c.value));
+    else selectedIds.delete(parseInt(c.value));
+  });
+}
+function toggleSelect(cb) {
+  if (cb.checked) selectedIds.add(parseInt(cb.value));
+  else selectedIds.delete(parseInt(cb.value));
+}
+
+// ======================== 审核弹窗 ========================
+let auditAction = null;
+
+function openAudit(orderId, action) {
+  currentOrderId = orderId;
+  auditAction = action;
+  document.getElementById('audit-reason').value = '';
+  document.getElementById('modal-alert').style.display = 'none';
+  document.getElementById('modal-title').textContent = action === 'approve' ? '✅ 批准退款申请' : '❌ 拒绝退款申请';
+
+  // 加载订单详情
+  apiFetch(`/api/admin/orders/${orderId}`).then(d => {
+    if (!d.success) return;
+    const o = d.data;
+    document.getElementById('modal-info').innerHTML = `
+      <div class="row"><div class="k">订单号</div><div class="v">${fmt(o.order_no)}</div></div>
+      <div class="row"><div class="k">用户</div><div class="v">${fmt(o.user_name)} ${fmt(o.user_phone)}</div></div>
+      <div class="row"><div class="k">退款金额</div><div class="v" style="color:#f57c00">${fmtAmt(o.actual_amount)}</div></div>
+      <div class="row"><div class="k">退款原因</div><div class="v">${fmt(o.refund_reason)}</div></div>
+      <div class="row"><div class="k">下单时间</div><div class="v">${fmtDate(o.created_at)}</div></div>
+      <div class="row"><div class="k">申请时间</div><div class="v">${fmtDate(o.updated_at)}</div></div>
+    `;
+  }).catch(() => {
+    document.getElementById('modal-info').innerHTML = `<div style="color:var(--danger)">订单信息加载失败</div>`;
+  });
+
+  if (action === 'approve') {
+    document.getElementById('modal-alert').style.display = 'block';
+    document.getElementById('modal-alert').textContent = '⚠️ 批准后将立即退款，该操作不可逆，请确认。';
+    document.getElementById('btn-reject').style.display = 'none';
+    document.getElementById('btn-approve').style.display = '';
+  } else {
+    document.getElementById('modal-alert').style.display = 'none';
+    document.getElementById('btn-reject').style.display = '';
+    document.getElementById('btn-approve').style.display = 'none';
+  }
+  document.getElementById('overlay').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('show');
+  currentOrderId = null; auditAction = null;
+}
+
+async function submitAudit(action) {
+  if (!currentOrderId) return;
+  const reason = document.getElementById('audit-reason').value.trim();
+  if (action === 'reject' && !reason) {
+    showToast('拒绝退款时必须填写原因', 'warning'); return;
+  }
+  const btn = action === 'approve' ? document.getElementById('btn-approve') : document.getElementById('btn-reject');
+  btn.disabled = true; btn.textContent = '处理中...';
+
+  try {
+    const d = await apiFetch(`/api/admin/orders/${currentOrderId}/refund`, {
+      method: 'POST',
+      body: JSON.stringify({ action, reason })
+    });
+    if (d.success) {
+      showToast(action === 'approve' ? '✅ 退款已批准，用户将收到通知' : '❌ 已拒绝退款申请', 'success');
+      closeModal();
+      loadData();
+      loadStats();
+    } else {
+      showToast('操作失败：' + (d.msg || '未知错误'), 'error');
+    }
+  } catch(e) {
+    showToast('网络错误，请重试', 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = action === 'approve' ? '✅ 批准退款' : '❌ 拒绝退款';
+  }
+}
+
+// ======================== 导出CSV ========================
+function exportCSV() {
+  const kw = document.getElementById('kw').value.trim();
+  const status = document.getElementById('statusFilter').value || 'refunding,refunded';
+  const days = document.getElementById('dateFilter').value;
+  let url = `/api/admin/export/orders?order_status=${status}&format=csv`;
+  if (kw) url += '&keyword=' + encodeURIComponent(kw);
+  if (days) url += '&days=' + days;
+  const a = document.createElement('a');
+  a.href = API + url + '&token=' + getToken();
+  a.download = 'refunds_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+// ======================== ESC关闭弹窗 ========================
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+document.getElementById('overlay').addEventListener('click', e => { if (e.target === document.getElementById('overlay')) closeModal(); });
+
+// ======================== 初始化 ========================
+(async function init() {
+  await loadStats();
+  await loadData(1);
+  await loadAnalysis();
+})();
+</script>
+</body>
+</html>

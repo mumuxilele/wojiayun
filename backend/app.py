@@ -12,12 +12,14 @@ import json
 app = Flask(__name__)
 CORS(app)
 
-# 数据库配置 - 请修改为你的数据库信息
+# 数据库配置 - 从环境变量读取（与其他服务统一）
+import os
 DB_CONFIG = {
-    'host': 'localhost',
-    'user': 'root',
-    'password': 'your_password',
-    'database': 'visit_system',
+    'host': os.environ.get('DB_HOST', '47.98.238.209'),
+    'port': int(os.environ.get('DB_PORT', '3306')),
+    'user': os.environ.get('DB_USER', 'root'),
+    'password': os.environ.get('DB_PASSWORD', ''),
+    'database': os.environ.get('DB_NAME', 'visit_system'),
     'charset': 'utf8mb4'
 }
 
@@ -162,11 +164,11 @@ def get_visits():
     params = []
     
     if month:
-        where += " AND DATE_FORMAT(visit_date, '%%Y-%%m') = %s"
+        where += " AND DATE_FORMAT(visit_time, '%%Y-%%m') = %s"
         params.append(month)
     
     if staff_id:
-        where += " AND staff_id = %s"
+        where += " AND visitor = %s"
         params.append(staff_id)
     
     if category:
@@ -180,7 +182,7 @@ def get_visits():
     # 分页查询
     offset = (page - 1) * page_size
     cursor.execute(
-        f"SELECT * FROM visit_records {where} ORDER BY visit_date DESC, id DESC LIMIT %s OFFSET %s",
+        f"SELECT * FROM visit_records {where} ORDER BY visit_time DESC, id DESC LIMIT %s OFFSET %s",
         params + [page_size, offset]
     )
     
@@ -188,10 +190,14 @@ def get_visits():
     cursor.close()
     conn.close()
     
-    # 转换日期格式
+    # 转换日期格式，并映射字段名给前端
     for row in rows:
-        if row.get('visit_date'):
-            row['visit_date'] = str(row['visit_date'])
+        if row.get('visit_time'):
+            row['visit_time'] = str(row['visit_time'])
+        # 映射字段名给前端
+        row['visit_date'] = row.get('visit_time')
+        row['staff_id'] = row.get('visitor')
+        row['staff_name'] = row.get('visitor_name')
         if row.get('create_time'):
             row['create_time'] = row['create_time'].strftime('%Y-%m-%d %H:%M:%S')
         if row.get('update_time'):
@@ -226,7 +232,7 @@ def create_visit():
     
     sql = '''
         INSERT INTO visit_records 
-        (company_name, region, staff_id, staff_name, visit_date, category, content, create_by, create_time)
+        (company_name, region, visitor, visitor_name, visit_time, category, content, creator, create_time)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
     '''
     
@@ -269,12 +275,11 @@ def update_visit(record_id):
         UPDATE visit_records SET
             company_name = %s,
             region = %s,
-            staff_id = %s,
-            staff_name = %s,
-            visit_date = %s,
+            visitor = %s,
+            visitor_name = %s,
+            visit_time = %s,
             category = %s,
             content = %s,
-            update_by = %s,
             update_time = %s
         WHERE id = %s AND deleted = 0
     '''
@@ -353,16 +358,16 @@ def get_stats():
         params.append(region)
     
     if staff_id:
-        where += " AND staff_id = %s"
+        where += " AND visitor = %s"
         params.append(staff_id)
     
     # 按时间维度统计
     if stats_type == 'month':
-        date_format = "DATE_FORMAT(visit_date, '%%Y-%%m')"
+        date_format = "DATE_FORMAT(visit_time, '%%Y-%%m')"
     elif stats_type == 'quarter':
-        date_format = "CONCAT(YEAR(visit_date), '-Q', QUARTER(visit_date))"
+        date_format = "CONCAT(YEAR(visit_time), '-Q', QUARTER(visit_time))"
     else:
-        date_format = "YEAR(visit_date)"
+        date_format = "YEAR(visit_time)"
     
     sql = f'''
         SELECT 
@@ -385,7 +390,7 @@ def get_stats():
     cursor.execute(f"SELECT COUNT(DISTINCT company_name) as companies FROM visit_records {where}", params)
     companies = cursor.fetchone()['companies']
     
-    cursor.execute(f"SELECT COUNT(DISTINCT staff_id) as staff FROM visit_records {where}", params)
+    cursor.execute(f"SELECT COUNT(DISTINCT visitor) as staff FROM visit_records {where}", params)
     staff = cursor.fetchone()['staff']
     
     cursor.close()

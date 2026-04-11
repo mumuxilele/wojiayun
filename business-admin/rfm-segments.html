@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RFM用户分群 - 管理后台</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f2f5; min-height: 100vh; }
+.nav { background: #1a1a2e; padding: 12px 20px; display: flex; align-items: center; gap: 16px; }
+.nav a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; }
+.nav a:hover { color: white; }
+.nav .cur { color: white; font-weight: 600; }
+.nav .sep { color: rgba(255,255,255,0.3); }
+.main { padding: 20px; max-width: 1400px; margin: 0 auto; }
+h2 { font-size: 22px; color: #1a1a2e; margin-bottom: 4px; }
+.subtitle { font-size: 13px; color: #888; margin-bottom: 20px; }
+
+/* RFM 定义卡片 */
+.rfm-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 24px; }
+.rfm-card { background: white; border-radius: 12px; padding: 16px; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.rfm-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+.rfm-card.active { border-color: var(--rfm-color, #00d1a0); }
+.rfm-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.rfm-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.rfm-name { font-size: 14px; font-weight: 600; color: #222; }
+.rfm-desc { font-size: 12px; color: #888; line-height: 1.5; margin-bottom: 10px; }
+.rfm-count { font-size: 24px; font-weight: 700; }
+.rfm-sub { font-size: 11px; color: #aaa; margin-top: 1px; }
+.rfm-bar { height: 4px; border-radius: 2px; margin-top: 10px; background: #f0f0f0; overflow: hidden; }
+.rfm-bar-fill { height: 100%; border-radius: 2px; }
+
+/* 工具栏 */
+.toolbar { background: white; padding: 14px 20px; border-radius: 12px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.filter-group { display: flex; align-items: center; gap: 8px; }
+.filter-group label { font-size: 13px; color: #666; white-space: nowrap; }
+select, input[type=text], input[type=number] { border: 1px solid #d9d9d9; border-radius: 6px; padding: 6px 10px; font-size: 13px; outline: none; }
+select:focus, input:focus { border-color: #00d1a0; }
+.btn { padding: 7px 16px; border-radius: 6px; font-size: 13px; cursor: pointer; border: none; transition: all 0.15s; }
+.btn-primary { background: #00d1a0; color: white; }
+.btn-primary:hover { background: #33dab3; }
+.btn-warning { background: #fa8c16; color: white; }
+.btn-warning:hover { background: #ffa940; }
+.btn-default { background: white; color: #666; border: 1px solid #d9d9d9; }
+.btn-default:hover { border-color: #00d1a0; color: #00d1a0; }
+.btn-success { background: #52c41a; color: white; }
+.btn-success:hover { background: #73d13d; }
+.spacer { flex: 1; }
+.batch-bar { display: flex; align-items: center; gap: 10px; }
+.batch-count { font-size: 13px; color: #666; }
+.batch-count b { color: #00d1a0; }
+
+/* 表格 */
+.table-wrap { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.table-head { padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f0f0f0; }
+.table-title { font-size: 14px; font-weight: 600; color: #222; }
+.table-sub { font-size: 12px; color: #aaa; }
+table { width: 100%; border-collapse: collapse; }
+th { background: #fafafa; padding: 10px 14px; text-align: left; font-size: 12px; color: #888; font-weight: 500; white-space: nowrap; border-bottom: 1px solid #f0f0f0; }
+td { padding: 10px 14px; font-size: 13px; color: #333; border-bottom: 1px solid #f0f0f0; white-space: nowrap; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #fafafa; }
+.check-col { width: 36px; text-align: center; }
+input[type=checkbox] { cursor: pointer; width: 15px; height: 15px; }
+
+/* 标签 */
+.rfm-tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+.level-tag { padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+.lv-bronze { background: #fff3cd; color: #85681d; }
+.lv-silver { background: #f0f0f0; color: #666; }
+.lv-gold { background: #fff7d0; color: #9a7000; }
+.lv-platinum { background: #e8f4fd; color: #1155aa; }
+.lv-diamond { background: #f3e8ff; color: #7c3aed; }
+
+/* 分页 */
+.pagination { padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #f0f0f0; }
+.pag-info { font-size: 12px; color: #aaa; }
+.pag-btns { display: flex; gap: 6px; }
+.pag-btn { padding: 4px 10px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 12px; cursor: pointer; background: white; color: #333; }
+.pag-btn.active { background: #00d1a0; border-color: #00d1a0; color: white; }
+.pag-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* 弹窗 */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; display: none; align-items: center; justify-content: center; }
+.modal-overlay.show { display: flex; }
+.modal { background: white; border-radius: 14px; width: 480px; max-width: 96vw; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+.modal-head { padding: 16px 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+.modal-head h3 { font-size: 16px; color: #222; }
+.modal-close { font-size: 20px; color: #aaa; cursor: pointer; border: none; background: none; }
+.modal-body { padding: 20px; }
+.form-row { margin-bottom: 16px; }
+.form-row label { display: block; font-size: 13px; color: #555; margin-bottom: 6px; font-weight: 500; }
+.form-row select, .form-row input, .form-row textarea { width: 100%; border: 1px solid #d9d9d9; border-radius: 6px; padding: 8px 12px; font-size: 13px; outline: none; }
+.form-row select:focus, .form-row input:focus, .form-row textarea:focus { border-color: #00d1a0; }
+.form-hint { font-size: 11px; color: #aaa; margin-top: 4px; }
+.preview-box { background: #f9f9f9; border-radius: 8px; padding: 12px; margin-top: 10px; }
+.preview-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+.preview-num { font-size: 24px; font-weight: 700; color: #00d1a0; }
+.modal-foot { padding: 14px 20px; border-top: 1px solid #f0f0f0; display: flex; justify-content: flex-end; gap: 10px; }
+
+/* 分值条 */
+.score-cell { display: flex; align-items: center; gap: 6px; }
+.score-dots { display: flex; gap: 2px; }
+.score-dot { width: 8px; height: 8px; border-radius: 50%; background: #e0e0e0; }
+.score-dot.on { background: #00d1a0; }
+
+.loading { text-align: center; padding: 60px; color: #aaa; }
+.empty { text-align: center; padding: 60px; color: #aaa; }
+.empty-icon { font-size: 48px; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+<div class="nav">
+    <a href="index.html">首页</a><span class="sep">/</span>
+    <a href="statistics.html">数据统计</a><span class="sep">/</span>
+    <span class="cur">RFM用户分群</span>
+</div>
+
+<div class="main">
+    <h2>📊 RFM用户分群</h2>
+    <p class="subtitle">基于最近消费时间(Recency)、消费频次(Frequency)、消费金额(Monetary)对用户进行智能分群，精准触达不同价值层次用户</p>
+
+    <!-- RFM 分群概览卡片 -->
+    <div class="rfm-cards" id="rfmCards">
+        <div class="loading">⏳ 加载分群数据中...</div>
+    </div>
+
+    <!-- 工具栏 -->
+    <div class="toolbar">
+        <div class="filter-group">
+            <label>分群类型</label>
+            <select id="filterType" onchange="loadUsers(1)">
+                <option value="">全部用户</option>
+                <option value="champions">💎 重要价值客户</option>
+                <option value="loyal">⭐ 忠诚客户</option>
+                <option value="potential">🌱 潜力客户</option>
+                <option value="new">🆕 新客户</option>
+                <option value="at_risk">⚠️ 流失风险客户</option>
+                <option value="lost">😴 流失客户</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>排序</label>
+            <select id="sortBy" onchange="loadUsers(1)">
+                <option value="monetary">按消费金额</option>
+                <option value="frequency">按消费频次</option>
+                <option value="recency">按最近消费</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>关键词</label>
+            <input type="text" id="keyword" placeholder="姓名/手机号" style="width:160px" onkeydown="if(event.key==='Enter')loadUsers(1)">
+        </div>
+        <button class="btn btn-primary" onclick="loadUsers(1)">🔍 搜索</button>
+        <div class="spacer"></div>
+        <div class="batch-bar" id="batchBar" style="display:none">
+            <span class="batch-count">已选 <b id="selectedCount">0</b> 人</span>
+            <button class="btn btn-warning" onclick="openBatchCouponModal()">🎫 批量发优惠券</button>
+            <button class="btn btn-default" onclick="clearSelection()">取消选择</button>
+        </div>
+        <button class="btn btn-success" onclick="exportRfm()">📥 导出数据</button>
+    </div>
+
+    <!-- 用户列表 -->
+    <div class="table-wrap">
+        <div class="table-head">
+            <div>
+                <span class="table-title">用户列表</span>
+                <span class="table-sub" id="totalText"> 共加载中...</span>
+            </div>
+            <div style="display:flex;gap:8px">
+                <button class="btn btn-default" onclick="selectAll()">全选当页</button>
+            </div>
+        </div>
+        <div id="userTableArea">
+            <div class="loading">⏳ 加载中...</div>
+        </div>
+        <div class="pagination" id="pagination" style="display:none">
+            <div class="pag-info" id="pagInfo"></div>
+            <div class="pag-btns" id="pagBtns"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 批量发优惠券弹窗 -->
+<div class="modal-overlay" id="couponModal">
+    <div class="modal">
+        <div class="modal-head">
+            <h3>🎫 批量发放优惠券</h3>
+            <button class="modal-close" onclick="closeCouponModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-row">
+                <label>选择优惠券 <span style="color:#f00">*</span></label>
+                <select id="couponSelect">
+                    <option value="">-- 请选择 --</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label>发放说明（可选）</label>
+                <input type="text" id="issueRemark" placeholder="例如：感谢您的长期支持">
+            </div>
+            <div class="preview-box">
+                <div class="preview-label">将向以下用户发放</div>
+                <div class="preview-num" id="previewCount">0</div>
+                <div style="font-size:12px;color:#aaa;margin-top:2px">名用户（已排除已持有该券的用户）</div>
+            </div>
+        </div>
+        <div class="modal-foot">
+            <button class="btn btn-default" onclick="closeCouponModal()">取消</button>
+            <button class="btn btn-primary" onclick="submitBatchCoupon()" id="submitCouponBtn">确认发放</button>
+        </div>
+    </div>
+</div>
+
+<script>
+var urlParams = new URLSearchParams(location.search);
+var token = urlParams.get('access_token') || localStorage.getItem('admin_token') || '';
+var isdev = urlParams.get('isdev') || '0';
+if (token) { localStorage.setItem('admin_token', token); }
+
+var currentPage = 1;
+var pageSize = 20;
+var totalUsers = 0;
+var selectedIds = new Set();
+var allPageIds = [];
+
+function apiUrl(path) {
+    var sep = path.indexOf('?') >= 0 ? '&' : '?';
+    return path + sep + 'access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+}
+
+// ==================== RFM 分群卡片 ====================
+var RFM_CONFIG = {
+    champions:  { name: '重要价值客户', icon: '💎', color: '#722ed1', bg: '#f9f0ff', desc: '最近购买、高频次、高金额', tip: 'R↑F↑M↑' },
+    loyal:      { name: '忠诚客户',     icon: '⭐', color: '#00d1a0', bg: '#e6f9f3', desc: '经常购买、中高金额',       tip: 'F↑M↑' },
+    potential:  { name: '潜力客户',     icon: '🌱', color: '#52c41a', bg: '#f6ffed', desc: '最近有购买、频次有待提升', tip: 'R↑' },
+    new:        { name: '新客户',        icon: '🆕', color: '#13c2c2', bg: '#e6fffb', desc: '最近才加入、购买次数少',  tip: 'R↑F↓' },
+    at_risk:    { name: '流失风险',      icon: '⚠️', color: '#fa8c16', bg: '#fff7e6', desc: '最近未购买但历史高价值',  tip: 'R↓F↑M↑' },
+    lost:       { name: '流失客户',      icon: '😴', color: '#f5222d', bg: '#fff1f0', desc: '长期未购买、无互动',       tip: 'R↓F↓' }
+};
+
+function loadRfmOverview() {
+    fetch(apiUrl('/api/admin/statistics/rfm-overview'))
+    .then(function(r){ return r.json(); })
+    .then(function(d) {
+        if (!d.success) { document.getElementById('rfmCards').innerHTML = '<p style="color:#aaa">加载失败</p>'; return; }
+        var items = d.data || [];
+        var totalAll = items.reduce(function(s, i){ return s + (i.count || 0); }, 0);
+        var html = '';
+        // 按顺序展示
+        var order = ['champions','loyal','potential','new','at_risk','lost'];
+        order.forEach(function(key) {
+            var cfg = RFM_CONFIG[key];
+            var item = items.find(function(x){ return x.rfm_type === key; }) || {count:0, avg_consume:0};
+            var pct = totalAll > 0 ? Math.round(item.count / totalAll * 100) : 0;
+            html += '<div class="rfm-card" style="--rfm-color:' + cfg.color + '" onclick="filterByType(\'' + key + '\')">'
+                + '<div class="rfm-card-head"><div class="rfm-icon" style="background:' + cfg.bg + '">' + cfg.icon + '</div>'
+                + '<div><div class="rfm-name" style="color:' + cfg.color + '">' + cfg.name + '</div>'
+                + '<div style="font-size:11px;color:#bbb">' + cfg.tip + '</div></div></div>'
+                + '<div class="rfm-desc">' + cfg.desc + '</div>'
+                + '<div class="rfm-count" style="color:' + cfg.color + '">' + (item.count || 0) + '</div>'
+                + '<div class="rfm-sub">人 · 占比 ' + pct + '% · 均消费 ¥' + parseFloat(item.avg_consume || 0).toFixed(0) + '</div>'
+                + '<div class="rfm-bar"><div class="rfm-bar-fill" style="width:' + pct + '%;background:' + cfg.color + '"></div></div>'
+                + '</div>';
+        });
+        document.getElementById('rfmCards').innerHTML = html;
+    })
+    .catch(function(e) {
+        document.getElementById('rfmCards').innerHTML = '<p style="color:#aaa">暂无分群数据（需先有订单记录）</p>';
+    });
+}
+
+function filterByType(type) {
+    document.getElementById('filterType').value = type;
+    // 高亮选中卡片
+    document.querySelectorAll('.rfm-card').forEach(function(el){ el.classList.remove('active'); });
+    loadUsers(1);
+}
+
+// ==================== 用户列表 ====================
+function loadUsers(page) {
+    currentPage = page;
+    selectedIds.clear();
+    updateBatchBar();
+    var type = document.getElementById('filterType').value;
+    var sort = document.getElementById('sortBy').value;
+    var kw = document.getElementById('keyword').value.trim();
+    var url = '/api/admin/statistics/rfm-members?page=' + page + '&page_size=' + pageSize + '&sort_by=' + sort;
+    if (type) url += '&rfm_type=' + encodeURIComponent(type);
+    if (kw) url += '&keyword=' + encodeURIComponent(kw);
+    document.getElementById('userTableArea').innerHTML = '<div class="loading">⏳ 加载中...</div>';
+    fetch(apiUrl(url))
+    .then(function(r){ return r.json(); })
+    .then(function(d) {
+        if (!d.success) { document.getElementById('userTableArea').innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><p>加载失败</p></div>'; return; }
+        var data = d.data || {};
+        var items = data.items || [];
+        totalUsers = data.total || 0;
+        allPageIds = items.map(function(i){ return i.member_id || i.user_id; });
+        document.getElementById('totalText').textContent = ' 共 ' + totalUsers + ' 人';
+        if (items.length === 0) {
+            document.getElementById('userTableArea').innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><p>该分群暂无用户</p></div>';
+            document.getElementById('pagination').style.display = 'none';
+            return;
+        }
+        renderTable(items);
+        renderPagination(totalUsers, page);
+    })
+    .catch(function() {
+        document.getElementById('userTableArea').innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><p>接口异常，请检查后端服务</p></div>';
+    });
+}
+
+function renderTable(items) {
+    var html = '<table><thead><tr>'
+        + '<th class="check-col"><input type="checkbox" id="checkAll" onchange="toggleAll(this)"></th>'
+        + '<th>用户</th><th>会员等级</th><th>最近购买</th><th>购买次数</th><th>累计消费</th><th>R分</th><th>F分</th><th>M分</th><th>分群</th><th>操作</th>'
+        + '</tr></thead><tbody>';
+    items.forEach(function(u) {
+        var uid = u.member_id || u.user_id;
+        var levelClass = 'lv-' + (u.member_level || 'bronze');
+        var levelMap = {bronze:'青铜',silver:'白银',gold:'黄金',platinum:'铂金',diamond:'钻石',legendary:'传奇'};
+        var rfmCfg = RFM_CONFIG[u.rfm_type] || {icon:'?', color:'#999', name: u.rfm_type || '-'};
+        var checked = selectedIds.has(uid) ? 'checked' : '';
+        html += '<tr>'
+            + '<td class="check-col"><input type="checkbox" ' + checked + ' onchange="toggleRow(this,' + JSON.stringify(uid) + ')"></td>'
+            + '<td><b>' + (u.user_name||'-') + '</b><br><span style="font-size:11px;color:#aaa">' + (u.phone||'-') + '</span></td>'
+            + '<td><span class="level-tag ' + levelClass + '">' + (levelMap[u.member_level]||u.member_level||'-') + '</span></td>'
+            + '<td>' + (u.recency_days === 0 ? '今天' : (u.recency_days > 0 ? u.recency_days + '天前' : '-')) + '</td>'
+            + '<td>' + (u.frequency_orders || 0) + ' 次</td>'
+            + '<td>¥' + parseFloat(u.monetary_total || 0).toFixed(2) + '</td>'
+            + '<td>' + renderScoreDots(u.r_score, '#00d1a0') + '</td>'
+            + '<td>' + renderScoreDots(u.f_score, '#52c41a') + '</td>'
+            + '<td>' + renderScoreDots(u.m_score, '#fa8c16') + '</td>'
+            + '<td><span class="rfm-tag" style="background:' + rfmCfg.bg + ';color:' + rfmCfg.color + '">' + rfmCfg.icon + ' ' + rfmCfg.name + '</span></td>'
+            + '<td><a href="member-profile.html?user_id=' + uid + '&access_token=' + encodeURIComponent(token) + '" style="color:#00d1a0;font-size:12px">画像</a></td>'
+            + '</tr>';
+    });
+    html += '</tbody></table>';
+    document.getElementById('userTableArea').innerHTML = html;
+}
+
+function renderScoreDots(score, color) {
+    var s = parseInt(score) || 0;
+    var html = '<div class="score-cell"><div class="score-dots">';
+    for (var i = 1; i <= 5; i++) {
+        html += '<div class="score-dot' + (i <= s ? ' on" style="background:' + color + '"' : '"') + '></div>';
+    }
+    html += '</div><span style="font-size:12px;color:#aaa;margin-left:2px">' + s + '</span></div>';
+    return html;
+}
+
+function renderPagination(total, current) {
+    var pages = Math.ceil(total / pageSize);
+    document.getElementById('pagInfo').textContent = '第 ' + current + ' / ' + pages + ' 页，共 ' + total + ' 条';
+    var html = '';
+    html += '<button class="pag-btn" onclick="loadUsers(' + (current-1) + ')" ' + (current<=1?'disabled':'') + '>上一页</button>';
+    var start = Math.max(1, current - 2), end = Math.min(pages, current + 2);
+    if (start > 1) html += '<button class="pag-btn" onclick="loadUsers(1)">1</button>';
+    if (start > 2) html += '<span style="padding:0 4px;color:#aaa">...</span>';
+    for (var p = start; p <= end; p++) {
+        html += '<button class="pag-btn ' + (p===current?'active':'') + '" onclick="loadUsers(' + p + ')">' + p + '</button>';
+    }
+    if (end < pages - 1) html += '<span style="padding:0 4px;color:#aaa">...</span>';
+    if (end < pages) html += '<button class="pag-btn" onclick="loadUsers(' + pages + ')">' + pages + '</button>';
+    html += '<button class="pag-btn" onclick="loadUsers(' + (current+1) + ')" ' + (current>=pages?'disabled':'') + '>下一页</button>';
+    document.getElementById('pagBtns').innerHTML = html;
+    document.getElementById('pagination').style.display = 'flex';
+}
+
+// ==================== 选择 ====================
+function toggleRow(el, uid) {
+    if (el.checked) selectedIds.add(uid); else selectedIds.delete(uid);
+    updateBatchBar();
+}
+function toggleAll(el) {
+    allPageIds.forEach(function(id){ if(el.checked) selectedIds.add(id); else selectedIds.delete(id); });
+    document.querySelectorAll('tbody input[type=checkbox]').forEach(function(c){ c.checked = el.checked; });
+    updateBatchBar();
+}
+function selectAll() {
+    allPageIds.forEach(function(id){ selectedIds.add(id); });
+    document.querySelectorAll('tbody input[type=checkbox]').forEach(function(c){ c.checked = true; });
+    var ca = document.getElementById('checkAll'); if(ca) ca.checked = true;
+    updateBatchBar();
+}
+function clearSelection() {
+    selectedIds.clear();
+    document.querySelectorAll('input[type=checkbox]').forEach(function(c){ c.checked = false; });
+    updateBatchBar();
+}
+function updateBatchBar() {
+    var cnt = selectedIds.size;
+    document.getElementById('selectedCount').textContent = cnt;
+    document.getElementById('batchBar').style.display = cnt > 0 ? 'flex' : 'none';
+    document.getElementById('previewCount').textContent = cnt;
+}
+
+// ==================== 批量发优惠券 ====================
+function loadCoupons() {
+    fetch(apiUrl('/api/admin/coupons?page=1&page_size=50&status=active'))
+    .then(function(r){ return r.json(); })
+    .then(function(d) {
+        var sel = document.getElementById('couponSelect');
+        sel.innerHTML = '<option value="">-- 请选择优惠券 --</option>';
+        var items = (d.data && d.data.items) ? d.data.items : (Array.isArray(d.data) ? d.data : []);
+        items.forEach(function(c) {
+            var label = c.coupon_name + '（';
+            if (c.coupon_type === 'cash') label += '满' + c.min_amount + '减' + c.discount_value;
+            else if (c.coupon_type === 'discount') label += c.discount_value * 10 + '折';
+            else label += c.coupon_type;
+            label += '）库存:' + (c.stock === null || c.unlimited_stock ? '不限' : c.stock);
+            var opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = label;
+            sel.appendChild(opt);
+        });
+    })
+    .catch(function(){});
+}
+
+function openBatchCouponModal() {
+    if (selectedIds.size === 0) { alert('请先选择用户'); return; }
+    loadCoupons();
+    document.getElementById('previewCount').textContent = selectedIds.size;
+    document.getElementById('couponModal').classList.add('show');
+}
+function closeCouponModal() {
+    document.getElementById('couponModal').classList.remove('show');
+}
+
+function submitBatchCoupon() {
+    var couponId = document.getElementById('couponSelect').value;
+    var remark = document.getElementById('issueRemark').value.trim();
+    if (!couponId) { alert('请选择优惠券'); return; }
+    if (selectedIds.size === 0) { alert('请先选择用户'); return; }
+    var btn = document.getElementById('submitCouponBtn');
+    btn.disabled = true; btn.textContent = '发放中...';
+    var userIds = Array.from(selectedIds);
+    // 使用已有的定向发放接口，传 user_ids 参数
+    fetch(apiUrl('/api/admin/coupons/' + couponId + '/targeted-issue'), {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ user_ids: userIds, remark: remark })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d) {
+        btn.disabled = false; btn.textContent = '确认发放';
+        if (d.success) {
+            alert('✅ 成功发放给 ' + (d.data && d.data.issued_count !== undefined ? d.data.issued_count : selectedIds.size) + ' 名用户');
+            closeCouponModal();
+            clearSelection();
+        } else {
+            alert('发放失败：' + (d.msg || '未知错误'));
+        }
+    })
+    .catch(function(e) {
+        btn.disabled = false; btn.textContent = '确认发放';
+        alert('请求失败：' + e.message);
+    });
+}
+
+// ==================== 导出 ====================
+function exportRfm() {
+    var type = document.getElementById('filterType').value;
+    var url = '/api/admin/statistics/rfm-export';
+    if (type) url += '?rfm_type=' + encodeURIComponent(type);
+    window.open(apiUrl(url), '_blank');
+}
+
+// ==================== 初始化 ====================
+loadRfmOverview();
+loadUsers(1);
+</script>
+</body>
+</html>

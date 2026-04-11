@@ -6,50 +6,76 @@
 <title>会员中心</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f5;min-height:100vh;padding-bottom:30px}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f5;min-height:100vh;padding-bottom:30px;color:#333}
 .header{background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%);color:white;padding:20px 15px 40px;position:relative}
 .header-top{display:flex;align-items:center;gap:10px;margin-bottom:16px}
 .back{color:white;font-size:20px;text-decoration:none;padding:4px 8px}
 .header-title{font-size:18px;font-weight:600}
-.member-card{background:rgba(255,255,255,.18);border-radius:16px;padding:16px;display:flex;align-items:center;gap:14px}
+.member-card{background:rgba(255,255,255,.18);border-radius:16px;padding:16px;display:flex;align-items:center;gap:14px;box-shadow:0 8px 20px rgba(0,0,0,.08)}
 .avatar{width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;border:2px solid rgba(255,255,255,.5)}
-.member-info .name{font-size:18px;font-weight:700}
+.member-info{flex:1;min-width:0}
+.member-info .name{font-size:18px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .member-info .phone{font-size:13px;opacity:.85;margin-top:2px}
-.level-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:12px;margin-top:5px;font-weight:600}
-.lv-bronze{background:rgba(205,127,50,.3);color:#ffd700}
-.lv-silver{background:rgba(192,192,192,.3);color:#e8e8e8}
-.lv-gold{background:rgba(255,215,0,.3);color:#ffd700}
-.lv-platinum{background:rgba(229,228,226,.3);color:#fff}
-
-/* 积分余额卡片 */
+.level-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;font-size:12px;margin-top:6px;font-weight:600;background:rgba(255,255,255,.2);color:#fff}
+.level-note{margin-top:8px;font-size:12px;opacity:.95}
 .points-row{display:flex;gap:12px;margin:-24px 15px 0;position:relative;z-index:10}
 .points-card{flex:1;background:white;border-radius:14px;padding:16px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.1)}
 .points-card .num{font-size:24px;font-weight:700;color:#333}
 .points-card .label{font-size:12px;color:#999;margin-top:3px}
 .points-card .sub{font-size:11px;color:#bbb;margin-top:1px}
+.section{background:white;margin:16px 15px;border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.section-title{font-size:15px;font-weight:600;color:#333;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.section-desc{font-size:12px;color:#999;line-height:1.6;margin-top:-6px;margin-bottom:12px}
+.benefit-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.benefit-card{background:linear-gradient(180deg,#fff7fb 0%,#fff 100%);border:1px solid #ffe1ef;border-radius:12px;padding:14px}
+.benefit-card .label{font-size:12px;color:#999}
+.benefit-card .value{font-size:22px;font-weight:700;color:#f5576c;margin-top:8px}
+.benefit-card .sub{font-size:11px;color:#999;margin-top:6px;line-height:1.5}
+.level-bar{position:relative;margin-bottom:8px}
+.level-progress{height:8px;border-radius:4px;background:#f0f0f0;overflow:hidden;margin-bottom:6px}
+.level-fill{height:100%;background:linear-gradient(90deg,#f093fb,#f5576c);border-radius:4px;transition:width .5s}
+.level-labels{display:flex;justify-content:space-between;font-size:11px;color:#999;gap:8px}
+.level-next-tip{font-size:12px;color:#666;text-align:center;margin-top:8px;line-height:1.6}
+.privilege-list{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.privilege-item{padding:12px;border-radius:12px;background:#faf7ff;border:1px solid #efe6ff;font-size:13px;color:#5c3b8f;line-height:1.5;display:flex;gap:8px;align-items:flex-start}
+.privilege-item .icon{font-size:16px;line-height:1.2}
+.task-list{display:flex;flex-direction:column;gap:10px}
+.task-card{display:flex;align-items:center;gap:12px;padding:14px;border-radius:12px;background:#fffaf2;border:1px solid #ffe4b5}
+.task-icon{width:40px;height:40px;border-radius:12px;background:#fff2d9;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.task-main{flex:1;min-width:0}
+.task-title{font-size:14px;font-weight:600;color:#333}
+.task-sub{font-size:12px;color:#999;margin-top:4px;line-height:1.5}
+.task-btn{padding:8px 12px;border:none;border-radius:999px;background:linear-gradient(135deg,#f093fb,#f5576c);color:#fff;font-size:12px;cursor:pointer;flex-shrink:0}
+.task-btn.secondary{background:#f3f3f3;color:#999}
+.task-meta{font-size:11px;color:#999;margin-top:6px;display:flex;flex-wrap:wrap;gap:8px}
+.task-progress{height:6px;border-radius:999px;background:#f0f0f0;overflow:hidden;margin-top:8px}
+.task-progress-fill{height:100%;background:linear-gradient(90deg,#f093fb,#f5576c);border-radius:999px}
+.level-list{display:flex;flex-direction:column;gap:10px}
 
-/* 功能菜单 */
+.level-item{padding:14px;border-radius:12px;border:1px solid #f1f1f1;background:#fff}
+.level-item.active{border-color:#f8bfd3;background:#fff7fb;box-shadow:0 4px 12px rgba(245,87,108,.08)}
+.level-item-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.level-name{font-size:14px;font-weight:700;color:#333}
+.level-threshold{font-size:12px;color:#999}
+.level-tag{font-size:11px;color:#fff;background:#f5576c;border-radius:999px;padding:3px 8px;flex-shrink:0}
+.level-privileges{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.level-pill{font-size:11px;padding:5px 8px;border-radius:999px;background:#f5f5f5;color:#666}
 .menu-section{background:white;margin:16px 15px;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.04)}
 .menu-section-title{padding:14px 16px 8px;font-size:13px;color:#999;font-weight:500}
 .menu-item{display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid #f5f5f5;cursor:pointer}
 .menu-item:last-child{border-bottom:none}
 .menu-item:active{background:#fafafa}
 .menu-icon{font-size:20px;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-right:12px;flex-shrink:0}
-.menu-text{flex:1;font-size:15px;color:#333}
+.menu-text-wrap{flex:1;min-width:0}
+.menu-text{font-size:15px;color:#333}
 .menu-sub{font-size:12px;color:#999;margin-top:2px}
 .menu-arrow{color:#ccc;font-size:18px}
-.menu-badge{background:#ff4d4f;color:white;font-size:11px;padding:1px 6px;border-radius:8px;margin-right:8px}
-
-/* 积分记录标签 */
 .tabs{display:flex;background:white;border-bottom:1px solid #f0f0f0}
 .tab{flex:1;padding:11px;text-align:center;font-size:13px;color:#666;cursor:pointer;border-bottom:2px solid transparent}
 .tab.active{color:#f5576c;border-bottom-color:#f5576c;font-weight:600}
-
-/* 积分记录列表 */
 .log-item{background:white;margin:0 15px;border-radius:0;padding:14px 16px;border-bottom:1px solid #f5f5f5;display:flex;align-items:center}
 .log-item:first-child{border-radius:14px 14px 0 0;margin-top:0}
 .log-item:last-child{border-bottom:none;border-radius:0 0 14px 14px;margin-bottom:16px}
-.log-item.single{border-radius:14px;margin:0 15px 16px}
 .log-icon-wrap{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;margin-right:12px}
 .log-icon-earn{background:#fff8e1}
 .log-icon-spend{background:#fce4ec}
@@ -59,18 +85,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f5;
 .log-points{font-size:16px;font-weight:700;flex-shrink:0}
 .log-earn{color:#52c41a}
 .log-spend{color:#f44336}
-
-/* 等级进度 */
-.level-section{background:white;margin:16px 15px;border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
-.level-title{font-size:15px;font-weight:600;color:#333;margin-bottom:14px}
-.level-bar{position:relative;margin-bottom:8px}
-.level-progress{height:8px;border-radius:4px;background:#f0f0f0;overflow:hidden;margin-bottom:6px}
-.level-fill{height:100%;background:linear-gradient(90deg,#f093fb,#f5576c);border-radius:4px;transition:width .5s}
-.level-labels{display:flex;justify-content:space-between;font-size:11px;color:#999}
-.level-next-tip{font-size:12px;color:#666;text-align:center;margin-top:6px}
-
 .empty{text-align:center;padding:30px;color:#bbb;font-size:13px}
 .loading{text-align:center;padding:30px;color:#bbb}
+@media (max-width: 360px){
+  .benefit-grid{grid-template-columns:1fr}
+  .privilege-list{grid-template-columns:1fr}
+  .points-row{flex-direction:column}
+}
 </style>
 </head>
 <body>
@@ -80,16 +101,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f5;
         <div class="header-title">会员中心</div>
     </div>
     <div class="member-card">
-        <div class="avatar">👤</div>
+        <div class="avatar" id="memberAvatar">👤</div>
         <div class="member-info">
             <div class="name" id="memberName">加载中...</div>
             <div class="phone" id="memberPhone"></div>
-            <div id="memberLevel"></div>
+            <div class="level-badge" id="memberLevel">🏅 会员等级加载中</div>
+            <div class="level-note" id="memberLevelNote">正在同步等级权益...</div>
         </div>
     </div>
 </div>
 
-<!-- 积分/余额卡片 -->
 <div class="points-row">
     <div class="points-card">
         <div class="num" id="myPoints">-</div>
@@ -104,60 +125,89 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f5;
     <div class="points-card" onclick="goTo('checkin.html')" style="cursor:pointer">
         <div class="num" id="checkinDays">-</div>
         <div class="label">连续签到</div>
-        <div class="sub">天数</div>
+        <div class="sub">每天签到更快升级</div>
     </div>
 </div>
 
-<!-- 等级进度 -->
-<div class="level-section" id="levelSection" style="margin-top:28px">
-    <div class="level-title">🏅 会员等级</div>
+<div class="section" id="growthSection" style="margin-top:28px">
+    <div class="section-title">🏅 等级进度</div>
+    <div class="section-desc">从“可用”升级到“有感”，让会员清楚知道自己为什么值得继续留在系统里。</div>
     <div class="level-bar">
         <div class="level-progress"><div class="level-fill" id="levelFill" style="width:0%"></div></div>
-        <div class="level-labels"><span id="levelCurrent">青铜</span><span id="levelNext">白银 (需500积分)</span></div>
+        <div class="level-labels"><span id="levelCurrent">当前等级</span><span id="levelNext">下一等级</span></div>
     </div>
-    <div class="level-next-tip" id="levelTip">再累计 500 积分升级白银会员</div>
+    <div class="level-next-tip" id="levelTip">正在计算升级路径...</div>
 </div>
 
-<!-- 快捷入口 -->
+<div class="section">
+    <div class="section-title">🎁 当前会员权益</div>
+    <div class="benefit-grid">
+        <div class="benefit-card">
+            <div class="label">专属折扣</div>
+            <div class="value" id="benefitDiscount">-</div>
+            <div class="sub">消费时自动享受会员等级折扣</div>
+        </div>
+        <div class="benefit-card">
+            <div class="label">积分倍率</div>
+            <div class="value" id="benefitPointsRate">-</div>
+            <div class="sub">购物、活动、签到累计更快</div>
+        </div>
+        <div class="benefit-card">
+            <div class="label">累计消费</div>
+            <div class="value" id="memberConsume">-</div>
+            <div class="sub">升级门槛按累计消费自动计算</div>
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <div class="section-title">✨ 你当前可用的权益</div>
+    <div class="section-desc">不只是一个等级标签，而是能被用户真正感知的权益集合。</div>
+    <div class="privilege-list" id="privilegeList">
+        <div class="empty" style="padding:20px 0">正在加载权益...</div>
+    </div>
+</div>
+
+<div class="section">
+    <div class="section-title">🚀 升级任务指引</div>
+    <div class="section-desc" id="upgradeGuideDesc">系统会根据你的当前等级，给出最短升级路径建议。</div>
+    <div class="task-list" id="upgradeTaskList">
+        <div class="empty" style="padding:20px 0">正在生成升级建议...</div>
+    </div>
+</div>
+
+<div class="section">
+    <div class="section-title">📊 等级权益对比</div>
+    <div class="section-desc">把等级差异讲透，用户才会理解“为什么要升级”。</div>
+    <div class="level-list" id="levelList">
+        <div class="empty" style="padding:20px 0">正在加载等级体系...</div>
+    </div>
+</div>
+
 <div class="menu-section">
-    <div class="menu-section-title">我的服务</div>
+    <div class="menu-section-title">会员服务捷径</div>
     <div class="menu-item" onclick="goTo('orders.html')">
         <div class="menu-icon" style="background:#e3f2fd">🛒</div>
-        <div><div class="menu-text">我的订单</div><div class="menu-sub">查看全部订单状态</div></div>
-        <div class="menu-arrow">›</div>
-    </div>
-    <div class="menu-item" onclick="goTo('bookings.html')">
-        <div class="menu-icon" style="background:#f3e5f5">📅</div>
-        <div><div class="menu-text">场馆预约</div><div class="menu-sub">查看预约记录</div></div>
+        <div class="menu-text-wrap"><div class="menu-text">我的订单</div><div class="menu-sub">查看待支付倒计时、发货与退款状态</div></div>
         <div class="menu-arrow">›</div>
     </div>
     <div class="menu-item" onclick="goTo('my_coupons.html')">
         <div class="menu-icon" style="background:#fff8e1">🎫</div>
-        <div><div class="menu-text">我的优惠券</div><div class="menu-sub" id="couponSub">查看可用优惠券</div></div>
-        <div class="menu-arrow">›</div>
-    </div>
-    <div class="menu-item" onclick="goTo('favorites.html')">
-        <div class="menu-icon" style="background:#fce4ec">❤️</div>
-        <div><div class="menu-text">我的收藏</div><div class="menu-sub">收藏的门店/场馆/商品</div></div>
+        <div class="menu-text-wrap"><div class="menu-text">我的优惠券</div><div class="menu-sub" id="couponSub">查看可用优惠券与到期提醒</div></div>
         <div class="menu-arrow">›</div>
     </div>
     <div class="menu-item" onclick="goTo('checkin.html')">
         <div class="menu-icon" style="background:#e8f5e9">✅</div>
-        <div><div class="menu-text">每日签到</div><div class="menu-sub">签到赚积分</div></div>
+        <div class="menu-text-wrap"><div class="menu-text">每日签到</div><div class="menu-sub">连续签到可获得额外奖励</div></div>
+        <div class="menu-arrow">›</div>
+    </div>
+    <div class="menu-item" onclick="goTo('settings.html')">
+        <div class="menu-icon" style="background:#f3e5f5">⚙️</div>
+        <div class="menu-text-wrap"><div class="menu-text">通知与账号设置</div><div class="menu-sub">同步你的通知偏好与会员信息</div></div>
         <div class="menu-arrow">›</div>
     </div>
 </div>
 
-<div class="menu-section">
-    <div class="menu-section-title">地址管理</div>
-    <div class="menu-item" onclick="goTo('address.html')">
-        <div class="menu-icon" style="background:#e8eaf6">📍</div>
-        <div><div class="menu-text">收货地址</div><div class="menu-sub" id="addressSub">管理配送地址</div></div>
-        <div class="menu-arrow">›</div>
-    </div>
-</div>
-
-<!-- 积分明细 -->
 <div class="menu-section" style="overflow:visible">
     <div class="menu-section-title" style="padding-bottom:0">积分明细</div>
     <div class="tabs">
@@ -175,48 +225,285 @@ var isdev = urlParams.get('isdev') || localStorage.getItem('user_isdev') || '0';
 if (!token) { document.body.innerHTML = '<div style="text-align:center;padding:60px;color:#999"><h2>请先登录</h2></div>'; throw new Error('No token'); }
 if (token) { localStorage.setItem('user_token', token); localStorage.setItem('user_isdev', isdev); }
 
-function api(p) { return p + (p.includes('?') ? '&' : '?') + 'access_token=' + encodeURIComponent(token) + '&isdev=' + isdev; }
+function api(path) { return path + (path.indexOf('?') >= 0 ? '&' : '?') + 'access_token=' + encodeURIComponent(token) + '&isdev=' + isdev; }
 function goTo(url) { var s = url.indexOf('?') >= 0 ? '&' : '?'; location.href = url + s + 'access_token=' + encodeURIComponent(token) + '&isdev=' + isdev; }
-
-var levelConfig = {
-    bronze: { name:'青铜会员', class:'lv-bronze', nextName:'白银', nextPoints:500 },
-    silver: { name:'白银会员', class:'lv-silver', nextName:'黄金', nextPoints:2000 },
-    gold: { name:'黄金会员', class:'lv-gold', nextName:'铂金', nextPoints:5000 },
-    platinum: { name:'铂金会员', class:'lv-platinum', nextName:null, nextPoints:null }
+function safeText(value, fallback) { return value === undefined || value === null || value === '' ? (fallback || '') : value; }
+function formatMoney(value) { return '¥' + parseFloat(value || 0).toFixed(2); }
+function formatDiscount(rate) {
+    var num = parseFloat(rate || 1);
+    if (!isFinite(num) || num <= 0) return '会员价';
+    if (num >= 1) return '无折扣';
+    return (Math.round(num * 100) / 10).toFixed(1).replace(/\.0$/, '') + '折';
+}
+function formatPointsRate(rate) {
+    var num = parseFloat(rate || 1);
+    if (!isFinite(num) || num <= 0) return 'x1';
+    return 'x' + (Math.round(num * 100) / 100).toFixed(num % 1 === 0 ? 0 : 2).replace(/0+$/, '').replace(/\.$/, '');
+}
+function parsePrivileges(value) {
+    if (Array.isArray(value)) return value.filter(Boolean);
+    if (!value) return [];
+    if (typeof value === 'string') {
+        try {
+            var parsed = JSON.parse(value);
+            return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+        } catch (e) {
+            return value.split(/[、,，;；\n]/).map(function(item){ return item.trim(); }).filter(Boolean);
+        }
+    }
+    return [];
+}
+function maskPhone(phone) {
+    return phone ? String(phone).replace(/(\d{3})\d{4}(\d{4})/, '$1****$2') : '';
+}
+function getLevelName(level) {
+    return safeText(level && (level.level_name || level.name || level.member_level), '普通会员');
+}
+function getLevelThreshold(level) {
+    var minAmount = parseFloat(level && level.min_amount || 0);
+    if (!isFinite(minAmount) || minAmount <= 0) return '新用户默认可加入';
+    return '累计消费满 ' + formatMoney(minAmount);
+}
+var memberBenefitsData = null;
+var growthTaskData = null;
+var growthTaskActionMap = {
+    order: { text: '去下单', url: 'products.html' },
+    checkin: { text: '去签到', url: 'checkin.html' },
+    review: { text: '去评价', url: 'orders.html' },
+    share: { text: '去分享', url: 'products.html' },
+    invite: { text: '去邀请', url: 'promotions.html' }
 };
+function renderPrivilegeList(privileges) {
 
-function loadMember() {
-    fetch(api('/api/user/member'))
+    var container = document.getElementById('privilegeList');
+    if (!privileges || privileges.length === 0) {
+        container.innerHTML = '<div class="empty" style="grid-column:1/-1">当前等级暂未配置专属权益，建议尽快补充等级权益规则</div>';
+        return;
+    }
+    container.innerHTML = privileges.map(function(item) {
+        return '<div class="privilege-item"><span class="icon">✨</span><span>' + item + '</span></div>';
+    }).join('');
+}
+function buildTaskCard(task) {
+    var action = task.action || { text: '查看', url: 'member.html' };
+    var progressPercent = Math.max(0, Math.min(100, parseInt(task.progressPercent || 0, 10) || 0));
+    var rewardText = [];
+    if (parseInt(task.pointsReward || 0, 10) > 0) rewardText.push((task.pointsReward || 0) + '积分');
+    if (parseInt(task.growthReward || 0, 10) > 0) rewardText.push((task.growthReward || 0) + '成长值');
+    var meta = [];
+    if (task.progressText) meta.push(task.progressText);
+    if (rewardText.length) meta.push('奖励 ' + rewardText.join(' + '));
+    var btnClass = 'task-btn' + (task.completed ? ' secondary' : '');
+    var btnAttr = task.completed ? ' disabled' : ' onclick="goTo(\'' + action.url + '\')"';
+    return '<div class="task-card">'
+        + '<div class="task-icon">' + (task.icon || '🎯') + '</div>'
+        + '<div class="task-main">'
+        + '<div class="task-title">' + task.title + '</div>'
+        + '<div class="task-sub">' + task.sub + '</div>'
+        + (meta.length ? '<div class="task-meta"><span>' + meta.join('</span><span>') + '</span></div>' : '')
+        + '<div class="task-progress"><div class="task-progress-fill" style="width:' + progressPercent + '%"></div></div>'
+        + '</div>'
+        + '<button class="' + btnClass + '"' + btnAttr + '>' + (task.completed ? '已完成' : action.text) + '</button>'
+        + '</div>';
+}
+function renderUpgradeTasks(memberData, growthData) {
+    var tasks = [];
+    var amountToNext = parseFloat(memberData && memberData.amount_to_next || 0);
+    var nextLevel = memberData && memberData.next_level;
+
+    if (growthData && Array.isArray(growthData.tasks) && growthData.tasks.length) {
+        growthData.tasks.slice().sort(function(a, b) {
+            if (!!a.is_completed !== !!b.is_completed) return a.is_completed ? 1 : -1;
+            return (parseInt(b.progress_percent || 0, 10) || 0) - (parseInt(a.progress_percent || 0, 10) || 0);
+        }).slice(0, 3).forEach(function(task) {
+            var action = growthTaskActionMap[task.task_type] || { text: '去看看', url: 'promotions.html' };
+            tasks.push({
+                icon: task.icon || '🎯',
+                title: task.task_name || '成长任务',
+                sub: task.description || '完成任务可获得积分和成长值奖励。',
+                action: action,
+                completed: !!task.is_completed,
+                progressText: (task.current_count || 0) + '/' + (task.target_count || 0),
+                progressPercent: task.progress_percent || 0,
+                pointsReward: task.points_reward || 0,
+                growthReward: task.growth_reward || 0
+            });
+        });
+        document.getElementById('upgradeGuideDesc').textContent = '本周期已完成 ' + (growthData.completed_tasks || 0) + '/' + (growthData.total_tasks || 0) + ' 项成长任务，完成率 ' + (growthData.completion_rate || 0) + '%。';
+    } else if (nextLevel) {
+        document.getElementById('upgradeGuideDesc').textContent = '距离' + getLevelName(nextLevel) + '还差 ' + formatMoney(amountToNext) + '，建议优先完成下面这些动作。';
+    } else {
+        document.getElementById('upgradeGuideDesc').textContent = '当前已达最高等级，下面这些动作更适合维持活跃度与权益使用频率。';
+    }
+
+    if (nextLevel) {
+        tasks.push({
+            icon: '🛍️',
+            title: '再消费 ' + formatMoney(amountToNext) + '，升级到' + getLevelName(nextLevel),
+            sub: '优先完成订单、预约或积分消费场景，最快触发会员升级。',
+            action: { text: '去下单', url: 'products.html' },
+            completed: false,
+            progressText: '升级差额 ' + formatMoney(amountToNext),
+            progressPercent: 0,
+            pointsReward: 0,
+            growthReward: 0
+        });
+    }
+
+    tasks.push({
+        icon: '✅',
+        title: '坚持每日签到，放大积分积累速度',
+        sub: '连续签到不仅有基础积分，还能叠加额外奖励，更适合低门槛提活。',
+        action: { text: '去签到', url: 'checkin.html' },
+        completed: false,
+        progressText: '低门槛高频活跃',
+        // 用今日是否已签到作为进度：已签到=100，未签到=0
+        progressPercent: (memberData && memberData.today_checked_in) ? 100 : 0,
+        pointsReward: 0,
+        growthReward: 0
+    });
+
+    tasks.push({
+        icon: '🎫',
+        title: '用好优惠券，提高消费转化效率',
+        sub: '先看券再下单，能更快完成高价值消费，同时保留会员获得感。',
+        action: { text: '看优惠券', url: 'my_coupons.html' },
+        completed: false,
+        progressText: '适合转化前决策',
+        // 有未使用优惠券=100，无券=0
+        progressPercent: (memberData && (memberData.coupon_count || 0) > 0) ? 100 : 0,
+        pointsReward: 0,
+        growthReward: 0
+    });
+
+    document.getElementById('upgradeTaskList').innerHTML = tasks.slice(0, 4).map(buildTaskCard).join('');
+}
+
+function renderLevelList(levels, currentLevel) {
+    var container = document.getElementById('levelList');
+    if (!levels || levels.length === 0) {
+        container.innerHTML = '<div class="empty">暂无等级规则，建议后台尽快配置 business_member_levels</div>';
+        return;
+    }
+    container.innerHTML = levels.map(function(level) {
+        var privileges = parsePrivileges(level.privileges);
+        var isActive = String(level.level_code || '') === String(currentLevel || '');
+        return '<div class="level-item' + (isActive ? ' active' : '') + '">'
+            + '<div class="level-item-head">'
+            + '<div><div class="level-name">' + getLevelName(level) + '</div><div class="level-threshold">' + getLevelThreshold(level) + '</div></div>'
+            + '<div>' + (isActive ? '<span class="level-tag">当前等级</span>' : '') + '</div>'
+            + '</div>'
+            + '<div class="level-privileges">'
+            + '<span class="level-pill">折扣 ' + formatDiscount(level.discount_rate) + '</span>'
+            + '<span class="level-pill">积分 ' + formatPointsRate(level.points_rate) + '</span>'
+            + privileges.slice(0, 4).map(function(item) { return '<span class="level-pill">' + item + '</span>'; }).join('')
+            + '</div>'
+            + '</div>';
+    }).join('');
+}
+function updateGrowthProgress(levels, currentLevel, totalConsume, amountToNext) {
+    var currentName = '当前等级';
+    var nextName = '已是最高等级';
+    var progress = 100;
+    if (!levels || levels.length === 0) {
+        document.getElementById('levelCurrent').textContent = currentName;
+        document.getElementById('levelNext').textContent = nextName;
+        document.getElementById('levelTip').textContent = '尚未配置等级规则，暂时无法计算升级路径';
+        document.getElementById('levelFill').style.width = '0%';
+        return;
+    }
+
+    var currentIndex = levels.findIndex(function(level) {
+        return String(level.level_code || '') === String(currentLevel || '');
+    });
+    if (currentIndex < 0) currentIndex = 0;
+    var currentData = levels[currentIndex] || levels[0];
+    var nextData = levels[currentIndex + 1] || null;
+    currentName = getLevelName(currentData);
+    nextName = nextData ? getLevelName(nextData) : '已达最高等级';
+
+    if (nextData) {
+        var currentMin = parseFloat(currentData.min_amount || 0);
+        var nextMin = parseFloat(nextData.min_amount || 0);
+        var consume = parseFloat(totalConsume || 0);
+        if (nextMin > currentMin) {
+            progress = Math.max(0, Math.min(100, Math.round((consume - currentMin) / (nextMin - currentMin) * 100)));
+        } else {
+            progress = 0;
+        }
+        document.getElementById('levelTip').textContent = '距离 ' + nextName + ' 还差 ' + formatMoney(amountToNext || Math.max(0, nextMin - consume)) + '，建议优先完成高价值消费和签到任务。';
+    } else {
+        progress = 100;
+        document.getElementById('levelTip').textContent = '🎉 你已处于当前等级体系最高档，可重点关注专属优惠与高价值活动。';
+    }
+
+    document.getElementById('levelFill').style.width = progress + '%';
+    document.getElementById('levelCurrent').textContent = currentName;
+    document.getElementById('levelNext').textContent = nextName;
+}
+function loadMemberBenefits() {
+    fetch(api('/api/user/member/benefits'))
     .then(function(r){ return r.json(); })
     .then(function(d) {
-        if (!d.success || !d.data) return;
+        if (!d.success || !d.data) throw new Error(d.msg || '加载失败');
         var m = d.data;
-        document.getElementById('memberName').textContent = m.user_name || '用户';
-        document.getElementById('memberPhone').textContent = m.phone ? m.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2') : '';
-        document.getElementById('myPoints').textContent = m.points || 0;
-        document.getElementById('myBalance').textContent = '¥' + parseFloat(m.balance || 0).toFixed(2);
-        document.getElementById('totalPointsSub').textContent = '累计 ' + (m.total_points || 0) + ' 积分';
+        memberBenefitsData = m;
+        var name = safeText(m.user_name, '用户');
+        var levelName = safeText(m.level_name, safeText(m.member_level, '普通会员'));
+        var privileges = parsePrivileges(m.privileges);
+        var levels = Array.isArray(m.levels) ? m.levels : [];
 
-        var lv = m.member_level || 'bronze';
-        var lvConf = levelConfig[lv] || levelConfig.bronze;
-        document.getElementById('memberLevel').innerHTML = '<span class="level-badge ' + lvConf.class + '">🏅 ' + lvConf.name + '</span>';
-        
-        // 等级进度
-        var totalPts = m.total_points || 0;
-        if (lvConf.nextPoints) {
-            var prev = { bronze:0, silver:500, gold:2000, platinum:5000 }[lv] || 0;
-            var pct = Math.min(100, Math.round((totalPts - prev) / (lvConf.nextPoints - prev) * 100));
-            document.getElementById('levelFill').style.width = pct + '%';
-            document.getElementById('levelCurrent').textContent = lvConf.name;
-            document.getElementById('levelNext').textContent = lvConf.nextName + '（需' + lvConf.nextPoints + '积分）';
-            document.getElementById('levelTip').textContent = '再累计 ' + Math.max(0, lvConf.nextPoints - totalPts) + ' 积分升级' + lvConf.nextName + '会员';
-        } else {
-            document.getElementById('levelFill').style.width = '100%';
-            document.getElementById('levelTip').textContent = '🎉 您已达到最高等级 铂金会员';
+        document.getElementById('memberName').textContent = name;
+        document.getElementById('memberAvatar').textContent = name.charAt(0) || '会';
+        document.getElementById('memberPhone').textContent = maskPhone(m.phone);
+        document.getElementById('memberLevel').textContent = '🏅 ' + levelName;
+        document.getElementById('memberLevelNote').textContent = privileges.length > 0 ? ('当前已开通 ' + privileges.length + ' 项会员权益') : '当前等级权益已同步，可继续完善后台权益配置';
+        document.getElementById('myPoints').textContent = m.points || 0;
+        document.getElementById('myBalance').textContent = formatMoney(m.balance || 0);
+        document.getElementById('totalPointsSub').textContent = '累计 ' + (m.total_points || 0) + ' 积分';
+        document.getElementById('benefitDiscount').textContent = formatDiscount(m.discount_rate);
+        document.getElementById('benefitPointsRate').textContent = formatPointsRate(m.points_rate);
+        document.getElementById('memberConsume').textContent = formatMoney(m.total_consume || 0);
+        renderPrivilegeList(privileges);
+        renderUpgradeTasks(m, growthTaskData);
+        renderLevelList(levels, m.member_level);
+        updateGrowthProgress(levels, m.member_level, m.total_consume || 0, m.amount_to_next || 0);
+    })
+    .catch(function() {
+        document.getElementById('memberName').textContent = '会员信息加载失败';
+        document.getElementById('memberLevelNote').textContent = '请稍后重试';
+        document.getElementById('privilegeList').innerHTML = '<div class="empty" style="grid-column:1/-1">权益加载失败</div>';
+        document.getElementById('upgradeTaskList').innerHTML = '<div class="empty">升级建议加载失败</div>';
+        document.getElementById('levelList').innerHTML = '<div class="empty">等级体系加载失败</div>';
+    });
+}
+function loadGrowthTasks() {
+    fetch(api('/api/user/growth/tasks'))
+    .then(function(r){ return r.json(); })
+    .then(function(d) {
+        if (!d.success || !d.data) throw new Error(d.msg || '加载失败');
+        growthTaskData = d.data || {
+            total_tasks: 0,
+            completed_tasks: 0,
+            remaining_tasks: 0,
+            completion_rate: 0,
+            tasks: []
+        };
+        renderUpgradeTasks(memberBenefitsData, growthTaskData);
+    })
+    .catch(function() {
+        growthTaskData = {
+            total_tasks: 0,
+            completed_tasks: 0,
+            remaining_tasks: 0,
+            completion_rate: 0,
+            tasks: []
+        };
+        if (memberBenefitsData) {
+            renderUpgradeTasks(memberBenefitsData, growthTaskData);
         }
     });
 }
-
 function loadCheckin() {
     fetch(api('/api/user/checkin/status'))
     .then(function(r){ return r.json(); })
@@ -226,29 +513,16 @@ function loadCheckin() {
         }
     }).catch(function(){});
 }
-
 function loadCouponCount() {
     fetch(api('/api/user/coupons?status=unused'))
     .then(function(r){ return r.json(); })
     .then(function(d) {
         if (d.success && d.data && d.data.items) {
             var cnt = d.data.items.length;
-            if (cnt > 0) document.getElementById('couponSub').textContent = cnt + ' 张可用';
+            document.getElementById('couponSub').textContent = cnt > 0 ? (cnt + ' 张可用，记得及时使用') : '暂无可用优惠券';
         }
     }).catch(function(){});
 }
-
-function loadAddressCount() {
-    fetch(api('/api/user/addresses'))
-    .then(function(r){ return r.json(); })
-    .then(function(d) {
-        if (d.success && d.data && d.data.items) {
-            var cnt = d.data.items.length;
-            document.getElementById('addressSub').textContent = cnt > 0 ? '共 ' + cnt + ' 个地址' : '暂无地址，点击添加';
-        }
-    }).catch(function(){});
-}
-
 var currentLogType = '';
 function switchLogTab(el) {
     document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
@@ -256,11 +530,9 @@ function switchLogTab(el) {
     currentLogType = el.dataset.type;
     loadLogs();
 }
-
 var logTypeIconMap = {
     earn:'💰', spend:'💸', exchange:'🔄', checkin:'✅', refund:'↩️', adjust:'⚙️'
 };
-
 function loadLogs() {
     var url = '/api/user/points/logs?page=1&page_size=20';
     if (currentLogType) url += '&type=' + currentLogType;
@@ -274,19 +546,18 @@ function loadLogs() {
         }
         var items = d.data.items;
         var html = '<div style="margin:0 15px;background:white;border-radius:14px;overflow:hidden;margin-bottom:16px">';
-        items.forEach(function(log, i) {
-            var pts = parseInt(log.points || 0);
+        items.forEach(function(log) {
+            var pts = parseInt(log.points || 0, 10);
             var isEarn = pts > 0;
             var icon = logTypeIconMap[log.type] || (isEarn ? '💰' : '💸');
             var iconBg = isEarn ? 'log-icon-earn' : 'log-icon-spend';
             var ptsCls = isEarn ? 'log-earn' : 'log-spend';
             var ptsStr = (isEarn ? '+' : '') + pts;
-            var borderBottom = i < items.length - 1 ? 'border-bottom:1px solid #f5f5f5' : '';
-            html += '<div class="log-item" style="' + borderBottom + '">'
+            html += '<div class="log-item">'
                 + '<div class="log-icon-wrap ' + iconBg + '">' + icon + '</div>'
                 + '<div class="log-info">'
-                + '<div class="log-desc">' + (log.description || log.type || '') + '</div>'
-                + '<div class="log-time">' + (log.created_at || '').substring(0,16) + '</div>'
+                + '<div class="log-desc">' + safeText(log.description || log.type, '积分变动') + '</div>'
+                + '<div class="log-time">' + safeText((log.created_at || '').substring(0,16), '-') + '</div>'
                 + '</div>'
                 + '<div class="log-points ' + ptsCls + '">' + ptsStr + '</div>'
                 + '</div>';
@@ -299,10 +570,10 @@ function loadLogs() {
     });
 }
 
-loadMember();
+loadMemberBenefits();
+loadGrowthTasks();
 loadCheckin();
 loadCouponCount();
-loadAddressCount();
 loadLogs();
 </script>
 </body>

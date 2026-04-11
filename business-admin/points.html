@@ -4,161 +4,109 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>积分管理 - 管理后台</title>
+    <link rel="stylesheet" href="../business-common/list-style.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        :root {
-            --primary-color: #1890ff;
-            --primary-light: #40a9ff;
-            --success-color: #52c41a;
-            --warning-color: #faad14;
-            --danger-color: #ff4d4f;
-            --info-color: #909399;
-            --text-primary: #303133;
-            --text-regular: #606266;
-            --text-secondary: #909399;
-            --border-color: #ebeef5;
-            --bg-white: #ffffff;
-            --bg-light: #f5f7fa;
-            --bg-striped: #fafafa;
-        }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg-light); font-size: 14px; color: var(--text-regular); }
-        .header { background: #001529; color: white; padding: 15px 20px; display: flex; align-items: center; }
-        .header h1 { font-size: 18px; flex: 1; }
-        .back { color: white; text-decoration: none; font-size: 14px; }
-        .toolbar { background: var(--bg-white); padding: 15px 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; border-bottom: 1px solid var(--border-color); }
-        .search-input { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; width: 180px; font-size: 14px; }
-        .search-input:focus { border-color: var(--primary-color); outline: none; }
-        .select { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; background: var(--bg-white); }
-        .btn { padding: 9px 15px; border-radius: 4px; font-size: 14px; cursor: pointer; border: 1px solid var(--border-color); background: var(--bg-white); color: var(--text-regular); transition: all .2s; }
-        .btn:hover { color: var(--primary-color); border-color: var(--primary-color); }
-        .btn-primary { background: var(--primary-color); border-color: var(--primary-color); color: var(--bg-white); }
-        .btn-primary:hover { background: var(--primary-light); border-color: var(--primary-light); }
-        .btn-sm { padding: 5px 10px; font-size: 12px; }
-        .tab-bar { display: flex; border-bottom: 1px solid var(--border-color); background: var(--bg-white); }
-        .tab-item { padding: 12px 24px; cursor: pointer; font-size: 14px; color: var(--text-secondary); border-bottom: 2px solid transparent; margin-bottom: -1px; }
-        .tab-item:hover { color: var(--primary-color); }
-        .tab-item.active { color: var(--primary-color); border-bottom-color: var(--primary-color); font-weight: 600; }
-        .content { padding: 20px; }
-        .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
-        .stat-card { background: var(--bg-white); border-radius: 4px; padding: 20px; text-align: center; box-shadow: 0 2px 12px rgba(0,0,0,.1); border: 1px solid var(--border-color); }
-        .stat-card .stat-num { font-size: 28px; font-weight: 600; color: var(--primary-color); }
-        .stat-card .stat-label { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
-        .stat-card.warning .stat-num { color: var(--warning-color); }
-        .stat-card.success .stat-num { color: var(--success-color); }
-        .el-table { width: 100%; border: 1px solid var(--border-color); border-radius: 4px; background-color: var(--bg-white); color: var(--text-regular); font-size: 14px; border-collapse: collapse; }
-        .el-table__header th { padding: 12px 10px; background-color: var(--bg-light); color: var(--text-primary); font-weight: 500; text-align: left; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); }
-        .el-table__header th:last-child { border-right: none; }
-        .el-table__body td { padding: 12px 10px; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); }
-        .el-table__body td:last-child { border-right: none; }
-        .el-table__body tr:hover > td { background-color: var(--bg-light); }
-        .el-table--striped .el-table__body tr:nth-child(2n) td { background-color: var(--bg-striped); }
-        .el-table--striped .el-table__body tr:nth-child(2n):hover td { background-color: var(--bg-light); }
-        .empty { text-align: center; padding: 40px; color: var(--info-color); }
-        .el-tag { display: inline-block; padding: 0 8px; height: 22px; line-height: 20px; font-size: 12px; border-radius: 4px; border: 1px solid; white-space: nowrap; }
-        .el-tag--success { background-color: #f6ffed; border-color: #b7eb8f; color: var(--success-color); }
-        .el-tag--warning { background-color: #fffbe6; border-color: #ffe58f; color: var(--warning-color); }
-        .el-tag--danger { background-color: #fff1f0; border-color: #ffa39e; color: var(--danger-color); }
-        .el-tag--info { background-color: #f4f4f5; border-color: #d3d3d3; color: var(--info-color); }
-        .el-tag--primary { background-color: #e6f7ff; border-color: #91d5ff; color: var(--primary-color); }
-        .el-pagination { white-space: nowrap; padding: 16px 0; text-align: right; user-select: none; }
-        .el-pagination__total { margin-right: 16px; color: var(--text-regular); font-size: 13px; }
-        .el-pager li { background: var(--bg-white); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; min-width: 30px; height: 28px; line-height: 28px; padding: 0 6px; display: inline-block; text-align: center; margin: 0 2px; font-size: 13px; color: var(--text-regular); }
-        .el-pager li:hover { color: var(--primary-color); border-color: var(--primary-color); }
-        .el-pager li.active { background-color: var(--primary-color); border-color: var(--primary-color); color: var(--bg-white); }
-        .actions a { color: var(--primary-color); margin-right: 10px; text-decoration: none; cursor: pointer; }
-        .actions a:hover { color: var(--primary-light); }
-        .points-num { font-weight: 600; font-family: 'DIN Alternate', monospace; }
-        .points-add { color: var(--success-color); }
-        .points-reduce { color: var(--danger-color); }
+        /* 页面特有样式 */
+        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
+        .actions .link:hover { text-decoration: underline; }
+        .actions .link.danger { color: var(--el-color-danger); }
+        /* 弹窗样式保留 */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.45); z-index: 200; }
-        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: var(--bg-white); border-radius: 4px; width: 480px; max-width: 92vw; z-index: 201; box-shadow: 0 2px 12px rgba(0,0,0,.15); }
-        .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
-        .modal-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
-        .modal-close { width: 32px; height: 32px; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; color: var(--text-secondary); }
-        .modal-close:hover { background: var(--bg-light); }
-        .modal-body { padding: 20px; }
-        .modal-footer { padding: 12px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px; }
-        .form-item { margin-bottom: 16px; }
-        .form-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; display: block; }
-        .form-input { width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; }
-        .form-input:focus { border-color: var(--primary-color); outline: none; }
-        .form-select { width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; background: var(--bg-white); }
-        /* 嵌入模式 */
-        body.embed-mode .header { display: none; }
-        body.embed-mode .content { padding-top: 0; }
     </style>
 </head>
-<body>
-    <div class="header">
-        <a href="index.html" class="back">← 返回</a>
-        <h1>💎 积分管理</h1>
-        <span></span>
-    </div>
-    
-    <div class="tab-bar">
-        <div class="tab-item active" onclick="switchTab('members', this)">会员积分</div>
-        <div class="tab-item" onclick="switchTab('logs', this)">积分记录</div>
-    </div>
-    
-    <div class="content">
-        <!-- 统计卡片 -->
-        <div class="stat-grid">
-            <div class="stat-card"><div class="stat-num" id="totalMembers">-</div><div class="stat-label">会员总数</div></div>
-            <div class="stat-card"><div class="stat-num" id="totalPoints">-</div><div class="stat-label">积分发放总量</div></div>
-            <div class="stat-card warning"><div class="stat-num" id="todayPoints">-</div><div class="stat-label">今日发放</div></div>
-            <div class="stat-card success"><div class="stat-num" id="monthPoints">-</div><div class="stat-label">本月发放</div></div>
+<body class="wy-design-list">
+    <!-- 顶部区域 -->
+    <div class="wy-design-list_top">
+        <div class="wy-design-list_top_title">
+            <h1 class="wy-design-list_title">积分管理 - 管理后台</h1>
+            <div class="wy-design-list_space"></div>
+            <div class="wy-design-list_btn-group">
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
+                        <span>搜索</span>
+                    </button>
+                </div>
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
+                        <span>重置</span>
+                    </button>
+                </div>
+            </div>
         </div>
-        
-        <!-- 会员积分 -->
-        <div id="membersPanel">
-            <div class="toolbar">
-                <input type="text" class="search-input" id="memberKeyword" placeholder="搜索用户名/手机号">
-                <select class="select" id="memberLevel">
+    </div>
+
+    <!-- 筛选区域 -->
+    <div class="wy-design-list_filter">
+        <div class="wy-design-list_other">
+            <div class="el-input el-input--small" style="width: 200px;">
+                <input type="text" id="memberKeyword" placeholder="搜索用户名/手机号" class="el-input__inner">
+            </div>
+        </div>
+        <div class="wy-design-list_other">
+            <select id="filter1" class="el-input__inner" style="width: 130px;">
+                
                     <option value="">全部等级</option>
                     <option value="bronze">青铜会员</option>
                     <option value="silver">白银会员</option>
                     <option value="gold">黄金会员</option>
                     <option value="platinum">铂金会员</option>
-                </select>
-                <button class="btn btn-primary" onclick="loadMembers(1)">搜索</button>
-                <button class="btn" onclick="resetMemberSearch()">重置</button>
-            </div>
-            <table class="el-table el-table--border el-table--striped">
-                <thead class="el-table__header">
-                    <tr><th>ID</th><th>用户名</th><th>手机号</th><th>会员等级</th><th>当前积分</th><th>累计积分</th><th>余额</th><th>注册时间</th><th>操作</th></tr>
-                </thead>
-                <tbody class="el-table__body" id="memberTable"><tr><td colspan="9" class="empty">加载中...</td></tr></tbody>
-            </table>
-            <div class="el-pagination" id="memberPager"></div>
+                
+            </select>
         </div>
-        
-        <!-- 积分记录 -->
-        <div id="logsPanel" style="display:none;">
-            <div class="toolbar">
-                <input type="text" class="search-input" id="logKeyword" placeholder="搜索用户名/手机号">
-                <select class="select" id="logType">
+        <div class="wy-design-list_other">
+            <select id="filter2" class="el-input__inner" style="width: 130px;">
+                
                     <option value="">全部类型</option>
                     <option value="earn">获得</option>
                     <option value="consume">消费</option>
                     <option value="expire">过期</option>
                     <option value="admin">管理员调整</option>
-                </select>
-                <input type="date" class="search-input" id="logDateFrom" style="width:140px;">
-                <input type="date" class="search-input" id="logDateTo" style="width:140px;">
-                <button class="btn btn-primary" onclick="loadLogs(1)">搜索</button>
-                <button class="btn" onclick="resetLogSearch()">重置</button>
-            </div>
-            <table class="el-table el-table--border el-table--striped">
-                <thead class="el-table__header">
-                    <tr><th>ID</th><th>用户</th><th>类型</th><th>积分变动</th><th>变动后余额</th><th>说明</th><th>时间</th></tr>
-                </thead>
-                <tbody class="el-table__body" id="logTable"><tr><td colspan="7" class="empty">加载中...</td></tr></tbody>
-            </table>
-            <div class="el-pagination" id="logPager"></div>
+                
+            </select>
+        </div>
+        <div class="wy-design-list_other">
+            <select id="filter3" class="el-input__inner" style="width: 130px;">
+                
+                    <option value="add">增加积分</option>
+                    <option value="reduce">扣减积分</option>
+                
+            </select>
         </div>
     </div>
+
+    <!-- 表格区域 -->
+    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
+        <div class="wy-design-table_bar">
+            <i class="wy-design-table_set el-icon-setting" title="列设置"></i>
+            <span class="wy-design-table_total">共 <em id="totalCount">0</em> 条</span>
+            <div class="wy-pages">
+                <div class="wy-pages_total">第<em id="currentPage">1</em>/<em id="totalPages">1</em>页</div>
+                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
+                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
+            </div>
+        </div>
+        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
+            <thead class="el-table__header">
+                <tr>
+                    <th><div class="cell">ID</div></th>
+                    <th><div class="cell">用户名</div></th>
+                    <th><div class="cell">手机号</div></th>
+                    <th><div class="cell">会员等级</div></th>
+                    <th><div class="cell">当前积分</div></th>
+                    <th><div class="cell">累计积分</div></th>
+                    <th><div class="cell">余额</div></th>
+                    <th><div class="cell">注册时间</div></th>
+                    <th><div class="cell">操作</div></th>
+                    <th><div class="cell">ID</div></th>
+                </tr>
+            </thead>
+            <tbody class="el-table__body" id="listBody">
+                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
     
-    <!-- 调整积分弹窗 -->
     <div class="modal-overlay" id="adjustOverlay" onclick="if(event.target===this)closeAdjustModal()"></div>
     <div class="modal" id="adjustModal">
         <div class="modal-header">
@@ -197,8 +145,10 @@
         </div>
     </div>
     
+    
+
     <script>
-        const token = new URLSearchParams(location.search).get('access_token') || '';
+    const token = new URLSearchParams(location.search).get('access_token') || '';
         const isdev = new URLSearchParams(location.search).get('isdev') || '0';
         const embed = new URLSearchParams(location.search).get('embed') || '0';
         if (embed === '1') { document.body.classList.add('embed-mode'); }
@@ -233,7 +183,7 @@
                 if (data.success && data.data) {
                     const items = data.data.items || [];
                     if (items.length === 0) {
-                        document.getElementById('memberTable').innerHTML = '<tr><td colspan="9" class="empty">暂无数据</td></tr>';
+                        document.getElementById('memberTable').innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">暂无数据</td></tr>';
                     } else {
                         document.getElementById('memberTable').innerHTML = items.map(m => 
                             `<tr><td>${m.id}</td><td>${m.user_name || '-'}</td><td>${m.phone || '-'}</td><td><span class="el-tag el-tag--${LEVEL_TAG[m.member_level] || 'info'}">${LEVEL_MAP[m.member_level] || m.member_level}</span></td><td class="points-num" style="color:var(--primary-color)">${m.points || 0}</td><td class="points-num">${m.total_points || 0}</td><td style="color:#f57c00">¥${parseFloat(m.balance||0).toFixed(2)}</td><td>${m.created_at || '-'}</td><td class="actions"><a onclick="openAdjustModal(${m.user_id},'${m.user_name||''}',${m.points||0})">调整积分</a><a onclick="viewMemberLogs(${m.user_id})">查看记录</a></td></tr>`
@@ -266,7 +216,7 @@
                 if (data.success && data.data) {
                     const items = data.data.items || [];
                     if (items.length === 0) {
-                        document.getElementById('logTable').innerHTML = '<tr><td colspan="7" class="empty">暂无数据</td></tr>';
+                        document.getElementById('logTable').innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">暂无数据</td></tr>';
                     } else {
                         document.getElementById('logTable').innerHTML = items.map(log => {
                             const pointsClass = log.points > 0 ? 'points-add' : 'points-reduce';

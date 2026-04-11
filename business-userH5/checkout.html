@@ -40,6 +40,30 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f5;
 .coupon-value{font-size:13px;color:#f57c00;font-weight:500}
 .coupon-arrow{font-size:18px;color:#ccc}
 
+/* V37.0 积分抵扣 ---- */
+.points-row{display:flex;align-items:center;gap:10px;cursor:pointer;padding:4px 0}
+.points-label{font-size:14px;color:#333;flex:1;display:flex;align-items:center;gap:6px}
+.points-balance{font-size:12px;color:#999}
+.points-balance strong{color:#f57c00}
+.points-value{font-size:13px;color:#f57c00;font-weight:500}
+.points-arrow{font-size:18px;color:#ccc}
+.points-sheet-section{padding:14px 15px;border-bottom:1px solid #f5f5f5}
+.points-sheet-title{font-size:14px;color:#333;font-weight:500;margin-bottom:12px}
+.points-slider-wrap{display:flex;align-items:center;gap:10px}
+.points-slider{flex:1;-webkit-appearance:none;height:4px;border-radius:2px;background:#ddd;outline:none}
+.points-slider::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#667eea;cursor:pointer}
+.points-slider-value{font-size:13px;color:#667eea;min-width:60px;text-align:right}
+.points-info{font-size:12px;color:#999;margin-top:8px}
+.points-info strong{color:#52c41a}
+
+/* V39.0 智能优惠推荐 */
+.smart-discount-card{display:flex;align-items:flex-start;gap:12px;padding:14px;border-radius:14px;background:linear-gradient(135deg,#fff8ec,#fff1df);border:1px solid #ffe2b8}
+.smart-discount-main{flex:1;min-width:0}
+.smart-discount-title{font-size:14px;color:#333;font-weight:600;line-height:1.5}
+.smart-discount-desc{font-size:12px;color:#999;line-height:1.6;margin-top:6px}
+.smart-discount-btn{border:none;border-radius:18px;padding:10px 14px;background:linear-gradient(135deg,#ff9800,#ff7043);color:white;font-size:13px;font-weight:600;cursor:pointer;flex-shrink:0}
+.smart-discount-btn:disabled{background:#ddd;color:#999;cursor:not-allowed}
+
 /* ---- 备注 ---- */
 .remark-input{width:100%;border:none;outline:none;font-size:14px;color:#333;resize:none;height:40px;background:transparent}
 .remark-input::placeholder{color:#bbb}
@@ -137,6 +161,30 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f5;
   </div>
 </div>
 
+<!-- V37.0 积分抵扣 -->
+<div class="section" id="pointsSection" style="display:none">
+  <div class="section-title">积分抵扣</div>
+  <div class="points-row" onclick="openPointsSheet()">
+    <span class="points-label" id="pointsLabel">
+      <span>💰 积分抵用</span>
+      <span class="points-balance" id="pointsBalance">可用 <strong>0</strong> 积分</span>
+    </span>
+    <span class="points-value" id="pointsValue"></span>
+    <span class="points-arrow">›</span>
+  </div>
+</div>
+
+<div class="section" id="optimalDiscountSection" style="display:none">
+  <div class="section-title">智能优惠推荐</div>
+  <div class="smart-discount-card">
+    <div class="smart-discount-main">
+      <div class="smart-discount-title" id="optimalDiscountTitle">系统正在为你计算最优组合</div>
+      <div class="smart-discount-desc" id="optimalDiscountDesc">将自动比较优惠券与积分组合，优先推荐真实可落地的最低实付方案。</div>
+    </div>
+    <button class="smart-discount-btn" id="applyOptimalBtn" onclick="applyOptimalPlan()">一键应用</button>
+  </div>
+</div>
+
 <!-- 备注 -->
 <div class="section">
   <div class="section-title">买家备注</div>
@@ -189,6 +237,34 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f5;
   <div id="couponList"><div class="loading">加载中...</div></div>
 </div>
 
+<!-- V37.0 积分抵扣弹窗 -->
+<div class="mask" id="pointsMask" onclick="closePointsSheet()"></div>
+<div class="coupon-sheet" id="pointsSheet">
+  <div class="sheet-header">
+    <h3>积分抵扣</h3>
+    <span class="sheet-close" onclick="closePointsSheet()">✕</span>
+  </div>
+  <div class="points-sheet-section">
+    <div class="points-sheet-title">使用积分抵用现金</div>
+    <div class="points-slider-wrap">
+      <input type="range" class="points-slider" id="pointsSlider" min="0" max="0" value="0" oninput="updatePointsDeduction(this.value)">
+      <span class="points-slider-value" id="pointsSliderValue">0</span>
+    </div>
+    <div class="points-info">
+      当前可用积分：<strong id="pointsAvailableDisplay">0</strong> 点
+      <br>抵用金额：<strong id="pointsDeductionDisplay">¥0.00</strong>
+      <br><span id="pointsTip">100积分 = ¥1.00</span>
+    </div>
+  </div>
+  <div style="padding:14px 15px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span style="font-size:14px;color:#666">不使用积分</span>
+      <button onclick="selectPoints(0)" id="resetPointsBtn" style="padding:6px 16px;border:1px solid #ddd;border-radius:15px;background:white;font-size:13px;color:#999;cursor:pointer">重置</button>
+    </div>
+    <button onclick="confirmPoints()" style="width:100%;padding:12px;border:none;border-radius:20px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;font-size:15px;font-weight:600;cursor:pointer">确认使用</button>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
@@ -200,7 +276,7 @@ const API = (p) => p + (p.includes('?') ? '&' : '?') + 'access_token=' + TOKEN;
 const params = new URLSearchParams(location.search);
 const cartIds   = (params.get('cart_ids') || '').split(',').filter(Boolean);
 const directProductId = params.get('product_id');
-const directQty = parseInt(params.get('quantity') || '1');
+const directQty = parseInt(params.get('quantity') || params.get('qty') || '1');
 const directSkuId = params.get('sku_id') || '';
 
 let state = {
@@ -212,6 +288,12 @@ let state = {
   totalAmount: 0,
   actualAmount: 0,
   loading: false,
+  optimalDiscount: null,
+  // V37.0 积分抵扣
+  userPoints: 0,          // 用户可用积分
+  pointsRate: 100,        // 积分兑换比例：100积分=1元
+  usePoints: 0,           // 本次使用积分数
+  pointsDeduction: 0,     // 积分抵扣金额
 };
 
 function showToast(msg, duration=2000) {
@@ -223,8 +305,23 @@ function showToast(msg, duration=2000) {
 
 // ---- 初始化 ----
 async function init() {
-  await Promise.all([loadOrderItems(), loadAddresses(), loadCoupons()]);
+  await Promise.all([loadOrderItems(), loadAddresses(), loadCoupons(), loadUserPoints()]);
   recalcAmount();
+  await loadOptimalDiscount();
+}
+
+// V37.0: 加载用户积分
+async function loadUserPoints() {
+  if (!TOKEN) return;
+  try {
+    const res = await fetch(API('/api/user/member/info')).then(r => r.json()).catch(() => ({}));
+    if (res.success && res.data) {
+      state.userPoints = parseInt(res.data.points || 0);
+      document.getElementById('pointsSection').style.display = 'block';
+      document.getElementById('pointsBalance').innerHTML = `可用 <strong>${state.userPoints.toLocaleString()}</strong> 积分`;
+      document.getElementById('pointsAvailableDisplay').textContent = state.userPoints.toLocaleString();
+    }
+  } catch (e) {}
 }
 
 async function loadOrderItems() {
@@ -310,43 +407,156 @@ function renderSelectedAddress() {
 
 async function loadCoupons() {
   const res = await fetch(API('/api/user/coupons?status=unused&page=1&per_page=20')).then(r=>r.json()).catch(()=>({}));
-  state.coupons = (res.data?.list || res.data || []).filter(c => {
-    const min = parseFloat(c.min_amount || 0);
-    return state.totalAmount >= min || min === 0;
-  });
+  state.coupons = (res.data?.list || res.data || []);
+}
+
+function getCouponDiscount(coupon, orderAmount) {
+  if (!coupon) return 0;
+  const min = parseFloat(coupon.min_amount || 0);
+  if (orderAmount < min) return 0;
+  let discount = 0;
+  if (coupon.coupon_type === 'cash') {
+    discount = parseFloat(coupon.discount_value || 0);
+  } else if (coupon.coupon_type === 'discount') {
+    discount = orderAmount * (1 - parseFloat(coupon.discount_value || 1));
+    const maxD = parseFloat(coupon.max_discount || 0);
+    if (maxD > 0) discount = Math.min(discount, maxD);
+  }
+  return Math.min(discount, orderAmount);
+}
+
+function renderSelectedCoupon() {
+  if (!state.selectedCoupon) {
+    document.getElementById('couponLabel').textContent = '选择优惠券';
+    document.getElementById('couponValue').textContent = '';
+    return;
+  }
+  const c = state.selectedCoupon;
+  const dispAmt = c.coupon_type === 'cash' ? '-¥' + parseFloat(c.discount_value || 0).toFixed(2) : parseFloat(c.discount_value || 1) * 10 + '折优惠';
+  document.getElementById('couponLabel').textContent = c.coupon_name || '优惠券';
+  document.getElementById('couponValue').textContent = dispAmt;
+}
+
+function isOptimalPlanApplied() {
+  const plan = state.optimalDiscount && state.optimalDiscount.optimal_plan;
+  if (!plan) return false;
+  const currentCouponId = state.selectedCoupon ? String(state.selectedCoupon.user_coupon_id || state.selectedCoupon.id || '') : '';
+  const planCouponId = plan.coupon ? String(plan.coupon.user_coupon_id || plan.coupon.id || '') : '';
+  return currentCouponId === planCouponId && (parseInt(state.usePoints || 0, 10) || 0) === (parseInt(plan.use_points || 0, 10) || 0);
+}
+
+function updateOptimalDiscountView() {
+  const section = document.getElementById('optimalDiscountSection');
+  const titleEl = document.getElementById('optimalDiscountTitle');
+  const descEl = document.getElementById('optimalDiscountDesc');
+  const btn = document.getElementById('applyOptimalBtn');
+  const plan = state.optimalDiscount && state.optimalDiscount.optimal_plan;
+
+  if (!plan) {
+    section.style.display = 'none';
+    return;
+  }
+
+  section.style.display = 'block';
+  const isApplied = isOptimalPlanApplied();
+  const currentSavings = getCouponDiscount(state.selectedCoupon, state.totalAmount) + state.pointsDeduction;
+
+  if ((plan.total_discount || 0) > 0) {
+    titleEl.textContent = isApplied
+      ? '当前已应用系统计算的最优方案'
+      : '推荐为你节省 ¥' + parseFloat(plan.total_discount || 0).toFixed(2);
+
+    const descParts = [];
+    if (plan.coupon) descParts.push('优惠券：' + (plan.coupon.coupon_name || '1张可用券'));
+    if ((plan.use_points || 0) > 0) descParts.push('积分：' + (plan.use_points || 0) + ' 点');
+    descParts.push('实付 ¥' + parseFloat(plan.final_amount || state.totalAmount || 0).toFixed(2));
+    if (!isApplied && plan.total_discount > currentSavings) {
+      descParts.push('比当前多省 ¥' + parseFloat(plan.total_discount - currentSavings).toFixed(2));
+    } else if (plan.recommend_reason) {
+      descParts.push(plan.recommend_reason);
+    }
+    descEl.textContent = descParts.join(' · ');
+
+    btn.style.display = 'inline-block';
+    btn.disabled = isApplied;
+    btn.textContent = isApplied ? '已应用' : '一键应用';
+  } else {
+    titleEl.textContent = '当前暂无更优优惠';
+    descEl.textContent = '本单暂无可叠加的优惠券或积分方案，直接提交即可。';
+    btn.style.display = 'none';
+    btn.disabled = false;
+  }
+}
+
+async function loadOptimalDiscount() {
+  if (!TOKEN || state.totalAmount <= 0) {
+    state.optimalDiscount = null;
+    updateOptimalDiscountView();
+    return;
+  }
+  try {
+    const res = await fetch(API('/api/user/discount/optimal?amount=' + encodeURIComponent(state.totalAmount.toFixed(2)))).then(r => r.json()).catch(() => ({}));
+    if (!res.success || !res.data) throw new Error(res.msg || '计算失败');
+    state.optimalDiscount = res.data;
+    updateOptimalDiscountView();
+  } catch (e) {
+    state.optimalDiscount = null;
+    updateOptimalDiscountView();
+  }
+}
+
+function applyOptimalPlan() {
+  const plan = state.optimalDiscount && state.optimalDiscount.optimal_plan;
+  if (!plan) return;
+
+  if (plan.coupon) {
+    const couponId = String(plan.coupon.user_coupon_id || plan.coupon.id || '');
+    state.selectedCoupon = state.coupons.find(c => String(c.user_coupon_id || c.id || '') === couponId) || plan.coupon;
+  } else {
+    state.selectedCoupon = null;
+  }
+
+  renderSelectedCoupon();
+  state.usePoints = parseInt(plan.use_points || 0, 10) || 0;
+  recalcAmount();
+  showToast('已应用系统推荐的最优优惠');
 }
 
 function recalcAmount() {
   state.totalAmount = state.items.reduce((s, i) => s + i.price * i.quantity, 0);
-  
-  let discount = 0;
-  const c = state.selectedCoupon;
-  if (c) {
-    const min = parseFloat(c.min_amount || 0);
-    if (state.totalAmount >= min) {
-      if (c.coupon_type === 'cash') {
-        discount = parseFloat(c.discount_value || 0);
-      } else if (c.coupon_type === 'discount') {
-        discount = state.totalAmount * (1 - parseFloat(c.discount_value || 1));
-        const maxD = parseFloat(c.max_discount || 0);
-        if (maxD > 0) discount = Math.min(discount, maxD);
-      }
-    }
-  }
-  discount = Math.min(discount, state.totalAmount);
-  state.actualAmount = Math.max(0, state.totalAmount - discount);
+
+  const discount = getCouponDiscount(state.selectedCoupon, state.totalAmount);
+
+  // V37.0: 积分抵扣
+  const afterCoupon = Math.max(0, state.totalAmount - discount);
+  const maxPointsUse = Math.min(state.userPoints, state.pointsRate * afterCoupon);
+  const actualUsePoints = Math.min(state.usePoints, maxPointsUse);
+  state.usePoints = actualUsePoints;
+  state.pointsDeduction = actualUsePoints / state.pointsRate;
+  state.actualAmount = Math.max(0, afterCoupon - state.pointsDeduction);
 
   document.getElementById('feeProductAmt').textContent = '¥' + state.totalAmount.toFixed(2);
   document.getElementById('feeTotalAmt').textContent = state.actualAmount.toFixed(2);
   document.getElementById('bottomTotal').textContent = state.actualAmount.toFixed(2);
 
   const discRow = document.getElementById('feeDiscountRow');
-  if (discount > 0) {
+  if (discount > 0 || state.pointsDeduction > 0) {
     discRow.style.display = 'flex';
-    document.getElementById('feeCouponDiscount').textContent = '-¥' + discount.toFixed(2);
+    const parts = [];
+    if (discount > 0) parts.push(`优惠券 -¥${discount.toFixed(2)}`);
+    if (state.pointsDeduction > 0) parts.push(`积分抵用 -¥${state.pointsDeduction.toFixed(2)}`);
+    document.getElementById('feeCouponDiscount').textContent = parts.join(' + ');
   } else {
     discRow.style.display = 'none';
   }
+
+  if (state.usePoints > 0) {
+    document.getElementById('pointsValue').textContent = `使用 ${state.usePoints} 积分抵 ¥${state.pointsDeduction.toFixed(2)}`;
+  } else {
+    document.getElementById('pointsValue').textContent = '';
+  }
+
+  updateOptimalDiscountView();
 }
 
 // ---- 地址弹窗 ----
@@ -425,20 +635,51 @@ function closeCouponSheet() {
   document.body.style.overflow = '';
 }
 function selectCoupon(coupon) {
-  if (!coupon) {
-    state.selectedCoupon = null;
-    document.getElementById('couponLabel').textContent = '选择优惠券';
-    document.getElementById('couponValue').textContent = '';
-  } else {
-    const c = typeof coupon === 'string' ? JSON.parse(coupon) : coupon;
-    state.selectedCoupon = c;
-    const dispAmt = c.coupon_type === 'cash' ? '-¥' + parseFloat(c.discount_value).toFixed(2) :
-                    parseFloat(c.discount_value) * 10 + '折优惠';
-    document.getElementById('couponLabel').textContent = c.coupon_name || '优惠券';
-    document.getElementById('couponValue').textContent = dispAmt;
-  }
+  state.selectedCoupon = coupon ? (typeof coupon === 'string' ? JSON.parse(coupon) : coupon) : null;
+  renderSelectedCoupon();
   recalcAmount();
   closeCouponSheet();
+}
+
+// V37.0: 积分抵扣弹窗
+function openPointsSheet() {
+  const afterCoupon = Math.max(0, state.totalAmount - getCouponDiscount(state.selectedCoupon, state.totalAmount));
+  const maxPointsUse = Math.min(state.userPoints, Math.floor(state.pointsRate * afterCoupon));
+
+  const slider = document.getElementById('pointsSlider');
+  slider.max = maxPointsUse;
+  slider.value = Math.min(state.usePoints, maxPointsUse);
+
+  document.getElementById('pointsAvailableDisplay').textContent = state.userPoints.toLocaleString();
+  document.getElementById('pointsTip').textContent = `${state.pointsRate}积分 = ¥1.00，最高抵用¥${(maxPointsUse / state.pointsRate).toFixed(2)}`;
+
+  updatePointsDeduction(slider.value);
+
+  document.getElementById('pointsSheet').classList.add('show');
+  document.getElementById('pointsMask').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closePointsSheet() {
+  document.getElementById('pointsSheet').classList.remove('show');
+  document.getElementById('pointsMask').classList.remove('show');
+  document.body.style.overflow = '';
+}
+function updatePointsDeduction(val) {
+  val = parseInt(val) || 0;
+  const deduction = val / state.pointsRate;
+  document.getElementById('pointsSliderValue').textContent = val.toLocaleString() + '积分';
+  document.getElementById('pointsDeductionDisplay').textContent = '¥' + deduction.toFixed(2);
+}
+function selectPoints(val) {
+  document.getElementById('pointsSlider').value = val;
+  updatePointsDeduction(val);
+}
+function confirmPoints() {
+  const val = parseInt(document.getElementById('pointsSlider').value) || 0;
+  state.usePoints = val;
+  state.pointsDeduction = val / state.pointsRate;
+  recalcAmount();
+  closePointsSheet();
 }
 
 // ---- 提交订单 ----
@@ -458,6 +699,8 @@ async function submitOrder() {
       address_id: state.selectedAddrId,
       remark: document.getElementById('remarkInput').value.trim(),
       coupon_code: state.selectedCoupon ? (state.selectedCoupon.coupon_code || '') : '',
+      // V37.0: 积分抵扣
+      use_points: state.usePoints || 0,
     };
 
     if (cartIds.length > 0) {

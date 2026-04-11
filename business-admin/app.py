@@ -7,7 +7,8 @@
 """
 from flask import Flask, g, request, jsonify, send_from_directory
 from flask_cors import CORS
-import sys, os, time, json, logging
+import sys, os, time, json, logging, datetime
+import pymysql.cursors
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
 
@@ -5068,6 +5069,356 @@ def admin_delete_backup(user, backup_id):
     except Exception as e:
         logging.error(f"删除备份失败: {e}")
         return jsonify({'success': False, 'msg': f'删除失败: {str(e}')
+
+
+# ============ 走访台账模块（从22306合并） ============
+
+@app.route('/api/admin/visits', methods=['GET'])
+@require_admin
+def get_visits(user):
+    """获取走访记录列表"""
+    page = int(request.args.get('current', 1))
+    page_size = int(request.args.get('rowCount', 10))
+    month = request.args.get('month', '')
+    staff_id = request.args.get('staffId', '')
+    category = request.args.get('category', '')
+    
+    ec_id, project_id = get_data_scope()
+    
+    conn = db.get_connection()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    
+    # 构建查询条件
+    where = "WHERE deleted = 0"
+    params = []
+    
+    if ec_id:
+        where += " AND ec_id = %s"
+        params.append(ec_id)
+    if project_id:
+        where += " AND project_id = %s"
+        params.append(project_id)
+    if month:
+        where += " AND DATE_FORMAT(visit_time, '%%Y-%%m') = %s"
+        params.append(month)
+    if staff_id:
+        where += " AND visitor = %s"
+        params.append(staff_id)
+    if category:
+        where += " AND category = %s"
+        params.append(category)
+    
+    # 查询总数
+    cursor.execute(f"SELECT COUNT(*) as total FROM visit_records {where}", params)
+    total = cursor.fetchone()['total']
+    
+    # 分页查询
+    offset = (page - 1) * page_size
+    cursor.execute(
+        f"SELECT * FROM visit_records {where} ORDER BY visit_time DESC, id DESC LIMIT %s OFFSET %s",
+        params + [page_size, offset]
+    )
+    
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    
+    # 转换日期格式，并映射字段名给前端
+    for row in rows:
+        if row.get('visit_time'):
+            row['visit_time'] = str(row['visit_time'])
+        row['visit_date'] = row.get('visit_time')
+        row['staff_id'] = row.get('visitor')
+        row['staff_name'] = row.get('visitor_name')
+        if row.get('create_time'):
+            row['create_time'] = row['create_time'].strftime('%Y-%m-%d %H:%M:%S')
+        if row.get('update_time'):
+            row['update_time'] = row['update_time'].strftime('%Y-%m-%d %H:%M:%S')
+    
+    log_admin_action('query_visits', {'page': page, 'total': total})
+    
+    return jsonify({
+        'success': True,
+        'data': {
+            'rows': rows,
+            'total': total,
+            'current': page,
+            'rowCount': page_size
+        }
+    })
+
+@app.route('/api/admin/visits', methods=['POST'])
+@require_admin
+def create_visit(user):
+    """新增走访记录"""
+    data = request.json
+    
+    required_fields = ['companyName', 'staffId', 'staffName', 'visitDate']
+    for field in required_fields:
+        if not data.get(field):
+            return jsonify({'success': False, 'msg': f'{field}不能为空'})
+    
+    ec_id, project_id = get_data_scope()
+    user_name = user.get('user_name', '系统用户')
+    
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    
+    now = datetime.datetime.now()
+    
+    sql = '''
+        INSERT INTO visit_records 
+        (company_name, region, visitor, visitor_name, visit_time, category, content, 
+         ec_id, project_id, creator, create_time)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    '''
+    
+    cursor.execute(sql, (
+        data.get('companyName'),
+        data.get('region', ''),
+        data.get('staffId'),
+        data.get('staffName'),
+        data.get('visitDate'),
+        data.get('category', ''),
+        data.get('content', ''),
+        ec_id,
+        project_id,
+        user_name,
+        now
+    ))
+    
+    record_id = cursor.lastrowid
+    conn.commit()
+    cursor.close()
+    conn.close()
+    
+    log_admin_action('create_visit', {'id': record_id, 'company': data.get('companyName')})
+    
+    return jsonify({
+        'success': True,
+        'msg': '保存成功',
+        'data': {'id': record_id}
+    })
+
+@app.route('/api/admin/visits/<int:record_id>', methods=['PUT'])
+@require_admin
+def update_visit(user, record_id):
+    """修改走访记录"""
+    data = request.json
+    
+    ec_id, project_id = get_data_scope()
+    user_name = user.get('user_name', '系统用户')
+    
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    
+    now = datetime.datetime.now()
+    
+    # 添加数据范围过滤
+    where = "WHERE id = %s AND deleted = 0"
+    params = [record_id]
+    if ec_id:
+        where += " AND ec_id = %s"
+        params.append(ec_id)
+    if project_id:
+        where += " AND project_id = %s"
+        params.append(project_id)
+    
+    sql = f'''
+        UPDATE visit_records SET
+            company_name = %s,
+            region = %s,
+            visitor = %s,
+            visitor_name = %s,
+            visit_time = %s,
+            category = %s,
+            content = %s,
+            update_time = %s
+        {where}
+    '''
+    
+    cursor.execute(sql, (
+        data.get('companyName'),
+        data.get('region', ''),
+        data.get('staffId'),
+        data.get('staffName'),
+        data.get('visitDate'),
+        data.get('category', ''),
+        data.get('content', ''),
+        now
+    ) + tuple(params[1:]))  # 添加WHERE条件参数
+    
+    conn.commit()
+    affected = cursor.affected_rows()
+    cursor.close()
+    conn.close()
+    
+    if affected == 0:
+        return jsonify({'success': False, 'msg': '记录不存在或无权限修改'})
+    
+    log_admin_action('update_visit', {'id': record_id})
+    
+    return jsonify({'success': True, 'msg': '修改成功'})
+
+@app.route('/api/admin/visits/<int:record_id>', methods=['DELETE'])
+@require_admin
+def delete_visit(user, record_id):
+    """删除走访记录（软删除）"""
+    ec_id, project_id = get_data_scope()
+    user_name = user.get('user_name', '系统用户')
+    
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    
+    now = datetime.datetime.now()
+    
+    # 添加数据范围过滤
+    where = "WHERE id = %s AND deleted = 0"
+    params = [record_id]
+    if ec_id:
+        where += " AND ec_id = %s"
+        params.append(ec_id)
+    if project_id:
+        where += " AND project_id = %s"
+        params.append(project_id)
+    
+    sql = f'''
+        UPDATE visit_records SET
+            deleted = 1,
+            delete_by = %s,
+            delete_time = %s
+        {where}
+    '''
+    
+    cursor.execute(sql, (user_name, now) + tuple(params[1:]))
+    
+    conn.commit()
+    affected = cursor.affected_rows()
+    cursor.close()
+    conn.close()
+    
+    if affected == 0:
+        return jsonify({'success': False, 'msg': '记录不存在或无权限删除'})
+    
+    log_admin_action('delete_visit', {'id': record_id})
+    
+    return jsonify({'success': True, 'msg': '删除成功'})
+
+@app.route('/api/admin/visits/stats')
+@require_admin
+def get_visit_stats(user):
+    """获取走访统计数据"""
+    stats_type = request.args.get('type', 'month')
+    region = request.args.get('region', '')
+    staff_id = request.args.get('staffId', '')
+    
+    ec_id, project_id = get_data_scope()
+    
+    conn = db.get_connection()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    
+    # 构建条件
+    where = "WHERE deleted = 0"
+    params = []
+    
+    if ec_id:
+        where += " AND ec_id = %s"
+        params.append(ec_id)
+    if project_id:
+        where += " AND project_id = %s"
+        params.append(project_id)
+    if region:
+        where += " AND region = %s"
+        params.append(region)
+    if staff_id:
+        where += " AND visitor = %s"
+        params.append(staff_id)
+    
+    # 按时间维度统计
+    if stats_type == 'month':
+        date_format = "DATE_FORMAT(visit_time, '%%Y-%%m')"
+    elif stats_type == 'quarter':
+        date_format = "CONCAT(YEAR(visit_time), '-Q', QUARTER(visit_time))"
+    else:
+        date_format = "YEAR(visit_time)"
+    
+    sql = f'''
+        SELECT 
+            {date_format} as period,
+            COUNT(*) as count,
+            COUNT(DISTINCT company_name) as company_count
+        FROM visit_records
+        {where}
+        GROUP BY {date_format}
+        ORDER BY period DESC
+    '''
+    
+    cursor.execute(sql, params)
+    stats = cursor.fetchall()
+    
+    # 汇总统计
+    cursor.execute(f"SELECT COUNT(*) as total FROM visit_records {where}", params)
+    total = cursor.fetchone()['total']
+    
+    cursor.execute(f"SELECT COUNT(DISTINCT company_name) as companies FROM visit_records {where}", params)
+    companies = cursor.fetchone()['companies']
+    
+    cursor.execute(f"SELECT COUNT(DISTINCT visitor) as staff FROM visit_records {where}", params)
+    staff = cursor.fetchone()['staff']
+    
+    cursor.close()
+    conn.close()
+    
+    return jsonify({
+        'success': True,
+        'data': {
+            'stats': stats,
+            'summary': {
+                'total': total,
+                'companies': companies,
+                'staff': staff
+            }
+        }
+    })
+
+@app.route('/api/admin/employees/search')
+@require_admin
+def search_employees_proxy(user):
+    """员工搜索代理接口"""
+    name = request.args.get('name', '')
+    current = int(request.args.get('current', 1))
+    row_count = int(request.args.get('rowCount', 20))
+    project_id = request.args.get('projectID', '')
+    
+    token = request.args.get('access_token') or request.headers.get('Token')
+    
+    import urllib.request
+    import urllib.parse
+    
+    # 调用我家云接口
+    base_url = 'https://gj.wojiacloud.com/h5/api/employees/getEmployeeListByName'
+    params = {
+        'access_token': token,
+        'time': int(datetime.datetime.now().timestamp() * 1000),
+        'projectID': project_id,
+        'name': urllib.parse.quote(name),
+        'rowCount': row_count,
+        'current': current
+    }
+    
+    url = base_url + '?' + urllib.parse.urlencode(params)
+    
+    try:
+        ctx = __import__('ssl').create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = __import__('ssl').CERT_NONE
+        
+        req = urllib.request.Request(url)
+        resp = urllib.request.urlopen(req, context=ctx, timeout=10)
+        result = json.loads(resp.read().decode('utf-8'))
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'msg': str(e), 'data': []})
 
 
 @app.route('/')

@@ -2,93 +2,74 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>门店列表</title>
+    <link rel="stylesheet" href="../business-common/list-style.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; min-height: 100vh; }
-        .header { background: linear-gradient(135deg, #43b89c 0%, #1a8a6e 100%); color: white; padding: 16px 15px 20px; }
-        .header-top { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-        .back-btn { font-size: 22px; cursor: pointer; }
-        .header h1 { font-size: 18px; }
-        .search-box { display: flex; background: white; border-radius: 22px; overflow: hidden; padding: 0 12px; align-items: center; gap: 8px; }
-        .search-box input { flex: 1; border: none; outline: none; padding: 10px 4px; font-size: 14px; }
-        .search-box button { background: none; border: none; font-size: 18px; cursor: pointer; color: #43b89c; }
-
-        .filter-bar { display: flex; gap: 8px; padding: 12px 15px; background: white; overflow-x: auto; white-space: nowrap; border-bottom: 1px solid #eee; }
-        .filter-tag { padding: 5px 14px; border-radius: 15px; font-size: 12px; background: #f0f0f0; color: #666; cursor: pointer; display: inline-block; }
-        .filter-tag.active { background: #43b89c; color: white; }
-
-        .shop-list { padding: 12px 15px; }
-        .shop-card { background: white; border-radius: 14px; margin-bottom: 14px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.06); cursor: pointer; }
-        .shop-card:active { transform: scale(0.99); opacity: .97; }
-        .shop-cover { width: 100%; height: 160px; object-fit: cover; background: linear-gradient(135deg, #a8edea, #fed6e3); display: flex; align-items: center; justify-content: center; font-size: 48px; }
-        .shop-body { padding: 14px; }
-        .shop-name { font-size: 16px; font-weight: 600; color: #222; margin-bottom: 6px; }
-        .shop-meta { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-        .shop-type { background: #e8f8f3; color: #43b89c; font-size: 11px; padding: 2px 8px; border-radius: 10px; }
-        .shop-rating { color: #faad14; font-size: 13px; }
-        .shop-addr { font-size: 13px; color: #888; margin-bottom: 8px; display: flex; gap: 4px; align-items: flex-start; }
-        .shop-addr svg { flex-shrink: 0; margin-top: 1px; }
-        .shop-hours { font-size: 12px; color: #aaa; display: flex; align-items: center; gap: 4px; }
-        .shop-status { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; }
-        .status-open { background: #f0fff4; color: #38a169; }
-        .status-closed { background: #fff5f5; color: #e53e3e; }
-        .shop-action { display: flex; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f5f5f5; }
-        .btn { flex: 1; padding: 8px 0; border-radius: 8px; border: none; font-size: 13px; cursor: pointer; }
-        .btn-primary { background: #43b89c; color: white; }
-        .btn-outline { background: white; border: 1px solid #43b89c; color: #43b89c; }
-
-        .empty { text-align: center; padding: 60px 20px; color: #bbb; }
-        .empty-icon { font-size: 48px; margin-bottom: 12px; }
-        .loading { text-align: center; padding: 40px; color: #aaa; font-size: 14px; }
-
+        /* 页面特有样式 */
+        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
+        .actions .link:hover { text-decoration: underline; }
+        .actions .link.danger { color: var(--el-color-danger); }
+        /* 弹窗样式保留 */
         /* 门店详情弹窗 */
         .modal-mask { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 100; }
-        .modal-mask.show { display: flex; align-items: flex-end; }
-        .modal { background: white; border-radius: 20px 20px 0 0; width: 100%; max-height: 85vh; overflow-y: auto; padding: 20px; }
-        .modal-title { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
-        .modal-close { float: right; font-size: 20px; cursor: pointer; color: #aaa; }
-        .detail-row { display: flex; padding: 10px 0; border-bottom: 1px solid #f5f5f5; font-size: 14px; }
-        .detail-label { color: #888; width: 80px; flex-shrink: 0; }
-        .detail-value { color: #333; flex: 1; }
-        .star-bar { color: #faad14; font-size: 20px; letter-spacing: 3px; }
-        .reviews-section { margin-top: 16px; }
-        .review-item { padding: 12px 0; border-bottom: 1px solid #f5f5f5; }
-        .review-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-        .reviewer-name { font-size: 13px; font-weight: 500; color: #333; }
-        .review-stars { color: #faad14; font-size: 12px; }
-        .review-time { font-size: 11px; color: #bbb; margin-left: auto; }
-        .review-content { font-size: 13px; color: #555; line-height: 1.6; }
-        .review-reply { background: #f8f8f8; border-left: 3px solid #43b89c; padding: 8px 10px; margin-top: 8px; border-radius: 0 6px 6px 0; font-size: 12px; color: #666; }
     </style>
 </head>
-<body>
-    <div class="header">
-        <div class="header-top">
-            <span class="back-btn" onclick="history.back()">←</span>
-            <h1>社区门店</h1>
+<body class="wy-design-list">
+    <!-- 顶部区域 -->
+    <div class="wy-design-list_top">
+        <div class="wy-design-list_top_title">
+            <h1 class="wy-design-list_title">门店列表</h1>
+            <div class="wy-design-list_space"></div>
+            <div class="wy-design-list_btn-group">
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
+                        <span>搜索</span>
+                    </button>
+                </div>
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
+                        <span>重置</span>
+                    </button>
+                </div>
+            </div>
         </div>
-        <div class="search-box">
-            <input type="text" id="searchInput" placeholder="搜索门店名称..." />
-            <button onclick="doSearch()">🔍</button>
+    </div>
+
+    <!-- 筛选区域 -->
+    <div class="wy-design-list_filter">
+        <div class="wy-design-list_other">
+            <div class="el-input el-input--small" style="width: 200px;">
+                <input type="text" id="searchInput" placeholder="搜索门店名称..." class="el-input__inner">
+            </div>
         </div>
     </div>
 
-    <div class="filter-bar" id="filterBar">
-        <span class="filter-tag active" data-type="">全部</span>
-        <span class="filter-tag" data-type="restaurant">餐饮</span>
-        <span class="filter-tag" data-type="retail">零售</span>
-        <span class="filter-tag" data-type="service">服务</span>
-        <span class="filter-tag" data-type="entertainment">娱乐</span>
-        <span class="filter-tag" data-type="health">健康</span>
+    <!-- 表格区域 -->
+    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
+        <div class="wy-design-table_bar">
+            <i class="wy-design-table_set el-icon-setting" title="列设置"></i>
+            <span class="wy-design-table_total">共 <em id="totalCount">0</em> 条</span>
+            <div class="wy-pages">
+                <div class="wy-pages_total">第<em id="currentPage">1</em>/<em id="totalPages">1</em>页</div>
+                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
+                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
+            </div>
+        </div>
+        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
+            <thead class="el-table__header">
+                <tr>
+                    <th><div class="cell">名称</div></th>
+                    <th><div class="cell">操作</div></th>
+                </tr>
+            </thead>
+            <tbody class="el-table__body" id="listBody">
+                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</td></tr>
+            </tbody>
+        </table>
     </div>
 
-    <div class="shop-list" id="shopList">
-        <div class="loading">加载中...</div>
-    </div>
-
-    <!-- 详情弹窗 -->
+    
     <div class="modal-mask" id="modalMask" onclick="closeModal(event)">
         <div class="modal" id="detailModal">
             <span class="modal-close" onclick="closeModal()">✕</span>
@@ -105,8 +86,10 @@
         </div>
     </div>
 
+    
+
     <script>
-        var urlParams = new URLSearchParams(location.search);
+    var urlParams = new URLSearchParams(location.search);
         var token = urlParams.get('access_token');
         var isdev = urlParams.get('isdev') || '0';
         if (token) {

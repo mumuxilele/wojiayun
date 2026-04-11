@@ -1,21 +1,32 @@
 """
 公共配置模块
-优先读取环境变量，未设置时使用默认值（生产环境请务必通过环境变量传入敏感信息）
+敏感信息必须通过环境变量传入，禁止硬编码：
 
-环境变量示例：
-  export DB_HOST=47.98.238.209
-  export DB_PASSWORD=your_password
-  export DB_NAME=visit_system
+必填环境变量：
+  DB_HOST      - 数据库地址
+  DB_PASSWORD  - 数据库密码（生产环境必须设置）
+
+可选环境变量（带默认值，适合开发环境）：
+  DB_PORT=3306
+  DB_USER=root
+  DB_NAME=visit_system
 """
 import os
 
+def _require_env(key, default=None, required=True):
+    """获取环境变量，敏感信息不允许有默认值"""
+    value = os.environ.get(key)
+    if not value and required and default is None:
+        raise EnvironmentError(f"缺少必填环境变量: {key}，请在启动前设置")
+    return value if value else default
+
 # ============ 数据库配置 ============
 DB_CONFIG = {
-    'host':     os.environ.get('DB_HOST', '47.98.238.209'),
-    'port':     int(os.environ.get('DB_PORT', '3306')),
-    'user':     os.environ.get('DB_USER', 'root'),
-    'password': os.environ.get('DB_PASSWORD') or os.environ.get('MYSQL_PWD', ''),
-    'database': os.environ.get('DB_NAME', 'visit_system'),
+    'host':     _require_env('DB_HOST', required=True),  # 必填，禁止硬编码
+    'port':     int(_require_env('DB_PORT', '3306', required=False)),
+    'user':     _require_env('DB_USER', 'root', required=False),
+    'password': _require_env('DB_PASSWORD', required=True),  # 必填，禁止硬编码
+    'database': _require_env('DB_NAME', 'visit_system', required=False),
     'charset':  'utf8mb4',
     'connect_timeout': 10,
     'autocommit': False,
@@ -23,8 +34,8 @@ DB_CONFIG = {
 
 # ============ 用户服务配置 ============
 USER_SERVICE_URL        = os.environ.get('USER_SERVICE_URL', 'http://127.0.0.1:22307/getUserInfo')
-USER_SERVICE_URL_CLOUD  = os.environ.get('USER_SERVICE_URL_CLOUD', 'https://wj.wojiacloud.com/getUserInfo')
-STAFF_SERVICE_URL_CLOUD = os.environ.get('STAFF_SERVICE_URL_CLOUD', 'https://gj.wojiacloud.com/getUserInfo')
+USER_SERVICE_URL_CLOUD  = os.environ.get('USER_SERVICE_URL_CLOUD', 'https://wj.wojiacloud.com/h5/users/api/getUserInfo')
+STAFF_SERVICE_URL_CLOUD = os.environ.get('STAFF_SERVICE_URL_CLOUD', 'https://gj.wojiacloud.com/users/getUserInfo')
 
 # ============ 服务端口 ============
 PORTS = {

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户管理 - 管理后台</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary-color: #1890ff;
+            --primary-light: #40a9ff;
+            --success-color: #52c41a;
+            --warning-color: #faad14;
+            --danger-color: #ff4d4f;
+            --info-color: #909399;
+            --text-primary: #303133;
+            --text-regular: #606266;
+            --text-secondary: #909399;
+            --border-color: #ebeef5;
+            --bg-white: #ffffff;
+            --bg-light: #f5f7fa;
+            --bg-striped: #fafafa;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg-light); font-size: 14px; color: var(--text-regular); }
+        .header { background: #001529; color: white; padding: 15px 20px; display: flex; align-items: center; }
+        .header h1 { font-size: 18px; flex: 1; }
+        .back { color: white; text-decoration: none; font-size: 14px; }
+        .toolbar { background: var(--bg-white); padding: 15px 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; border-bottom: 1px solid var(--border-color); }
+        .search-input { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; width: 200px; font-size: 14px; }
+        .search-input:focus { border-color: var(--primary-color); outline: none; }
+        .select { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; background: var(--bg-white); }
+        .btn { padding: 9px 15px; border-radius: 4px; font-size: 14px; cursor: pointer; border: 1px solid var(--border-color); background: var(--bg-white); color: var(--text-regular); transition: all .2s; }
+        .btn:hover { color: var(--primary-color); border-color: var(--primary-color); }
+        .btn-primary { background: var(--primary-color); border-color: var(--primary-color); color: var(--bg-white); }
+        .btn-primary:hover { background: var(--primary-light); border-color: var(--primary-light); }
+        .el-table { width: 100%; border: 1px solid var(--border-color); border-radius: 4px; background-color: var(--bg-white); font-size: 14px; border-collapse: collapse; }
+        .el-table__header th { padding: 12px 10px; background-color: var(--bg-light); color: var(--text-primary); font-weight: 500; text-align: left; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); }
+        .el-table__header th:last-child { border-right: none; }
+        .el-table__body td { padding: 12px 10px; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); }
+        .el-table__body td:last-child { border-right: none; }
+        .el-table__body tr:hover > td { background-color: var(--bg-light); }
+        .el-table--striped .el-table__body tr:nth-child(2n) td { background-color: var(--bg-striped); }
+        .el-table--striped .el-table__body tr:nth-child(2n):hover td { background-color: var(--bg-light); }
+        .empty { text-align: center; padding: 40px; color: var(--info-color); }
+        .el-tag { display: inline-block; padding: 0 8px; height: 22px; line-height: 20px; font-size: 12px; border-radius: 4px; border: 1px solid; white-space: nowrap; }
+        .el-tag--success { background-color: #f6ffed; border-color: #b7eb8f; color: var(--success-color); }
+        .el-tag--warning { background-color: #fffbe6; border-color: #ffe58f; color: var(--warning-color); }
+        .el-tag--danger { background-color: #fff1f0; border-color: #ffa39e; color: var(--danger-color); }
+        .el-tag--info { background-color: #f4f4f5; border-color: #d3d3d3; color: var(--info-color); }
+        .el-tag--primary { background-color: #e6f7ff; border-color: #91d5ff; color: var(--primary-color); }
+        .points-num { font-weight: 600; color: var(--primary-color); }
+        .balance-num { font-weight: 600; color: #f57c00; }
+        .el-pagination { white-space: nowrap; padding: 16px 20px; text-align: center; user-select: none; background: var(--bg-white); display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .el-pagination__total { color: var(--text-regular); font-size: 13px; }
+        .el-pagination button { background: var(--bg-white); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; min-width: 30px; height: 28px; padding: 0 10px; font-size: 13px; color: var(--text-regular); transition: all .2s; }
+        .el-pagination button:hover:not(:disabled) { color: var(--primary-color); border-color: var(--primary-color); }
+        .el-pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .actions a { color: var(--primary-color); margin-right: 10px; text-decoration: none; cursor: pointer; }
+        .actions a:hover { color: var(--primary-light); }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="index.html" class="back">← 返回</a>
+        <h1>👥 用户管理</h1>
+        <span></span>
+    </div>
+    <div class="toolbar">
+        <input type="text" class="search-input" id="keyword" placeholder="搜索用户名/手机号">
+        <select class="select" id="levelFilter">
+            <option value="">全部等级</option>
+            <option value="bronze">青铜会员</option>
+            <option value="silver">白银会员</option>
+            <option value="gold">黄金会员</option>
+            <option value="platinum">铂金会员</option>
+        </select>
+        <button class="btn btn-primary" onclick="loadList(1)">搜索</button>
+        <button class="btn" onclick="resetSearch()">重置</button>
+        <button class="btn" onclick="exportMembers()" style="margin-left:auto">📥 导出CSV</button>
+    </div>
+    <table class="el-table el-table--border el-table--striped">
+        <thead class="el-table__header">
+            <tr>
+                <th>ID</th>
+                <th>用户名</th>
+                <th>手机号</th>
+                <th>会员等级</th>
+                <th>当前积分</th>
+                <th>累计积分</th>
+                <th>账户余额</th>
+                <th>注册时间</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody class="el-table__body" id="listBody"><tr><td colspan="9" class="empty">加载中...</td></tr></tbody>
+    </table>
+    <div class="el-pagination">
+        <button id="prevBtn" onclick="changePage(-1)" disabled>上一页</button>
+        <span id="pageInfo" class="el-pagination__total">第 1 页</span>
+        <button id="nextBtn" onclick="changePage(1)" disabled>下一页</button>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('admin_token') || new URLSearchParams(location.search).get('access_token') || '';
+        const isdev = new URLSearchParams(location.search).get('isdev') || '0';
+        let currentPage = 1;
+        let totalPages = 1;
+
+        const LEVEL_MAP = { bronze: '青铜', silver: '白银', gold: '黄金', platinum: '铂金' };
+        const LEVEL_TAG = { bronze: 'info', silver: 'primary', gold: 'warning', platinum: 'danger' };
+
+        function authUrl(url) {
+            const sep = url.includes('?') ? '&' : '?';
+            return url + sep + 'access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+        }
+
+        async function loadList(page) {
+            currentPage = page || 1;
+            const keyword = document.getElementById('keyword').value;
+            const level = document.getElementById('levelFilter').value;
+            let url = '/api/admin/users?page=' + currentPage + '&page_size=20';
+            if (keyword) url += '&keyword=' + encodeURIComponent(keyword);
+            if (level) url += '&level=' + level;
+            try {
+                const res = await fetch(authUrl(url));
+                const data = await res.json();
+                if (data.success && data.data) {
+                    const total = data.data.total || 0;
+                    totalPages = Math.ceil(total / 20) || 1;
+                    document.getElementById('pageInfo').textContent = `第 ${currentPage} 页，共 ${totalPages} 页（${total} 名用户）`;
+                    document.getElementById('prevBtn').disabled = currentPage <= 1;
+                    document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+
+                    const items = data.data.items || [];
+                    if (items.length === 0) {
+                        document.getElementById('listBody').innerHTML = '<tr><td colspan="9" class="empty">暂无用户数据</td></tr>';
+                        return;
+                    }
+                    document.getElementById('listBody').innerHTML = items.map(m =>
+                        `<tr>
+                            <td>${m.id}</td>
+                            <td>${m.user_name || '-'}</td>
+                            <td>${m.phone || '-'}</td>
+                            <td><span class="el-tag el-tag--${LEVEL_TAG[m.member_level] || 'info'}">${LEVEL_MAP[m.member_level] || m.member_level || '-'}</span></td>
+                            <td class="points-num">${m.points || 0}</td>
+                            <td>${m.total_points || 0}</td>
+                            <td class="balance-num">¥${parseFloat(m.balance || 0).toFixed(2)}</td>
+                            <td>${(m.created_at || '').substring(0, 10) || '-'}</td>
+                            <td class="actions">
+                                <a href="member-profile.html?access_token=${encodeURIComponent(token)}&isdev=${isdev}&user_id=${m.user_id}" target="_blank">画像</a>
+                                <a href="points.html?access_token=${encodeURIComponent(token)}&isdev=${isdev}" target="_blank">积分管理</a>
+                            </td>
+                        </tr>`
+                    ).join('');
+                }
+            } catch (e) {
+                document.getElementById('listBody').innerHTML = '<tr><td colspan="9" class="empty">加载失败</td></tr>';
+            }
+        }
+
+        function changePage(delta) { loadList(currentPage + delta); }
+        function resetSearch() {
+            document.getElementById('keyword').value = '';
+            document.getElementById('levelFilter').value = '';
+            loadList(1);
+        }
+
+        function exportMembers() {
+            const keyword = document.getElementById('keyword').value;
+            const level = document.getElementById('levelFilter').value;
+            let url = '/api/admin/export/members?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+            if (keyword) url += '&keyword=' + encodeURIComponent(keyword);
+            if (level) url += '&member_level=' + level;
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '会员数据_' + new Date().toISOString().substring(0,10) + '.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+
+
+        document.getElementById('keyword').addEventListener('keydown', e => { if (e.key === 'Enter') loadList(1); });
+
+        loadList(1);
+    </script>
+</body>
+</html>

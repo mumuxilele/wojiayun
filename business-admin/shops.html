@@ -4,140 +4,57 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>门店管理</title>
+    <link rel="stylesheet" href="../business-common/list-style.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        :root {
-            --primary-color: #1890ff;
-            --primary-light: #40a9ff;
-            --success-color: #52c41a;
-            --warning-color: #faad14;
-            --danger-color: #ff4d4f;
-            --info-color: #909399;
-            --text-primary: #303133;
-            --text-regular: #606266;
-            --text-secondary: #909399;
-            --border-color: #ebeef5;
-            --bg-white: #ffffff;
-            --bg-light: #f5f7fa;
-            --bg-striped: #fafafa;
-        }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg-light); font-size: 14px; color: var(--text-regular); }
-        .header { background: #001529; color: white; padding: 15px 20px; display: flex; align-items: center; }
-        .header h1 { font-size: 18px; flex: 1; }
-        .back { color: white; text-decoration: none; font-size: 14px; }
-        .toolbar { background: var(--bg-white); padding: 15px 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; border-bottom: 1px solid var(--border-color); }
-        .search-input { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; width: 200px; font-size: 14px; }
-        .search-input:focus { border-color: var(--primary-color); outline: none; }
-        .select { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; background: var(--bg-white); }
-        .btn { padding: 9px 15px; border-radius: 4px; font-size: 14px; cursor: pointer; border: 1px solid var(--border-color); background: var(--bg-white); color: var(--text-regular); transition: all .2s; }
-        .btn:hover { color: var(--primary-color); border-color: var(--primary-color); }
-        .btn-primary { background: var(--primary-color); border-color: var(--primary-color); color: var(--bg-white); }
-        .btn-primary:hover { background: var(--primary-light); border-color: var(--primary-light); }
-        .btn-success { background: var(--success-color); border-color: var(--success-color); color: var(--bg-white); }
-        .btn-success:hover { background: #73d13d; border-color: #73d13d; }
-        .btn-danger { background: var(--danger-color); border-color: var(--danger-color); color: var(--bg-white); }
-        .btn-danger:hover { opacity: .85; }
-        .btn-sm { padding: 5px 10px; font-size: 12px; }
-        .content { padding: 20px; }
-        .el-table { width: 100%; border: 1px solid var(--border-color); border-radius: 4px; background-color: var(--bg-white); color: var(--text-regular); font-size: 14px; border-collapse: collapse; }
-        .el-table__header th { padding: 12px 10px; background-color: var(--bg-light); color: var(--text-primary); font-weight: 500; text-align: left; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); }
-        .el-table__header th:last-child { border-right: none; }
-        .el-table__body td { padding: 12px 10px; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); }
-        .el-table__body td:last-child { border-right: none; }
-        .el-table__body tr:hover > td { background-color: var(--bg-light); }
-        .el-table--striped .el-table__body tr:nth-child(2n) td { background-color: var(--bg-striped); }
-        .el-table--striped .el-table__body tr:nth-child(2n):hover td { background-color: var(--bg-light); }
-        .empty { text-align: center; padding: 40px; color: var(--info-color); }
-        .el-tag { display: inline-block; padding: 0 8px; height: 22px; line-height: 20px; font-size: 12px; border-radius: 4px; border: 1px solid; white-space: nowrap; }
-        .el-tag--success { background-color: #f6ffed; border-color: #b7eb8f; color: var(--success-color); }
-        .el-tag--danger { background-color: #fff1f0; border-color: #ffa39e; color: var(--danger-color); }
-        .el-tag--info { background-color: #f4f4f5; border-color: #d3d3d3; color: var(--info-color); }
-        .el-pagination { white-space: nowrap; padding: 16px 20px; text-align: center; user-select: none; background: var(--bg-white); display: flex; justify-content: center; align-items: center; gap: 8px; }
-        .el-pagination__total { color: var(--text-regular); font-size: 13px; }
-        .el-pagination button { background: var(--bg-white); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; min-width: 30px; height: 28px; line-height: 28px; padding: 0 10px; font-size: 13px; color: var(--text-regular); transition: all .2s; }
-        .el-pagination button:hover:not(:disabled) { color: var(--primary-color); border-color: var(--primary-color); }
-        .el-pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
-        .actions a { color: var(--primary-color); margin-right: 10px; text-decoration: none; cursor: pointer; transition: color .2s; }
-        .actions a:hover { color: var(--primary-light); }
-        .actions a.danger { color: var(--danger-color); }
-        .actions a.danger:hover { opacity: .75; }
+        /* 页面特有样式 */
+        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
+        .actions .link:hover { text-decoration: underline; }
+        .actions .link.danger { color: var(--el-color-danger); }
+        /* 弹窗样式保留 */
         /* 弹窗 */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.45); z-index: 200; }
-        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: var(--bg-white); border-radius: 4px; width: 540px; max-width: 94vw; z-index: 201; box-shadow: 0 4px 20px rgba(0,0,0,.18); }
-        .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
-        .modal-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
-        .modal-close { width: 32px; height: 32px; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; color: var(--text-secondary); background: none; border: none; }
-        .modal-close:hover { background: var(--bg-light); }
-        .modal-body { padding: 20px; max-height: 60vh; overflow-y: auto; }
-        .modal-footer { padding: 12px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px; }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .form-item { margin-bottom: 16px; }
-        .form-item.full { grid-column: span 2; }
-        .form-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; display: block; }
-        .form-label.required::before { content: '* '; color: var(--danger-color); }
-        .form-input, .form-select, .form-textarea { width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; font-family: inherit; }
-        .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--primary-color); outline: none; }
-        .form-textarea { resize: vertical; min-height: 72px; }
     </style>
 </head>
-<body>
-    <div class="header">
-        <a href="index.html" class="back">← 返回</a>
-        <h1>🏪 门店管理</h1>
-        <span></span>
-    </div>
-    <div class="toolbar">
-        <input type="text" class="search-input" id="keyword" placeholder="搜索门店名称/地址">
-        <select class="select" id="statusFilter">
-            <option value="">全部状态</option>
-            <option value="open">营业中</option>
-            <option value="closed">已停业</option>
-        </select>
-        <button class="btn btn-primary" onclick="loadList(1)">搜索</button>
-        <button class="btn" onclick="resetSearch()">重置</button>
-        <button class="btn btn-success" style="margin-left:auto" onclick="openModal()">+ 添加门店</button>
-    </div>
-    <div class="content" style="padding:0">
-        <table class="el-table el-table--border el-table--striped">
-            <thead class="el-table__header">
-                <tr>
-                    <th>ID</th>
-                    <th>门店名称</th>
-                    <th>类型</th>
-                    <th>门店编号</th>
-                    <th>地址</th>
-                    <th>电话</th>
-                    <th>状态</th>
-                    <th>创建时间</th>
-                    <th>操作</th>
-                </tr>
-            </thead>
-            <tbody class="el-table__body" id="listBody"><tr><td colspan="9" class="empty">加载中...</td></tr></tbody>
-        </table>
-        <div class="el-pagination">
-            <button id="prevBtn" onclick="changePage(-1)" disabled>上一页</button>
-            <span id="pageInfo" class="el-pagination__total">第 1 页</span>
-            <button id="nextBtn" onclick="changePage(1)" disabled>下一页</button>
+<body class="wy-design-list">
+    <!-- 顶部区域 -->
+    <div class="wy-design-list_top">
+        <div class="wy-design-list_top_title">
+            <h1 class="wy-design-list_title">门店管理</h1>
+            <div class="wy-design-list_space"></div>
+            <div class="wy-design-list_btn-group">
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
+                        <span>搜索</span>
+                    </button>
+                </div>
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
+                        <span>重置</span>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- 新增/编辑门店弹窗 -->
-    <div class="modal-overlay" id="shopOverlay" onclick="if(event.target===this)closeModal()"></div>
-    <div class="modal" id="shopModal">
-        <div class="modal-header">
-            <span class="modal-title" id="modalTitle">添加门店</span>
-            <button class="modal-close" onclick="closeModal()">✕</button>
+    <!-- 筛选区域 -->
+    <div class="wy-design-list_filter">
+        <div class="wy-design-list_other">
+            <div class="el-input el-input--small" style="width: 200px;">
+                <input type="text" id="keyword" placeholder="搜索门店名称/地址" class="el-input__inner">
+            </div>
         </div>
-        <div class="modal-body">
-            <input type="hidden" id="shopId">
-            <div class="form-row">
-                <div class="form-item">
-                    <label class="form-label required">门店名称</label>
-                    <input type="text" class="form-input" id="shopName" placeholder="请输入门店名称" maxlength="50">
-                </div>
-                <div class="form-item">
-                    <label class="form-label">门店类型</label>
-                    <select class="form-select" id="shopType">
+        <div class="wy-design-list_other">
+            <select id="filter1" class="el-input__inner" style="width: 130px;">
+                
+            <option value="">全部状态</option>
+            <option value="open">营业中</option>
+            <option value="closed">已停业</option>
+        
+            </select>
+        </div>
+        <div class="wy-design-list_other">
+            <select id="filter2" class="el-input__inner" style="width: 130px;">
+                
                         <option value="">请选择</option>
                         <option value="restaurant">餐饮</option>
                         <option value="retail">零售</option>
@@ -145,44 +62,51 @@
                         <option value="entertainment">娱乐</option>
                         <option value="supermarket">超市</option>
                         <option value="other">其他</option>
-                    </select>
-                </div>
-                <div class="form-item">
-                    <label class="form-label">门店编号</label>
-                    <input type="text" class="form-input" id="shopCode" placeholder="如 S001">
-                </div>
-                <div class="form-item">
-                    <label class="form-label">联系电话</label>
-                    <input type="text" class="form-input" id="shopPhone" placeholder="请输入联系电话">
-                </div>
-                <div class="form-item full">
-                    <label class="form-label">门店地址</label>
-                    <input type="text" class="form-input" id="shopAddress" placeholder="请输入详细地址">
-                </div>
-                <div class="form-item">
-                    <label class="form-label">营业时间</label>
-                    <input type="text" class="form-input" id="shopHours" placeholder="如 09:00-22:00">
-                </div>
-                <div class="form-item">
-                    <label class="form-label">状态</label>
-                    <select class="form-select" id="shopStatus">
+                    
+            </select>
+        </div>
+        <div class="wy-design-list_other">
+            <select id="filter3" class="el-input__inner" style="width: 130px;">
+                
                         <option value="open">营业中</option>
                         <option value="closed">已停业</option>
-                    </select>
-                </div>
-                <div class="form-item full">
-                    <label class="form-label">门店简介</label>
-                    <textarea class="form-textarea" id="shopDesc" placeholder="请输入门店简介" rows="3"></textarea>
-                </div>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn" onclick="closeModal()">取消</button>
-            <button class="btn btn-primary" onclick="submitShop()">确认保存</button>
+                    
+            </select>
         </div>
     </div>
 
-    <!-- 查看详情弹窗 -->
+    <!-- 表格区域 -->
+    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
+        <div class="wy-design-table_bar">
+            <i class="wy-design-table_set el-icon-setting" title="列设置"></i>
+            <span class="wy-design-table_total">共 <em id="totalCount">0</em> 条</span>
+            <div class="wy-pages">
+                <div class="wy-pages_total">第<em id="currentPage">1</em>/<em id="totalPages">1</em>页</div>
+                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
+                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
+            </div>
+        </div>
+        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
+            <thead class="el-table__header">
+                <tr>
+                    <th><div class="cell">ID</div></th>
+                    <th><div class="cell">门店名称</div></th>
+                    <th><div class="cell">类型</div></th>
+                    <th><div class="cell">门店编号</div></th>
+                    <th><div class="cell">地址</div></th>
+                    <th><div class="cell">电话</div></th>
+                    <th><div class="cell">状态</div></th>
+                    <th><div class="cell">创建时间</div></th>
+                    <th><div class="cell">操作</div></th>
+                </tr>
+            </thead>
+            <tbody class="el-table__body" id="listBody">
+                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    
     <div class="modal-overlay" id="detailOverlay" onclick="if(event.target===this)closeDetail()"></div>
     <div class="modal" id="detailModal">
         <div class="modal-header">
@@ -195,8 +119,10 @@
         </div>
     </div>
 
+    
+
     <script>
-        const token = localStorage.getItem('admin_token') || new URLSearchParams(location.search).get('access_token') || '';
+    const token = localStorage.getItem('admin_token') || new URLSearchParams(location.search).get('access_token') || '';
         const isdev = new URLSearchParams(location.search).get('isdev') || '0';
         let currentPage = 1;
         let totalPages = 1;
@@ -228,7 +154,7 @@
                     document.getElementById('nextBtn').disabled = currentPage >= totalPages;
 
                     if (items.length === 0) {
-                        document.getElementById('listBody').innerHTML = '<tr><td colspan="9" class="empty">暂无数据</td></tr>';
+                        document.getElementById('listBody').innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">暂无数据</td></tr>';
                         return;
                     }
                     document.getElementById('listBody').innerHTML = items.map(item =>

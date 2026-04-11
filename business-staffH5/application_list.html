@@ -4,46 +4,83 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>申请单列表 - 员工端</title>
+    <link rel="stylesheet" href="../business-common/list-style.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; min-height: 100vh; }
-        .header { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; padding: 15px; display: flex; align-items: center; }
-        .header h1 { font-size: 18px; flex: 1; }
-        .back { color: white; text-decoration: none; font-size: 14px; }
-        .filter { display: flex; gap: 8px; padding: 10px 15px; background: white; overflow-x: auto; }
-        .filter-item { padding: 6px 12px; border-radius: 15px; font-size: 12px; white-space: nowrap; background: #f0f0f0; color: #666; }
-        .filter-item.active { background: #11998e; color: white; }
-        .list { padding: 10px; }
-        .item { background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; }
-        .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .item-title { font-size: 15px; font-weight: 500; color: #333; }
-        .item-status { font-size: 12px; padding: 4px 10px; border-radius: 10px; }
-        .status-pending { background: #fff3e0; color: #f57c00; }
-        .status-processing { background: #e3f2fd; color: #1976d2; }
-        .status-completed { background: #e8f5e9; color: #388e3c; }
-        .item-info { font-size: 12px; color: #999; }
-        .priority { color: #f57c00; font-weight: 600; }
-        .empty { text-align: center; padding: 60px 20px; color: #999; }
-        .login-tip { text-align: center; padding: 40px; color: #999; }
+        /* 页面特有样式 */
+        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
+        .actions .link:hover { text-decoration: underline; }
+        .actions .link.danger { color: var(--el-color-danger); }
+        /* 弹窗样式保留 */
+        
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.45); z-index: 200; }
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: var(--el-bg-white); border-radius: 4px; width: 580px; max-width: 95vw; max-height: 85vh; flex-direction: column; z-index: 201; box-shadow: 0 4px 20px rgba(0,0,0,.18); }
+        .modal.show { display: flex; }
+        .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--el-border-color-light); display: flex; justify-content: space-between; align-items: center; }
+        .modal-title { font-size: 16px; font-weight: 600; color: var(--el-text-primary); }
+        .modal-close { background: none; border: none; width: 32px; height: 32px; border-radius: 4px; cursor: pointer; font-size: 16px; color: var(--el-text-secondary); display: flex; align-items: center; justify-content: center; }
+        .modal-close:hover { background: var(--el-bg-light); }
+        .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+        .modal-footer { padding: 12px 20px; border-top: 1px solid var(--el-border-color-light); display: flex; justify-content: flex-end; gap: 10px; }
     </style>
 </head>
-<body>
-    <div class="header">
-        <a href="index.html" class="back" onclick="return goBack()">← 返回</a>
-        <h1>申请单列表</h1>
-        <span></span>
+<body class="wy-design-list">
+    <!-- 顶部区域 -->
+    <div class="wy-design-list_top">
+        <div class="wy-design-list_top_title">
+            <h1 class="wy-design-list_title">申请单列表 - 员工端</h1>
+            <div class="wy-design-list_space"></div>
+            <div class="wy-design-list_btn-group">
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
+                        <span>搜索</span>
+                    </button>
+                </div>
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
+                        <span>重置</span>
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="filter">
-        <div class="filter-item active" data-status="">全部</div>
-        <div class="filter-item" data-status="pending">待处理</div>
-        <div class="filter-item" data-status="processing">处理中</div>
-        <div class="filter-item" data-status="completed">已完成</div>
-        <div class="filter-item" data-status="rejected">已拒绝</div>
+
+    <!-- 筛选区域 -->
+    <div class="wy-design-list_filter">
+        <div class="wy-design-list_other">
+            <div class="el-input el-input--small" style="width: 200px;">
+                <input type="text" id="keyword" placeholder="搜索关键词" class="el-input__inner">
+            </div>
+        </div>
     </div>
-    <div class="list" id="list"><div class="empty">加载中...</div></div>
+
+    <!-- 表格区域 -->
+    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
+        <div class="wy-design-table_bar">
+            <i class="wy-design-table_set el-icon-setting" title="列设置"></i>
+            <span class="wy-design-table_total">共 <em id="totalCount">0</em> 条</span>
+            <div class="wy-pages">
+                <div class="wy-pages_total">第<em id="currentPage">1</em>/<em id="totalPages">1</em>页</div>
+                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
+                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
+            </div>
+        </div>
+        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
+            <thead class="el-table__header">
+                <tr>
+                    <th><div class="cell">名称</div></th>
+                    <th><div class="cell">操作</div></th>
+                </tr>
+            </thead>
+            <tbody class="el-table__body" id="listBody">
+                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    
 
     <script>
-        // Token 管理
+    // Token 管理
         const urlParams = new URLSearchParams(location.search);
         let token = urlParams.get('access_token');
         let isdev = urlParams.get('isdev') || '0';

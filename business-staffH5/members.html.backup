@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>会员管理 - 员工端</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; min-height: 100vh; }
+        
+        .header { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; padding: 15px; position: sticky; top: 0; z-index: 100; }
+        .header-top { display: flex; justify-content: space-between; align-items: center; }
+        .back-btn { color: white; font-size: 20px; text-decoration: none; padding: 5px 10px; }
+        .header h1 { font-size: 18px; }
+        .header-stats { display: flex; gap: 15px; margin-top: 12px; font-size: 12px; }
+        .header-stat { background: rgba(255,255,255,0.2); padding: 8px 12px; border-radius: 8px; }
+        .header-stat span { opacity: 0.8; }
+        
+        .search-bar { background: white; padding: 10px 15px; display: flex; gap: 10px; border-bottom: 1px solid #eee; }
+        .search-input { flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 20px; font-size: 14px; outline: none; }
+        .search-input:focus { border-color: #11998e; }
+        .filter-btn { padding: 8px 15px; background: #f0f0f0; border-radius: 20px; font-size: 13px; border: none; cursor: pointer; }
+        .filter-btn.active { background: #11998e; color: white; }
+        
+        .member-list { background: white; }
+        .member-item { display: flex; padding: 15px; border-bottom: 1px solid #f5f5f5; cursor: pointer; }
+        .member-item:active { background: #fafafa; }
+        .member-avatar { width: 48px; height: 48px; background: linear-gradient(135deg, #11998e, #38ef7d); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; margin-right: 12px; flex-shrink: 0; }
+        .member-info { flex: 1; min-width: 0; }
+        .member-name { font-size: 15px; color: #333; font-weight: 500; margin-bottom: 4px; }
+        .member-phone { font-size: 13px; color: #666; margin-bottom: 6px; }
+        .member-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+        .tag { padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+        .tag-level { background: #fff3e0; color: #ff9800; }
+        .tag-points { background: #e3f2fd; color: #2196f3; }
+        .tag-vip { background: #f3e5f5; color: #9c27b0; }
+        .member-right { text-align: right; flex-shrink: 0; margin-left: 10px; }
+        .member-balance { font-size: 15px; color: #ff5722; font-weight: 600; }
+        .member-total { font-size: 11px; color: #999; margin-top: 2px; }
+        
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 15px; padding: 15px; background: white; }
+        .page-btn { padding: 8px 16px; background: #f0f0f0; border-radius: 5px; font-size: 13px; border: none; cursor: pointer; }
+        .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .page-btn.primary { background: #11998e; color: white; }
+        .page-info { font-size: 13px; color: #666; }
+        
+        .filter-sheet { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-radius: 16px 16px 0 0; padding: 20px; z-index: 200; transform: translateY(100%); transition: transform 0.3s; }
+        .filter-sheet.show { transform: translateY(0); }
+        .filter-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 199; display: none; }
+        .filter-overlay.show { display: block; }
+        .filter-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; }
+        .filter-options { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+        .filter-option { padding: 8px 16px; border-radius: 20px; font-size: 14px; border: 1px solid #ddd; cursor: pointer; }
+        .filter-option.active { background: #11998e; color: white; border-color: #11998e; }
+        .filter-actions { display: flex; gap: 10px; }
+        .filter-actions button { flex: 1; padding: 12px; border-radius: 8px; font-size: 15px; border: none; cursor: pointer; }
+        .btn-reset { background: #f5f5f5; color: #666; }
+        .btn-confirm { background: #11998e; color: white; }
+        
+        .member-detail-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 300; display: none; justify-content: center; align-items: center; padding: 20px; }
+        .member-detail-modal.show { display: flex; }
+        .detail-card { background: white; border-radius: 16px; width: 100%; max-width: 400px; max-height: 80vh; overflow-y: auto; }
+        .detail-header { background: linear-gradient(135deg, #11998e, #38ef7d); padding: 25px; text-align: center; color: white; position: relative; }
+        .detail-close { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; }
+        .detail-avatar { width: 70px; height: 70px; background: rgba(255,255,255,0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; margin: 0 auto 10px; }
+        .detail-name { font-size: 18px; font-weight: 600; }
+        .detail-phone { font-size: 14px; opacity: 0.9; margin-top: 5px; }
+        .detail-body { padding: 15px; }
+        .detail-section { margin-bottom: 20px; }
+        .detail-section-title { font-size: 14px; color: #999; margin-bottom: 10px; }
+        .detail-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .detail-stat { background: #f9f9f9; padding: 12px; border-radius: 8px; text-align: center; }
+        .detail-stat-val { font-size: 18px; color: #333; font-weight: 600; }
+        .detail-stat-label { font-size: 11px; color: #999; margin-top: 3px; }
+        .detail-history { max-height: 200px; overflow-y: auto; }
+        .history-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f5f5f5; font-size: 13px; }
+        .history-type { color: #333; }
+        .history-points { color: #ff5722; font-weight: 500; }
+        .history-points.earn { color: #52c41a; }
+        
+        .empty { text-align: center; padding: 50px 20px; color: #bbb; }
+        .empty-icon { font-size: 50px; margin-bottom: 10px; }
+        .loading { text-align: center; padding: 30px; color: #999; }
+        
+        .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.75); color: white; padding: 10px 20px; border-radius: 25px; font-size: 14px; z-index: 999; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-top">
+            <a href="index.html" class="back-btn">←</a>
+            <h1>会员管理</h1>
+            <div style="width:40px"></div>
+        </div>
+        <div class="header-stats">
+            <div class="header-stat"><span>全部会员</span> <strong id="totalCount">0</strong></div>
+            <div class="header-stat"><span>今日新增</span> <strong id="todayCount">0</strong></div>
+        </div>
+    </div>
+
+    <div class="search-bar">
+        <input type="text" class="search-input" id="searchInput" placeholder="搜索会员姓名/手机号...">
+        <button class="filter-btn" onclick="toggleFilter()">筛选</button>
+    </div>
+
+    <div class="member-list" id="memberList">
+        <div class="loading">加载中...</div>
+    </div>
+
+    <div class="pagination" id="pagination" style="display:none">
+        <button class="page-btn" id="prevBtn" onclick="prevPage()">上一页</button>
+        <span class="page-info" id="pageInfo">1/1</span>
+        <button class="page-btn" id="nextBtn" onclick="nextPage()">下一页</button>
+    </div>
+
+    <!-- 筛选面板 -->
+    <div class="filter-overlay" id="filterOverlay" onclick="toggleFilter()"></div>
+    <div class="filter-sheet" id="filterSheet">
+        <div class="filter-title">筛选会员等级</div>
+        <div class="filter-options" id="levelOptions">
+            <div class="filter-option active" data-level="">全部</div>
+            <div class="filter-option" data-level="vip">VIP会员</div>
+            <div class="filter-option" data-level="gold">黄金会员</div>
+            <div class="filter-option" data-level="silver">白银会员</div>
+            <div class="filter-option" data-level="bronze">青铜会员</div>
+            <div class="filter-option" data-level="normal">普通会员</div>
+        </div>
+        <div class="filter-actions">
+            <button class="btn-reset" onclick="resetFilter()">重置</button>
+            <button class="btn-confirm" onclick="applyFilter()">确定</button>
+        </div>
+    </div>
+
+    <!-- 会员详情弹窗 -->
+    <div class="member-detail-modal" id="detailModal" onclick="if(event.target===this)closeDetail()">
+        <div class="detail-card">
+            <div class="detail-header">
+                <div class="detail-close" onclick="closeDetail()">×</div>
+                <div class="detail-avatar">👤</div>
+                <div class="detail-name" id="detailName">-</div>
+                <div class="detail-phone" id="detailPhone">-</div>
+            </div>
+            <div class="detail-body">
+                <div class="detail-section">
+                    <div class="detail-section-title">账户信息</div>
+                    <div class="detail-stats">
+                        <div class="detail-stat">
+                            <div class="detail-stat-val" id="detailBalance">¥0</div>
+                            <div class="detail-stat-label">余额</div>
+                        </div>
+                        <div class="detail-stat">
+                            <div class="detail-stat-val" id="detailPoints">0</div>
+                            <div class="detail-stat-label">积分</div>
+                        </div>
+                        <div class="detail-stat">
+                            <div class="detail-stat-val" id="detailLevel">-</div>
+                            <div class="detail-stat-label">会员等级</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="detail-section">
+                    <div class="detail-section-title">消费统计</div>
+                    <div class="detail-stats">
+                        <div class="detail-stat">
+                            <div class="detail-stat-val" id="detailTotal">¥0</div>
+                            <div class="detail-stat-label">累计消费</div>
+                        </div>
+                        <div class="detail-stat">
+                            <div class="detail-stat-val" id="detailOrders">0</div>
+                            <div class="detail-stat-label">订单数</div>
+                        </div>
+                        <div class="detail-stat">
+                            <div class="detail-stat-val" id="detailCheckin">0</div>
+                            <div class="detail-stat-label">签到次数</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="detail-section">
+                    <div class="detail-section-title">积分变动记录</div>
+                    <div class="detail-history" id="detailHistory">
+                        <div class="empty" style="padding:20px">暂无记录</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var urlParams = new URLSearchParams(location.search);
+        var token = urlParams.get('access_token') || localStorage.getItem('staff_token');
+        var isdev = urlParams.get('isdev') || localStorage.getItem('staff_isdev') || '0';
+        
+        var page = 1;
+        var pageSize = 15;
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+        }
+        var total = 0;
+        var totalPages = 0;
+        var keyword = '';
+        var currentLevel = '';
+        var members = [];
+
+        function apiUrl(path) {
+            return path + (path.indexOf('?') >= 0 ? '&' : '?') + 'access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+        }
+
+        function loadMembers() {
+            var url = '/api/staff/members?page=' + page + '&page_size=' + pageSize;
+            if (keyword) url += '&keyword=' + encodeURIComponent(keyword);
+            if (currentLevel) url += '&member_level=' + currentLevel;
+            
+            document.getElementById('memberList').innerHTML = '<div class="loading">加载中...</div>';
+            
+            fetch(apiUrl(url)).then(function(r){return r.json()}).then(function(d){
+                if (d.success && d.data) {
+                    members = d.data.items || [];
+                    total = d.data.total || 0;
+                    totalPages = Math.ceil(total / pageSize);
+                    renderMembers();
+                    document.getElementById('totalCount').textContent = total;
+                    document.getElementById('todayCount').textContent = '0';
+                    renderPagination();
+                } else {
+                    document.getElementById('memberList').innerHTML = '<div class="empty"><div class="empty-icon">😕</div>加载失败</div>';
+                }
+            }).catch(function(){
+                document.getElementById('memberList').innerHTML = '<div class="empty"><div class="empty-icon">😕</div>网络错误</div>';
+            });
+        }
+
+        // 等级映射（提升为文件级全局变量，避免 showDetail 引用时 ReferenceError）
+        var levelMap = {vip:'VIP会员', gold:'黄金', silver:'白银', bronze:'青铜', normal:'普通'};
+        var levelClass = {vip:'tag-vip', gold:'tag-level', silver:'tag-level', bronze:'tag-level', normal:'tag-points'};
+
+        function renderMembers() {
+            if (members.length === 0) {
+                document.getElementById('memberList').innerHTML = '<div class="empty"><div class="empty-icon">👤</div>暂无会员</div>';
+                return;
+            }
+            
+            document.getElementById('memberList').innerHTML = members.map(function(m) {
+                var level = levelMap[m.member_level] || '普通';
+                var cls = levelClass[m.member_level] || 'tag-points';
+                return '<div class="member-item" onclick="showDetail(' + members.indexOf(m) + ')">' +
+                    '<div class="member-avatar">' + escapeHtml(m.user_name ? m.user_name.charAt(0) : '?') + '</div>' +
+                    '<div class="member-info">' +
+                        '<div class="member-name">' + escapeHtml(m.user_name || '未知') + '</div>' +
+                        '<div class="member-phone">' + escapeHtml(m.phone || '无手机号') + '</div>' +
+                        '<div class="member-tags">' +
+                            '<span class="tag ' + cls + '">' + level + '</span>' +
+                            '<span class="tag tag-points">积分 ' + (m.points || 0) + '</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="member-right">' +
+                        '<div class="member-balance">¥' + ((m.balance || 0).toFixed(2)) + '</div>' +
+                        '<div class="member-total">累计 ' + (m.total_points || 0) + ' 积分</div>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+        }
+
+        function renderPagination() {
+            var pagination = document.getElementById('pagination');
+            if (totalPages <= 1) {
+                pagination.style.display = 'none';
+                return;
+            }
+            pagination.style.display = 'flex';
+            document.getElementById('pageInfo').textContent = page + '/' + totalPages;
+            document.getElementById('prevBtn').disabled = page <= 1;
+            document.getElementById('nextBtn').disabled = page >= totalPages;
+        }
+
+        function prevPage() {
+            if (page > 1) {
+                page--;
+                loadMembers();
+            }
+        }
+
+        function nextPage() {
+            if (page < totalPages) {
+                page++;
+                loadMembers();
+            }
+        }
+
+        function toggleFilter() {
+            var sheet = document.getElementById('filterSheet');
+            var overlay = document.getElementById('filterOverlay');
+            sheet.classList.toggle('show');
+            overlay.classList.toggle('show');
+        }
+
+        function resetFilter() {
+            document.querySelectorAll('#levelOptions .filter-option').forEach(function(el){
+                el.classList.remove('active');
+            });
+            document.querySelector('#levelOptions .filter-option[data-level=""]').classList.add('active');
+            currentLevel = '';
+        }
+
+        function applyFilter() {
+            var active = document.querySelector('#levelOptions .filter-option.active');
+            currentLevel = active ? active.dataset.level : '';
+            page = 1;
+            toggleFilter();
+            loadMembers();
+        }
+
+        function showDetail(idx) {
+            var m = members[idx];
+            document.getElementById('detailName').textContent = m.user_name || '未知';
+            document.getElementById('detailPhone').textContent = m.phone || '无手机号';
+            document.getElementById('detailBalance').textContent = '¥' + ((m.balance || 0).toFixed(2));
+            document.getElementById('detailPoints').textContent = m.points || 0;
+            document.getElementById('detailLevel').textContent = (levelMap[m.member_level] || '普通');
+            // 先显示会员表自带的累计消费
+            document.getElementById('detailTotal').textContent = '¥' + ((m.total_consume || 0).toFixed(2));
+            document.getElementById('detailOrders').textContent = '加载中...';
+            document.getElementById('detailCheckin').textContent = '加载中...';
+
+            // 异步补充真实订单数和签到数
+            fetch(apiUrl('/api/staff/members/' + m.user_id + '/stats')).then(function(r){ return r.json(); }).then(function(d){
+                if (d.success && d.data) {
+                    document.getElementById('detailTotal').textContent = '¥' + (parseFloat(d.data.total_consume || m.total_consume || 0).toFixed(2));
+                    document.getElementById('detailOrders').textContent = d.data.order_count || 0;
+                    document.getElementById('detailCheckin').textContent = d.data.checkin_count || 0;
+                } else {
+                    document.getElementById('detailOrders').textContent = '-';
+                    document.getElementById('detailCheckin').textContent = '-';
+                }
+            }).catch(function(){
+                document.getElementById('detailOrders').textContent = '-';
+                document.getElementById('detailCheckin').textContent = '-';
+            });
+
+            // 加载积分历史
+            loadPointsHistory(m.user_id);
+            
+            document.getElementById('detailModal').classList.add('show');
+        }
+
+        function closeDetail() {
+            document.getElementById('detailModal').classList.remove('show');
+        }
+
+        function loadPointsHistory(userId) {
+            fetch(apiUrl('/api/user/points/log?user_id=' + userId + '&page=1&page_size=20')).then(function(r){return r.json()}).then(function(d){
+                if (d.success && d.data && d.data.items && d.data.items.length > 0) {
+                    var html = d.data.items.map(function(item) {
+                        var isEarn = item.points > 0;
+                        return '<div class="history-item">' +
+                            '<span class="history-type">' + (item.description || item.type || '积分变动') + '</span>' +
+                            '<span class="history-points ' + (isEarn ? 'earn' : '') + '">' + (isEarn ? '+' : '') + item.points + '</span>' +
+                        '</div>';
+                    }).join('');
+                    document.getElementById('detailHistory').innerHTML = html;
+                } else {
+                    document.getElementById('detailHistory').innerHTML = '<div class="empty" style="padding:20px">暂无记录</div>';
+                }
+            }).catch(function(){
+                document.getElementById('detailHistory').innerHTML = '<div class="empty" style="padding:20px">加载失败</div>';
+            });
+        }
+
+        function showToast(msg) {
+            var toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(function(){ toast.remove(); }, 2000);
+        }
+
+        // 搜索防抖
+        var searchTimer = null;
+        document.getElementById('searchInput').addEventListener('input', function(){
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(function(){
+                keyword = document.getElementById('searchInput').value.trim();
+                page = 1;
+                loadMembers();
+            }, 300);
+        });
+
+        // 筛选选项点击
+        document.querySelectorAll('#levelOptions .filter-option').forEach(function(el){
+            el.addEventListener('click', function(){
+                document.querySelectorAll('#levelOptions .filter-option').forEach(function(e){ e.classList.remove('active'); });
+                el.classList.add('active');
+            });
+        });
+
+        // 初始加载
+        loadMembers();
+    </script>
+</body>
+</html>

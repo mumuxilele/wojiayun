@@ -2,82 +2,74 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>反馈管理 - 员工端</title>
+    <link rel="stylesheet" href="../business-common/list-style.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; min-height: 100vh; }
-        
-        .header { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; padding: 15px 20px; display: flex; align-items: center; gap: 12px; }
-        .back-btn { font-size: 20px; cursor: pointer; text-decoration: none; color: white; }
-        .header h1 { font-size: 17px; flex: 1; }
-        
-        .filters { display: flex; gap: 8px; padding: 12px 15px; overflow-x: auto; }
-        .filter-btn { padding: 6px 14px; border-radius: 15px; border: 1px solid #e8e8e8; background: white; font-size: 13px; color: #666; cursor: pointer; white-space: nowrap; }
-        .filter-btn.active { background: #11998e; color: white; border-color: #11998e; }
-        
-        .feedback-list { padding: 0 15px 15px; }
-        .feedback-item { background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
-        .feedback-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .feedback-title { font-size: 15px; font-weight: 500; color: #333; flex: 1; margin-right: 8px; }
-        .feedback-type-tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; }
-        .tag-suggestion { background: #e6f7ff; color: #1890ff; }
-        .tag-bug { background: #fff2f0; color: #ff4d4f; }
-        .tag-complaint { background: #fff7e6; color: #fa8c16; }
-        .tag-praise { background: #f6ffed; color: #52c41a; }
-        
-        .feedback-user { font-size: 12px; color: #999; margin-bottom: 6px; }
-        .feedback-content { font-size: 13px; color: #666; line-height: 1.5; margin-bottom: 8px; }
-        
-        .feedback-reply { background: #f6ffed; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; border-left: 3px solid #52c41a; }
-        .reply-label { font-size: 12px; color: #52c41a; font-weight: 500; }
-        .reply-content { font-size: 13px; color: #333; line-height: 1.5; margin-top: 4px; }
-        
-        .feedback-footer { display: flex; justify-content: space-between; align-items: center; }
-        .feedback-time { font-size: 12px; color: #bbb; }
-        .feedback-status { font-size: 12px; padding: 2px 8px; border-radius: 4px; }
-        .status-pending { background: #fff7e6; color: #fa8c16; }
-        .status-replied { background: #f6ffed; color: #52c41a; }
-        
-        .reply-btn { padding: 6px 14px; background: #11998e; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; }
-        .reply-btn:active { opacity: 0.8; }
-        
-        .empty { text-align: center; padding: 60px 20px; color: #bbb; }
-        .empty-icon { font-size: 48px; margin-bottom: 10px; }
-        .loading { text-align: center; padding: 30px; color: #999; }
-        
+        /* 页面特有样式 */
+        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
+        .actions .link:hover { text-decoration: underline; }
+        .actions .link.danger { color: var(--el-color-danger); }
+        /* 弹窗样式保留 */
         /* 回复弹窗 */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: flex-end; justify-content: center; z-index: 999; }
-        .modal-overlay.show { display: flex; }
-        .modal-box { background: white; border-radius: 16px 16px 0 0; padding: 20px; width: 100%; max-width: 500px; }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .modal-header h3 { font-size: 16px; }
-        .modal-close { font-size: 22px; cursor: pointer; color: #999; background: none; border: none; }
-        textarea.reply-input { width: 100%; padding: 12px; border: 1.5px solid #e8e8e8; border-radius: 8px; font-size: 14px; min-height: 100px; resize: none; outline: none; }
-        textarea.reply-input:focus { border-color: #11998e; }
-        .submit-reply { width: 100%; padding: 12px; background: #11998e; color: white; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; margin-top: 12px; }
     </style>
 </head>
-<body>
-    <div class="header">
-        <a class="back-btn" onclick="history.back()">←</a>
-        <h1>反馈管理</h1>
+<body class="wy-design-list">
+    <!-- 顶部区域 -->
+    <div class="wy-design-list_top">
+        <div class="wy-design-list_top_title">
+            <h1 class="wy-design-list_title">反馈管理 - 员工端</h1>
+            <div class="wy-design-list_space"></div>
+            <div class="wy-design-list_btn-group">
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
+                        <span>搜索</span>
+                    </button>
+                </div>
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
+                        <span>重置</span>
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
-    
-    <div class="filters">
-        <div class="filter-btn active" data-status="" onclick="filterFeedback(this)">全部</div>
-        <div class="filter-btn" data-status="pending" onclick="filterFeedback(this)">待处理</div>
-        <div class="filter-btn" data-status="replied" onclick="filterFeedback(this)">已回复</div>
-        <div class="filter-btn" data-status="suggestion" data-type="1" onclick="filterFeedback(this)">建议</div>
-        <div class="filter-btn" data-status="bug" data-type="1" onclick="filterFeedback(this)">问题</div>
-        <div class="filter-btn" data-status="complaint" data-type="1" onclick="filterFeedback(this)">投诉</div>
+
+    <!-- 筛选区域 -->
+    <div class="wy-design-list_filter">
+        <div class="wy-design-list_other">
+            <div class="el-input el-input--small" style="width: 200px;">
+                <input type="text" id="keyword" placeholder="搜索关键词" class="el-input__inner">
+            </div>
+        </div>
     </div>
-    
-    <div class="feedback-list" id="feedbackList">
-        <div class="loading">加载中...</div>
+
+    <!-- 表格区域 -->
+    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
+        <div class="wy-design-table_bar">
+            <i class="wy-design-table_set el-icon-setting" title="列设置"></i>
+            <span class="wy-design-table_total">共 <em id="totalCount">0</em> 条</span>
+            <div class="wy-pages">
+                <div class="wy-pages_total">第<em id="currentPage">1</em>/<em id="totalPages">1</em>页</div>
+                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
+                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
+            </div>
+        </div>
+        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
+            <thead class="el-table__header">
+                <tr>
+                    <th><div class="cell">名称</div></th>
+                    <th><div class="cell">操作</div></th>
+                </tr>
+            </thead>
+            <tbody class="el-table__body" id="listBody">
+                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</td></tr>
+            </tbody>
+        </table>
     </div>
+
     
-    <!-- 回复弹窗 -->
     <div class="modal-overlay" id="replyModal">
         <div class="modal-box">
             <div class="modal-header">
@@ -89,6 +81,8 @@
             <button class="submit-reply" id="replySubmitBtn" onclick="submitReply()">提交回复</button>
         </div>
     </div>
+
+    
 
     <script>
     const API = localStorage.getItem('apiBase') || '';

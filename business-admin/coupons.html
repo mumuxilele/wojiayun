@@ -4,187 +4,92 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>优惠券管理 - 管理后台</title>
+    <link rel="stylesheet" href="../business-common/list-style.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        :root {
-            --primary-color: #1890ff;
-            --success-color: #52c41a;
-            --warning-color: #faad14;
-            --danger-color: #ff4d4f;
-            --text-primary: #303133;
-            --text-regular: #606266;
-            --text-secondary: #909399;
-            --border-color: #ebeef5;
-            --bg-white: #ffffff;
-            --bg-light: #f5f7fa;
-        }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif; background: var(--bg-light); font-size: 14px; color: var(--text-regular); min-height: 100vh; }
-        .layout { display: flex; min-height: 100vh; }
-        .sidebar { width: 200px; background: #2c3e50; min-height: 100vh; position: fixed; top: 0; left: 0; z-index: 100; }
-        .sidebar-header { padding: 16px 20px; border-bottom: 1px solid #3d4f5f; }
-        .sidebar-header h5 { color: white; font-size: 16px; font-weight: 600; }
-        .sidebar a { color: #ecf0f1; text-decoration: none; padding: 12px 20px; display: block; font-size: 14px; transition: all .2s; }
-        .sidebar a:hover { background: #34495e; }
-        .sidebar a.active { background: #34495e; border-left: 3px solid var(--primary-color); }
-        .main { flex: 1; margin-left: 200px; padding: 24px; }
-        .page-title { font-size: 18px; font-weight: 600; color: var(--text-primary); margin-bottom: 20px; }
-        .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
-        .toolbar-left { display: flex; gap: 10px; align-items: center; }
-        .toolbar-right { display: flex; gap: 10px; }
-        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all .2s; }
-        .btn-primary { background: var(--primary-color); color: white; }
-        .btn-primary:hover { background: #40a9ff; }
-        .btn-success { background: var(--success-color); color: white; }
-        .btn-warning { background: var(--warning-color); color: white; }
-        .card { background: var(--bg-white); border-radius: 8px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,.06); border: 1px solid var(--border-color); }
-        .el-table { width: 100%; border: 1px solid var(--border-color); background-color: var(--bg-white); font-size: 13px; border-collapse: collapse; }
-        .el-table th { padding: 10px 12px; background-color: var(--bg-light); color: var(--text-primary); font-weight: 500; text-align: left; border-bottom: 1px solid var(--border-color); }
-        .el-table td { padding: 12px; border-bottom: 1px solid var(--border-color); }
-        .el-table tr:hover > td { background-color: var(--bg-light); }
-        .status-tag { padding: 2px 8px; border-radius: 4px; font-size: 12px; }
-        .status-active { background: #e6f7ff; color: #1890ff; }
-        .status-inactive { background: #f5f5f5; color: #999; }
-        .type-tag { padding: 2px 8px; border-radius: 4px; font-size: 12px; }
-        .type-discount { background: #fff7e6; color: #fa8c16; }
-        .type-cash { background: #f6ffed; color: #52c41a; }
-        .type-points { background: #f9f0ff; color: #722ed1; }
+        /* 页面特有样式 */
+        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
+        .actions .link:hover { text-decoration: underline; }
+        .actions .link.danger { color: var(--el-color-danger); }
+        /* 弹窗样式保留 */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.5); z-index: 200; align-items: center; justify-content: center; }
-        .modal-overlay.show { display: flex; }
-        .modal { background: white; border-radius: 8px; width: 500px; max-width: 90%; max-height: 90vh; overflow-y: auto; }
-        .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
-        .modal-title { font-size: 16px; font-weight: 600; }
-        .modal-close { width: 28px; height: 28px; border-radius: 50%; background: #f5f5f5; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; font-size: 16px; }
-        .modal-body { padding: 20px; }
-        .form-group { margin-bottom: 16px; }
-        .form-label { display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-regular); }
-        .form-input { width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; }
-        .form-input:focus { border-color: var(--primary-color); outline: none; }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .modal-footer { padding: 12px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px; }
-        .empty { text-align: center; padding: 40px; color: var(--text-secondary); }
     </style>
 </head>
-<body>
-    <div class="layout">
-        <div class="sidebar">
-            <div class="sidebar-header"><h5>管理后台</h5></div>
-            <a href="index.html">🏠 首页</a>
-            <a href="statistics.html">📊 数据统计</a>
-            <a href="venues.html">🏟️ 场地管理</a>
-            <a href="applications.html">📋 申请单</a>
-            <a href="orders.html">🧾 订单</a>
-            <a href="shops.html">🏪 门店</a>
-            <a href="points.html">💎 积分管理</a>
-            <a href="coupons.html" class="active">🎫 优惠券</a>
-            <a href="users.html">👥 用户管理</a>
-        </div>
-        <div class="main">
-            <h4 class="page-title">🎫 优惠券管理</h4>
-            
-            <div class="toolbar">
-                <div class="toolbar-left">
-                    <select id="filterStatus" class="form-input" style="width:120px" onchange="loadCoupons()">
-                        <option value="">全部状态</option>
-                        <option value="active">启用中</option>
-                        <option value="inactive">已停用</option>
-                    </select>
+<body class="wy-design-list">
+    <!-- 顶部区域 -->
+    <div class="wy-design-list_top">
+        <div class="wy-design-list_top_title">
+            <h1 class="wy-design-list_title">优惠券管理 - 管理后台</h1>
+            <div class="wy-design-list_space"></div>
+            <div class="wy-design-list_btn-group">
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
+                        <span>搜索</span>
+                    </button>
                 </div>
-                <div class="toolbar-right">
-                    <button class="btn btn-primary" onclick="openCreateModal()">➕ 新建优惠券</button>
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
+                        <span>重置</span>
+                    </button>
                 </div>
-            </div>
-            
-            <div class="card">
-                <div id="couponList" class="loading" style="text-align:center;padding:30px;color:#999">加载中...</div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- 新建/编辑弹窗 -->
-    <div class="modal-overlay" id="createModal">
-        <div class="modal">
-            <div class="modal-header">
-                <span class="modal-title" id="modalTitle">新建优惠券</span>
-                <button class="modal-close" onclick="closeCreateModal()">✕</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label class="form-label">优惠券名称 *</label>
-                    <input type="text" class="form-input" id="couponName" placeholder="如：新用户专享8折券">
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">类型 *</label>
-                        <select class="form-input" id="couponType">
-                            <option value="cash">现金券（直接抵扣金额）</option>
-                            <option value="discount">折扣券（如0.8表示8折）</option>
-                            <option value="points">积分券（赠送积分）</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">优惠值 *</label>
-                        <input type="number" class="form-input" id="discountValue" placeholder="折扣/金额" step="0.01">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">最低消费</label>
-                        <input type="number" class="form-input" id="minAmount" placeholder="0表示不限" step="0.01">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">最大优惠</label>
-                        <input type="number" class="form-input" id="maxDiscount" placeholder="折扣券可设置上限">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">兑换所需积分</label>
-                    <input type="number" class="form-input" id="pointsCost" placeholder="0表示免费发放">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">发放总量</label>
-                    <input type="number" class="form-input" id="totalCount" placeholder="0表示不限量">
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">有效期开始</label>
-                        <input type="date" class="form-input" id="validFrom">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">有效期结束</label>
-                        <input type="date" class="form-input" id="validUntil">
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn" onclick="closeCreateModal()">取消</button>
-                <button class="btn btn-primary" onclick="submitCoupon()">保存</button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- 发放弹窗 -->
-    <div class="modal-overlay" id="issueModal">
-        <div class="modal">
-            <div class="modal-header">
-                <span class="modal-title">发放优惠券</span>
-                <button class="modal-close" onclick="closeIssueModal()">✕</button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" id="issueCouponId">
-                <div class="form-group">
-                    <label class="form-label">用户ID列表（每行一个）</label>
-                    <textarea class="form-input" id="issueUserIds" rows="6" placeholder="user_001&#10;user_002&#10;user_003"></textarea>
-                </div>
-                <p style="font-size:12px;color:#999">单次最多发放100人</p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn" onclick="closeIssueModal()">取消</button>
-                <button class="btn btn-success" onclick="submitIssue()">确认发放</button>
             </div>
         </div>
     </div>
 
-    <!-- V30.0 定向发放弹窗 -->
+    <!-- 筛选区域 -->
+    <div class="wy-design-list_filter">
+        <div class="wy-design-list_other">
+            <select id="filter0" class="el-input__inner" style="width: 130px;">
+                
+                        <option value="">全部状态</option>
+                        <option value="active">启用中</option>
+                        <option value="inactive">已停用</option>
+                    
+            </select>
+        </div>
+        <div class="wy-design-list_other">
+            <select id="filter1" class="el-input__inner" style="width: 130px;">
+                
+                            <option value="cash">现金券（直接抵扣金额）</option>
+                            <option value="discount">折扣券（如0.8表示8折）</option>
+                            <option value="points">积分券（赠送积分）</option>
+                        
+            </select>
+        </div>
+    </div>
+
+    <!-- 表格区域 -->
+    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
+        <div class="wy-design-table_bar">
+            <i class="wy-design-table_set el-icon-setting" title="列设置"></i>
+            <span class="wy-design-table_total">共 <em id="totalCount">0</em> 条</span>
+            <div class="wy-pages">
+                <div class="wy-pages_total">第<em id="currentPage">1</em>/<em id="totalPages">1</em>页</div>
+                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
+                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
+            </div>
+        </div>
+        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
+            <thead class="el-table__header">
+                <tr>
+                    <th><div class="cell">ID</div></th>
+                    <th><div class="cell">名称</div></th>
+                    <th><div class="cell">类型</div></th>
+                    <th><div class="cell">优惠值</div></th>
+                    <th><div class="cell">最低消费</div></th>
+                    <th><div class="cell">兑换积分</div></th>
+                    <th><div class="cell">已发/总量</div></th>
+                    <th><div class="cell">有效期</div></th>
+                    <th><div class="cell">状态</div></th>
+                    <th><div class="cell">操作</div></th>
+                </tr>
+            </thead>
+            <tbody class="el-table__body" id="listBody">
+                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    
     <div class="modal-overlay" id="targetedModal">
         <div class="modal" style="max-width:560px">
             <div class="modal-header">
@@ -235,8 +140,10 @@
         </div>
     </div>
 
+    
+
     <script>
-        const token = new URLSearchParams(location.search).get('access_token') || localStorage.getItem('admin_token') || '';
+    const token = new URLSearchParams(location.search).get('access_token') || localStorage.getItem('admin_token') || '';
         const isDev = new URLSearchParams(location.search).get('isdev') || '0';
         
         function authUrl(url) {

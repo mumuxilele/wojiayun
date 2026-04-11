@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>营销促销管理</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f2f5; }
+        .page { padding: 20px; }
+        
+        /* 工具栏 */
+        .toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+        .toolbar input, .toolbar select { padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 13px; outline: none; }
+        .toolbar input:focus, .toolbar select:focus { border-color: #1890ff; }
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 500; }
+        .btn-primary { background: #1890ff; color: white; }
+        .btn-primary:hover { background: #40a9ff; }
+        .btn-danger { background: #ff4d4f; color: white; }
+        .btn-success { background: #52c41a; color: white; }
+        .btn-default { background: white; border: 1px solid #d9d9d9; color: #333; }
+        .btn-default:hover { border-color: #1890ff; color: #1890ff; }
+        .btn-sm { padding: 4px 10px; font-size: 12px; }
+
+        /* 统计卡片 */
+        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
+        .stat-card { background: white; border-radius: 8px; padding: 16px 20px; border-left: 4px solid; }
+        .stat-card.seckill { border-color: #ff4d4f; }
+        .stat-card.full_reduce { border-color: #1890ff; }
+        .stat-card.discount { border-color: #722ed1; }
+        .stat-card.total { border-color: #52c41a; }
+        .stat-num { font-size: 26px; font-weight: 700; color: #333; }
+        .stat-label { font-size: 12px; color: #999; margin-top: 4px; }
+
+        /* 表格 */
+        .table-wrap { background: white; border-radius: 8px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #fafafa; padding: 12px 14px; text-align: left; font-size: 13px; font-weight: 500; color: #666; border-bottom: 1px solid #f0f0f0; }
+        td { padding: 12px 14px; font-size: 13px; color: #333; border-bottom: 1px solid #f5f5f5; vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: #fafafa; }
+
+        .type-badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+        .type-seckill { background: #fff1f0; color: #ff4d4f; }
+        .type-full_reduce { background: #e6f7ff; color: #1890ff; }
+        .type-discount { background: #f9f0ff; color: #722ed1; }
+
+        .status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+        .st-active { background: #f6ffed; color: #52c41a; }
+        .st-inactive { background: #f5f5f5; color: #999; }
+        .st-ended { background: #fff1f0; color: #ff4d4f; }
+
+        .time-cell { font-size: 12px; color: #666; }
+        .promo-rule { font-size: 12px; color: #1890ff; font-weight: 500; }
+        .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+        /* 分页 */
+        .pagination { display: flex; gap: 6px; align-items: center; padding: 14px 16px; justify-content: flex-end; }
+        .page-btn { padding: 5px 10px; border: 1px solid #d9d9d9; border-radius: 4px; cursor: pointer; font-size: 13px; background: white; }
+        .page-btn.active { background: #1890ff; color: white; border-color: #1890ff; }
+        .page-btn:hover:not(.active) { border-color: #1890ff; color: #1890ff; }
+        .page-info { font-size: 13px; color: #666; }
+
+        /* 弹窗 */
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1000; background: rgba(0,0,0,.5); }
+        .modal.show { display: flex; align-items: center; justify-content: center; }
+        .modal-box { background: white; border-radius: 10px; padding: 24px; width: 600px; max-height: 80vh; overflow-y: auto; position: relative; }
+        .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 20px; color: #333; }
+        .modal-close { position: absolute; top: 16px; right: 16px; font-size: 20px; color: #999; cursor: pointer; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+        .modal-close:hover { background: #f5f5f5; color: #333; }
+        
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        .form-group.full { grid-column: 1 / -1; }
+        .form-label { font-size: 13px; color: #555; font-weight: 500; }
+        .form-label.required::after { content: ' *'; color: #ff4d4f; }
+        .form-input { padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 13px; outline: none; }
+        .form-input:focus { border-color: #1890ff; }
+        .form-input[disabled] { background: #f5f5f5; color: #999; }
+        .form-hint { font-size: 11px; color: #999; }
+        .form-select { padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 13px; outline: none; }
+        .form-select:focus { border-color: #1890ff; }
+
+        /* 动态表单区 */
+        #seckillFields, #fullReduceFields, #discountFields { display: none; }
+
+        .modal-btns { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; border-top: 1px solid #f0f0f0; padding-top: 16px; }
+
+        /* 统计弹窗 */
+        .stat-modal-box { background: white; border-radius: 10px; padding: 24px; width: 700px; max-height: 80vh; overflow-y: auto; position: relative; }
+        .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+        .mini-stat { background: #f9f9f9; border-radius: 8px; padding: 12px; text-align: center; }
+        .mini-num { font-size: 22px; font-weight: 700; color: #333; }
+        .mini-label { font-size: 11px; color: #999; margin-top: 2px; }
+
+        .empty-row td { text-align: center; padding: 40px; color: #bbb; }
+        .loading-row td { text-align: center; padding: 30px; color: #999; }
+    </style>
+</head>
+<body>
+<div class="page">
+    <div class="toolbar">
+        <input type="text" id="searchInput" placeholder="搜索活动名称..." style="width:220px">
+        <select id="typeFilter">
+            <option value="">全部类型</option>
+            <option value="seckill">⚡ 秒杀</option>
+            <option value="full_reduce">💰 满减</option>
+            <option value="discount">🏷️ 折扣</option>
+        </select>
+        <select id="statusFilter">
+            <option value="">全部状态</option>
+            <option value="active">进行中</option>
+            <option value="inactive">未开始</option>
+            <option value="ended">已结束</option>
+        </select>
+        <button class="btn btn-default" onclick="loadList()">🔍 搜索</button>
+        <button class="btn btn-primary" onclick="openCreate()">+ 创建活动</button>
+    </div>
+
+    <div class="stats-row" id="statsRow">
+        <div class="stat-card total"><div class="stat-num" id="sTotal">-</div><div class="stat-label">活动总数</div></div>
+        <div class="stat-card seckill"><div class="stat-num" id="sSeckill">-</div><div class="stat-label">秒杀活动</div></div>
+        <div class="stat-card full_reduce"><div class="stat-num" id="sFullReduce">-</div><div class="stat-label">满减活动</div></div>
+        <div class="stat-card discount"><div class="stat-num" id="sDiscount">-</div><div class="stat-label">折扣活动</div></div>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:50px">ID</th>
+                    <th>活动名称</th>
+                    <th style="width:90px">类型</th>
+                    <th>优惠规则</th>
+                    <th>活动时间</th>
+                    <th style="width:70px">库存</th>
+                    <th style="width:80px">参与人数</th>
+                    <th style="width:80px">状态</th>
+                    <th style="width:180px">操作</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <tr class="loading-row"><td colspan="9">加载中...</td></tr>
+            </tbody>
+        </table>
+        <div class="pagination" id="pagination"></div>
+    </div>
+</div>
+
+<!-- 创建/编辑弹窗 -->
+<div class="modal" id="createModal">
+    <div class="modal-box">
+        <div class="modal-title" id="modalTitle">创建营销活动</div>
+        <div class="modal-close" onclick="closeCreate()">×</div>
+        <div class="form-grid">
+            <div class="form-group full">
+                <label class="form-label required">活动名称</label>
+                <input type="text" class="form-input" id="fName" placeholder="例：周末特惠秒杀">
+            </div>
+            <div class="form-group">
+                <label class="form-label required">活动类型</label>
+                <select class="form-select" id="fType" onchange="onTypeChange()">
+                    <option value="">-- 选择类型 --</option>
+                    <option value="seckill">⚡ 秒杀</option>
+                    <option value="full_reduce">💰 满减</option>
+                    <option value="discount">🏷️ 折扣</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">每人限用次数 (0=不限)</label>
+                <input type="number" class="form-input" id="fPerLimit" value="0" min="0">
+            </div>
+            <div class="form-group">
+                <label class="form-label required">开始时间</label>
+                <input type="datetime-local" class="form-input" id="fStartTime">
+            </div>
+            <div class="form-group">
+                <label class="form-label required">结束时间</label>
+                <input type="datetime-local" class="form-input" id="fEndTime">
+            </div>
+            <!-- 秒杀专属字段 -->
+            <div id="seckillFields">
+                <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:14px">
+                    <div class="form-group">
+                        <label class="form-label required">秒杀价（元）</label>
+                        <input type="number" class="form-input" id="fSeckillPrice" step="0.01" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">总库存（0=不限）</label>
+                        <input type="number" class="form-input" id="fTotalStock" value="0" min="0">
+                    </div>
+                </div>
+            </div>
+            <!-- 满减专属字段 -->
+            <div id="fullReduceFields">
+                <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:14px">
+                    <div class="form-group">
+                        <label class="form-label required">满多少元</label>
+                        <input type="number" class="form-input" id="fMinAmount" step="0.01" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label required">减多少元</label>
+                        <input type="number" class="form-input" id="fReduceAmount" step="0.01" min="0">
+                    </div>
+                </div>
+            </div>
+            <!-- 折扣专属字段 -->
+            <div id="discountFields">
+                <div class="form-group">
+                    <label class="form-label required">折扣率 (例: 0.9 表示九折)</label>
+                    <input type="number" class="form-input" id="fDiscountRate" step="0.01" min="0.01" max="0.99" placeholder="0.00 ~ 0.99">
+                    <span class="form-hint">0.9 = 九折，0.8 = 八折</span>
+                </div>
+            </div>
+            <div class="form-group full">
+                <label class="form-label">活动描述</label>
+                <input type="text" class="form-input" id="fDescription" placeholder="活动简介（选填）">
+            </div>
+        </div>
+        <div class="modal-btns">
+            <button class="btn btn-default" onclick="closeCreate()">取消</button>
+            <button class="btn btn-primary" onclick="submitCreate()">保存活动</button>
+        </div>
+    </div>
+</div>
+
+<!-- 参与统计弹窗 -->
+<div class="modal" id="statsModal">
+    <div class="stat-modal-box">
+        <div class="modal-title" id="statsModalTitle">活动参与统计</div>
+        <div class="modal-close" onclick="closeStatsModal()">×</div>
+        <div class="stat-grid" id="statGrid">
+            <div class="mini-stat"><div class="mini-num" id="mParticipants">-</div><div class="mini-label">参与人数</div></div>
+            <div class="mini-stat"><div class="mini-num" id="mUses">-</div><div class="mini-label">累计使用次数</div></div>
+            <div class="mini-stat"><div class="mini-num" id="mStock">-</div><div class="mini-label">剩余库存</div></div>
+        </div>
+        <table>
+            <thead>
+                <tr><th>用户</th><th>手机号</th><th>使用次数</th><th>最后使用时间</th></tr>
+            </thead>
+            <tbody id="statTableBody">
+                <tr class="loading-row"><td colspan="4">加载中...</td></tr>
+            </tbody>
+        </table>
+        <div style="text-align:right;margin-top:16px">
+            <button class="btn btn-default" onclick="closeStatsModal()">关闭</button>
+        </div>
+    </div>
+</div>
+
+<script>
+var params = new URLSearchParams(location.search);
+var token = params.get('access_token') || localStorage.getItem('admin_token') || '';
+var isdev = params.get('isdev') || '0';
+var currentPage = 1;
+var editId = null;
+
+function api(path) { return path + '?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev; }
+
+var TYPE_LABELS = { 'seckill':'⚡ 秒杀', 'full_reduce':'💰 满减', 'discount':'🏷️ 折扣' };
+var TYPE_CSS = { 'seckill':'type-seckill', 'full_reduce':'type-full_reduce', 'discount':'type-discount' };
+
+async function loadList(page) {
+    page = page || 1;
+    currentPage = page;
+    var keyword = document.getElementById('searchInput').value.trim();
+    var type = document.getElementById('typeFilter').value;
+    var status = document.getElementById('statusFilter').value;
+    var url = api('/api/admin/promotions') + '&page=' + page + '&page_size=20';
+    if (keyword) url += '&keyword=' + encodeURIComponent(keyword);
+    if (type) url += '&type=' + type;
+    if (status) url += '&status=' + status;
+
+    var tbody = document.getElementById('tableBody');
+    tbody.innerHTML = '<tr class="loading-row"><td colspan="9">加载中...</td></tr>';
+
+    try {
+        var r = await fetch(url);
+        var d = await r.json();
+        var items = (d.data && d.data.items) || [];
+        var total = (d.data && d.data.total) || 0;
+
+        if (!items.length) {
+            tbody.innerHTML = '<tr class="empty-row"><td colspan="9">暂无活动数据</td></tr>';
+        } else {
+            tbody.innerHTML = items.map(function(p) {
+                var typeLabel = TYPE_LABELS[p.promo_type] || p.promo_type;
+                var typeCss = TYPE_CSS[p.promo_type] || '';
+                var rule = getRuleText(p);
+                var st = getStatusBadge(p);
+                var timeStr = formatDT(p.start_time) + ' ~<br>' + formatDT(p.end_time);
+                var stock = p.total_stock > 0 ? p.total_stock : '不限';
+                return '<tr>' +
+                    '<td>' + p.id + '</td>' +
+                    '<td><strong>' + escH(p.promo_name) + '</strong>' + (p.description ? '<div style="font-size:11px;color:#999;margin-top:2px">' + escH(p.description) + '</div>' : '') + '</td>' +
+                    '<td><span class="type-badge ' + typeCss + '">' + typeLabel + '</span></td>' +
+                    '<td><span class="promo-rule">' + rule + '</span></td>' +
+                    '<td class="time-cell">' + timeStr + '</td>' +
+                    '<td>' + stock + '</td>' +
+                    '<td>' + (p.participant_count || 0) + '</td>' +
+                    '<td>' + st + '</td>' +
+                    '<td class="actions">' +
+                        '<button class="btn btn-default btn-sm" onclick="viewStats(' + p.id + ')">统计</button>' +
+                        '<button class="btn btn-primary btn-sm" onclick="openEdit(' + JSON.stringify(p).replace(/"/g,'&quot;') + ')">编辑</button>' +
+                        '<button class="btn btn-danger btn-sm" onclick="endPromo(' + p.id + ', \'' + escH(p.promo_name) + '\')">终止</button>' +
+                    '</td></tr>';
+            }).join('');
+        }
+
+        // 更新统计卡片
+        updateStatCards(items);
+        renderPagination(total, page, 20);
+    } catch(e) {
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="9">加载失败，请刷新</td></tr>';
+    }
+}
+
+function getRuleText(p) {
+    if (p.promo_type === 'seckill') return '秒杀价 ¥' + Number(p.seckill_price || 0).toFixed(2);
+    if (p.promo_type === 'full_reduce') return '满¥' + Number(p.min_amount || 0).toFixed(0) + ' 减¥' + Number(p.reduce_amount || 0).toFixed(0);
+    if (p.promo_type === 'discount') return (Number(p.discount_rate || 1) * 10).toFixed(1) + ' 折';
+    return '-';
+}
+
+function getStatusBadge(p) {
+    var now = new Date();
+    var start = p.start_time ? new Date(p.start_time) : null;
+    var end = p.end_time ? new Date(p.end_time) : null;
+    var s = p.status;
+    if (s === 'ended') return '<span class="status-badge st-ended">已终止</span>';
+    if (end && end < now) return '<span class="status-badge st-ended">已结束</span>';
+    if (start && start > now) return '<span class="status-badge st-inactive">未开始</span>';
+    return '<span class="status-badge st-active">进行中</span>';
+}
+
+function updateStatCards(items) {
+    var total = items.length;
+    var sk = items.filter(function(i) { return i.promo_type === 'seckill'; }).length;
+    var fr = items.filter(function(i) { return i.promo_type === 'full_reduce'; }).length;
+    var dc = items.filter(function(i) { return i.promo_type === 'discount'; }).length;
+    document.getElementById('sTotal').textContent = total;
+    document.getElementById('sSeckill').textContent = sk;
+    document.getElementById('sFullReduce').textContent = fr;
+    document.getElementById('sDiscount').textContent = dc;
+}
+
+function renderPagination(total, page, pageSize) {
+    var pages = Math.ceil(total / pageSize);
+    var html = '<span class="page-info">共 ' + total + ' 条</span>';
+    if (pages > 1) {
+        if (page > 1) html += '<button class="page-btn" onclick="loadList(' + (page-1) + ')">«</button>';
+        var start = Math.max(1, page - 2), end = Math.min(pages, start + 4);
+        for (var i = start; i <= end; i++) {
+            html += '<button class="page-btn' + (i === page ? ' active' : '') + '" onclick="loadList(' + i + ')">' + i + '</button>';
+        }
+        if (page < pages) html += '<button class="page-btn" onclick="loadList(' + (page+1) + ')">»</button>';
+    }
+    document.getElementById('pagination').innerHTML = html;
+}
+
+// ====== 创建/编辑 ======
+
+function onTypeChange() {
+    var t = document.getElementById('fType').value;
+    document.getElementById('seckillFields').style.display = t === 'seckill' ? 'block' : 'none';
+    document.getElementById('fullReduceFields').style.display = t === 'full_reduce' ? 'block' : 'none';
+    document.getElementById('discountFields').style.display = t === 'discount' ? 'block' : 'none';
+}
+
+function openCreate() {
+    editId = null;
+    document.getElementById('modalTitle').textContent = '创建营销活动';
+    clearForm();
+    document.getElementById('createModal').classList.add('show');
+}
+
+function openEdit(promo) {
+    editId = promo.id;
+    document.getElementById('modalTitle').textContent = '编辑活动';
+    clearForm();
+    document.getElementById('fName').value = promo.promo_name || '';
+    document.getElementById('fType').value = promo.promo_type || '';
+    document.getElementById('fPerLimit').value = promo.per_limit || 0;
+    if (promo.start_time) document.getElementById('fStartTime').value = promo.start_time.replace(' ', 'T').substring(0, 16);
+    if (promo.end_time) document.getElementById('fEndTime').value = promo.end_time.replace(' ', 'T').substring(0, 16);
+    document.getElementById('fSeckillPrice').value = promo.seckill_price || '';
+    document.getElementById('fTotalStock').value = promo.total_stock || 0;
+    document.getElementById('fMinAmount').value = promo.min_amount || '';
+    document.getElementById('fReduceAmount').value = promo.reduce_amount || '';
+    document.getElementById('fDiscountRate').value = promo.discount_rate || '';
+    document.getElementById('fDescription').value = promo.description || '';
+    onTypeChange();
+    document.getElementById('createModal').classList.add('show');
+}
+
+function clearForm() {
+    ['fName','fSeckillPrice','fMinAmount','fReduceAmount','fDiscountRate','fDescription','fStartTime','fEndTime'].forEach(function(id) {
+        document.getElementById(id).value = '';
+    });
+    document.getElementById('fType').value = '';
+    document.getElementById('fPerLimit').value = 0;
+    document.getElementById('fTotalStock').value = 0;
+    document.getElementById('seckillFields').style.display = 'none';
+    document.getElementById('fullReduceFields').style.display = 'none';
+    document.getElementById('discountFields').style.display = 'none';
+}
+
+function closeCreate() { document.getElementById('createModal').classList.remove('show'); editId = null; }
+
+async function submitCreate() {
+    var name = document.getElementById('fName').value.trim();
+    var type = document.getElementById('fType').value;
+    var startTime = document.getElementById('fStartTime').value;
+    var endTime = document.getElementById('fEndTime').value;
+
+    if (!name) { alert('请填写活动名称'); return; }
+    if (!type) { alert('请选择活动类型'); return; }
+    if (!startTime || !endTime) { alert('请填写活动时间'); return; }
+    if (new Date(startTime) >= new Date(endTime)) { alert('结束时间必须晚于开始时间'); return; }
+
+    var body = {
+        promo_name: name,
+        promo_type: type,
+        per_limit: parseInt(document.getElementById('fPerLimit').value) || 0,
+        start_time: startTime.replace('T', ' ') + ':00',
+        end_time: endTime.replace('T', ' ') + ':00',
+        description: document.getElementById('fDescription').value.trim(),
+        total_stock: parseInt(document.getElementById('fTotalStock').value) || 0,
+        apply_type: 'all',
+        apply_ids: []
+    };
+
+    if (type === 'seckill') {
+        var sp = parseFloat(document.getElementById('fSeckillPrice').value);
+        if (!sp || sp <= 0) { alert('请填写秒杀价'); return; }
+        body.seckill_price = sp;
+    } else if (type === 'full_reduce') {
+        var ma = parseFloat(document.getElementById('fMinAmount').value);
+        var ra = parseFloat(document.getElementById('fReduceAmount').value);
+        if (!ma || !ra || ma <= 0 || ra <= 0) { alert('请填写满减规则'); return; }
+        if (ra >= ma) { alert('优惠金额不能大于等于满减金额'); return; }
+        body.min_amount = ma;
+        body.reduce_amount = ra;
+    } else if (type === 'discount') {
+        var dr = parseFloat(document.getElementById('fDiscountRate').value);
+        if (!dr || dr <= 0 || dr >= 1) { alert('折扣率须在 0.01 ~ 0.99 之间'); return; }
+        body.discount_rate = dr;
+    }
+
+    try {
+        var url, method;
+        if (editId) {
+            url = api('/api/admin/promotions/' + editId);
+            method = 'PUT';
+        } else {
+            url = api('/api/admin/promotions');
+            method = 'POST';
+        }
+        var r = await fetch(url, { method: method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+        var d = await r.json();
+        if (d.success) {
+            alert(editId ? '活动更新成功' : '活动创建成功');
+            closeCreate();
+            loadList();
+        } else {
+            alert(d.msg || '操作失败');
+        }
+    } catch(e) {
+        alert('操作失败，请检查网络');
+    }
+}
+
+async function endPromo(id, name) {
+    if (!confirm('确认终止活动「' + name + '」？此操作不可撤销。')) return;
+    try {
+        var r = await fetch(api('/api/admin/promotions/' + id), { method: 'DELETE' });
+        var d = await r.json();
+        if (d.success) { alert('活动已终止'); loadList(); }
+        else { alert(d.msg || '操作失败'); }
+    } catch(e) { alert('操作失败'); }
+}
+
+// ====== 统计弹窗 ======
+
+async function viewStats(id) {
+    document.getElementById('statsModal').classList.add('show');
+    document.getElementById('statTableBody').innerHTML = '<tr class="loading-row"><td colspan="4">加载中...</td></tr>';
+    document.getElementById('mParticipants').textContent = '-';
+    document.getElementById('mUses').textContent = '-';
+    document.getElementById('mStock').textContent = '-';
+    try {
+        var r = await fetch(api('/api/admin/promotions/' + id + '/stats'));
+        var d = await r.json();
+        if (d.success) {
+            var data = d.data;
+            document.getElementById('statsModalTitle').textContent = (data.promo && data.promo.promo_name) || '活动统计';
+            document.getElementById('mParticipants').textContent = data.total_participants || 0;
+            document.getElementById('mUses').textContent = data.total_uses || 0;
+            var stock = (data.promo && data.promo.total_stock) ? data.promo.total_stock : '不限';
+            document.getElementById('mStock').textContent = stock;
+            var rows = (data.participants || []);
+            if (!rows.length) {
+                document.getElementById('statTableBody').innerHTML = '<tr class="empty-row"><td colspan="4">暂无参与记录</td></tr>';
+            } else {
+                document.getElementById('statTableBody').innerHTML = rows.map(function(u) {
+                    return '<tr><td>' + escH(u.user_name || u.user_id) + '</td><td>' + escH(u.phone || '-') + '</td><td>' + (u.use_count || 0) + '</td><td>' + (u.last_use_at || '-') + '</td></tr>';
+                }).join('');
+            }
+        } else {
+            document.getElementById('statTableBody').innerHTML = '<tr class="empty-row"><td colspan="4">查询失败</td></tr>';
+        }
+    } catch(e) {
+        document.getElementById('statTableBody').innerHTML = '<tr class="empty-row"><td colspan="4">加载失败</td></tr>';
+    }
+}
+
+function closeStatsModal() { document.getElementById('statsModal').classList.remove('show'); }
+
+// ====== 工具函数 ======
+
+function formatDT(dt) {
+    if (!dt) return '-';
+    return dt.toString().replace('T', ' ').substring(0, 16);
+}
+
+function escH(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// 点击弹窗外关闭
+document.getElementById('createModal').addEventListener('click', function(e) {
+    if (e.target === this) closeCreate();
+});
+document.getElementById('statsModal').addEventListener('click', function(e) {
+    if (e.target === this) closeStatsModal();
+});
+
+// 初始化
+loadList();
+</script>
+</body>
+</html>

@@ -2,81 +2,85 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>我的申请</title>
+    <link rel="stylesheet" href="../business-common/list-style.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; min-height: 100vh; }
-        .header { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 15px; display: flex; align-items: center; }
-        .header h1 { font-size: 18px; flex: 1; }
-        .back { color: white; text-decoration: none; font-size: 14px; }
-        .filter { display: flex; gap: 8px; padding: 10px 15px; background: white; overflow-x: auto; border-bottom: 1px solid #f0f0f0; }
-        .filter::-webkit-scrollbar { display: none; }
-        .filter-item { padding: 6px 14px; border-radius: 15px; font-size: 12px; white-space: nowrap; background: #f0f0f0; color: #666; cursor: pointer; flex-shrink: 0; transition: all .2s; }
-        .filter-item.active { background: #667eea; color: white; }
-        .list { padding: 10px; }
-        .item { background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; cursor: pointer; transition: box-shadow .2s; box-shadow: 0 1px 4px rgba(0,0,0,.05); }
-        .item:active { box-shadow: 0 2px 10px rgba(102,126,234,.2); }
-        .item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 8px; }
-        .item-title { font-size: 15px; font-weight: 500; color: #333; flex: 1; line-height: 1.4; }
-        .item-status { font-size: 11px; padding: 3px 8px; border-radius: 10px; flex-shrink: 0; margin-top: 2px; }
-        .status-pending { background: #fff3e0; color: #f57c00; }
-        .status-processing { background: #e3f2fd; color: #1976d2; }
-        .status-completed { background: #e8f5e9; color: #388e3c; }
-        .status-rejected { background: #ffebee; color: #d32f2f; }
-        .status-cancelled { background: #f5f5f5; color: #999; }
-        .item-meta { display: flex; gap: 10px; font-size: 12px; color: #bbb; margin-top: 4px; }
-        .item-type { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; color: #666; background: #f5f5f5; padding: 2px 8px; border-radius: 8px; }
-        /* 加载更多 */
-        .load-more { text-align: center; padding: 16px; }
-        .load-more-btn { padding: 10px 28px; background: white; border: 1px solid #667eea; color: #667eea; border-radius: 20px; font-size: 14px; cursor: pointer; }
-        .load-more-btn:active { background: #667eea; color: white; }
-        .load-more-btn:disabled { opacity: .5; cursor: not-allowed; }
-        .empty { text-align: center; padding: 60px 20px; color: #bbb; }
-        .empty-icon { font-size: 48px; margin-bottom: 12px; }
-        .empty-tip { font-size: 14px; margin-bottom: 8px; }
-        .empty-sub { font-size: 12px; color: #ddd; }
-        /* FAB */
-        .fab { position: fixed; bottom: 30px; right: 20px; width: 56px; height: 56px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 28px; text-decoration: none; box-shadow: 0 4px 14px rgba(102,126,234,.5); z-index: 50; }
-        .fab:active { transform: scale(0.96); }
-        /* 顶部统计条 */
-        .stat-bar { background: white; padding: 8px 15px; display: flex; gap: 16px; font-size: 12px; color: #999; border-bottom: 1px solid #f0f0f0; }
-        .stat-bar span { color: #667eea; font-weight: 600; }
+        /* 页面特有样式 */
+        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
+        .actions .link:hover { text-decoration: underline; }
+        .actions .link.danger { color: var(--el-color-danger); }
+        /* 弹窗样式保留 */
+        
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.45); z-index: 200; }
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: var(--el-bg-white); border-radius: 4px; width: 580px; max-width: 95vw; max-height: 85vh; flex-direction: column; z-index: 201; box-shadow: 0 4px 20px rgba(0,0,0,.18); }
+        .modal.show { display: flex; }
+        .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--el-border-color-light); display: flex; justify-content: space-between; align-items: center; }
+        .modal-title { font-size: 16px; font-weight: 600; color: var(--el-text-primary); }
+        .modal-close { background: none; border: none; width: 32px; height: 32px; border-radius: 4px; cursor: pointer; font-size: 16px; color: var(--el-text-secondary); display: flex; align-items: center; justify-content: center; }
+        .modal-close:hover { background: var(--el-bg-light); }
+        .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+        .modal-footer { padding: 12px 20px; border-top: 1px solid var(--el-border-color-light); display: flex; justify-content: flex-end; gap: 10px; }
     </style>
 </head>
-<body>
-    <div class="header">
-        <a href="javascript:void(0)" class="back" onclick="goBack()">← 返回</a>
-        <h1>我的申请</h1>
-        <span></span>
+<body class="wy-design-list">
+    <!-- 顶部区域 -->
+    <div class="wy-design-list_top">
+        <div class="wy-design-list_top_title">
+            <h1 class="wy-design-list_title">我的申请</h1>
+            <div class="wy-design-list_space"></div>
+            <div class="wy-design-list_btn-group">
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
+                        <span>搜索</span>
+                    </button>
+                </div>
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
+                        <span>重置</span>
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- 状态筛选 -->
-    <div class="filter" id="filterRow">
-        <div class="filter-item active" data-status="">全部</div>
-        <div class="filter-item" data-status="pending">🕐 待处理</div>
-        <div class="filter-item" data-status="processing">⚙️ 处理中</div>
-        <div class="filter-item" data-status="completed">✅ 已完成</div>
-        <div class="filter-item" data-status="rejected">❌ 已拒绝</div>
-        <div class="filter-item" data-status="cancelled">🚫 已撤销</div>
+    <!-- 筛选区域 -->
+    <div class="wy-design-list_filter">
+        <div class="wy-design-list_other">
+            <div class="el-input el-input--small" style="width: 200px;">
+                <input type="text" id="keyword" placeholder="搜索关键词" class="el-input__inner">
+            </div>
+        </div>
     </div>
 
-    <!-- 统计条 -->
-    <div class="stat-bar" id="statBar" style="display:none">
-        共 <span id="totalCount">0</span> 条记录
+    <!-- 表格区域 -->
+    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
+        <div class="wy-design-table_bar">
+            <i class="wy-design-table_set el-icon-setting" title="列设置"></i>
+            <span class="wy-design-table_total">共 <em id="totalCount">0</em> 条</span>
+            <div class="wy-pages">
+                <div class="wy-pages_total">第<em id="currentPage">1</em>/<em id="totalPages">1</em>页</div>
+                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
+                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
+            </div>
+        </div>
+        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
+            <thead class="el-table__header">
+                <tr>
+                    <th><div class="cell">名称</div></th>
+                    <th><div class="cell">操作</div></th>
+                </tr>
+            </thead>
+            <tbody class="el-table__body" id="listBody">
+                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</td></tr>
+            </tbody>
+        </table>
     </div>
 
-    <div class="list" id="list"><div class="empty"><div class="empty-icon">⏳</div><div class="empty-tip">加载中...</div></div></div>
-
-    <!-- 加载更多 -->
-    <div class="load-more" id="loadMoreArea" style="display:none">
-        <button class="load-more-btn" id="loadMoreBtn" onclick="loadMore()">加载更多</button>
-    </div>
-
-    <a href="javascript:void(0)" class="fab" onclick="goTo('application_create.html')">+</a>
+    
 
     <script>
-        var TYPE_MAP = {repair:'🔧 报修', booking:'📅 预约', complaint:'📝 投诉', consult:'💬 咨询', other:'📋 其他'};
+    var TYPE_MAP = {repair:'🔧 报修', booking:'📅 预约', complaint:'📝 投诉', consult:'💬 咨询', other:'📋 其他'};
         var STATUS_TEXT = {pending:'待处理', processing:'处理中', completed:'已完成', rejected:'已拒绝', cancelled:'已撤销'};
 
         var urlParams = new URLSearchParams(location.search);

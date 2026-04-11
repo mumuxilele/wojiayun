@@ -4,14 +4,48 @@ const https = require('https');
 const http = require('http');
 const multer = require('multer');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
+const FormData = require('form-data');
 
 const app = express();
 const PORT = process.env.PORT || 22314;
 
 // 配置 multer 用于文件上传
-const upload = multer({ 
+const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 10 * 1024 * 1024 } // 限制10MB
+});
+
+// 配置图片上传存储
+const imageStorage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const uploadDir = path.join(__dirname, 'uploads');
+        // 确保上传目录存在
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        // 生成唯一文件名
+        const ext = path.extname(file.originalname) || '.jpg';
+        const filename = `${Date.now()}-${generateUUID()}${ext}`;
+        cb(null, filename);
+    }
+});
+
+const imageUpload = multer({
+    storage: imageStorage,
+    limits: { fileSize: 10 * 1024 * 1024 },
+    fileFilter: function (req, file, cb) {
+        // 只接受图片文件
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('只允许上传图片文件'));
+        }
+    }
 });
 
 // 配置
@@ -31,6 +65,8 @@ const CONFIG = {
 app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
+// 提供上传图片的静态访问
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // 提供 SDK 静态文件
 app.use('/sdk', express.static(require('path').join(__dirname, '../aichat-sdk/dist')));
 
@@ -113,19 +149,19 @@ app.get('/api/userinfo', async (req, res) => {
 // API: 聊天接口（转发到腾讯云）
 app.post('/api/chat', async (req, res) => {
     try {
-        const { session_id, visitor_biz_id, content, model_name, custom_variables } = req.body;
+        const { session_id, visitor_biz_id, content, model_name, custom_variables, widget_action, image_ids, image_urls } = req.body;
 
-        if (!content) {
-            return res.status(400).json({ 
-                success: false, 
-                error: '缺少 content 参数' 
+        if (!content && !widget_action) {
+            return res.status(400).json({
+                success: false,
+                error: '缺少 content 或 widget_action 参数'
             });
         }
 
         if (!visitor_biz_id) {
-            return res.status(400).json({ 
-                success: false, 
-                error: '缺少 visitor_biz_id 参数' 
+            return res.status(400).json({
+                success: false,
+                error: '缺少 visitor_biz_id 参数'
             });
         }
 
@@ -134,18 +170,36 @@ app.post('/api/chat', async (req, res) => {
             session_id: session_id || generateUUID(),
             bot_app_key: CONFIG.TENCENT_APP_KEY,
             visitor_biz_id: visitor_biz_id,
-            content: content,
+            content: content || '',
             stream: 'enable',
             incremental: true
         };
 
-        // 添加自定义变量
-        if (custom_variables) {
-            requestBody.custom_variables = custom_variables;
+        // 添加自定义变量（包含图片信息）
+        let finalCustomVars = custom_variables || {};
+        if (image_ids) {
+            finalCustomVars.image_ids = image_ids;
+        }
+        if (image_urls) {
+            finalCustomVars.image_urls = image_urls;
+        }
+        if (Object.keys(finalCustomVars).length > 0) {
+            requestBody.custom_variables = finalCustomVars;
         }
 
         if (model_name) {
             requestBody.model_name = model_name;
+        }
+
+        // 添加 widget_action 支持（驼峰式命名，payload 为字符串）
+        if (widget_action) {
+            requestBody.widget_action = {
+                widgetId: widget_action.widgetId || widget_action.widget_id,
+                widgetRunId: widget_action.widgetRunId || widget_action.widget_run_id,
+                actionType: widget_action.actionType || widget_action.action_type,
+                payload: typeof widget_action.payload === 'string' ? widget_action.payload : JSON.stringify(widget_action.payload || {})
+            };
+            console.log('Widget Action:', JSON.stringify(requestBody.widget_action));
         }
 
         // 设置 SSE 响应头
@@ -188,13 +242,107 @@ app.post('/api/chat', async (req, res) => {
 
     } catch (error) {
         console.error('聊天接口错误:', error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             error: '服务器内部错误',
-            message: error.message 
+            message: error.message
         });
     }
 });
+
+// API: 图片上传接口 - 批量转发到我家云
+app.post('/api/upload-image', upload.array('images', 10), async (req, res) => {
+    try {
+        const files = req.files;
+        if (!files || files.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: '缺少图片文件'
+            });
+        }
+
+        const accessToken = req.body.access_token;
+        if (!accessToken) {
+            return res.status(400).json({
+                success: false,
+                error: '缺少 access_token'
+            });
+        }
+
+        console.log(`批量转发 ${files.length} 张图片到云端`);
+        files.forEach((file, i) => {
+            console.log(`  [${i + 1}] ${file.originalname}, size: ${file.size}`);
+        });
+
+        // 创建 FormData 对象，批量添加所有图片
+        const formData = new FormData();
+        formData.append('access_token', accessToken);
+        
+        // 添加所有图片文件
+        files.forEach(file => {
+            formData.append('files', file.buffer, {
+                filename: file.originalname || 'image.jpg',
+                contentType: file.mimetype || 'image/jpeg'
+            });
+        });
+
+        // 发送到我家云上传接口，直接返回云端原始响应
+        await uploadToWojiaCloud(formData, res);
+
+    } catch (error) {
+        console.error('图片上传错误:', error);
+        res.status(500).json({
+            success: false,
+            error: '图片上传失败',
+            message: error.message
+        });
+    }
+});
+
+// 转发到我家云上传接口 - 直接透传响应
+function uploadToWojiaCloud(formData, clientRes) {
+    return new Promise((resolve, reject) => {
+        const options = {
+            hostname: 'gj.wojiacloud.com',
+            port: 443,
+            path: '/api/file/uploadFiles',
+            method: 'POST',
+            headers: formData.getHeaders()
+        };
+
+        const request = https.request(options, (cloudRes) => {
+            // 设置响应头
+            clientRes.status(cloudRes.statusCode);
+            Object.keys(cloudRes.headers).forEach(key => {
+                clientRes.setHeader(key, cloudRes.headers[key]);
+            });
+
+            let data = '';
+            cloudRes.on('data', (chunk) => {
+                data += chunk;
+                clientRes.write(chunk);
+            });
+            cloudRes.on('end', () => {
+                console.log('云端上传响应:', data);
+                clientRes.end();
+                resolve({ forwarded: true });
+            });
+        });
+
+        request.on('error', (error) => {
+            console.error('请求失败:', error);
+            clientRes.status(500).json({
+                success: false,
+                error: '上传失败',
+                message: error.message
+            });
+            reject(error);
+        });
+
+        // 将 FormData 写入请求
+        formData.pipe(request);
+    });
+}
 
 // 生成 UUID
 function generateUUID() {

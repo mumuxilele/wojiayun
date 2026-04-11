@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>我的申请</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+            background: #F8F9FA; 
+            min-height: 100vh;
+            padding: 16px 20px 24px;
+        }
+        
+        /* 页面标题 */
+        .page-title { 
+            font-size: 18px; 
+            font-weight: 600; 
+            color: #1D2129; 
+            margin-bottom: 16px;
+        }
+        
+        /* 搜索框 */
+        .search-bar {
+            background: #FFFFFF;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+            display: flex;
+            gap: 8px;
+        }
+        .search-input {
+            flex: 1;
+            height: 36px;
+            border: none;
+            background: #F8F9FA;
+            border-radius: 8px;
+            padding: 0 12px;
+            font-size: 14px;
+            color: #1D2129;
+            outline: none;
+        }
+        .search-input::placeholder {
+            color: #86909C;
+        }
+        .search-input:focus {
+            background: #E6FAF7;
+        }
+        .search-btn {
+            height: 36px;
+            padding: 0 16px;
+            background: #30c2b3;
+            color: #FFFFFF;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .search-btn:active {
+            background: #26A096;
+        }
+        
+        /* 筛选栏 */
+        .filter-bar { 
+            background: #FFFFFF; 
+            border-radius: 12px;
+            padding: 12px 16px; 
+            display: flex; 
+            gap: 8px; 
+            margin-bottom: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        }
+        .filter-item { 
+            padding: 6px 14px; 
+            border-radius: 4px; 
+            font-size: 14px; 
+            white-space: nowrap; 
+            cursor: pointer; 
+            background: #F8F9FA; 
+            color: #4E5969;
+            border: none;
+        }
+        .filter-item.active { 
+            background: #E6FAF7; 
+            color: #30c2b3;
+        }
+        
+        /* 申请列表 */
+        .app-list { 
+            padding: 0; 
+        }
+        
+        /* 申请卡片 */
+        .app-card { 
+            background: #FFFFFF; 
+            border-radius: 12px; 
+            padding: 16px; 
+            margin-bottom: 12px; 
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        }
+        .app-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-start; 
+            margin-bottom: 12px; 
+        }
+        .app-type { 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+        }
+        .app-icon { 
+            width: 40px; 
+            height: 40px; 
+            border-radius: 8px; 
+            background: #E6FAF7; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 20px; 
+        }
+        .app-type-info { 
+            flex: 1; 
+        }
+        .app-type-name { 
+            font-size: 15px; 
+            font-weight: 600; 
+            color: #1D2129; 
+        }
+        .app-no { 
+            font-size: 12px; 
+            color: #86909C; 
+            margin-top: 2px; 
+        }
+        
+        /* 状态标签 */
+        .app-status { 
+            padding: 4px 10px; 
+            border-radius: 4px; 
+            font-size: 12px; 
+            font-weight: 500;
+            color: #FFFFFF;
+        }
+        .status-pending { 
+            background: #30c2b3; 
+        }
+        .status-processing { 
+            background: #FF7D00; 
+        }
+        .status-approved { 
+            background: #00B42A; 
+        }
+        .status-rejected { 
+            background: #F53F3F; 
+        }
+        .status-cancelled { 
+            background: #86909C; 
+        }
+        
+        .app-title { 
+            font-size: 15px; 
+            color: #1D2129; 
+            margin-bottom: 8px; 
+            line-height: 1.4; 
+        }
+        .app-meta { 
+            display: flex; 
+            gap: 16px; 
+            font-size: 12px; 
+            color: #86909C; 
+        }
+        
+        .app-footer { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-top: 12px; 
+            padding-top: 12px; 
+            border-top: 1px solid #F8F9FA; 
+        }
+        .app-date { 
+            font-size: 12px; 
+            color: #86909C; 
+        }
+        .app-actions { 
+            display: flex; 
+            gap: 8px; 
+        }
+        
+        /* 按钮样式 */
+        .app-btn { 
+            padding: 6px 12px; 
+            border-radius: 4px; 
+            font-size: 13px; 
+            border: none; 
+            cursor: pointer; 
+        }
+        .btn-primary { 
+            background: #30c2b3; 
+            color: #FFFFFF; 
+        }
+        .btn-primary:active {
+            background: #26A096;
+        }
+        .btn-default { 
+            background: #F8F9FA; 
+            color: #4E5969; 
+        }
+        
+        /* Toast提示 */
+        .toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.75);
+            color: #FFFFFF;
+            padding: 12px 24px;
+            border-radius: 8px;
+            z-index: 1000;
+            font-size: 14px;
+            display: none;
+        }
+        .toast.show {
+            display: block;
+            animation: fadeInOut 2s ease;
+        }
+        @keyframes fadeInOut {
+            0% { opacity: 0; }
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        
+        /* 空状态 */
+        .empty { 
+            text-align: center; 
+            padding: 60px 20px; 
+        }
+        .empty-icon { 
+            font-size: 64px; 
+            margin-bottom: 16px; 
+            color: #C9CDD4;
+        }
+        .empty-text { 
+            color: #86909C; 
+            font-size: 14px; 
+        }
+        
+        .loading { 
+            text-align: center; 
+            padding: 40px; 
+            color: #86909C;
+            font-size: 14px;
+        }
+        
+        /* 底部新建按钮 */
+        .fab {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: #30c2b3;
+            color: #FFFFFF;
+            font-size: 24px;
+            border: none;
+            box-shadow: 0 4px 12px rgba(48, 194, 179, 0.4);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .fab:active {
+            background: #26A096;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-title">我的申请</div>
+    
+    <!-- 搜索框 -->
+    <div class="search-bar">
+        <input type="text" class="search-input" id="searchInput" placeholder="搜索申请标题、编号...">
+        <button class="search-btn" onclick="doSearch()">搜索</button>
+    </div>
+    
+    <!-- 状态筛选（精简为3个） -->
+    <div class="filter-bar" id="filterBar">
+        <div class="filter-item active" data-status="" onclick="filterApps('')">全部</div>
+        <div class="filter-item" data-status="pending" onclick="filterApps('pending')">待审批</div>
+        <div class="filter-item" data-status="approved" onclick="filterApps('approved')">已通过</div>
+    </div>
+    
+    <div class="app-list" id="appList">
+        <div class="loading">加载中...</div>
+    </div>
+    
+    <button class="fab" onclick="createNew()">+</button>
+    
+    <!-- Toast提示 -->
+    <div class="toast" id="toast"></div>
+    
+    <script>
+        const urlParams = new URLSearchParams(location.search);
+        const token = urlParams.get('access_token') || localStorage.getItem('access_token') || '';
+        const API_BASE = location.origin;
+        
+        let currentStatus = '';
+        let currentKeyword = '';
+        let currentPage = 1;
+        let isLoading = false;
+        let hasMore = true;
+        
+        const statusMap = {
+            'pending': { text: '待审批', class: 'status-pending' },
+            'processing': { text: '审批中', class: 'status-processing' },
+            'approved': { text: '已通过', class: 'status-approved' },
+            'rejected': { text: '已拒绝', class: 'status-rejected' },
+            'cancelled': { text: '已取消', class: 'status-cancelled' }
+        };
+        
+        // 显示Toast
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+        
+        // 搜索
+        function doSearch() {
+            currentKeyword = document.getElementById('searchInput').value.trim();
+            currentPage = 1;
+            hasMore = true;
+            loadApplications(false);
+        }
+        
+        // 回车搜索
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                doSearch();
+            }
+        });
+        
+        // 加载申请列表
+        async function loadApplications(append = false) {
+            if (isLoading || (!append && !hasMore)) return;
+            isLoading = true;
+            
+            if (!append) {
+                document.getElementById('appList').innerHTML = '<div class="loading">加载中...</div>';
+            }
+            
+            try {
+                let url = `${API_BASE}/api/user/applications/v2?access_token=${token}&page=${currentPage}&page_size=20`;
+                if (currentStatus) {
+                    url += `&status=${currentStatus}`;
+                }
+                if (currentKeyword) {
+                    url += `&keyword=${encodeURIComponent(currentKeyword)}`;
+                }
+                
+                const res = await fetch(url);
+                const data = await res.json();
+                
+                if (!data.success) {
+                    document.getElementById('appList').innerHTML = `
+                        <div class="empty">
+                            <div class="empty-icon">😕</div>
+                            <div class="empty-text">${data.msg || '加载失败'}</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const { items, total, pages } = data.data || { items: [], total: 0, pages: 0 };
+                
+                if (!append && items.length === 0) {
+                    document.getElementById('appList').innerHTML = `
+                        <div class="empty">
+                            <div class="empty-icon">📋</div>
+                            <div class="empty-text">${currentKeyword ? '未找到相关申请' : '暂无申请记录'}</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                renderApps(items, append);
+                
+                hasMore = currentPage < pages;
+                if (hasMore) {
+                    currentPage++;
+                }
+            } catch (e) {
+                console.error('加载失败:', e);
+                if (!append) {
+                    document.getElementById('appList').innerHTML = `
+                        <div class="empty">
+                            <div class="empty-icon">😕</div>
+                            <div class="empty-text">加载失败，请稍后重试</div>
+                        </div>
+                    `;
+                }
+            } finally {
+                isLoading = false;
+            }
+        }
+        
+        // 渲染申请列表
+        function renderApps(items, append) {
+            const html = items.map(app => {
+                const status = statusMap[app.status] || { text: app.status, class: '' };
+                const date = app.created_at ? new Date(app.created_at).toLocaleDateString('zh-CN') : '-';
+                
+                let actions = '';
+                if (app.status === 'pending') {
+                    actions = `<button class="app-btn btn-default" onclick="event.stopPropagation(); cancelApp(${app.id})">取消</button>`;
+                } else if (['rejected', 'cancelled'].includes(app.status)) {
+                    actions = `<button class="app-btn btn-primary" onclick="event.stopPropagation(); reapply(${app.id})">再次申请</button>`;
+                }
+                
+                return `
+                    <div class="app-card" onclick="viewDetail(${app.id})">
+                        <div class="app-header">
+                            <div class="app-type">
+                                <div class="app-icon">${app.type_icon || '📋'}</div>
+                                <div class="app-type-info">
+                                    <div class="app-type-name">${app.type_name || '未知类型'}</div>
+                                    <div class="app-no">${app.app_no || '-'}</div>
+                                </div>
+                            </div>
+                            <span class="app-status ${status.class}">${status.text}</span>
+                        </div>
+                        <div class="app-title">${app.title || '无标题'}</div>
+                        <div class="app-meta">
+                            <span>步骤 ${app.current_step || 1}/${app.total_steps || 1}</span>
+                        </div>
+                        <div class="app-footer">
+                            <span class="app-date">${date}</span>
+                            <div class="app-actions">
+                                ${actions}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            const container = document.getElementById('appList');
+            if (append) {
+                container.innerHTML += html;
+            } else {
+                container.innerHTML = html;
+            }
+        }
+        
+        // 筛选
+        function filterApps(status) {
+            currentStatus = status;
+            currentPage = 1;
+            hasMore = true;
+            
+            document.querySelectorAll('.filter-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.status === status);
+            });
+            
+            loadApplications(false);
+        }
+        
+        // 查看详情
+        function viewDetail(appId) {
+            location.href = `application_detail_v2.html?id=${appId}&access_token=${token}`;
+        }
+        
+        // 取消申请
+        async function cancelApp(appId) {
+            if (!confirm('确定要取消这个申请吗？')) return;
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/user/applications/v2/${appId}/cancel?access_token=${token}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    showToast('已取消申请');
+                    // 刷新列表
+                    currentPage = 1;
+                    hasMore = true;
+                    loadApplications(false);
+                } else {
+                    showToast(data.msg || '操作失败');
+                }
+            } catch (e) {
+                showToast('操作失败，请稍后重试');
+            }
+        }
+        
+        // 再次申请
+        function reapply(appId) {
+            location.href = `application_form_v2.html?type=copy&copy_id=${appId}&access_token=${token}`;
+        }
+        
+        // 新建申请
+        function createNew() {
+            // 显示申请类型选择（简化版直接跳转到加班申请）
+            location.href = `application_form_v2.html?type=overtime&access_token=${token}`;
+        }
+        
+        // 初始化
+        loadApplications(false);
+        
+        // 下拉加载更多
+        window.addEventListener('scroll', () => {
+            if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100) {
+                if (!isLoading && hasMore) {
+                    loadApplications(true);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

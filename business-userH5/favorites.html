@@ -1,76 +1,86 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>我的收藏</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f5;min-height:100vh;padding-bottom:30px}
-.header{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:15px;display:flex;align-items:center;position:sticky;top:0;z-index:50}
-.header h1{font-size:18px;flex:1;text-align:center}
-.back{color:white;font-size:14px;text-decoration:none;padding:4px 8px}
-.header-right{padding:4px 8px;font-size:13px;cursor:pointer;color:rgba(255,255,255,.85)}
-
-.tab-row{display:flex;background:white;border-bottom:1px solid #eee}
-.tab{flex:1;padding:12px 0;text-align:center;font-size:14px;color:#666;cursor:pointer;position:relative}
-.tab.active{color:#667eea;font-weight:600}
-.tab.active::after{content:'';position:absolute;bottom:0;left:20%;right:20%;height:2px;background:#667eea;border-radius:2px}
-
-.list{padding:10px}
-.fav-item{background:white;border-radius:12px;margin-bottom:10px;display:flex;align-items:stretch;overflow:hidden;cursor:pointer;transition:all .2s;box-shadow:0 1px 4px rgba(0,0,0,.06)}
-.fav-item:active{transform:scale(.98)}
-
-.fav-img{width:80px;height:80px;flex-shrink:0;background:#f5f5f5;display:flex;align-items:center;justify-content:center;font-size:32px}
-.fav-img img{width:100%;height:100%;object-fit:cover}
-.fav-body{flex:1;padding:12px;min-width:0;display:flex;flex-direction:column;justify-content:space-between}
-.fav-name{font-size:15px;color:#333;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.fav-desc{font-size:12px;color:#999;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.fav-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
-.fav-price{font-size:15px;color:#f57c00;font-weight:700}
-.fav-time{font-size:11px;color:#ccc}
-.fav-action{width:60px;display:flex;align-items:center;justify-content:center;background:#fff5f5;flex-shrink:0}
-.unfav-btn{padding:8px 12px;font-size:12px;color:#ff4d4f;cursor:pointer;text-align:center;line-height:1.4}
-.unfav-btn:active{background:#ffe0e0}
-
-.empty{text-align:center;padding:80px 20px;color:#bbb}
-.empty-icon{font-size:56px;margin-bottom:16px}
-.empty-text{font-size:15px;margin-bottom:20px}
-.go-btn{padding:10px 28px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;border-radius:25px;font-size:14px;cursor:pointer}
-
-.loading{text-align:center;padding:40px;color:#bbb;font-size:14px}
-.load-more{text-align:center;padding:16px;color:#999;font-size:14px;cursor:pointer}
-.load-more:hover{color:#667eea}
-
-.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.75);color:white;padding:10px 20px;border-radius:20px;font-size:14px;pointer-events:none;opacity:0;transition:opacity .3s;z-index:999}
-.toast.show{opacity:1}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的收藏</title>
+    <link rel="stylesheet" href="../business-common/list-style.css">
+    <style>
+        /* 页面特有样式 */
+        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
+        .actions .link:hover { text-decoration: underline; }
+        .actions .link.danger { color: var(--el-color-danger); }
+        /* 弹窗样式保留 */
+        
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.45); z-index: 200; }
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: var(--el-bg-white); border-radius: 4px; width: 580px; max-width: 95vw; max-height: 85vh; flex-direction: column; z-index: 201; box-shadow: 0 4px 20px rgba(0,0,0,.18); }
+        .modal.show { display: flex; }
+        .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--el-border-color-light); display: flex; justify-content: space-between; align-items: center; }
+        .modal-title { font-size: 16px; font-weight: 600; color: var(--el-text-primary); }
+        .modal-close { background: none; border: none; width: 32px; height: 32px; border-radius: 4px; cursor: pointer; font-size: 16px; color: var(--el-text-secondary); display: flex; align-items: center; justify-content: center; }
+        .modal-close:hover { background: var(--el-bg-light); }
+        .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+        .modal-footer { padding: 12px 20px; border-top: 1px solid var(--el-border-color-light); display: flex; justify-content: flex-end; gap: 10px; }
+    </style>
 </head>
-<body>
+<body class="wy-design-list">
+    <!-- 顶部区域 -->
+    <div class="wy-design-list_top">
+        <div class="wy-design-list_top_title">
+            <h1 class="wy-design-list_title">我的收藏</h1>
+            <div class="wy-design-list_space"></div>
+            <div class="wy-design-list_btn-group">
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
+                        <span>搜索</span>
+                    </button>
+                </div>
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
+                        <span>重置</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<div class="header">
-    <a href="index.html" class="back">←</a>
-    <h1>我的收藏</h1>
-    <span class="header-right" id="editBtn" onclick="toggleEdit()">管理</span>
-</div>
+    <!-- 筛选区域 -->
+    <div class="wy-design-list_filter">
+        <div class="wy-design-list_other">
+            <div class="el-input el-input--small" style="width: 200px;">
+                <input type="text" id="keyword" placeholder="搜索关键词" class="el-input__inner">
+            </div>
+        </div>
+    </div>
 
-<div class="tab-row">
-    <div class="tab active" data-type="all" onclick="switchTab('all')">全部</div>
-    <div class="tab" data-type="venue" onclick="switchTab('venue')">场地</div>
-    <div class="tab" data-type="shop" onclick="switchTab('shop')">门店</div>
-    <div class="tab" data-type="product" onclick="switchTab('product')">商品</div>
-</div>
+    <!-- 表格区域 -->
+    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
+        <div class="wy-design-table_bar">
+            <i class="wy-design-table_set el-icon-setting" title="列设置"></i>
+            <span class="wy-design-table_total">共 <em id="totalCount">0</em> 条</span>
+            <div class="wy-pages">
+                <div class="wy-pages_total">第<em id="currentPage">1</em>/<em id="totalPages">1</em>页</div>
+                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
+                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
+            </div>
+        </div>
+        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
+            <thead class="el-table__header">
+                <tr>
+                    <th><div class="cell">名称</div></th>
+                    <th><div class="cell">操作</div></th>
+                </tr>
+            </thead>
+            <tbody class="el-table__body" id="listBody">
+                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</td></tr>
+            </tbody>
+        </table>
+    </div>
 
-<div id="favList" class="list">
-    <div class="loading">加载中...</div>
-</div>
+    
 
-<div id="loadMoreBtn" class="load-more" style="display:none" onclick="loadMore()">加载更多</div>
-
-<div class="toast" id="toast"></div>
-
-<script>
-const token = localStorage.getItem('wjy_token') || new URLSearchParams(location.search).get('access_token') || '';
+    <script>
+    const token = localStorage.getItem('wjy_token') || new URLSearchParams(location.search).get('access_token') || '';
 const isdev = new URLSearchParams(location.search).get('isdev') || '0';
 
 let currentTab = 'all';
@@ -233,6 +243,6 @@ function escHtml(str) {
 
 // 初始化
 loadFavorites(true);
-</script>
+    </script>
 </body>
 </html>

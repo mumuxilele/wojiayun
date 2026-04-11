@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>限时秒杀</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #1a1a1a; min-height: 100vh; color: white; }
+
+        .header { background: linear-gradient(135deg, #ff4d4f, #ff6b6b); padding: 15px; display: flex; align-items: center; position: sticky; top: 0; z-index: 50; }
+        .header h1 { font-size: 18px; flex: 1; text-align: center; }
+        .back { color: white; font-size: 22px; text-decoration: none; padding: 4px 8px; }
+
+        /* 倒计时横幅 */
+        .countdown-banner { background: linear-gradient(135deg, #ff4d4f, #ff6b6b); padding: 20px 16px; text-align: center; }
+        .countdown-label { font-size: 13px; opacity: 0.9; margin-bottom: 12px; }
+        .countdown-timer { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; }
+        .timer-block { background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px 14px; min-width: 56px; }
+        .timer-value { font-size: 28px; font-weight: 700; line-height: 1; }
+        .timer-unit { font-size: 10px; opacity: 0.7; margin-top: 4px; }
+        .countdown-desc { font-size: 12px; opacity: 0.8; }
+
+        /* 状态指示 */
+        .status-bar { background: #2a2a2a; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; }
+        .status-left { display: flex; align-items: center; gap: 8px; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #52c41a; animation: pulse 1.5s infinite; }
+        .status-dot.end { background: #999; animation: none; }
+        .status-dot.waiting { background: #faad14; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .status-text { font-size: 13px; color: rgba(255,255,255,0.8); }
+        .seckill-count { font-size: 12px; color: rgba(255,255,255,0.5); }
+
+        /* 秒杀进度 */
+        .seckill-progress { background: #2a2a2a; padding: 16px; margin: 12px 0; }
+        .progress-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .progress-title { font-size: 13px; color: rgba(255,255,255,0.8); }
+        .progress-rate { font-size: 13px; color: #ff4d4f; font-weight: 600; }
+        .progress-bar { height: 12px; background: rgba(255,255,255,0.1); border-radius: 6px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #ff4d4f, #ff6b6b); border-radius: 6px; transition: width 0.3s; }
+        .progress-label { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11px; color: rgba(255,255,255,0.5); }
+
+        /* 商品列表 */
+        .product-list { padding: 0 12px; }
+        .section-title { font-size: 16px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .section-title .fire { font-size: 20px; }
+
+        .product-card { background: #2a2a2a; border-radius: 16px; margin-bottom: 12px; overflow: hidden; display: flex; }
+        .product-img { width: 120px; height: 120px; background: #3a3a3a; flex-shrink: 0; position: relative; }
+        .product-img img { width: 100%; height: 100%; object-fit: cover; }
+        .product-tag { position: absolute; top: 0; left: 0; background: #ff4d4f; font-size: 10px; padding: 3px 6px; border-radius: 0 0 8px 0; }
+        .product-content { flex: 1; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; }
+        .product-name { font-size: 14px; font-weight: 600; color: white; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .product-price-row { display: flex; align-items: baseline; gap: 6px; margin-top: 6px; }
+        .seckill-price { font-size: 20px; font-weight: 700; color: #ff4d4f; }
+        .seckill-price::before { content: '¥'; font-size: 13px; }
+        .original-price { font-size: 12px; color: rgba(255,255,255,0.4); text-decoration: line-through; }
+        .discount-tag { background: rgba(255,77,79,0.2); color: #ff4d4f; font-size: 11px; padding: 2px 6px; border-radius: 4px; }
+        .product-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+        .stock-text { font-size: 11px; color: rgba(255,255,255,0.5); }
+        .stock-text strong { color: #ff4d4f; }
+        .buy-btn { background: linear-gradient(135deg, #ff4d4f, #ff6b6b); color: white; border: none; border-radius: 16px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; }
+        .buy-btn:disabled { background: #555; color: #888; cursor: not-allowed; }
+
+        /* 商品详情页 */
+        .detail-container { padding: 16px; }
+        .detail-header { display: flex; gap: 16px; margin-bottom: 20px; }
+        .detail-img { width: 100px; height: 100px; background: #2a2a2a; border-radius: 12px; overflow: hidden; }
+        .detail-img img { width: 100%; height: 100%; object-fit: cover; }
+        .detail-info { flex: 1; }
+        .detail-name { font-size: 18px; font-weight: 600; line-height: 1.4; margin-bottom: 8px; }
+        .detail-price-row { display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px; }
+        .detail-seckill-price { font-size: 28px; font-weight: 700; color: #ff4d4f; }
+        .detail-seckill-price::before { content: '¥'; font-size: 16px; }
+        .detail-original { font-size: 14px; color: rgba(255,255,255,0.4); text-decoration: line-through; }
+
+        /* 规则说明 */
+        .rules-section { background: #2a2a2a; border-radius: 16px; padding: 16px; margin-top: 16px; }
+        .rules-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+        .rules-list { font-size: 12px; color: rgba(255,255,255,0.6); line-height: 1.8; }
+        .rules-list li { margin-bottom: 4px; }
+
+        /* Toast */
+        .toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); background: rgba(0,0,0,0.8); color: white; padding: 12px 24px; border-radius: 12px; font-size: 14px; opacity: 0; transition: all 0.25s; z-index: 500; pointer-events: none; }
+        .toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+        /* 空状态 */
+        .empty-state { text-align: center; padding: 60px 20px; color: rgba(255,255,255,0.5); }
+        .empty-icon { font-size: 64px; margin-bottom: 16px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a class="back" onclick="history.back()">‹</a>
+        <h1>限时秒杀</h1>
+        <span style="width:40px"></span>
+    </div>
+
+    <!-- 倒计时横幅 -->
+    <div class="countdown-banner" id="countdownBanner">
+        <div class="countdown-label" id="countdownLabel">距离本场秒杀开始</div>
+        <div class="countdown-timer">
+            <div class="timer-block">
+                <div class="timer-value" id="timerHour">00</div>
+                <div class="timer-unit">时</div>
+            </div>
+            <div class="timer-block">
+                <div class="timer-value" id="timerMin">00</div>
+                <div class="timer-unit">分</div>
+            </div>
+            <div class="timer-block">
+                <div class="timer-value" id="timerSec">00</div>
+                <div class="timer-unit">秒</div>
+            </div>
+        </div>
+        <div class="countdown-desc" id="countdownDesc">下一场: 10:00</div>
+    </div>
+
+    <!-- 状态栏 -->
+    <div class="status-bar">
+        <div class="status-left">
+            <div class="status-dot" id="statusDot"></div>
+            <span class="status-text" id="statusText">秒杀进行中</span>
+        </div>
+        <span class="seckill-count" id="seckillCount">今日已有 0 人参与</span>
+    </div>
+
+    <!-- 商品列表 -->
+    <div class="product-list" id="productList">
+        <div class="section-title">
+            <span class="fire">🔥</span>
+            <span>秒杀好物</span>
+        </div>
+        <!-- 动态渲染 -->
+    </div>
+
+    <!-- 规则说明 -->
+    <div class="rules-section" style="margin:16px">
+        <div class="rules-title">📜 秒杀规则</div>
+        <ul class="rules-list">
+            <li>1. 每个用户每款商品限购1件，超出数量无法下单</li>
+            <li>2. 秒杀商品库存有限，售完即止</li>
+            <li>3. 秒杀订单需在30分钟内完成支付</li>
+            <li>4. 秒杀商品不支持使用优惠券</li>
+            <li>5. 秒杀活动最终解释权归商家所有</li>
+        </ul>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const urlParams = new URLSearchParams(location.search);
+        const token = urlParams.get('access_token') || localStorage.getItem('access_token') || '';
+        const API_BASE = location.origin;
+
+        let seckillData = null;
+        let products = [];
+        let timerInterval = null;
+
+        async function loadSeckillInfo() {
+            try {
+                const res = await fetch(`${API_BASE}/api/user/seckill/countdown?access_token=${token}`);
+                const data = await res.json();
+
+                if (data.success) {
+                    seckillData = data.data;
+                    renderCountdown();
+                    loadProducts();
+                } else {
+                    // 使用默认数据
+                    renderDefaultCountdown();
+                    loadProducts();
+                }
+            } catch(e) {
+                renderDefaultCountdown();
+                loadProducts();
+            }
+        }
+
+        function renderDefaultCountdown() {
+            // 默认显示正在进行的秒杀
+            document.getElementById('countdownLabel').textContent = '本场秒杀进行中';
+            document.getElementById('timerHour').textContent = '00';
+            document.getElementById('timerMin').textContent = '00';
+            document.getElementById('timerSec').textContent = '00';
+            document.getElementById('countdownDesc').textContent = '秒杀进行中，抓紧下单！';
+            document.getElementById('statusDot').className = 'status-dot';
+            document.getElementById('statusText').textContent = '秒杀进行中';
+
+            // 30分钟倒计时
+            let remaining = 30 * 60;
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                remaining--;
+                if (remaining <= 0) {
+                    remaining = 30 * 60;
+                }
+                const h = Math.floor(remaining / 3600);
+                const m = Math.floor((remaining % 3600) / 60);
+                const s = remaining % 60;
+                document.getElementById('timerHour').textContent = String(h).padStart(2, '0');
+                document.getElementById('timerMin').textContent = String(m).padStart(2, '0');
+                document.getElementById('timerSec').textContent = String(s).padStart(2, '0');
+            }, 1000);
+        }
+
+        function renderCountdown() {
+            if (!seckillData) return;
+
+            const status = seckillData.status; // waiting / ongoing / ended
+
+            if (status === 'waiting') {
+                document.getElementById('countdownLabel').textContent = '距离秒杀开始';
+                document.getElementById('statusDot').className = 'status-dot waiting';
+                document.getElementById('statusText').textContent = '即将开始';
+            } else if (status === 'ongoing') {
+                document.getElementById('countdownLabel').textContent = '距本场结束';
+                document.getElementById('statusDot').className = 'status-dot';
+                document.getElementById('statusText').textContent = '秒杀进行中';
+            } else {
+                document.getElementById('countdownLabel').textContent = '本场已结束';
+                document.getElementById('statusDot').className = 'status-dot end';
+                document.getElementById('statusText').textContent = '已结束';
+            }
+
+            // 设置倒计时
+            const endTime = new Date(seckillData.end_time || Date.now() + 30 * 60 * 1000).getTime();
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                const now = Date.now();
+                const diff = Math.max(0, endTime - now);
+                const h = Math.floor(diff / 3600000);
+                const m = Math.floor((diff % 3600000) / 60000);
+                const s = Math.floor((diff % 60000) / 1000);
+                document.getElementById('timerHour').textContent = String(h).padStart(2, '0');
+                document.getElementById('timerMin').textContent = String(m).padStart(2, '0');
+                document.getElementById('timerSec').textContent = String(s).padStart(2, '0');
+            }, 1000);
+
+            // 更新描述
+            if (seckillData.next_session) {
+                document.getElementById('countdownDesc').textContent = `下一场: ${seckillData.next_session}`;
+            }
+        }
+
+        async function loadProducts() {
+            try {
+                const res = await fetch(`${API_BASE}/api/seckill/active?access_token=${token}`);
+                const data = await res.json();
+
+                if (data.success && data.data) {
+                    products = Array.isArray(data.data) ? data.data : [data.data];
+                    renderProducts();
+                } else {
+                    renderMockProducts();
+                }
+            } catch(e) {
+                renderMockProducts();
+            }
+        }
+
+        function renderMockProducts() {
+            // 模拟秒杀商品数据
+            products = [
+                {
+                    id: 1,
+                    name: '【秒杀】有机纯牛奶 250ml*12盒',
+                    price: 29.9,
+                    original_price: 59.9,
+                    stock: 50,
+                    sold: 120,
+                    limit: 1,
+                    images: []
+                },
+                {
+                    id: 2,
+                    name: '【秒杀】新鲜土鸡蛋 30枚装',
+                    price: 19.9,
+                    original_price: 39.9,
+                    stock: 30,
+                    sold: 85,
+                    limit: 2,
+                    images: []
+                },
+                {
+                    id: 3,
+                    name: '【秒杀】东北大米 5kg 优质新米',
+                    price: 39.9,
+                    original_price: 79.9,
+                    stock: 0,
+                    sold: 200,
+                    limit: 1,
+                    images: []
+                },
+                {
+                    id: 4,
+                    name: '【秒杀】进口智利车厘子 500g',
+                    price: 49.9,
+                    original_price: 99.9,
+                    stock: 20,
+                    sold: 45,
+                    limit: 2,
+                    images: []
+                }
+            ];
+            renderProducts();
+        }
+
+        function renderProducts() {
+            const container = document.getElementById('productList');
+
+            if (products.length === 0) {
+                container.innerHTML += `
+                    <div class="empty-state">
+                        <div class="empty-icon">⏰</div>
+                        <div>暂无秒杀活动</div>
+                    </div>
+                `;
+                return;
+            }
+
+            const status = seckillData?.status;
+            const isEnded = status === 'ended';
+
+            container.innerHTML += products.map(p => {
+                const discount = p.original_price > 0 ? Math.round((1 - p.price / p.original_price) * 100) / 10 : 0;
+                const soldPercent = p.sold + p.stock > 0 ? (p.sold / (p.sold + p.stock)) * 100 : 0;
+                const isSoldOut = p.stock <= 0;
+                const canBuy = !isEnded && !isSoldOut;
+
+                return `
+                    <div class="product-card" onclick="goToProduct(${p.id})">
+                        <div class="product-img">
+                            ${p.images && p.images.length > 0
+                                ? `<img src="${p.images[0]}" onerror="this.parentNode.innerHTML='<span style=font-size:40px;color:#555>🛍️</span>'">`
+                                : '<span style="font-size:40px;color:#555;display:flex;align-items:center;justify-content:center;width:100%;height:100%">🛍️</span>'}
+                            <div class="product-tag">秒杀</div>
+                        </div>
+                        <div class="product-content">
+                            <div class="product-name">${p.name}</div>
+                            <div class="product-price-row">
+                                <span class="seckill-price">${p.price.toFixed(2)}</span>
+                                <span class="original-price">¥${p.original_price.toFixed(2)}</span>
+                                <span class="discount-tag">${discount}折</span>
+                            </div>
+                            <div class="product-meta">
+                                <span class="stock-text">剩余 <strong>${p.stock}</strong> 件</span>
+                                <button class="buy-btn" ${canBuy ? '' : 'disabled'} onclick="event.stopPropagation();buyNow(${p.id})">
+                                    ${isEnded ? '已结束' : (isSoldOut ? '已售罄' : '立即抢')}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // 更新参与人数
+            const totalSold = products.reduce((sum, p) => sum + (p.sold || 0), 0);
+            document.getElementById('seckillCount').textContent = `今日已有 ${totalSold + 128} 人参与`;
+        }
+
+        function goToProduct(productId) {
+            location.href = `product_detail.html?id=${productId}&access_token=${token}`;
+        }
+
+        function buyNow(productId) {
+            if (!token) {
+                showToast('请先登录');
+                setTimeout(() => {
+                    location.href = `member.html?redirect=${encodeURIComponent(location.href)}`;
+                }, 1000);
+                return;
+            }
+
+            // 跳转到商品详情页
+            location.href = `product_detail.html?id=${productId}&access_token=${token}&seckill=1`;
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2000);
+        }
+
+        loadSeckillInfo();
+    </script>
+</body>
+</html>

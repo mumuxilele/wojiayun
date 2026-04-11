@@ -13,8 +13,8 @@ const ChatDao = require('./ChatDao');
 
 const PORT = 22309;
 const USER_SERVICE_URL_LOCAL = 'http://127.0.0.1:22307/getUserInfo';
-const USER_SERVICE_URL_STAFF = 'https://gj.wojiacloud.com/getUserInfo';
-const USER_SERVICE_URL_USER = 'https://wj.wojiacloud.com/getUserInfo';
+const USER_SERVICE_URL_STAFF = 'https://gj.wojiacloud.com/users/getUserInfo';
+const USER_SERVICE_URL_USER = 'https://wj.wojiacloud.com/h5/users/api/getUserInfo';
 
 // MySQL连接池
 const pool = mysql.createPool({

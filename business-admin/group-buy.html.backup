@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拼团活动管理 - 管理后台</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root { --primary: #1890ff; --success: #52c41a; --warning: #faad14; --danger: #ff4d4f; --border: #ebeef5; --bg: #f5f7fa; --text: #303133; --text2: #606266; --text3: #909399; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg); font-size: 14px; color: var(--text2); }
+        .layout { display: flex; min-height: 100vh; }
+        .sidebar { width: 200px; background: #2c3e50; min-height: 100vh; position: fixed; top: 0; left: 0; z-index: 100; overflow-y: auto; }
+        .sidebar-header { padding: 16px 20px; border-bottom: 1px solid #3d4f5f; }
+        .sidebar-header h5 { color: white; font-size: 16px; font-weight: 600; }
+        .sidebar a { color: #ecf0f1; text-decoration: none; padding: 12px 20px; display: block; font-size: 14px; transition: all .2s; }
+        .sidebar a:hover { background: #34495e; }
+        .sidebar a.active { background: #34495e; border-left: 3px solid var(--primary); }
+        .main { flex: 1; margin-left: 200px; padding: 20px; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .page-title { font-size: 18px; font-weight: 600; color: var(--text); }
+        .toolbar { background: white; padding: 14px 16px; border-radius: 6px; margin-bottom: 16px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+        .toolbar input, .toolbar select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; background: white; }
+        .toolbar input:focus, .toolbar select:focus { border-color: var(--primary); outline: none; }
+        .toolbar input { width: 180px; }
+        .btn { padding: 8px 16px; border-radius: 4px; font-size: 13px; cursor: pointer; border: 1px solid var(--border); background: white; color: var(--text2); transition: all .2s; }
+        .btn:hover { color: var(--primary); border-color: var(--primary); }
+        .btn-primary { background: var(--primary); border-color: var(--primary); color: white; }
+        .btn-primary:hover { background: #40a9ff; border-color: #40a9ff; color: white; }
+        .btn-danger { background: var(--danger); border-color: var(--danger); color: white; }
+        .btn-danger:hover { opacity: .85; }
+        .btn-warning { background: var(--warning); border-color: var(--warning); color: white; }
+        .btn-success { background: var(--success); border-color: var(--success); color: white; }
+        .btn-sm { padding: 4px 10px; font-size: 12px; }
+        .card { background: white; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,.06); overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { padding: 12px 10px; background: var(--bg); color: var(--text); font-weight: 500; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+        td { padding: 10px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        tr:hover td { background: #fafafa; }
+        .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+        .tag-pending { background: #e6f7ff; color: #1890ff; border: 1px solid #91d5ff; }
+        .tag-ongoing { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+        .tag-success { background: #d9f7be; color: #389e0d; border: 1px solid #b7eb8f; }
+        .tag-failed { background: #fff1f0; color: #ff4d4f; border: 1px solid #ffccc7; }
+        .tag-cancelled { background: #f5f5f5; color: #999; border: 1px solid #d9d9d9; }
+        .goods-img { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; border: 1px solid #f0f0f0; background: #f5f5f5; }
+        .pagination { display: flex; gap: 4px; padding: 14px; justify-content: flex-end; align-items: center; }
+        .page-btn { padding: 5px 10px; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; font-size: 12px; background: white; }
+        .page-btn.active { background: var(--primary); border-color: var(--primary); color: white; }
+        .page-info { font-size: 12px; color: var(--text3); margin: 0 8px; }
+        .empty { text-align: center; padding: 60px; color: var(--text3); }
+        .loading { text-align: center; padding: 40px; color: var(--text3); }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.5); z-index: 300; align-items: center; justify-content: center; }
+        .modal-overlay.show { display: flex; }
+        .modal { background: white; border-radius: 8px; padding: 24px; width: 640px; max-width: 95vw; max-height: 85vh; overflow-y: auto; }
+        .modal-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+        .form-row.full { grid-template-columns: 1fr; }
+        .form-group label { display: block; font-size: 13px; color: var(--text2); margin-bottom: 5px; }
+        .form-group label.required::before { content: '* '; color: var(--danger); }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px;
+            font-size: 13px; transition: border .2s;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); outline: none; }
+        .form-group textarea { resize: vertical; min-height: 80px; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+        .close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text3); }
+        .close-btn:hover { color: var(--text); }
+        .price-display { display: flex; align-items: center; gap: 10px; }
+        .original-price { text-decoration: line-through; color: var(--text3); font-size: 12px; }
+        .group-price { color: var(--danger); font-weight: 600; font-size: 16px; }
+        .people-bar { display: flex; align-items: center; gap: 8px; }
+        .people-progress { width: 80px; height: 8px; background: #f0f0f0; border-radius: 4px; overflow: hidden; }
+        .people-fill { height: 100%; background: linear-gradient(90deg, #52c41a, #73d13d); transition: width .3s; }
+        .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+        .tabs { display: flex; gap: 2px; background: var(--bg); padding: 4px; border-radius: 6px; margin-bottom: 16px; }
+        .tab { padding: 8px 16px; cursor: pointer; border-radius: 4px; font-size: 13px; transition: all .2s; }
+        .tab:hover { background: white; }
+        .tab.active { background: white; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+    </style>
+</head>
+<body>
+<div class="layout">
+    <div class="sidebar">
+        <div class="sidebar-header"><h5>管理后台</h5></div>
+        <a href="index.html">🏠 首页</a>
+        <a href="statistics.html">📊 数据统计</a>
+        <a href="venues.html">🏟️ 场地管理</a>
+        <a href="shops.html">🏪 门店管理</a>
+        <a href="products.html">📦 商品管理</a>
+        <a href="applications.html">📋 申请单</a>
+        <a href="orders.html">🧾 订单管理</a>
+        <a href="points.html">💎 积分管理</a>
+        <a href="coupons.html">🎫 优惠券</a>
+        <a href="promotions.html">🔥 促销活动</a>
+        <a href="points-mall.html">🎁 积分商城</a>
+        <a href="group-buy.html" class="active">👥 拼团活动</a>
+        <a href="member-levels.html">🏆 会员等级</a>
+        <a href="feedback.html">💬 反馈</a>
+        <a href="notifications.html">🔔 通知</a>
+        <a href="notices.html">📢 公告</a>
+    </div>
+    <div class="main">
+        <div class="page-header">
+            <h1 class="page-title">👥 拼团活动管理</h1>
+            <button class="btn btn-primary" onclick="openModal()">+ 创建拼团活动</button>
+        </div>
+        
+        <!-- 状态Tab -->
+        <div class="tabs">
+            <div class="tab active" data-status="">全部</div>
+            <div class="tab" data-status="pending">待开始</div>
+            <div class="tab" data-status="ongoing">拼团中</div>
+            <div class="tab" data-status="success">已成功</div>
+            <div class="tab" data-status="failed">已失败</div>
+        </div>
+        
+        <!-- 筛选工具栏 -->
+        <div class="toolbar">
+            <input type="text" id="searchName" placeholder="搜索活动名称" onkeyup="handleSearch(event)">
+            <select id="filterStatus" style="display:none">
+                <option value="">全部状态</option>
+                <option value="pending">待开始</option>
+                <option value="ongoing">拼团中</option>
+                <option value="success">已成功</option>
+                <option value="failed">已失败</option>
+                <option value="cancelled">已取消</option>
+            </select>
+            <button class="btn" onclick="loadData(1)">🔍 搜索</button>
+            <button class="btn" onclick="resetFilters()">🔄 重置</button>
+        </div>
+        
+        <!-- 数据表格 -->
+        <div class="card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>活动编号</th>
+                        <th>活动名称</th>
+                        <th>商品</th>
+                        <th>价格信息</th>
+                        <th>成团进度</th>
+                        <th>有效时长</th>
+                        <th>活动时间</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr><td colspan="9" class="loading">加载中...</td></tr>
+                </tbody>
+            </table>
+            <div class="pagination" id="pagination"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 创建/编辑弹窗 -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+        <div class="modal-title">
+            <span id="modalTitle">创建拼团活动</span>
+            <button class="close-btn" onclick="closeModal()">×</button>
+        </div>
+        <form id="activityForm">
+            <input type="hidden" id="activityId">
+            <div class="form-row full">
+                <div class="form-group">
+                    <label class="required">活动名称</label>
+                    <input type="text" id="activityName" maxlength="100" placeholder="请输入活动名称" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="required">选择商品</label>
+                    <select id="productSelect" required onchange="onProductChange()">
+                        <option value="">请选择商品</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>商品图片</label>
+                    <input type="text" id="productImage" placeholder="商品图片URL（自动填充）" readonly>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>原价</label>
+                    <input type="number" id="originalPrice" step="0.01" placeholder="原价（自动填充）" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="required">拼团价</label>
+                    <input type="number" id="groupPrice" step="0.01" min="0.01" placeholder="请输入拼团价格" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="required">最小成团人数</label>
+                    <input type="number" id="minPeople" min="2" value="2" placeholder="最少2人成团" required>
+                </div>
+                <div class="form-group">
+                    <label class="required">最大参与人数</label>
+                    <input type="number" id="maxPeople" min="2" value="10" placeholder="最大参与人数" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="required">活动开始时间</label>
+                    <input type="datetime-local" id="startTime" required>
+                </div>
+                <div class="form-group">
+                    <label class="required">活动结束时间</label>
+                    <input type="datetime-local" id="endTime" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>拼团有效时长(小时)</label>
+                    <input type="number" id="validHours" min="1" value="24" placeholder="团创建后有效时长">
+                    <small style="color:#999;font-size:11px">用户开团后，需在此时间内凑齐人数</small>
+                </div>
+                <div class="form-group">
+                    <label>活动状态</label>
+                    <select id="activityStatus">
+                        <option value="pending">待开始</option>
+                        <option value="ongoing">立即开始</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" onclick="closeModal()">取消</button>
+                <button type="submit" class="btn btn-primary">保存并发布</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+const API_BASE = '/api/admin';
+let currentPage = 1;
+let pageSize = 15;
+let currentStatus = '';
+let productsCache = [];
+
+function getToken() {
+    return localStorage.getItem('admin_token') || new URLSearchParams(window.location.search).get('access_token') || '';
+}
+
+function getHeaders() {
+    return { 'Content-Type': 'application/json', 'Token': getToken() };
+}
+
+function api(url, options = {}) {
+    return fetch(API_BASE + url + '?access_token=' + getToken(), { ...options, headers: getHeaders() }).then(r => r.json());
+}
+
+function getStatusName(s) {
+    return { pending:'待开始', ongoing:'拼团中', success:'拼团成功', failed:'已失败', cancelled:'已取消' }[s] || s;
+}
+
+function getStatusClass(s) {
+    return { pending:'tag-pending', ongoing:'tag-ongoing', success:'tag-success', failed:'tag-failed', cancelled:'tag-cancelled' }[s] || '';
+}
+
+function formatDatetime(dt) {
+    if (!dt) return '-';
+    return new Date(dt).toLocaleString('zh-CN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+}
+
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        currentStatus = this.dataset.status;
+        loadData(1);
+    });
+});
+
+function loadData(page = 1) {
+    currentPage = page;
+    const name = document.getElementById('searchName').value.trim();
+    const params = new URLSearchParams({ page, page_size: pageSize });
+    if (name) params.append('name', name);
+    if (currentStatus) params.append('status', currentStatus);
+    document.getElementById('tableBody').innerHTML = '<tr><td colspan="9" class="loading">加载中...</td></tr>';
+    api('/group-buy/activities?' + params.toString())
+        .then(res => {
+            if (res.success) {
+                renderTable(res.data.items || []);
+                renderPagination(res.data);
+            } else {
+                document.getElementById('tableBody').innerHTML = '<tr><td colspan="9" class="empty">' + (res.msg || '加载失败') + '</td></tr>';
+            }
+        });
+}
+
+function renderTable(items) {
+    if (!items || items.length === 0) {
+        document.getElementById('tableBody').innerHTML = '<tr><td colspan="9" class="empty">暂无数据</td></tr>';
+        return;
+    }
+    const html = items.map(item => {
+        const progress = item.min_people > 0 ? Math.round((item.current_people / item.min_people) * 100) : 0;
+        const imgHtml = item.product_image ? `<img src="${item.product_image}" class="goods-img" onerror="this.style.display='none'">` : `<span class="goods-img">👥</span>`;
+        return `<tr>
+            <td><code style="font-size:11px">${item.activity_no}</code></td>
+            <td>${escapeHtml(item.name)}</td>
+            <td>${imgHtml}<span style="margin-left:8px">${escapeHtml(item.product_name || '-')}</span></td>
+            <td><div class="price-display"><span class="original-price">${item.original_price ? '¥' + Number(item.original_price).toFixed(2) : ''}</span><span class="group-price">¥${Number(item.group_price).toFixed(2)}</span></div></td>
+            <td><div class="people-bar"><span>${item.current_people}/${item.min_people}人</span><div class="people-progress"><div class="people-fill" style="width:${Math.min(progress, 100)}%"></div></div><span style="font-size:11px;color:#52c41a">${progress}%</span></div><small style="color:#999">最多${item.max_people}人</small></td>
+            <td>${item.valid_hours || 24}小时</td>
+            <td><div style="font-size:12px">${formatDatetime(item.start_time)}</div><div style="font-size:12px;color:#999">至 ${formatDatetime(item.end_time)}</div></td>
+            <td><span class="tag ${getStatusClass(item.status)}">${getStatusName(item.status)}</span></td>
+            <td class="actions">
+                <button class="btn btn-sm" onclick="viewOrders('${item.activity_no}')">订单</button>
+                <button class="btn btn-sm ${item.status === 'ongoing' ? 'btn-warning' : 'btn-success'}" onclick="toggleStatus(${item.id}, '${item.status}')">${item.status === 'ongoing' ? '暂停' : (item.status === 'pending' ? '启动' : '-')}</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteActivity(${item.id})">删除</button>
+            </td>
+        </tr>`;
+    }).join('');
+    document.getElementById('tableBody').innerHTML = html;
+}
+
+function renderPagination(data) {
+    const total = data.total || 0;
+    const pages = Math.ceil(total / pageSize);
+    if (pages <= 1) { document.getElementById('pagination').innerHTML = ''; return; }
+    let html = `<span class="page-info">共 ${total} 条</span>`;
+    for (let i = 1; i <= pages; i++) {
+        if (i === 1 || i === pages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+            html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="loadData(${i})">${i}</button>`;
+        } else if (i === currentPage - 3 || i === currentPage + 3) {
+            html += '<span style="padding:0 4px">...</span>';
+        }
+    }
+    document.getElementById('pagination').innerHTML = html;
+}
+
+async function openModal(id = null) {
+    document.getElementById('modalOverlay').classList.add('show');
+    document.getElementById('modalTitle').textContent = id ? '编辑拼团活动' : '创建拼团活动';
+    document.getElementById('activityForm').reset();
+    document.getElementById('activityId').value = '';
+    if (productsCache.length === 0) { await loadProducts(); }
+    renderProductSelect(productsCache);
+    if (id) {
+        api('/group-buy/activities/' + id).then(res => {
+            if (res.success && res.data) {
+                const item = res.data;
+                document.getElementById('activityId').value = item.id;
+                document.getElementById('activityName').value = item.name || '';
+                document.getElementById('productSelect').value = item.product_id || '';
+                document.getElementById('productImage').value = item.product_image || '';
+                document.getElementById('originalPrice').value = item.original_price || '';
+                document.getElementById('groupPrice').value = item.group_price || '';
+                document.getElementById('minPeople').value = item.min_people || 2;
+                document.getElementById('maxPeople').value = item.max_people || 10;
+                document.getElementById('startTime').value = item.start_time ? item.start_time.slice(0, 16) : '';
+                document.getElementById('endTime').value = item.end_time ? item.end_time.slice(0, 16) : '';
+                document.getElementById('validHours').value = item.valid_hours || 24;
+                document.getElementById('activityStatus').value = item.status === 'ongoing' ? 'ongoing' : 'pending';
+            }
+        });
+    }
+}
+
+function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
+
+function loadProducts() {
+    return api('/products?page=1&page_size=100').then(res => { if (res.success) { productsCache = res.data.items || []; } });
+}
+
+function renderProductSelect(products) {
+    const select = document.getElementById('productSelect');
+    select.innerHTML = '<option value="">请选择商品</option>' + products.map(p => `<option value="${p.id}" data-image="${p.images || ''}" data-price="${p.price || 0}">${p.product_name}</option>`).join('');
+}
+
+function onProductChange() {
+    const select = document.getElementById('productSelect');
+    const option = select.options[select.selectedIndex];
+    if (option && option.value) {
+        document.getElementById('productImage').value = option.dataset.image || '';
+        document.getElementById('originalPrice').value = option.dataset.price || '';
+    }
+}
+
+function viewOrders(activityNo) { alert('查看活动 ' + activityNo + ' 的订单详情'); }
+
+document.getElementById('activityForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const id = document.getElementById('activityId').value;
+    const data = {
+        name: document.getElementById('activityName').value.trim(),
+        product_id: parseInt(document.getElementById('productSelect').value) || 0,
+        product_name: document.getElementById('productSelect').options[document.getElementById('productSelect').selectedIndex].text,
+        product_image: document.getElementById('productImage').value.trim(),
+        original_price: parseFloat(document.getElementById('originalPrice').value) || 0,
+        group_price: parseFloat(document.getElementById('groupPrice').value) || 0,
+        min_people: parseInt(document.getElementById('minPeople').value) || 2,
+        max_people: parseInt(document.getElementById('maxPeople').value) || 10,
+        start_time: document.getElementById('startTime').value,
+        end_time: document.getElementById('endTime').value,
+        valid_hours: parseInt(document.getElementById('validHours').value) || 24,
+        status: document.getElementById('activityStatus').value
+    };
+    if (!data.name || !data.product_id || !data.group_price || !data.start_time || !data.end_time) { alert('请填写必填项'); return; }
+    if (data.group_price >= data.original_price && data.original_price > 0) { alert('拼团价必须小于原价'); return; }
+    const method = id ? 'PUT' : 'POST';
+    const url = id ? '/group-buy/activities/' + id : '/group-buy/activities';
+    api(url, { method, body: data }).then(res => {
+        if (res.success) { closeModal(); loadData(currentPage); alert(id ? '修改成功' : '创建成功'); }
+        else { alert(res.msg || '操作失败'); }
+    });
+});
+
+function toggleStatus(id, currentStatus) {
+    if (currentStatus === 'pending') {
+        api('/group-buy/activities/' + id + '/start', { method: 'POST' }).then(res => { if (res.success) { loadData(currentPage); alert('活动已启动'); } else alert(res.msg || '操作失败'); });
+    } else if (currentStatus === 'ongoing') {
+        api('/group-buy/activities/' + id + '/pause', { method: 'POST' }).then(res => { if (res.success) { loadData(currentPage); alert('活动已暂停'); } else alert(res.msg || '操作失败'); });
+    }
+}
+
+function deleteActivity(id) {
+    if (!confirm('确定要删除该拼团活动吗？')) return;
+    api('/group-buy/activities/' + id, { method: 'DELETE' }).then(res => { if (res.success) { loadData(currentPage); alert('删除成功'); } else alert(res.msg || '删除失败'); });
+}
+
+function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function handleSearch(e) { if (e.key === 'Enter') loadData(1); }
+function resetFilters() {
+    document.getElementById('searchName').value = '';
+    currentStatus = '';
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelector('.tab[data-status=""]').classList.add('active');
+    loadData(1);
+}
+document.addEventListener('DOMContentLoaded', function() { loadData(1); });
+</script>
+</body>
+</html>

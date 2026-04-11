@@ -1,41 +1,16 @@
+// 公共环境变量
+const commonEnv = {
+  NODE_ENV: 'production',
+  PYTHONUNBUFFERED: '1',
+  DB_HOST: '47.98.238.209',
+  DB_PORT: '3306',
+  DB_USER: 'root',
+  DB_PASSWORD: 'Wojiacloud$2023',
+  DB_NAME: 'visit_system'
+};
+
 module.exports = {
   apps: [
-    // 走访台账后端 - 端口 22306
-    {
-      name: 'wojiayun-backend',
-      script: '/www/wwwroot/wojiayun/backend/app.py',
-      interpreter: '/www/wwwroot/wojiayun/venv/bin/python',
-      cwd: '/www/wwwroot/wojiayun/backend',
-      instances: 1,
-      autorestart: true,
-      watch: false,
-      max_memory_restart: '500M',
-      env: {
-        NODE_ENV: 'production',
-        PYTHONUNBUFFERED: '1'
-      },
-      log_file: '/var/log/pm2/wojiayun-backend.log',
-      out_file: '/var/log/pm2/wojiayun-backend-out.log',
-      error_file: '/var/log/pm2/wojiayun-backend-error.log',
-      time: true
-    },
-    // 统一前端 + API代理 + WebSocket聊天 - 端口 22316
-    {
-      name: 'wojiayun-frontend',
-      script: '/www/wwwroot/wojiayun/frontend/unified_server.js',
-      cwd: '/www/wwwroot/wojiayun/frontend',
-      instances: 1,
-      autorestart: true,
-      watch: false,
-      max_memory_restart: '500M',
-      env: {
-        NODE_ENV: 'production'
-      },
-      log_file: '/var/log/pm2/wojiayun-frontend.log',
-      out_file: '/var/log/pm2/wojiayun-frontend-out.log',
-      error_file: '/var/log/pm2/wojiayun-frontend-error.log',
-      time: true
-    },
     // 用户服务代理 - 端口 22307
     {
       name: 'wojiayun-node-service',
@@ -45,9 +20,7 @@ module.exports = {
       autorestart: true,
       watch: false,
       max_memory_restart: '300M',
-      env: {
-        NODE_ENV: 'production'
-      },
+      env: { NODE_ENV: 'production' },
       log_file: '/var/log/pm2/wojiayun-node-service.log',
       out_file: '/var/log/pm2/wojiayun-node-service-out.log',
       error_file: '/var/log/pm2/wojiayun-node-service-error.log',
@@ -62,9 +35,7 @@ module.exports = {
       autorestart: true,
       watch: false,
       max_memory_restart: '500M',
-      env: {
-        NODE_ENV: 'production'
-      },
+      env: { NODE_ENV: 'production' },
       log_file: '/var/log/pm2/wojiayun-chat.log',
       out_file: '/var/log/pm2/wojiayun-chat-out.log',
       error_file: '/var/log/pm2/wojiayun-chat-error.log',
@@ -80,10 +51,7 @@ module.exports = {
       autorestart: true,
       watch: false,
       max_memory_restart: '500M',
-      env: {
-        NODE_ENV: 'production',
-        PYTHONUNBUFFERED: '1'
-      },
+      env: commonEnv,
       log_file: '/var/log/pm2/wojiayun-userH5.log',
       out_file: '/var/log/pm2/wojiayun-userH5-out.log',
       error_file: '/var/log/pm2/wojiayun-userH5-error.log',
@@ -99,10 +67,7 @@ module.exports = {
       autorestart: true,
       watch: false,
       max_memory_restart: '500M',
-      env: {
-        NODE_ENV: 'production',
-        PYTHONUNBUFFERED: '1'
-      },
+      env: commonEnv,
       log_file: '/var/log/pm2/wojiayun-staffH5.log',
       out_file: '/var/log/pm2/wojiayun-staffH5-out.log',
       error_file: '/var/log/pm2/wojiayun-staffH5-error.log',
@@ -118,10 +83,7 @@ module.exports = {
       autorestart: true,
       watch: false,
       max_memory_restart: '500M',
-      env: {
-        NODE_ENV: 'production',
-        PYTHONUNBUFFERED: '1'
-      },
+      env: commonEnv,
       log_file: '/var/log/pm2/wojiayun-admin.log',
       out_file: '/var/log/pm2/wojiayun-admin-out.log',
       error_file: '/var/log/pm2/wojiayun-admin-error.log',
@@ -138,8 +100,7 @@ module.exports = {
       watch: false,
       max_memory_restart: '300M',
       env: {
-        NODE_ENV: 'production',
-        PYTHONUNBUFFERED: '1',
+        ...commonEnv,
         CUSTOMER_ACCOUNT_SECRET_KEY: 'wojiacloud_secret_key_2026'
       },
       log_file: '/var/log/pm2/wojiayun-auth.log',

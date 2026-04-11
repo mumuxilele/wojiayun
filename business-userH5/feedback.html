@@ -2,121 +2,74 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>意见反馈 - 社区服务</title>
+    <link rel="stylesheet" href="../business-common/list-style.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; min-height: 100vh; }
-        
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 20px; display: flex; align-items: center; gap: 12px; }
-        .back-btn { font-size: 20px; cursor: pointer; text-decoration: none; color: white; }
-        .header h1 { font-size: 17px; flex: 1; }
-        
-        /* 反馈表单 */
-        .form-section { background: white; margin: 15px; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .form-title { font-size: 16px; font-weight: 600; color: #333; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
-        .form-group { margin-bottom: 15px; }
-        .form-label { font-size: 14px; color: #666; margin-bottom: 8px; display: block; }
-        .form-label .required { color: #ff4d4f; margin-left: 2px; }
-        
-        .type-selector { display: flex; gap: 10px; flex-wrap: wrap; }
-        .type-btn { padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e8e8e8; background: white; font-size: 13px; color: #666; cursor: pointer; transition: all 0.2s; }
-        .type-btn.active { border-color: #667eea; background: #f0f0ff; color: #667eea; font-weight: 500; }
-        .type-btn .icon { margin-right: 4px; }
-        
-        input[type="text"], input[type="tel"], textarea { width: 100%; padding: 12px; border: 1.5px solid #e8e8e8; border-radius: 8px; font-size: 14px; color: #333; outline: none; transition: border-color 0.2s; }
-        input[type="text"]:focus, input[type="tel"]:focus, textarea:focus { border-color: #667eea; }
-        textarea { height: 120px; resize: none; }
-        .char-count { text-align: right; font-size: 12px; color: #bbb; margin-top: 4px; }
-        .char-count.over { color: #ff4d4f; }
-        
-        .submit-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 500; cursor: pointer; transition: opacity 0.2s; }
-        .submit-btn:active { opacity: 0.85; }
-        .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        
-        /* 我的反馈列表 */
-        .section-divider { padding: 20px 15px 10px; font-size: 15px; font-weight: 600; color: #333; display: flex; align-items: center; gap: 8px; }
-        .section-divider .count { font-size: 12px; color: #999; font-weight: 400; }
-        
-        .feedback-list { padding: 0 15px 15px; }
-        .feedback-item { background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
-        .feedback-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .feedback-title { font-size: 15px; font-weight: 500; color: #333; flex: 1; margin-right: 10px; }
-        .feedback-type-tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
-        .tag-suggestion { background: #e6f7ff; color: #1890ff; }
-        .tag-bug { background: #fff2f0; color: #ff4d4f; }
-        .tag-complaint { background: #fff7e6; color: #fa8c16; }
-        .tag-praise { background: #f6ffed; color: #52c41a; }
-        
-        .feedback-content { font-size: 13px; color: #666; line-height: 1.5; margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
-        
-        .feedback-reply { background: #f6ffed; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; border-left: 3px solid #52c41a; }
-        .reply-label { font-size: 12px; color: #52c41a; font-weight: 500; margin-bottom: 4px; }
-        .reply-content { font-size: 13px; color: #333; line-height: 1.5; }
-        
-        .feedback-footer { display: flex; justify-content: space-between; align-items: center; }
-        .feedback-time { font-size: 12px; color: #bbb; }
-        .feedback-status { font-size: 12px; padding: 2px 8px; border-radius: 4px; }
-        .status-pending { background: #fff7e6; color: #fa8c16; }
-        .status-replied { background: #f6ffed; color: #52c41a; }
-        .status-closed { background: #f0f0f0; color: #999; }
-        
-        .empty { text-align: center; padding: 40px 20px; color: #bbb; }
-        .empty-icon { font-size: 48px; margin-bottom: 10px; }
-        .loading { text-align: center; padding: 30px; color: #999; }
-        
+        /* 页面特有样式 */
+        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
+        .actions .link:hover { text-decoration: underline; }
+        .actions .link.danger { color: var(--el-color-danger); }
+        /* 弹窗样式保留 */
         /* 提交成功弹窗 */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 999; }
-        .modal-overlay.show { display: flex; }
-        .modal-box { background: white; border-radius: 16px; padding: 30px; width: 280px; text-align: center; }
-        .modal-icon { font-size: 56px; margin-bottom: 15px; }
-        .modal-title { font-size: 18px; font-weight: 600; color: #333; margin-bottom: 8px; }
-        .modal-desc { font-size: 14px; color: #666; margin-bottom: 20px; }
-        .modal-btn { padding: 10px 40px; background: #667eea; color: white; border: none; border-radius: 20px; font-size: 14px; cursor: pointer; }
     </style>
 </head>
-<body>
-    <div class="header">
-        <a class="back-btn" onclick="history.back()">←</a>
-        <h1>意见反馈</h1>
-    </div>
-    
-    <!-- 反馈表单 -->
-    <div class="form-section">
-        <div class="form-title">📝 提交反馈</div>
-        <div class="form-group">
-            <div class="form-label">反馈类型<span class="required">*</span></div>
-            <div class="type-selector">
-                <div class="type-btn active" data-type="suggestion" onclick="selectType(this)">💡 建议</div>
-                <div class="type-btn" data-type="bug" onclick="selectType(this)">🐛 问题</div>
-                <div class="type-btn" data-type="complaint" onclick="selectType(this)">😤 投诉</div>
-                <div class="type-btn" data-type="praise" onclick="selectType(this)">👍 表扬</div>
+<body class="wy-design-list">
+    <!-- 顶部区域 -->
+    <div class="wy-design-list_top">
+        <div class="wy-design-list_top_title">
+            <h1 class="wy-design-list_title">意见反馈 - 社区服务</h1>
+            <div class="wy-design-list_space"></div>
+            <div class="wy-design-list_btn-group">
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
+                        <span>搜索</span>
+                    </button>
+                </div>
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
+                        <span>重置</span>
+                    </button>
+                </div>
             </div>
         </div>
-        <div class="form-group">
-            <div class="form-label">标题<span class="required">*</span></div>
-            <input type="text" id="fbTitle" placeholder="请简要描述您的反馈" maxlength="100">
-            <div class="char-count"><span id="titleCount">0</span>/100</div>
-        </div>
-        <div class="form-group">
-            <div class="form-label">详细内容<span class="required">*</span></div>
-            <textarea id="fbContent" placeholder="请详细描述您遇到的问题或建议..." maxlength="2000"></textarea>
-            <div class="char-count"><span id="contentCount">0</span>/2000</div>
-        </div>
-        <div class="form-group">
-            <div class="form-label">联系方式（选填）</div>
-            <input type="tel" id="fbContact" placeholder="方便我们回复您">
-        </div>
-        <button class="submit-btn" id="submitBtn" onclick="submitFeedback()">提交反馈</button>
     </div>
-    
-    <!-- 我的反馈列表 -->
-    <div class="section-divider">📋 我的反馈 <span class="count" id="totalCount"></span></div>
-    <div class="feedback-list" id="feedbackList">
-        <div class="loading">加载中...</div>
+
+    <!-- 筛选区域 -->
+    <div class="wy-design-list_filter">
+        <div class="wy-design-list_other">
+            <div class="el-input el-input--small" style="width: 200px;">
+                <input type="text" id="keyword" placeholder="搜索关键词" class="el-input__inner">
+            </div>
+        </div>
     </div>
+
+    <!-- 表格区域 -->
+    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
+        <div class="wy-design-table_bar">
+            <i class="wy-design-table_set el-icon-setting" title="列设置"></i>
+            <span class="wy-design-table_total">共 <em id="totalCount">0</em> 条</span>
+            <div class="wy-pages">
+                <div class="wy-pages_total">第<em id="currentPage">1</em>/<em id="totalPages">1</em>页</div>
+                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
+                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
+            </div>
+        </div>
+        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
+            <thead class="el-table__header">
+                <tr>
+                    <th><div class="cell">名称</div></th>
+                    <th><div class="cell">操作</div></th>
+                </tr>
+            </thead>
+            <tbody class="el-table__body" id="listBody">
+                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
     
-    <!-- 成功弹窗 -->
     <div class="modal-overlay" id="successModal">
         <div class="modal-box">
             <div class="modal-icon">✅</div>
@@ -125,6 +78,8 @@
             <button class="modal-btn" onclick="closeModal()">我知道了</button>
         </div>
     </div>
+
+    
 
     <script>
     const API = localStorage.getItem('apiBase') || '';

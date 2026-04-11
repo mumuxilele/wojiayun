@@ -1373,6 +1373,20 @@ def _post_payment_hooks(pay_record, pay_no):
         except Exception as e:
             logger.warning(f"会员升级检查失败: {e}")
 
+    # 5. 订单支付完成后触发成长任务
+    if pay_record.get('order_type') == 'order' and pay_record.get('order_id') and amount > 0:
+        try:
+            from .growth_task_service import growth_task_service
+            growth_task_service.on_order_completed(
+                user_id=user_id,
+                order_id=pay_record['order_id'],
+                order_amount=amount,
+                ec_id=ec_id,
+                project_id=project_id
+            )
+        except Exception as e:
+            logger.warning(f"订单成长任务触发失败: {e}")
+
 
 # 便捷实例
 payment = PaymentService()

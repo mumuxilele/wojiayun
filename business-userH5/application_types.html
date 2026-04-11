@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>选择申请类型</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f6fa; min-height: 100vh; }
+        
+        .header { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 16px; position: sticky; top: 0; z-index: 100; }
+        .header h1 { font-size: 18px; text-align: center; }
+        .header-back { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 20px; cursor: pointer; }
+        
+        .category-tabs { background: white; padding: 12px 16px; display: flex; gap: 8px; overflow-x: auto; border-bottom: 1px solid #eee; }
+        .category-tabs::-webkit-scrollbar { display: none; }
+        .category-tab { padding: 8px 16px; border-radius: 16px; font-size: 13px; white-space: nowrap; cursor: pointer; background: #f5f6fa; color: #666; }
+        .category-tab.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        
+        .section { padding: 16px; }
+        .section-title { font-size: 14px; color: #999; margin-bottom: 12px; font-weight: 500; }
+        
+        .type-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+        .type-item { background: white; border-radius: 12px; padding: 16px 8px; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .type-item:active { transform: scale(0.95); }
+        .type-icon { font-size: 32px; margin-bottom: 8px; }
+        .type-name { font-size: 13px; color: #333; font-weight: 500; }
+        
+        .favorites { background: white; margin: 0 16px 16px; border-radius: 12px; padding: 16px; }
+        .fav-title { font-size: 14px; font-weight: 600; color: #333; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+        .fav-list { display: flex; flex-wrap: wrap; gap: 8px; }
+        .fav-item { background: #f5f6fa; padding: 8px 14px; border-radius: 16px; font-size: 13px; color: #666; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .fav-item:active { background: #e8eaf6; }
+        
+        .loading { text-align: center; padding: 40px; color: #999; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <span class="header-back" onclick="history.back()">‹</span>
+        <h1>选择申请类型</h1>
+    </div>
+    
+    <div class="category-tabs" id="categoryTabs">
+        <div class="category-tab active" data-category="" onclick="filterCategory('')">全部</div>
+    </div>
+    
+    <div class="favorites" id="favorites" style="display: none;">
+        <div class="fav-title">⭐ 常用申请</div>
+        <div class="fav-list" id="favList"></div>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">申请类型</div>
+        <div class="type-grid" id="typeGrid">
+            <div class="loading">加载中...</div>
+        </div>
+    </div>
+    
+    <script>
+        const urlParams = new URLSearchParams(location.search);
+        const token = urlParams.get('access_token') || localStorage.getItem('access_token') || '';
+        const API_BASE = location.origin;
+        
+        let allTypes = [];
+        
+        // 加载申请类型
+        async function loadTypes() {
+            try {
+                const res = await fetch(`${API_BASE}/api/user/application/types?access_token=${token}`);
+                const data = await res.json();
+                
+                if (!data.success) {
+                    document.getElementById('typeGrid').innerHTML = '<div class="loading">加载失败</div>';
+                    return;
+                }
+                
+                allTypes = data.data.items || [];
+                renderTypes(allTypes);
+                renderCategoryTabs(allTypes);
+                loadFavorites();
+            } catch (e) {
+                document.getElementById('typeGrid').innerHTML = '<div class="loading">加载失败</div>';
+            }
+        }
+        
+        // 渲染类型列表
+        function renderTypes(types) {
+            if (types.length === 0) {
+                document.getElementById('typeGrid').innerHTML = '<div class="loading">暂无申请类型</div>';
+                return;
+            }
+            
+            const html = types.map(t => `
+                <div class="type-item" onclick="selectType('${t.type_code}')">
+                    <div class="type-icon">${t.icon || '📋'}</div>
+                    <div class="type-name">${t.type_name}</div>
+                </div>
+            `).join('');
+            
+            document.getElementById('typeGrid').innerHTML = html;
+        }
+        
+        // 渲染分类标签
+        function renderCategoryTabs(types) {
+            const categories = [...new Set(types.map(t => t.category).filter(Boolean))];
+            const tabsHtml = categories.map(c => `
+                <div class="category-tab" data-category="${c}" onclick="filterCategory('${c}')">${c}</div>
+            `).join('');
+            
+            document.getElementById('categoryTabs').innerHTML += tabsHtml;
+        }
+        
+        // 筛选分类
+        function filterCategory(category) {
+            document.querySelectorAll('.category-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.category === category);
+            });
+            
+            if (category) {
+                const filtered = allTypes.filter(t => t.category === category);
+                renderTypes(filtered);
+            } else {
+                renderTypes(allTypes);
+            }
+        }
+        
+        // 加载常用申请
+        async function loadFavorites() {
+            try {
+                const res = await fetch(`${API_BASE}/api/user/applications/v2/favorites?access_token=${token}`);
+                const data = await res.json();
+                
+                if (data.success && data.data.items && data.data.items.length > 0) {
+                    const html = data.data.items.slice(0, 5).map(item => `
+                        <div class="fav-item" onclick="selectType('${item.app_type}', '${item.id}')">
+                            <span>${item.type_icon || '📋'}</span>
+                            <span>${item.title}</span>
+                        </div>
+                    `).join('');
+                    
+                    document.getElementById('favList').innerHTML = html;
+                    document.getElementById('favorites').style.display = 'block';
+                }
+            } catch (e) {
+                console.error('加载常用申请失败:', e);
+            }
+        }
+        
+        // 选择类型
+        function selectType(typeCode, copyId = '') {
+            let url = `application_form_v2.html?type=${typeCode}&access_token=${token}`;
+            if (copyId) {
+                url += `&copy_id=${copyId}`;
+            }
+            location.href = url;
+        }
+        
+        // 初始化
+        loadTypes();
+    </script>
+</body>
+</html>

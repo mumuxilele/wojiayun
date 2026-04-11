@@ -2,97 +2,76 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>预约管理 - 员工端</title>
+    <link rel="stylesheet" href="../business-common/list-style.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; min-height: 100vh; }
-        
-        .header { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; padding: 15px; position: sticky; top: 0; z-index: 100; }
-        .header-top { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-        .header a { color: white; text-decoration: none; font-size: 18px; }
-        .header h2 { font-size: 18px; flex: 1; }
-        
-        .tab-bar { display: flex; gap: 5px; overflow-x: auto; }
-        .tab-bar::-webkit-scrollbar { display: none; }
-        .tab { padding: 6px 14px; border-radius: 16px; font-size: 12px; background: rgba(255,255,255,0.25); color: white; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
-        .tab.active { background: white; color: #11998e; font-weight: 600; }
-        
-        .booking-list { padding: 10px 15px; }
-        .booking-card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .booking-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .venue-name { font-size: 16px; font-weight: 600; color: #333; }
-        .booking-status { font-size: 11px; padding: 3px 8px; border-radius: 4px; font-weight: 500; }
-        .status-pending { background: #fff7e6; color: #fa8c16; }
-        .status-confirmed { background: #e6f7ff; color: #1890ff; }
-        .status-completed { background: #f6ffed; color: #52c41a; }
-        .status-cancelled { background: #fff1f0; color: #f5222d; }
-        
-        .booking-info { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .info-item { font-size: 13px; }
-        .info-label { color: #999; font-size: 11px; }
-        .info-value { color: #333; margin-top: 2px; }
-        
-        .booking-actions { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f5f5f5; }
-        .btn { padding: 8px 16px; border: none; border-radius: 8px; font-size: 13px; cursor: pointer; flex: 1; text-align: center; }
-        .btn-primary { background: #11998e; color: white; }
-        .btn-secondary { background: #f5f5f5; color: #666; }
-        .btn-danger { background: #f5222d; color: white; }
-        .btn:active { opacity: 0.8; }
-        
-        .verify-section { background: white; margin: 10px 15px; border-radius: 12px; padding: 20px; text-align: center; }
-        .verify-input { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 20px; text-align: center; letter-spacing: 4px; text-transform: uppercase; outline: none; }
-        .verify-input:focus { border-color: #11998e; }
-        .verify-btn { width: 100%; padding: 12px; border: none; border-radius: 10px; background: linear-gradient(135deg, #11998e, #38ef7d); color: white; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 12px; }
-        
+        /* 页面特有样式 */
+        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
+        .actions .link:hover { text-decoration: underline; }
+        .actions .link.danger { color: var(--el-color-danger); }
+        /* 弹窗样式保留 */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; display: none; align-items: center; justify-content: center; }
-        .modal { background: white; border-radius: 16px; padding: 20px; margin: 20px; max-width: 400px; width: 100%; }
-        .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 12px; text-align: center; }
-        .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
-        
-        .empty { text-align: center; padding: 40px; color: #bbb; font-size: 14px; }
-        .loading { text-align: center; padding: 20px; color: #999; }
-        .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.75); color: white; padding: 10px 20px; border-radius: 20px; font-size: 13px; z-index: 1000; display: none; }
     </style>
 </head>
-<body>
-    <div class="header">
-        <div class="header-top">
-            <a href="index.html" id="backLink">←</a>
-            <h2>📅 预约管理</h2>
-        </div>
-        <div class="tab-bar" id="tabBar">
-            <div class="tab active" data-status="">全部</div>
-            <div class="tab" data-status="pending">待确认</div>
-            <div class="tab" data-status="confirmed">已确认</div>
-            <div class="tab" data-status="completed">已完成</div>
-            <div class="tab" data-status="cancelled">已取消</div>
-        </div>
-    </div>
-    
-    <div class="verify-section">
-        <div style="font-size:14px;color:#666;margin-bottom:10px">核销码验证</div>
-        <input type="text" class="verify-input" id="verifyCode" placeholder="输入核销码" maxlength="10">
-        <button class="verify-btn" onclick="verifyBooking()">扫码核销</button>
-    </div>
-    
-    <div class="booking-list" id="bookingList"><div class="loading">加载中...</div></div>
-    
-    <div class="modal-overlay" id="modal">
-        <div class="modal">
-            <div class="modal-title" id="modalTitle">确认操作</div>
-            <div id="modalContent"></div>
-            <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="closeModal()" style="flex:1">取消</button>
-                <button class="btn btn-primary" id="modalConfirm" style="flex:1">确认</button>
+<body class="wy-design-list">
+    <!-- 顶部区域 -->
+    <div class="wy-design-list_top">
+        <div class="wy-design-list_top_title">
+            <h1 class="wy-design-list_title">预约管理 - 员工端</h1>
+            <div class="wy-design-list_space"></div>
+            <div class="wy-design-list_btn-group">
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
+                        <span>搜索</span>
+                    </button>
+                </div>
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
+                        <span>重置</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- 筛选区域 -->
+    <div class="wy-design-list_filter">
+        <div class="wy-design-list_other">
+            <div class="el-input el-input--small" style="width: 200px;">
+                <input type="text" id="keyword" placeholder="搜索关键词" class="el-input__inner">
+            </div>
+        </div>
+    </div>
+
+    <!-- 表格区域 -->
+    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
+        <div class="wy-design-table_bar">
+            <i class="wy-design-table_set el-icon-setting" title="列设置"></i>
+            <span class="wy-design-table_total">共 <em id="totalCount">0</em> 条</span>
+            <div class="wy-pages">
+                <div class="wy-pages_total">第<em id="currentPage">1</em>/<em id="totalPages">1</em>页</div>
+                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
+                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
+            </div>
+        </div>
+        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
+            <thead class="el-table__header">
+                <tr>
+                    <th><div class="cell">名称</div></th>
+                    <th><div class="cell">操作</div></th>
+                </tr>
+            </thead>
+            <tbody class="el-table__body" id="listBody">
+                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
     
-    <div class="toast" id="toast"></div>
 
     <script>
-        var urlParams = new URLSearchParams(location.search);
+    var urlParams = new URLSearchParams(location.search);
         var token = urlParams.get('access_token');
         var isdev = urlParams.get('isdev') || '0';
         if (token) {

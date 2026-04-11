@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>申请详情</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f6fa; min-height: 100vh; padding-bottom: 80px; }
+        
+        .header { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 16px; position: sticky; top: 0; z-index: 100; }
+        .header h1 { font-size: 18px; text-align: center; }
+        .header-back { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 20px; cursor: pointer; }
+        
+        .status-card { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 24px 16px; text-align: center; }
+        .status-icon { font-size: 48px; margin-bottom: 12px; }
+        .status-text { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+        .status-desc { font-size: 13px; opacity: 0.9; }
+        
+        .info-section { background: white; margin: 12px 16px; border-radius: 12px; padding: 16px; }
+        .section-title { font-size: 15px; font-weight: 600; color: #333; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        
+        .info-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f5f6fa; }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { font-size: 14px; color: #999; }
+        .info-value { font-size: 14px; color: #333; font-weight: 500; max-width: 60%; text-align: right; }
+        
+        .timeline { position: relative; padding-left: 24px; }
+        .timeline::before { content: ''; position: absolute; left: 7px; top: 0; bottom: 0; width: 2px; background: #e0e0e0; }
+        .timeline-item { position: relative; padding-bottom: 20px; }
+        .timeline-item:last-child { padding-bottom: 0; }
+        .timeline-dot { position: absolute; left: -20px; width: 14px; height: 14px; border-radius: 50%; background: #667eea; border: 2px solid white; }
+        .timeline-content { font-size: 14px; color: #333; }
+        .timeline-time { font-size: 12px; color: #999; margin-top: 4px; }
+        
+        .file-list { display: flex; flex-wrap: wrap; gap: 8px; }
+        .file-item { background: #f5f6fa; padding: 8px 12px; border-radius: 6px; font-size: 13px; color: #667eea; cursor: pointer; }
+        
+        .action-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 12px 16px; box-shadow: 0 -2px 8px rgba(0,0,0,0.08); display: flex; gap: 12px; }
+        .btn { flex: 1; padding: 14px; border-radius: 24px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; text-align: center; }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .btn-default { background: #f5f6fa; color: #666; }
+        .btn-danger { background: #ffebee; color: #f44336; }
+        
+        .loading { text-align: center; padding: 40px; color: #999; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <span class="header-back" onclick="history.back()">‹</span>
+        <h1>申请详情</h1>
+    </div>
+    
+    <div id="loading" class="loading">加载中...</div>
+    <div id="content" style="display: none;">
+        <div class="status-card" id="statusCard">
+            <div class="status-icon" id="statusIcon">⏳</div>
+            <div class="status-text" id="statusText">待审批</div>
+            <div class="status-desc" id="statusDesc">您的申请正在处理中，请耐心等待</div>
+        </div>
+        
+        <div class="info-section">
+            <div class="section-title">📋 基本信息</div>
+            <div class="info-row">
+                <span class="info-label">申请编号</span>
+                <span class="info-value" id="appNo">-</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">申请类型</span>
+                <span class="info-value" id="appType">-</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">申请标题</span>
+                <span class="info-value" id="appTitle">-</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">提交时间</span>
+                <span class="info-value" id="submitTime">-</span>
+            </div>
+        </div>
+        
+        <div class="info-section" id="formDataSection">
+            <div class="section-title">📝 申请内容</div>
+            <div id="formDataList"></div>
+        </div>
+        
+        <div class="info-section" id="attachmentSection" style="display: none;">
+            <div class="section-title">📎 附件</div>
+            <div class="file-list" id="fileList"></div>
+        </div>
+        
+        <div class="info-section" id="timelineSection">
+            <div class="section-title">📊 审批进度</div>
+            <div class="timeline" id="timeline"></div>
+        </div>
+    </div>
+    
+    <div class="action-bar" id="actionBar" style="display: none;">
+        <button class="btn btn-danger" onclick="cancelApp()">取消申请</button>
+        <button class="btn btn-default" onclick="copyApp()">再次申请</button>
+    </div>
+    
+    <script>
+        const urlParams = new URLSearchParams(location.search);
+        const token = urlParams.get('access_token') || localStorage.getItem('access_token') || '';
+        const appId = urlParams.get('id');
+        const API_BASE = location.origin;
+        
+        let appData = null;
+        
+        const statusMap = {
+            'pending': { icon: '⏳', text: '待审批', desc: '您的申请正在等待审批', color: '#ff9800' },
+            'processing': { icon: '🔄', text: '审批中', desc: '您的申请正在处理中', color: '#2196f3' },
+            'approved': { icon: '✅', text: '已通过', desc: '您的申请已获批准', color: '#4caf50' },
+            'rejected': { icon: '❌', text: '已拒绝', desc: '您的申请未获批准', color: '#f44336' },
+            'completed': { icon: '🎉', text: '已完成', desc: '申请已处理完毕', color: '#9c27b0' },
+            'cancelled': { icon: '🚫', text: '已取消', desc: '您已取消该申请', color: '#999' }
+        };
+        
+        async function loadDetail() {
+            if (!appId) {
+                alert('缺少申请ID');
+                history.back();
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/user/applications/v2/${appId}?access_token=${token}`);
+                const data = await res.json();
+                
+                if (!data.success) {
+                    alert(data.msg || '加载失败');
+                    return;
+                }
+                
+                appData = data.data;
+                renderDetail();
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+                
+                // 显示操作按钮
+                if (['pending'].includes(appData.status)) {
+                    document.getElementById('actionBar').style.display = 'flex';
+                }
+            } catch (e) {
+                alert('加载失败');
+            }
+        }
+        
+        function renderDetail() {
+            const status = statusMap[appData.status] || statusMap['pending'];
+            
+            // 状态卡片
+            document.getElementById('statusIcon').textContent = appData.type_icon || status.icon;
+            document.getElementById('statusText').textContent = status.text;
+            document.getElementById('statusDesc').textContent = appData.approve_remark || status.desc;
+            document.querySelector('.status-card').style.background = `linear-gradient(135deg, ${status.color}, ${adjustColor(status.color, -20)})`;
+            
+            // 基本信息
+            document.getElementById('appNo').textContent = appData.app_no;
+            document.getElementById('appType').textContent = appData.type_name || appData.app_type;
+            document.getElementById('appTitle').textContent = appData.title;
+            document.getElementById('submitTime').textContent = new Date(appData.created_at).toLocaleString('zh-CN');
+            
+            // 表单数据
+            renderFormData();
+            
+            // 附件
+            if (appData.attachments && appData.attachments.length > 0) {
+                renderAttachments();
+            }
+            
+            // 审批进度
+            renderTimeline();
+        }
+        
+        function renderFormData() {
+            const formData = appData.form_data || {};
+            const schema = appData.form_schema || {};
+            const fields = schema.fields || [];
+            
+            let html = '';
+            fields.forEach(field => {
+                const value = formData[field.name];
+                if (value) {
+                    html += `
+                        <div class="info-row">
+                            <span class="info-label">${field.label}</span>
+                            <span class="info-value">${value}</span>
+                        </div>
+                    `;
+                }
+            });
+            
+            document.getElementById('formDataList').innerHTML = html || '<div style="color: #999; padding: 20px;">暂无详细内容</div>';
+        }
+        
+        function renderAttachments() {
+            const html = appData.attachments.map(att => `
+                <div class="file-item" onclick="viewFile('${att.file_url}')">${att.file_name}</div>
+            `).join('');
+            
+            document.getElementById('fileList').innerHTML = html;
+            document.getElementById('attachmentSection').style.display = 'block';
+        }
+        
+        function renderTimeline() {
+            const history = appData.approve_history || [];
+            
+            let html = `
+                <div class="timeline-item">
+                    <div class="timeline-dot" style="background: #667eea;"></div>
+                    <div class="timeline-content">
+                        <div>提交申请</div>
+                        <div class="timeline-time">${new Date(appData.created_at).toLocaleString('zh-CN')}</div>
+                    </div>
+                </div>
+            `;
+            
+            history.forEach(item => {
+                const actionText = { 'approve': '通过', 'reject': '拒绝', 'transfer': '转交' }[item.action] || item.action;
+                html += `
+                    <div class="timeline-item">
+                        <div class="timeline-dot" style="background: ${item.action === 'reject' ? '#f44336' : '#667eea'};"></div>
+                        <div class="timeline-content">
+                            <div>${item.approver_name} ${actionText}了申请</div>
+                            ${item.remark ? `<div style="color: #666; margin-top: 4px;">${item.remark}</div>` : ''}
+                            <div class="timeline-time">${item.time}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('timeline').innerHTML = html;
+        }
+        
+        function adjustColor(color, amount) {
+            const num = parseInt(color.replace('#', ''), 16);
+            const r = Math.max(0, Math.min(255, (num >> 16) + amount));
+            const g = Math.max(0, Math.min(255, ((num >> 8) & 0x00FF) + amount));
+            const b = Math.max(0, Math.min(255, (num & 0x0000FF) + amount));
+            return `#${(0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1)}`;
+        }
+        
+        async function cancelApp() {
+            if (!confirm('确定要取消该申请吗？')) return;
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/user/applications/v2/${appId}/cancel?access_token=${token}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Token': token }
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    alert('申请已取消');
+                    location.reload();
+                } else {
+                    alert(data.msg || '取消失败');
+                }
+            } catch (e) {
+                alert('操作失败');
+            }
+        }
+        
+        function copyApp() {
+            location.href = `application_form_v2.html?type=${appData.app_type}&copy_id=${appId}&access_token=${token}`;
+        }
+        
+        function viewFile(url) {
+            window.open(url, '_blank');
+        }
+        
+        // 初始化
+        loadDetail();
+    </script>
+</body>
+</html>

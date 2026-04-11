@@ -2,103 +2,83 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>商品管理 - 员工端</title>
+    <link rel="stylesheet" href="../business-common/list-style.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; min-height: 100vh; }
-        .header { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; padding: 16px 15px; display: flex; align-items: center; gap: 12px; }
-        .back-btn { font-size: 22px; cursor: pointer; }
-        .header h1 { font-size: 18px; font-weight: 600; flex: 1; }
-        .header-action { font-size: 13px; background: rgba(255,255,255,0.25); padding: 5px 10px; border-radius: 8px; cursor: pointer; }
-
-        .search-bar { background: white; padding: 10px 15px; display: flex; gap: 8px; align-items: center; border-bottom: 1px solid #eee; }
-        .search-input { flex: 1; height: 36px; padding: 0 12px; border: 1px solid #e0e0e0; border-radius: 18px; font-size: 13px; outline: none; }
-        .search-btn { height: 36px; padding: 0 16px; background: #11998e; color: white; border: none; border-radius: 18px; font-size: 13px; cursor: pointer; }
-
-        .filter-bar { display: flex; gap: 8px; padding: 10px 15px; background: white; border-bottom: 1px solid #f0f0f0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        .filter-tag { padding: 5px 14px; border-radius: 15px; font-size: 12px; white-space: nowrap; background: #f0f0f0; color: #666; cursor: pointer; border: none; flex-shrink: 0; }
-        .filter-tag.active { background: #11998e; color: white; }
-
-        /* 低库存预警 */
-        .warning-banner { margin: 10px 15px; background: #fff7e6; border: 1px solid #ffd591; border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; gap: 8px; cursor: pointer; }
-        .warning-banner:active { background: #fff0d0; }
-        .warning-icon { font-size: 20px; }
-        .warning-text { flex: 1; font-size: 13px; color: #d46b08; }
-        .warning-arrow { color: #fa8c16; }
-
-        /* 商品列表 */
-        .product-item { background: white; margin: 0 15px 10px; border-radius: 12px; padding: 12px; display: flex; gap: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); cursor: pointer; }
-        .product-item:active { background: #fafafa; }
-        .product-img { width: 70px; height: 70px; border-radius: 10px; background: #f5f5f5; object-fit: cover; display: flex; align-items: center; justify-content: center; font-size: 30px; flex-shrink: 0; }
-        .product-info { flex: 1; min-width: 0; }
-        .product-name { font-size: 14px; font-weight: 600; color: #333; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .product-meta { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
-        .product-price { font-size: 16px; font-weight: 700; color: #f5576c; }
-        .product-category { font-size: 11px; background: #e8f5f2; color: #11998e; padding: 2px 6px; border-radius: 4px; }
-        .product-bottom { display: flex; justify-content: space-between; align-items: center; }
-        .stock-info { font-size: 12px; }
-        .stock-normal { color: #52c41a; }
-        .stock-low { color: #fa8c16; }
-        .stock-out { color: #f5222d; font-weight: 600; }
-        .product-status { font-size: 11px; padding: 2px 8px; border-radius: 4px; }
-        .status-active { background: #f6ffed; color: #52c41a; }
-        .status-inactive { background: #f5f5f5; color: #999; }
-        .sales-info { font-size: 11px; color: #999; }
-
+        /* 页面特有样式 */
+        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
+        .actions .link:hover { text-decoration: underline; }
+        .actions .link.danger { color: var(--el-color-danger); }
+        /* 弹窗样式保留 */
         /* 库存调整弹窗 */
         .modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; display: none; align-items: flex-end; }
-        .modal-mask.show { display: flex; }
-        .modal { background: white; width: 100%; border-radius: 16px 16px 0 0; padding: 20px 20px 40px; }
-        .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; display: flex; justify-content: space-between; }
-        .modal-close { font-size: 20px; cursor: pointer; color: #999; }
-        .modal-product-name { font-size: 14px; color: #333; margin-bottom: 8px; }
-        .modal-current { font-size: 13px; color: #666; margin-bottom: 16px; }
-        .stock-form { display: flex; flex-direction: column; gap: 12px; }
-        .stock-form label { font-size: 13px; color: #555; margin-bottom: 4px; display: block; }
-        .stock-form input { width: 100%; height: 42px; padding: 0 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; outline: none; }
-        .stock-form input:focus { border-color: #11998e; }
-        .modal-btns { display: flex; gap: 10px; margin-top: 16px; }
-        .btn-cancel { flex: 1; height: 42px; background: #f5f5f5; color: #666; border: none; border-radius: 10px; font-size: 14px; cursor: pointer; }
-        .btn-confirm { flex: 2; height: 42px; background: linear-gradient(90deg, #11998e, #38ef7d); color: white; border: none; border-radius: 10px; font-size: 14px; cursor: pointer; font-weight: 600; }
-
-        .empty { text-align: center; padding: 40px 20px; color: #bbb; font-size: 14px; }
-        .load-more { text-align: center; padding: 15px; color: #11998e; font-size: 13px; cursor: pointer; }
-        .toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: rgba(0,0,0,0.75); color: white; padding: 10px 20px; border-radius: 8px; font-size: 14px; z-index: 999; display: none; }
     </style>
 </head>
-<body>
-    <div class="header">
-        <span class="back-btn" onclick="history.back()">←</span>
-        <h1>商品管理</h1>
-        <div class="header-action" onclick="showStockWarning()">⚠️ 预警</div>
+<body class="wy-design-list">
+    <!-- 顶部区域 -->
+    <div class="wy-design-list_top">
+        <div class="wy-design-list_top_title">
+            <h1 class="wy-design-list_title">商品管理 - 员工端</h1>
+            <div class="wy-design-list_space"></div>
+            <div class="wy-design-list_btn-group">
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
+                        <span>搜索</span>
+                    </button>
+                </div>
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
+                        <span>重置</span>
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="search-bar">
-        <input type="text" class="search-input" id="searchInput" placeholder="搜索商品名称..." onkeypress="handleSearchKey(event)">
-        <button class="search-btn" onclick="loadProducts(1)">搜索</button>
+    <!-- 筛选区域 -->
+    <div class="wy-design-list_filter">
+        <div class="wy-design-list_other">
+            <div class="el-input el-input--small" style="width: 200px;">
+                <input type="text" id="searchInput" placeholder="搜索商品名称..." class="el-input__inner">
+            </div>
+        </div>
+        <div class="wy-design-list_other">
+            <select id="filter1" class="el-input__inner" style="width: 130px;">
+                
+                        <option value="add">补货（增加库存）</option>
+                        <option value="sub">减少库存</option>
+                        <option value="set">直接设置库存</option>
+                    
+            </select>
+        </div>
     </div>
 
-    <div class="filter-bar">
-        <button class="filter-tag active" data-status="">全部</button>
-        <button class="filter-tag" data-status="active">在售</button>
-        <button class="filter-tag" data-status="inactive">下架</button>
-        <button class="filter-tag" data-stock="low">低库存</button>
-        <button class="filter-tag" data-stock="out">缺货</button>
+    <!-- 表格区域 -->
+    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
+        <div class="wy-design-table_bar">
+            <i class="wy-design-table_set el-icon-setting" title="列设置"></i>
+            <span class="wy-design-table_total">共 <em id="totalCount">0</em> 条</span>
+            <div class="wy-pages">
+                <div class="wy-pages_total">第<em id="currentPage">1</em>/<em id="totalPages">1</em>页</div>
+                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
+                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
+            </div>
+        </div>
+        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
+            <thead class="el-table__header">
+                <tr>
+                    <th><div class="cell">名称</div></th>
+                    <th><div class="cell">操作</div></th>
+                </tr>
+            </thead>
+            <tbody class="el-table__body" id="listBody">
+                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</td></tr>
+            </tbody>
+        </table>
     </div>
 
-    <div id="warningBanner" style="display:none" class="warning-banner" onclick="loadStockWarning()">
-        <span class="warning-icon">⚠️</span>
-        <span class="warning-text" id="warningText">检查库存预警中...</span>
-        <span class="warning-arrow">›</span>
-    </div>
-
-    <div id="productList" style="padding-top:10px">
-        <div class="empty">加载中...</div>
-    </div>
-    <div id="loadMore" class="load-more" style="display:none" onclick="loadMore()">加载更多</div>
-
-    <!-- 库存调整弹窗 -->
+    
     <div class="modal-mask" id="stockModal" onclick="closeModal(event)">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-title">调整库存 <span class="modal-close" onclick="closeStockModal()">×</span></div>
@@ -131,8 +111,10 @@
 
     <div class="toast" id="toast"></div>
 
+    
+
     <script>
-        var urlParams = new URLSearchParams(location.search);
+    var urlParams = new URLSearchParams(location.search);
         var token = urlParams.get('access_token') || localStorage.getItem('staff_token') || '';
         var isdev = urlParams.get('isdev') || localStorage.getItem('staff_isdev') || '0';
         var currentPage = 1;

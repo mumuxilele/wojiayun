@@ -4,75 +4,48 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>通知管理 - 管理中心</title>
+    <link rel="stylesheet" href="../business-common/list-style.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f2f5; }
-        .toolbar { background: white; padding: 16px 20px; border-bottom: 1px solid #f0f0f0; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
-        .toolbar select, .toolbar input { padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 13px; outline: none; }
-        .toolbar input { width: 200px; }
-        .toolbar select:focus, .toolbar input:focus { border-color: #1890ff; }
-        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; }
-        .btn-primary { background: #1890ff; color: white; }
-        .btn-primary:hover { background: #40a9ff; }
-        .btn-reset { background: #f0f0f0; color: #666; }
-        .btn-reset:hover { background: #d9d9d9; }
-        .btn-success { background: #52c41a; color: white; }
-        .btn-success:hover { background: #73d13d; }
-        .toolbar-stats { margin-left: auto; font-size: 13px; color: #999; }
-        .toolbar-stats .unread { color: #ff4d4f; font-weight: 600; }
-        
-        .content { padding: 20px; }
-        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
-        th { background: #fafafa; padding: 12px 16px; text-align: left; font-weight: 500; color: #666; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
-        td { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; font-size: 13px; color: #333; }
-        tr:hover { background: #fafafa; }
-        
-        .tag { padding: 3px 8px; border-radius: 4px; font-size: 12px; white-space: nowrap; }
-        .tag-system { background: #e6f7ff; color: #1890ff; }
-        .tag-order { background: #fff7e6; color: #fa8c16; }
-        .tag-application { background: #f6ffed; color: #52c41a; }
-        .tag-booking { background: #fff0f6; color: #eb2f96; }
-        .tag-points { background: #fff7e6; color: #faad14; }
-        .tag-coupon { background: #f9f0ff; color: #722ed1; }
-        .tag-promotion { background: #e6fffb; color: #13c2c2; }
-        
-        .read-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
-        .read-dot.unread { background: #ff4d4f; }
-        .read-dot.read { background: #d9d9d9; }
-        
-        .content-preview { max-width: 350px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        
-        .pagination { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; }
-        .pagination-info { font-size: 13px; color: #999; }
-        .pagination-btns { display: flex; gap: 6px; }
-        .page-btn { padding: 6px 12px; border: 1px solid #d9d9d9; background: white; border-radius: 4px; cursor: pointer; font-size: 13px; color: #666; }
-        .page-btn.active { background: #1890ff; color: white; border-color: #1890ff; }
-        .page-btn:disabled { color: #d9d9d9; cursor: not-allowed; }
-        
-        .empty { text-align: center; padding: 60px; color: #bbb; }
-        
+        /* 页面特有样式 */
+        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
+        .actions .link:hover { text-decoration: underline; }
+        .actions .link.danger { color: var(--el-color-danger); }
+        /* 弹窗样式保留 */
         /* 发送通知弹窗 */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.45); display: none; align-items: center; justify-content: center; z-index: 999; }
-        .modal-overlay.show { display: flex; }
-        .modal { background: white; border-radius: 8px; width: 500px; }
-        .modal-header { padding: 16px 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
-        .modal-header h3 { font-size: 16px; font-weight: 600; }
-        .modal-close { font-size: 20px; cursor: pointer; color: #999; background: none; border: none; }
-        .modal-body { padding: 20px; }
-        .modal-footer { padding: 12px 20px; border-top: 1px solid #f0f0f0; text-align: right; }
-        
-        .form-group { margin-bottom: 16px; }
-        .form-label { font-size: 13px; color: #666; margin-bottom: 6px; display: block; }
-        .form-label .required { color: #ff4d4f; }
-        .form-input { width: 100%; padding: 10px 12px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 14px; outline: none; }
-        .form-input:focus { border-color: #1890ff; }
-        .form-select { width: 100%; padding: 10px 12px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 14px; outline: none; background: white; }
-        textarea.form-input { min-height: 100px; resize: vertical; }
     </style>
 </head>
-<body>
-    <div class="toolbar">
-        <select id="filterType" onchange="loadNotifications()">
+<body class="wy-design-list">
+    <!-- 顶部区域 -->
+    <div class="wy-design-list_top">
+        <div class="wy-design-list_top_title">
+            <h1 class="wy-design-list_title">通知管理 - 管理中心</h1>
+            <div class="wy-design-list_space"></div>
+            <div class="wy-design-list_btn-group">
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
+                        <span>搜索</span>
+                    </button>
+                </div>
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
+                        <span>重置</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 筛选区域 -->
+    <div class="wy-design-list_filter">
+        <div class="wy-design-list_other">
+            <div class="el-input el-input--small" style="width: 200px;">
+                <input type="text" id="filterKeyword" placeholder="搜索用户ID/标题/内容" class="el-input__inner">
+            </div>
+        </div>
+        <div class="wy-design-list_other">
+            <select id="filter1" class="el-input__inner" style="width: 130px;">
+                
             <option value="">全部类型</option>
             <option value="system">系统通知</option>
             <option value="order">订单通知</option>
@@ -80,39 +53,57 @@
             <option value="booking">预约通知</option>
             <option value="points">积分通知</option>
             <option value="coupon">优惠券通知</option>
-        </select>
-        <select id="filterRead" onchange="loadNotifications()">
+        
+            </select>
+        </div>
+        <div class="wy-design-list_other">
+            <select id="filter2" class="el-input__inner" style="width: 130px;">
+                
             <option value="">全部状态</option>
             <option value="false">未读</option>
             <option value="true">已读</option>
-        </select>
-        <input type="text" id="filterKeyword" placeholder="搜索用户ID/标题/内容" onkeydown="if(event.key==='Enter')loadNotifications()">
-        <button class="btn btn-primary" onclick="loadNotifications()">查询</button>
-        <button class="btn btn-reset" onclick="resetFilter()">重置</button>
-        <button class="btn btn-success" onclick="showSendModal()">📨 发送通知</button>
-        <span class="toolbar-stats" id="toolbarStats"></span>
+        
+            </select>
+        </div>
+        <div class="wy-design-list_other">
+            <select id="filter3" class="el-input__inner" style="width: 130px;">
+                
+                        <option value="system">系统通知</option>
+                        <option value="promotion">促销活动</option>
+                    
+            </select>
+        </div>
     </div>
-    
-    <div class="content">
-        <table>
-            <thead>
+
+    <!-- 表格区域 -->
+    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
+        <div class="wy-design-table_bar">
+            <i class="wy-design-table_set el-icon-setting" title="列设置"></i>
+            <span class="wy-design-table_total">共 <em id="totalCount">0</em> 条</span>
+            <div class="wy-pages">
+                <div class="wy-pages_total">第<em id="currentPage">1</em>/<em id="totalPages">1</em>页</div>
+                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
+                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
+            </div>
+        </div>
+        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
+            <thead class="el-table__header">
                 <tr>
-                    <th style="width:40px">状态</th>
-                    <th>用户ID</th>
-                    <th>标题</th>
-                    <th>内容</th>
-                    <th>类型</th>
-                    <th>创建时间</th>
+                    <th><div class="cell">状态</div></th>
+                    <th><div class="cell">用户ID</div></th>
+                    <th><div class="cell">标题</div></th>
+                    <th><div class="cell">内容</div></th>
+                    <th><div class="cell">类型</div></th>
+                    <th><div class="cell">创建时间</div></th>
                 </tr>
             </thead>
-            <tbody id="notifTable">
-                <tr><td colspan="6" class="empty">加载中...</td></tr>
+            <tbody class="el-table__body" id="listBody">
+                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</td></tr>
             </tbody>
         </table>
-        <div class="pagination" id="pagination"></div>
     </div>
+
     
-    <!-- 发送通知弹窗 -->
     <div class="modal-overlay" id="sendModal">
         <div class="modal">
             <div class="modal-header">
@@ -146,6 +137,8 @@
             </div>
         </div>
     </div>
+
+    
 
     <script>
     const API = localStorage.getItem('apiBase') || '';

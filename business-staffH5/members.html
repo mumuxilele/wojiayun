@@ -4,134 +4,80 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>会员管理 - 员工端</title>
+    <link rel="stylesheet" href="../business-common/list-style.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; min-height: 100vh; }
+        /* 页面特有样式 */
+        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
+        .actions .link:hover { text-decoration: underline; }
+        .actions .link.danger { color: var(--el-color-danger); }
+        /* 弹窗样式保留 */
         
-        .header { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; padding: 15px; position: sticky; top: 0; z-index: 100; }
-        .header-top { display: flex; justify-content: space-between; align-items: center; }
-        .back-btn { color: white; font-size: 20px; text-decoration: none; padding: 5px 10px; }
-        .header h1 { font-size: 18px; }
-        .header-stats { display: flex; gap: 15px; margin-top: 12px; font-size: 12px; }
-        .header-stat { background: rgba(255,255,255,0.2); padding: 8px 12px; border-radius: 8px; }
-        .header-stat span { opacity: 0.8; }
-        
-        .search-bar { background: white; padding: 10px 15px; display: flex; gap: 10px; border-bottom: 1px solid #eee; }
-        .search-input { flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 20px; font-size: 14px; outline: none; }
-        .search-input:focus { border-color: #11998e; }
-        .filter-btn { padding: 8px 15px; background: #f0f0f0; border-radius: 20px; font-size: 13px; border: none; cursor: pointer; }
-        .filter-btn.active { background: #11998e; color: white; }
-        
-        .member-list { background: white; }
-        .member-item { display: flex; padding: 15px; border-bottom: 1px solid #f5f5f5; cursor: pointer; }
-        .member-item:active { background: #fafafa; }
-        .member-avatar { width: 48px; height: 48px; background: linear-gradient(135deg, #11998e, #38ef7d); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; margin-right: 12px; flex-shrink: 0; }
-        .member-info { flex: 1; min-width: 0; }
-        .member-name { font-size: 15px; color: #333; font-weight: 500; margin-bottom: 4px; }
-        .member-phone { font-size: 13px; color: #666; margin-bottom: 6px; }
-        .member-tags { display: flex; gap: 6px; flex-wrap: wrap; }
-        .tag { padding: 2px 8px; border-radius: 4px; font-size: 11px; }
-        .tag-level { background: #fff3e0; color: #ff9800; }
-        .tag-points { background: #e3f2fd; color: #2196f3; }
-        .tag-vip { background: #f3e5f5; color: #9c27b0; }
-        .member-right { text-align: right; flex-shrink: 0; margin-left: 10px; }
-        .member-balance { font-size: 15px; color: #ff5722; font-weight: 600; }
-        .member-total { font-size: 11px; color: #999; margin-top: 2px; }
-        
-        .pagination { display: flex; justify-content: center; align-items: center; gap: 15px; padding: 15px; background: white; }
-        .page-btn { padding: 8px 16px; background: #f0f0f0; border-radius: 5px; font-size: 13px; border: none; cursor: pointer; }
-        .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .page-btn.primary { background: #11998e; color: white; }
-        .page-info { font-size: 13px; color: #666; }
-        
-        .filter-sheet { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-radius: 16px 16px 0 0; padding: 20px; z-index: 200; transform: translateY(100%); transition: transform 0.3s; }
-        .filter-sheet.show { transform: translateY(0); }
-        .filter-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 199; display: none; }
-        .filter-overlay.show { display: block; }
-        .filter-title { font-size: 16px; font-weight: 600; margin-bottom: 15px; }
-        .filter-options { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
-        .filter-option { padding: 8px 16px; border-radius: 20px; font-size: 14px; border: 1px solid #ddd; cursor: pointer; }
-        .filter-option.active { background: #11998e; color: white; border-color: #11998e; }
-        .filter-actions { display: flex; gap: 10px; }
-        .filter-actions button { flex: 1; padding: 12px; border-radius: 8px; font-size: 15px; border: none; cursor: pointer; }
-        .btn-reset { background: #f5f5f5; color: #666; }
-        .btn-confirm { background: #11998e; color: white; }
-        
-        .member-detail-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 300; display: none; justify-content: center; align-items: center; padding: 20px; }
-        .member-detail-modal.show { display: flex; }
-        .detail-card { background: white; border-radius: 16px; width: 100%; max-width: 400px; max-height: 80vh; overflow-y: auto; }
-        .detail-header { background: linear-gradient(135deg, #11998e, #38ef7d); padding: 25px; text-align: center; color: white; position: relative; }
-        .detail-close { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; }
-        .detail-avatar { width: 70px; height: 70px; background: rgba(255,255,255,0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; margin: 0 auto 10px; }
-        .detail-name { font-size: 18px; font-weight: 600; }
-        .detail-phone { font-size: 14px; opacity: 0.9; margin-top: 5px; }
-        .detail-body { padding: 15px; }
-        .detail-section { margin-bottom: 20px; }
-        .detail-section-title { font-size: 14px; color: #999; margin-bottom: 10px; }
-        .detail-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .detail-stat { background: #f9f9f9; padding: 12px; border-radius: 8px; text-align: center; }
-        .detail-stat-val { font-size: 18px; color: #333; font-weight: 600; }
-        .detail-stat-label { font-size: 11px; color: #999; margin-top: 3px; }
-        .detail-history { max-height: 200px; overflow-y: auto; }
-        .history-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f5f5f5; font-size: 13px; }
-        .history-type { color: #333; }
-        .history-points { color: #ff5722; font-weight: 500; }
-        .history-points.earn { color: #52c41a; }
-        
-        .empty { text-align: center; padding: 50px 20px; color: #bbb; }
-        .empty-icon { font-size: 50px; margin-bottom: 10px; }
-        .loading { text-align: center; padding: 30px; color: #999; }
-        
-        .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.75); color: white; padding: 10px 20px; border-radius: 25px; font-size: 14px; z-index: 999; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.45); z-index: 200; }
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: var(--el-bg-white); border-radius: 4px; width: 580px; max-width: 95vw; max-height: 85vh; flex-direction: column; z-index: 201; box-shadow: 0 4px 20px rgba(0,0,0,.18); }
+        .modal.show { display: flex; }
+        .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--el-border-color-light); display: flex; justify-content: space-between; align-items: center; }
+        .modal-title { font-size: 16px; font-weight: 600; color: var(--el-text-primary); }
+        .modal-close { background: none; border: none; width: 32px; height: 32px; border-radius: 4px; cursor: pointer; font-size: 16px; color: var(--el-text-secondary); display: flex; align-items: center; justify-content: center; }
+        .modal-close:hover { background: var(--el-bg-light); }
+        .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+        .modal-footer { padding: 12px 20px; border-top: 1px solid var(--el-border-color-light); display: flex; justify-content: flex-end; gap: 10px; }
     </style>
 </head>
-<body>
-    <div class="header">
-        <div class="header-top">
-            <a href="index.html" class="back-btn">←</a>
-            <h1>会员管理</h1>
-            <div style="width:40px"></div>
-        </div>
-        <div class="header-stats">
-            <div class="header-stat"><span>全部会员</span> <strong id="totalCount">0</strong></div>
-            <div class="header-stat"><span>今日新增</span> <strong id="todayCount">0</strong></div>
-        </div>
-    </div>
-
-    <div class="search-bar">
-        <input type="text" class="search-input" id="searchInput" placeholder="搜索会员姓名/手机号...">
-        <button class="filter-btn" onclick="toggleFilter()">筛选</button>
-    </div>
-
-    <div class="member-list" id="memberList">
-        <div class="loading">加载中...</div>
-    </div>
-
-    <div class="pagination" id="pagination" style="display:none">
-        <button class="page-btn" id="prevBtn" onclick="prevPage()">上一页</button>
-        <span class="page-info" id="pageInfo">1/1</span>
-        <button class="page-btn" id="nextBtn" onclick="nextPage()">下一页</button>
-    </div>
-
-    <!-- 筛选面板 -->
-    <div class="filter-overlay" id="filterOverlay" onclick="toggleFilter()"></div>
-    <div class="filter-sheet" id="filterSheet">
-        <div class="filter-title">筛选会员等级</div>
-        <div class="filter-options" id="levelOptions">
-            <div class="filter-option active" data-level="">全部</div>
-            <div class="filter-option" data-level="vip">VIP会员</div>
-            <div class="filter-option" data-level="gold">黄金会员</div>
-            <div class="filter-option" data-level="silver">白银会员</div>
-            <div class="filter-option" data-level="bronze">青铜会员</div>
-            <div class="filter-option" data-level="normal">普通会员</div>
-        </div>
-        <div class="filter-actions">
-            <button class="btn-reset" onclick="resetFilter()">重置</button>
-            <button class="btn-confirm" onclick="applyFilter()">确定</button>
+<body class="wy-design-list">
+    <!-- 顶部区域 -->
+    <div class="wy-design-list_top">
+        <div class="wy-design-list_top_title">
+            <h1 class="wy-design-list_title">会员管理 - 员工端</h1>
+            <div class="wy-design-list_space"></div>
+            <div class="wy-design-list_btn-group">
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
+                        <span>搜索</span>
+                    </button>
+                </div>
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
+                        <span>重置</span>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- 会员详情弹窗 -->
+    <!-- 筛选区域 -->
+    <div class="wy-design-list_filter">
+        <div class="wy-design-list_other">
+            <div class="el-input el-input--small" style="width: 200px;">
+                <input type="text" id="searchInput" placeholder="搜索会员姓名/手机号..." class="el-input__inner">
+            </div>
+        </div>
+    </div>
+
+    <!-- 表格区域 -->
+    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
+        <div class="wy-design-table_bar">
+            <i class="wy-design-table_set el-icon-setting" title="列设置"></i>
+            <span class="wy-design-table_total">共 <em id="totalCount">0</em> 条</span>
+            <div class="wy-pages">
+                <div class="wy-pages_total">第<em id="currentPage">1</em>/<em id="totalPages">1</em>页</div>
+                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
+                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
+            </div>
+        </div>
+        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
+            <thead class="el-table__header">
+                <tr>
+                    <th><div class="cell">名称</div></th>
+                    <th><div class="cell">操作</div></th>
+                </tr>
+            </thead>
+            <tbody class="el-table__body" id="listBody">
+                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    
     <div class="member-detail-modal" id="detailModal" onclick="if(event.target===this)closeDetail()">
         <div class="detail-card">
             <div class="detail-header">
@@ -185,8 +131,10 @@
         </div>
     </div>
 
+    
+
     <script>
-        var urlParams = new URLSearchParams(location.search);
+    var urlParams = new URLSearchParams(location.search);
         var token = urlParams.get('access_token') || localStorage.getItem('staff_token');
         var isdev = urlParams.get('isdev') || localStorage.getItem('staff_isdev') || '0';
         
@@ -231,14 +179,15 @@
             });
         }
 
+        // 等级映射（提升为文件级全局变量，避免 showDetail 引用时 ReferenceError）
+        var levelMap = {vip:'VIP会员', gold:'黄金', silver:'白银', bronze:'青铜', normal:'普通'};
+        var levelClass = {vip:'tag-vip', gold:'tag-level', silver:'tag-level', bronze:'tag-level', normal:'tag-points'};
+
         function renderMembers() {
             if (members.length === 0) {
                 document.getElementById('memberList').innerHTML = '<div class="empty"><div class="empty-icon">👤</div>暂无会员</div>';
                 return;
             }
-            
-            var levelMap = {vip:'VIP会员', gold:'黄金', silver:'白银', bronze:'青铜', normal:'普通'};
-            var levelClass = {vip:'tag-vip', gold:'tag-level', silver:'tag-level', bronze:'tag-level', normal:'tag-points'};
             
             document.getElementById('memberList').innerHTML = members.map(function(m) {
                 var level = levelMap[m.member_level] || '普通';
@@ -317,10 +266,26 @@
             document.getElementById('detailBalance').textContent = '¥' + ((m.balance || 0).toFixed(2));
             document.getElementById('detailPoints').textContent = m.points || 0;
             document.getElementById('detailLevel').textContent = (levelMap[m.member_level] || '普通');
-            document.getElementById('detailTotal').textContent = '¥0';
-            document.getElementById('detailOrders').textContent = '0';
-            document.getElementById('detailCheckin').textContent = '0';
-            
+            // 先显示会员表自带的累计消费
+            document.getElementById('detailTotal').textContent = '¥' + ((m.total_consume || 0).toFixed(2));
+            document.getElementById('detailOrders').textContent = '加载中...';
+            document.getElementById('detailCheckin').textContent = '加载中...';
+
+            // 异步补充真实订单数和签到数
+            fetch(apiUrl('/api/staff/members/' + m.user_id + '/stats')).then(function(r){ return r.json(); }).then(function(d){
+                if (d.success && d.data) {
+                    document.getElementById('detailTotal').textContent = '¥' + (parseFloat(d.data.total_consume || m.total_consume || 0).toFixed(2));
+                    document.getElementById('detailOrders').textContent = d.data.order_count || 0;
+                    document.getElementById('detailCheckin').textContent = d.data.checkin_count || 0;
+                } else {
+                    document.getElementById('detailOrders').textContent = '-';
+                    document.getElementById('detailCheckin').textContent = '-';
+                }
+            }).catch(function(){
+                document.getElementById('detailOrders').textContent = '-';
+                document.getElementById('detailCheckin').textContent = '-';
+            });
+
             // 加载积分历史
             loadPointsHistory(m.user_id);
             

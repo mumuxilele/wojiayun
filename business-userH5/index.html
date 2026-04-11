@@ -135,6 +135,7 @@
             <div class="menu-text">提交申请</div>
         </div>
         <div class="menu-item" onclick="goTo('orders.html')">
+            <span class="menu-badge" id="orderBadge"></span>
             <span class="menu-icon">🛒</span>
             <div class="menu-text">我的订单</div>
         </div>
@@ -424,7 +425,57 @@
         loadRecentOrders();
         checkNotifications();
         checkUnpaidBookings();
+        checkUnpaidOrders();  // V31.0 新增：检测待支付订单
         loadBadges();
+
+        // V31.0：轮询刷新角标（每60秒自动刷新一次未读消息数）
+        setInterval(function() {
+            loadBadgesQuick();
+        }, 60000);
+
+        // V31.0 快速刷新角标（仅刷新通知数，不全量加载）
+        function loadBadgesQuick() {
+            fetch('/api/user/notifications?page=1&page_size=1&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev)
+            .then(function(r){return r.json()})
+            .then(function(d){
+                if(d.success && d.data) {
+                    var cnt = d.data.unread_count || 0;
+                    var el = document.getElementById('notifBadge');
+                    if(cnt > 0) { el.textContent = cnt > 99 ? '99+' : cnt; el.style.display = 'block'; }
+                    else { el.style.display = 'none'; }
+                }
+            }).catch(function(){});
+        }
+
+        // V31.0 新增：检测待支付订单（15分钟内下单但未支付）
+        function checkUnpaidOrders() {
+            fetch('/api/user/orders?page=1&page_size=5&status=pending&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev)
+            .then(function(r){return r.json()})
+            .then(function(data){
+                if (!data.success || !data.data) return;
+                var items = (data.data.items || []).filter(function(o){
+                    return (o.order_status === 'pending' || o.status === 'pending') && o.pay_status !== 'paid';
+                });
+                if (items.length > 0) {
+                    var o = items[0];
+                    var createAt = new Date(o.created_at);
+                    var now = new Date();
+                    var diffMin = Math.floor((now - createAt) / 60000);
+                    var remainMin = 30 - diffMin;
+                    if (remainMin > 0 && remainMin <= 30) {
+                        // 有待支付订单且在超时前，显示角标+提醒
+                        var el = document.getElementById('orderBadge');
+                        if (el) { el.textContent = items.length; el.style.display = 'block'; }
+                        // 如果只剩5分钟则显示紧急提示条
+                        if (remainMin <= 5) {
+                            document.getElementById('noticeText').textContent = '⚠️ 您有订单将在 ' + remainMin + ' 分钟后超时取消，请尽快支付！';
+                            document.getElementById('noticeBar').style.display = 'flex';
+                            document.getElementById('noticeBar').onclick = function(){ goTo('orders.html'); };
+                        }
+                    }
+                }
+            }).catch(function(){});
+        }
 
         // 加载角标（未读消息数、未用优惠券数、今日是否已签到）
         function loadBadges() {

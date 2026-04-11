@@ -63,7 +63,63 @@ def get_staff_stats(user):
     processing = db.get_total(f"SELECT COUNT(*) FROM business_applications WHERE {scope} AND status='processing'", p.copy())
     completed_today = db.get_total(f"SELECT COUNT(*) FROM business_applications WHERE {scope} AND status='completed' AND DATE(completed_at)=CURDATE()", p.copy())
     total_orders = db.get_total(f"SELECT COUNT(*) FROM business_orders WHERE {scope}", p.copy())
-    return jsonify({'success': True, 'data': {'pending': pending, 'processing': processing, 'completed_today': completed_today, 'total_orders': total_orders, 'total_apps': pending+processing}})
+
+    # V31.0 新增：待办事项聚合
+    # 今日订单数 & 今日收入
+    today_orders = 0
+    today_income = 0.0
+    try:
+        today_scope = scope + " AND DATE(created_at)=CURDATE()"
+        today_orders = db.get_total(f"SELECT COUNT(*) FROM business_orders WHERE {today_scope}", p.copy())
+        income_row = db.get_one(f"SELECT COALESCE(SUM(actual_amount),0) as total FROM business_orders WHERE {today_scope} AND pay_status='paid'", p.copy())
+        today_income = float(income_row['total']) if income_row else 0.0
+    except Exception:
+        pass
+
+    # 待发货订单数（已支付但未发货）
+    pending_ship = 0
+    try:
+        ship_scope = scope + " AND order_status='paid' AND pay_status='paid'"
+        pending_ship = db.get_total(f"SELECT COUNT(*) FROM business_orders WHERE {ship_scope}", p.copy())
+    except Exception:
+        pass
+
+    # 待退款订单数
+    pending_refund = 0
+    try:
+        refund_scope = scope + " AND refund_status='pending'"
+        pending_refund = db.get_total(f"SELECT COUNT(*) FROM business_orders WHERE {refund_scope}", p.copy())
+    except Exception:
+        pass
+
+    # 待回复评价数
+    pending_reviews = 0
+    try:
+        review_scope = "deleted=0 AND reply IS NULL"
+        if ec_id:
+            review_scope += " AND ec_id=%s"
+        if project_id:
+            review_scope += " AND project_id=%s"
+        review_p = []
+        if ec_id: review_p.append(ec_id)
+        if project_id: review_p.append(project_id)
+        pending_reviews = db.get_total(f"SELECT COUNT(*) FROM business_reviews WHERE {review_scope}", review_p)
+    except Exception:
+        pass
+
+    return jsonify({'success': True, 'data': {
+        'pending': pending,
+        'processing': processing,
+        'completed_today': completed_today,
+        'total_orders': total_orders,
+        'total_apps': pending + processing,
+        # V31.0 新增待办聚合
+        'today_orders': today_orders,
+        'today_income': today_income,
+        'pending_ship': pending_ship,
+        'pending_refund': pending_refund,
+        'pending_reviews': pending_reviews
+    }})
 
 def _get_date_range(rng):
     """根据range参数返回(date_from, date_to)"""
@@ -2387,6 +2443,262 @@ def get_print_history(user, order_id):
     limit = min(max(1, int(request.args.get('limit', 10))), 50)
     history = PrintService.get_print_history(order_id, limit)
     return jsonify({'success': True, 'data': history})
+
+
+# ============ V29.0 申请审批系统 (员工端/管家端) ============
+
+@app.route('/api/staff/applications/v2/pending', methods=['GET'])
+@require_staff
+def get_pending_applications_v2(user):
+    """V29.0: 获取待审批申请列表"""
+    from business_common.application_service import ApplicationService
+    
+    page = max(1, int(request.args.get('page', 1)))
+    page_size = min(int(request.args.get('page_size', 20)), 50)
+    
+    result = ApplicationService.get_pending_applications(
+        approver_id=user.get('user_id'),
+        ec_id=user.get('ec_id'),
+        project_id=user.get('project_id'),
+        page=page,
+        page_size=page_size
+    )
+    return jsonify({'success': True, 'data': result})
+
+
+@app.route('/api/staff/applications/v2/all', methods=['GET'])
+@require_staff
+def get_all_applications_v2(user):
+    """V29.0: 获取所有申请列表（带筛选）"""
+    from business_common.application_service import ApplicationService
+    
+    type_code = request.args.get('type_code')
+    status = request.args.get('status')
+    keyword = request.args.get('keyword', '').strip()
+    page = max(1, int(request.args.get('page', 1)))
+    page_size = min(int(request.args.get('page_size', 20)), 50)
+    
+    where = "1=1"
+    params = []
+    
+    if user.get('ec_id'):
+        where += " AND ec_id=%s"
+        params.append(user.get('ec_id'))
+    if user.get('project_id'):
+        where += " AND project_id=%s"
+        params.append(user.get('project_id'))
+    if type_code:
+        where += " AND app_type=%s"
+        params.append(type_code)
+    if status:
+        where += " AND status=%s"
+        params.append(status)
+    if keyword:
+        where += " AND (title LIKE %s OR user_name LIKE %s OR app_no LIKE %s)"
+        like_key = f"%{keyword}%"
+        params.extend([like_key, like_key, like_key])
+    
+    total = db.get_total(f"SELECT COUNT(*) FROM business_applications WHERE {where} AND deleted=0", params)
+    offset = (page - 1) * page_size
+    
+    items = db.get_all(
+        f"""SELECT id, app_no, app_type, title, user_name, user_phone, status,
+                  current_step, total_steps, form_data, created_at, updated_at
+           FROM business_applications
+           WHERE {where} AND deleted=0
+           ORDER BY 
+             CASE status 
+               WHEN 'pending' THEN 1 
+               WHEN 'processing' THEN 2 
+               ELSE 3 
+             END,
+             created_at DESC
+           LIMIT %s OFFSET %s""",
+        params + [page_size, offset]
+    )
+    
+    # 获取类型名称
+    type_names = {}
+    types = ApplicationService.get_application_types()
+    for t in types:
+        type_names[t['type_code']] = {'name': t['type_name'], 'icon': t['icon']}
+    
+    for item in items or []:
+        type_info = type_names.get(item.get('app_type'), {})
+        item['type_name'] = type_info.get('name', item.get('app_type'))
+        item['type_icon'] = type_info.get('icon', '')
+        if item.get('form_data'):
+            try:
+                item['form_data'] = json.loads(item['form_data'])
+            except:
+                item['form_data'] = {}
+    
+    return jsonify({'success': True, 'data': {
+        'items': items or [],
+        'total': total,
+        'page': page,
+        'page_size': page_size,
+        'pages': (total + page_size - 1) // page_size if total else 0
+    }})
+
+
+@app.route('/api/staff/applications/v2/<int:app_id>', methods=['GET'])
+@require_staff
+def get_application_detail_staff_v2(user, app_id):
+    """V29.0: 员工获取申请详情"""
+    from business_common.application_service import ApplicationService
+    
+    app = ApplicationService.get_application_detail(
+        app_id=app_id,
+        is_staff=True
+    )
+    
+    if not app:
+        return jsonify({'success': False, 'msg': '申请不存在'})
+    
+    # 验证数据权限
+    if app.get('ec_id') and app.get('ec_id') != user.get('ec_id'):
+        return jsonify({'success': False, 'msg': '无权查看该申请'})
+    
+    return jsonify({'success': True, 'data': app})
+
+
+@app.route('/api/staff/applications/v2/<int:app_id>/approve', methods=['POST'])
+@require_staff
+@rate_limiter.rate_limit(limit=30, window_seconds=60)
+def approve_application_v2(user, app_id):
+    """V29.0: 审批申请"""
+    from business_common.application_service import ApplicationService
+    
+    data = request.get_json() or {}
+    action = data.get('action')  # approve, reject, transfer
+    remark = data.get('remark', '').strip()
+    transfer_to = data.get('transfer_to')
+    
+    if action not in ['approve', 'reject', 'transfer']:
+        return jsonify({'success': False, 'msg': '无效的操作类型'})
+    
+    if action == 'transfer' and not transfer_to:
+        return jsonify({'success': False, 'msg': '请选择转交人'})
+    
+    result = ApplicationService.approve_application(
+        app_id=app_id,
+        approver_id=user.get('user_id'),
+        approver_name=user.get('user_name', ''),
+        action=action,
+        remark=remark,
+        transfer_to=transfer_to
+    )
+    return jsonify(result)
+
+
+@app.route('/api/staff/applications/v2/stats', methods=['GET'])
+@require_staff
+def get_application_stats_v2(user):
+    """V29.0: 获取申请统计"""
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    
+    where = "deleted=0"
+    params = []
+    if ec_id:
+        where += " AND ec_id=%s"
+        params.append(ec_id)
+    if project_id:
+        where += " AND project_id=%s"
+        params.append(project_id)
+    
+    # 待审批数量
+    pending_count = db.get_total(
+        f"SELECT COUNT(*) FROM business_applications WHERE {where} AND status IN ('pending', 'processing')",
+        params.copy()
+    )
+    
+    # 今日提交数量
+    today_count = db.get_total(
+        f"SELECT COUNT(*) FROM business_applications WHERE {where} AND DATE(created_at)=CURDATE()",
+        params.copy()
+    )
+    
+    # 各状态统计
+    status_stats = db.get_all(
+        f"""SELECT status, COUNT(*) as count 
+            FROM business_applications 
+            WHERE {where}
+            GROUP BY status""",
+        params.copy()
+    ) or []
+    
+    # 各类型统计
+    type_stats = db.get_all(
+        f"""SELECT app_type, COUNT(*) as count 
+            FROM business_applications 
+            WHERE {where} AND DATE(created_at)=CURDATE()
+            GROUP BY app_type""",
+        params.copy()
+    ) or []
+    
+    return jsonify({'success': True, 'data': {
+        'pending_count': pending_count,
+        'today_count': today_count,
+        'status_stats': status_stats,
+        'type_stats': type_stats
+    }})
+
+
+@app.route('/api/staff/applications/v2/types', methods=['GET'])
+@require_staff
+def get_application_types_staff_v2(user):
+    """V29.0: 员工获取申请类型列表"""
+    from business_common.application_service import ApplicationService
+    
+    types = ApplicationService.get_application_types()
+    return jsonify({'success': True, 'data': {'items': types}})
+
+
+@app.route('/api/staff/applications/v2/remind-expired', methods=['GET'])
+@require_staff
+def get_expired_applications_remind(user):
+    """V29.0: 获取即将到期的申请（用于提醒）"""
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    
+    where = "status IN ('approved', 'processing') AND expire_time IS NOT NULL AND expire_time > NOW()"
+    params = []
+    
+    if ec_id:
+        where += " AND ec_id=%s"
+        params.append(ec_id)
+    if project_id:
+        where += " AND project_id=%s"
+        params.append(project_id)
+    
+    # 24小时内到期的
+    items = db.get_all(
+        f"""SELECT id, app_no, app_type, title, user_name, user_phone, 
+                  expire_time, form_data
+           FROM business_applications
+           WHERE {where} AND expire_time <= DATE_ADD(NOW(), INTERVAL 24 HOUR)
+           ORDER BY expire_time ASC
+           LIMIT 50""",
+        params
+    ) or []
+    
+    # 获取类型名称
+    type_map = {}
+    types = db.get_all("SELECT type_code, type_name FROM business_application_types WHERE is_active=1")
+    for t in types or []:
+        type_map[t['type_code']] = t['type_name']
+    
+    for item in items:
+        item['type_name'] = type_map.get(item.get('app_type'), item.get('app_type'))
+        if item.get('form_data'):
+            try:
+                item['form_data'] = json.loads(item['form_data'])
+            except:
+                item['form_data'] = {}
+    
+    return jsonify({'success': True, 'data': {'items': items, 'total': len(items)}})
 
 
 if __name__ == '__main__':

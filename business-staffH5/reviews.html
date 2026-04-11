@@ -1,156 +1,98 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>评价管理</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f5;min-height:100vh;padding-bottom:30px}
-.header{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:15px;display:flex;align-items:center;position:sticky;top:0;z-index:50}
-.header h1{font-size:18px;flex:1;text-align:center}
-.back{color:white;font-size:20px;text-decoration:none;padding:4px 8px}
-
-/* ---- 统计卡片 ---- */
-.stat-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:12px}
-.stat-card{background:white;border-radius:12px;padding:14px;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,.06)}
-.stat-num{font-size:28px;font-weight:700;color:#333;margin-bottom:4px}
-.stat-num.orange{color:#f57c00}
-.stat-num.green{color:#52c41a}
-.stat-num.red{color:#f44336}
-.stat-label{font-size:12px;color:#999}
-
-/* ---- 评分总览 ---- */
-.rating-overview{background:white;margin:0 10px 10px;border-radius:12px;padding:14px 15px}
-.rating-title{font-size:14px;font-weight:600;color:#333;margin-bottom:12px}
-.rating-big{display:flex;align-items:center;gap:16px;margin-bottom:12px}
-.big-num{font-size:40px;font-weight:700;color:#f57c00}
-.stars-wrap{display:flex;flex-direction:column;gap:4px}
-.star-row{display:flex;align-items:center;gap:6px;font-size:12px}
-.star-label{width:20px;color:#999}
-.star-bar-bg{flex:1;height:6px;background:#f0f0f0;border-radius:3px}
-.star-bar{height:6px;border-radius:3px;background:linear-gradient(90deg,#ffd700,#f57c00)}
-.star-count{width:24px;color:#bbb;text-align:right}
-
-/* ---- 过滤器 ---- */
-.filter-wrap{background:white;margin:0 0 10px;padding:0 12px;overflow-x:auto;white-space:nowrap;border-bottom:1px solid #f0f0f0}
-.filter-wrap::-webkit-scrollbar{display:none}
-.filter-item{display:inline-block;padding:11px 14px;font-size:13px;color:#666;cursor:pointer;border-bottom:2px solid transparent}
-.filter-item.active{color:#667eea;border-bottom-color:#667eea;font-weight:600}
-
-.filter-bar{display:flex;gap:8px;padding:10px 12px;background:white;margin-bottom:10px}
-.filter-select{flex:1;border:1px solid #e8e8e8;border-radius:8px;padding:8px 10px;font-size:13px;color:#333;background:white}
-.search-input{flex:2;border:1px solid #e8e8e8;border-radius:8px;padding:8px 10px;font-size:13px;outline:none}
-
-/* ---- 评价卡片 ---- */
-.review-list{padding:0 10px}
-.review-card{background:white;border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.05)}
-.rc-head{display:flex;align-items:center;gap:10px;padding:12px 15px;border-bottom:1px solid #f5f5f5}
-.rc-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;color:white;font-size:14px;font-weight:600;flex-shrink:0}
-.rc-user-info{flex:1;min-width:0}
-.rc-user-name{font-size:14px;color:#333;font-weight:500}
-.rc-meta{font-size:12px;color:#bbb;margin-top:2px}
-.rc-rating{display:flex;gap:2px;flex-shrink:0}
-.star{font-size:16px;line-height:1}
-.rc-type-badge{font-size:11px;padding:2px 8px;border-radius:10px;background:#f0f4ff;color:#667eea;flex-shrink:0}
-
-.rc-body{padding:10px 15px}
-.rc-target{font-size:12px;color:#999;margin-bottom:6px}
-.rc-content{font-size:14px;color:#333;line-height:1.6;word-break:break-all}
-.rc-images{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
-.rc-img{width:60px;height:60px;border-radius:6px;object-fit:cover;cursor:pointer}
-
-.rc-reply{background:#f8f8f8;margin:0 15px 10px;border-radius:8px;padding:10px 12px}
-.rc-reply-label{font-size:12px;color:#667eea;font-weight:500;margin-bottom:4px}
-.rc-reply-text{font-size:13px;color:#555;line-height:1.6}
-
-.rc-actions{display:flex;justify-content:flex-end;gap:8px;padding:10px 15px;border-top:1px solid #f5f5f5}
-.act-btn{padding:6px 14px;border-radius:16px;font-size:12px;cursor:pointer;border:none;font-weight:500}
-.act-reply{background:#f0f4ff;color:#667eea}
-.act-reply:active{background:#667eea;color:white}
-.act-delete{background:#fff2f0;color:#f44336}
-.act-delete:active{background:#f44336;color:white}
-.act-replied{background:#f6ffed;color:#52c41a;cursor:default}
-
-/* ---- 回复弹窗 ---- */
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>评价管理</title>
+    <link rel="stylesheet" href="../business-common/list-style.css">
+    <style>
+        /* 页面特有样式 */
+        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
+        .actions .link:hover { text-decoration: underline; }
+        .actions .link.danger { color: var(--el-color-danger); }
+        /* 弹窗样式保留 */
+        /* ---- 回复弹窗 ---- */
 .mask{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:none}
-.mask.show{display:block}
-.reply-modal{position:fixed;bottom:0;left:0;right:0;background:white;border-radius:16px 16px 0 0;padding:20px 15px;z-index:101;transform:translateY(100%);transition:transform .3s}
-.reply-modal.show{transform:translateY(0)}
-.modal-title{font-size:16px;font-weight:600;color:#333;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
-.modal-close{font-size:22px;color:#bbb;cursor:pointer;padding:0 4px}
-.modal-user{font-size:13px;color:#666;margin-bottom:10px;background:#f5f5f5;border-radius:8px;padding:8px 12px}
-.reply-textarea{width:100%;border:1px solid #e8e8e8;border-radius:10px;padding:12px;font-size:14px;line-height:1.6;resize:none;height:100px;outline:none;font-family:inherit}
-.reply-textarea:focus{border-color:#667eea}
-.char-count{text-align:right;font-size:12px;color:#bbb;margin-top:4px;margin-bottom:12px}
-.modal-btns{display:flex;gap:10px}
-.btn-cancel{flex:1;padding:12px;border:1px solid #e8e8e8;border-radius:10px;font-size:15px;color:#666;background:white;cursor:pointer}
-.btn-submit{flex:2;padding:12px;background:linear-gradient(135deg,#667eea,#764ba2);border:none;border-radius:10px;font-size:15px;color:white;font-weight:600;cursor:pointer}
-.btn-submit:disabled{background:#ccc;cursor:not-allowed}
-
-.empty{text-align:center;padding:50px 20px;color:#bbb;font-size:14px}
-.empty-icon{font-size:52px;margin-bottom:10px}
-.loading{text-align:center;padding:40px;color:#bbb;font-size:14px}
-.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.9);background:rgba(0,0,0,.75);color:white;padding:10px 20px;border-radius:8px;font-size:14px;z-index:999;opacity:0;transition:all .2s;pointer-events:none}
-.toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
-</style>
+    </style>
 </head>
-<body>
-<div class="header">
-  <a class="back" href="index.html" onclick="history.back();return false">&#8592;</a>
-  <h1>评价管理</h1>
-</div>
+<body class="wy-design-list">
+    <!-- 顶部区域 -->
+    <div class="wy-design-list_top">
+        <div class="wy-design-list_top_title">
+            <h1 class="wy-design-list_title">评价管理</h1>
+            <div class="wy-design-list_space"></div>
+            <div class="wy-design-list_btn-group">
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
+                        <span>搜索</span>
+                    </button>
+                </div>
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
+                        <span>重置</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<!-- 统计卡片 -->
-<div class="stat-cards">
-  <div class="stat-card"><div class="stat-num" id="statTotal">-</div><div class="stat-label">总评价数</div></div>
-  <div class="stat-card"><div class="stat-num orange" id="statAvg">-</div><div class="stat-label">平均评分</div></div>
-  <div class="stat-card"><div class="stat-num green" id="statToday">-</div><div class="stat-label">今日新增</div></div>
-  <div class="stat-card"><div class="stat-num red" id="statUnreplied">-</div><div class="stat-label">待回复</div></div>
-</div>
-
-<!-- 评分总览 -->
-<div class="rating-overview" id="ratingOverview" style="display:none">
-  <div class="rating-title">⭐ 评分分布</div>
-  <div class="rating-big">
-    <div class="big-num" id="bigAvg">4.5</div>
-    <div class="stars-wrap" id="starBars"></div>
-  </div>
-</div>
-
-<!-- 过滤器 -->
-<div class="filter-wrap">
-  <span class="filter-item active" onclick="filterByStatus('')">全部</span>
-  <span class="filter-item" onclick="filterByStatus('unreplied')">待回复</span>
-  <span class="filter-item" onclick="filterByStatus('replied')">已回复</span>
-  <span class="filter-item" onclick="filterByStatus('low')">差评(1-2星)</span>
-</div>
-<div class="filter-bar">
-  <select class="filter-select" id="ratingFilter" onchange="loadReviews()">
+    <!-- 筛选区域 -->
+    <div class="wy-design-list_filter">
+        <div class="wy-design-list_other">
+            <div class="el-input el-input--small" style="width: 200px;">
+                <input type="text" id="searchInput" placeholder="搜索评价内容..." class="el-input__inner">
+            </div>
+        </div>
+        <div class="wy-design-list_other">
+            <select id="filter1" class="el-input__inner" style="width: 130px;">
+                
     <option value="">全部评分</option>
     <option value="5">⭐⭐⭐⭐⭐ 5星</option>
     <option value="4">⭐⭐⭐⭐ 4星</option>
     <option value="3">⭐⭐⭐ 3星</option>
     <option value="2">⭐⭐ 2星</option>
     <option value="1">⭐ 1星</option>
-  </select>
-  <select class="filter-select" id="typeFilter" onchange="loadReviews()">
+  
+            </select>
+        </div>
+        <div class="wy-design-list_other">
+            <select id="filter2" class="el-input__inner" style="width: 130px;">
+                
     <option value="">全部类型</option>
     <option value="order">订单评价</option>
     <option value="product">商品评价</option>
     <option value="venue">场地评价</option>
     <option value="shop">门店评价</option>
-  </select>
-  <input class="search-input" id="searchInput" placeholder="搜索评价内容..." onkeydown="if(event.key==='Enter')loadReviews()">
-</div>
+  
+            </select>
+        </div>
+    </div>
 
-<!-- 评价列表 -->
-<div class="review-list" id="reviewList"><div class="loading">加载中...</div></div>
-<div style="text-align:center;padding:10px" id="loadMoreWrap" style="display:none">
-  <span id="loadMoreBtn" onclick="loadMore()" style="color:#667eea;font-size:14px;cursor:pointer;padding:8px 20px;display:inline-block"></span>
-</div>
+    <!-- 表格区域 -->
+    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
+        <div class="wy-design-table_bar">
+            <i class="wy-design-table_set el-icon-setting" title="列设置"></i>
+            <span class="wy-design-table_total">共 <em id="totalCount">0</em> 条</span>
+            <div class="wy-pages">
+                <div class="wy-pages_total">第<em id="currentPage">1</em>/<em id="totalPages">1</em>页</div>
+                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
+                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
+            </div>
+        </div>
+        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
+            <thead class="el-table__header">
+                <tr>
+                    <th><div class="cell">名称</div></th>
+                    <th><div class="cell">操作</div></th>
+                </tr>
+            </thead>
+            <tbody class="el-table__body" id="listBody">
+                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</td></tr>
+            </tbody>
+        </table>
+    </div>
 
-<!-- 回复弹窗 -->
+    
 <div class="mask" id="mask" onclick="closeMask()"></div>
 <div class="reply-modal" id="replyModal">
   <div class="modal-title">
@@ -169,8 +111,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f5;
 
 <div class="toast" id="toast"></div>
 
-<script>
-const TOKEN = new URLSearchParams(location.search).get('access_token') || '';
+
+
+    <script>
+    const TOKEN = new URLSearchParams(location.search).get('access_token') || '';
 const API = (p) => p + (p.includes('?') ? '&' : '?') + 'access_token=' + TOKEN;
 
 let page = 1, totalPages = 1;
@@ -383,6 +327,6 @@ async function deleteReview(id) {
 // 初始化
 loadStats();
 loadReviews();
-</script>
+    </script>
 </body>
 </html>

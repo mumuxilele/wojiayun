@@ -1,211 +1,80 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<!-- v2026.03.28 - cache bust -->
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>场馆预约</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f5;min-height:100vh}
-/* 顶部 */
-.header{background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:15px;display:flex;align-items:center;position:sticky;top:0;z-index:50}
-.header h1{font-size:18px;flex:1}
-.back{color:white;text-decoration:none;font-size:14px}
-.tab-bar{background:white;display:flex;overflow-x:auto}
-.tab{flex:1;min-width:80px;text-align:center;padding:12px;font-size:13px;color:#666;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
-.tab.active{color:#667eea;border-bottom-color:#667eea;font-weight:600}
-
-/* 搜索筛选 */
-.filter{background:white;padding:10px 15px;display:flex;gap:8px;overflow-x:auto;border-bottom:1px solid #f0f0f0}
-.filter select,.filter input{padding:6px 10px;border:1px solid #e0e0e0;border-radius:15px;font-size:12px;background:white;white-space:nowrap}
-.filter select{min-width:80px}
-
-/* 场馆卡片 */
-.list{padding:12px}
-.venue-card{background:white;border-radius:12px;padding:15px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
-.v-top{display:flex;gap:12px;margin-bottom:10px}
-.v-img{width:70px;height:70px;border-radius:8px;background:#f5f5f5;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:32px}
-.v-img img{width:100%;height:100%;object-fit:cover}
-.v-info{flex:1;min-width:0}
-.v-name{font-size:15px;font-weight:600;color:#333;margin-bottom:4px}
-.v-tags{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px}
-.tag{padding:2px 6px;background:#f0f0f0;border-radius:3px;font-size:11px;color:#666}
-.tag-price{background:#fff7e6;color:#f57c00}
-.v-desc{font-size:12px;color:#999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.v-bottom{display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid #f5f5f5}
-.v-price{font-size:18px;color:#f57c00;font-weight:700}
-.v-price span{font-size:12px;font-weight:normal;color:#999}
-.btn-book{padding:7px 16px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;border-radius:20px;font-size:13px;cursor:pointer}
-.btn-book:active{transform:scale(.96)}
-
-/* 预约面板 */
-.overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:100}
-.panel{display:none;position:fixed;bottom:0;left:0;right:0;background:white;border-radius:16px 16px 0 0;z-index:101;max-height:92vh;overflow-y:auto}
-.panel.show{display:block}
-.overlay.show{display:block}
-.panel-hd{padding:16px;display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid #f0f0f0;position:sticky;top:0;background:white;z-index:1}
-.panel-title{font-size:16px;font-weight:600;color:#333}
-.panel-close{width:28px;height:28px;border-radius:50%;background:#f5f5f5;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:#999;border:none}
-.panel-body{padding:16px}
-
-/* 场地信息 */
-.v-info-panel{display:flex;gap:12px;padding-bottom:12px;border-bottom:1px solid #f0f0f5;margin-bottom:12px}
-.v-info-panel .v-img{width:60px;height:60px}
-.v-info-panel .v-name{font-size:15px;font-weight:600;margin-bottom:4px}
-.v-info-panel .v-price{font-size:16px}
-
-/* 时间段网格 */
-.time-section{margin-bottom:12px}
-.time-label{font-size:13px;color:#666;margin-bottom:8px;font-weight:500}
-.time-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px}
-.time-btn{padding:8px 4px;text-align:center;border:1px solid #e0e0e0;border-radius:8px;font-size:12px;cursor:pointer;background:white;color:#333;transition:all .15s}
-.time-btn:active{transform:scale(.96)}
-.time-btn.used{background:#ffeaea;color:#ff4d4f;border-color:#ff4d4f;cursor:not-allowed;opacity:.7}
-.time-btn.selected{background:#667eea;color:white;border-color:#667eea}
-.time-btn:hover:not(.used):not(.selected){border-color:#667eea}
-
-/* 快捷时间 */
-.quick-section{margin-bottom:12px}
-.quick-btns{display:flex;gap:6px;flex-wrap:wrap}
-.quick-btn{padding:5px 12px;border:1px solid #667eea;background:white;color:#667eea;border-radius:15px;font-size:12px;cursor:pointer}
-.quick-btn:active{background:#667eea;color:white}
-
-/* 预约信息 */
-.info-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f5f5f5;font-size:14px}
-.info-label{color:#999}
-.info-value{color:#333;font-weight:500}
-.info-value.highlight{color:#f57c00;font-size:16px;font-weight:700}
-
-/* 规则 */
-.rules-box{background:#f9f9f9;padding:10px;border-radius:8px;margin:10px 0;font-size:12px;color:#666;line-height:1.6;white-space:pre-wrap}
-
-/* 提交按钮 */
-.submit-btn{width:100%;padding:14px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;border-radius:12px;font-size:16px;cursor:pointer;margin-top:10px}
-.submit-btn:active{transform:scale(.98)}
-.submit-btn:disabled{opacity:.5;cursor:not-allowed}
-
-/* 我的预约列表 */
-.booking-item{background:white;border-radius:12px;padding:14px;margin:12px;box-shadow:0 2px 6px rgba(0,0,0,.05)}
-.bk-main{display:flex;gap:12px;}
-.bk-img{width:70px;height:70px;border-radius:8px;object-fit:cover;flex-shrink:0;background:#f5f5f5;}
-.bk-details{flex:1;min-width:0;}
-.bk-venue{font-size:15px;font-weight:600;color:#333;}
-.bk-info{font-size:13px;color:#666;margin-top:4px;}
-.bk-info strong{color:#667eea;}
-.bk-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.bk-venue{font-size:15px;font-weight:600;color:#333}
-.bk-status{padding:2px 8px;border-radius:8px;font-size:11px}
-.bk-status.pending{background:#fff7e6;color:#fa8c16}
-.bk-status.confirmed{background:#e3f2fd;color:#1976d2}
-.bk-status.completed{background:#e8f5e9;color:#388e3c}
-.bk-status.cancelled{background:#f5f5f5;color:#999}
-.bk-info{font-size:13px;color:#666;margin-bottom:6px}
-.bk-info div{margin-top:3px}
-.bk-code{background:#f0f0f0;padding:8px;border-radius:6px;text-align:center;margin-top:8px}
-.bk-code span{font-size:11px;color:#999}
-.bk-code strong{font-size:16px;color:#333;letter-spacing:2px;margin-left:6px}
-.bk-img-placeholder{width:70px;height:70px;border-radius:8px;background:linear-gradient(135deg,#f0f0f5,#e8e8f0);display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0}
-.bk-created{font-size:11px;color:#bbb;margin-top:4px}
-
-/* 账单确认弹窗 */
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>场馆预约</title>
+    <link rel="stylesheet" href="../business-common/list-style.css">
+    <style>
+        /* 页面特有样式 */
+        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
+        .actions .link:hover { text-decoration: underline; }
+        .actions .link.danger { color: var(--el-color-danger); }
+        /* 弹窗样式保留 */
+        /* 账单确认弹窗 */
 .bill-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:200}
-.bill-panel{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;border-radius:16px;width:340px;z-index:201;padding:24px}
-.bill-panel.show{display:block}
-.bill-overlay.show{display:block}
-.bill-title{font-size:18px;font-weight:700;text-align:center;margin-bottom:16px}
-.bill-row{display:flex;justify-content:space-between;padding:10px 0;font-size:14px;border-bottom:1px solid #f5f5f5}
-.bill-row.total{border-bottom:none;font-size:16px;font-weight:700;color:#f57c00;padding-top:14px}
-.bill-btns{display:flex;gap:10px;margin-top:20px}
-.bill-btns button{flex:1;padding:12px;border-radius:10px;font-size:15px;border:none;cursor:pointer}
-.bill-cancel{background:#f5f5f5;color:#666}
-.bill-confirm{background:linear-gradient(135deg,#52c41a,#73d13d);color:white}
-
-.empty{text-align:center;padding:50px 20px;color:#bbb;font-size:14px}
-.loading{text-align:center;padding:50px 20px;color:#999;font-size:14px}
-.venue-imgs{width:100%;height:160px;background:#f5f5f5;border-radius:8px;overflow:hidden;margin-bottom:12px;display:flex;align-items:center;justify-content:center;font-size:48px}
-.venue-imgs img{width:100%;height:100%;object-fit:cover}
-</style>
+    </style>
 </head>
-<body>
-<div class="header">
-  <a href="javascript:void(0)" class="back" onclick="goBack()">← 返回</a>
-  <h1>场馆预约</h1>
-  <span></span>
-</div>
-
-<div class="tab-bar">
-  <div class="tab active" onclick="switchTab('venues')">🏟️ 选场馆</div>
-  <div class="tab" onclick="switchTab('my')">📋 我的预约</div>
-</div>
-
-<div id="tabVenues">
-  <div class="filter">
-    <select id="filterType" onchange="loadVenues()"><option value="">全部类型</option><option value="yumaoqiu">🏸 羽毛球</option><option value="lanqiu">🏀 篮球</option><option value="pingpang">🏓 乒乓球</option><option value="yujia">🧘 瑜伽</option><option value="youyong">🏊 游泳</option><option value="gym">💪 健身</option></select>
-  </div>
-  <div class="list" id="venueList"><div class="loading">加载场馆中...</div></div>
-</div>
-
-<div id="tabMy" style="display:none">
-  <div class="filter">
-    <select id="myStatus" onchange="loadMyBookings()"><option value="">全部状态</option><option value="pending">待确认</option><option value="confirmed">已确认</option><option value="completed">已完成</option><option value="cancelled">已取消</option></select>
-  </div>
-  <div id="myBookingList"><div class="loading">加载中...</div></div>
-</div>
-
-<!-- 预约底部面板 -->
-<div class="overlay" id="overlay" onclick="closePanel()"></div>
-<div class="panel" id="bookingPanel">
-  <div class="panel-hd">
-    <span class="panel-title">📅 预约场馆</span>
-    <button class="panel-close" onclick="closePanel()">✕</button>
-  </div>
-  <div class="panel-body">
-    <div class="v-info-panel" id="panelVenue"></div>
-    
-    <!-- 图片轮播 -->
-    <div class="venue-imgs" id="panelImgs">🏟️</div>
-    
-    <!-- 规则 -->
-    <div class="rules-box" id="panelRules" style="display:none"></div>
-    
-    <!-- 日期选择 -->
-    <div class="time-section">
-      <div class="time-label">📅 预约日期</div>
-      <input type="date" class="form-input" id="bookDate" style="width:100%;padding:10px;border:1px solid #e0e0e0;border-radius:8px;font-size:14px" onchange="onDateChange()">
+<body class="wy-design-list">
+    <!-- 顶部区域 -->
+    <div class="wy-design-list_top">
+        <div class="wy-design-list_top_title">
+            <h1 class="wy-design-list_title">场馆预约</h1>
+            <div class="wy-design-list_space"></div>
+            <div class="wy-design-list_btn-group">
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
+                        <span>搜索</span>
+                    </button>
+                </div>
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
+                        <span>重置</span>
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
-    
-    <!-- 时间段选择 -->
-    <div class="time-section">
-      <div class="time-label">🕐 选择时段（已被预约的不可选）</div>
-      <div class="time-grid" id="timeSlots"></div>
-    </div>
-    
-    <!-- 快捷选择 -->
-    <div class="quick-section">
-      <div class="time-label">⚡ 快捷选择</div>
-      <div class="quick-btns" id="quickBtns">
-        <button class="quick-btn" onclick="quickSelect(1)">1小时</button>
-        <button class="quick-btn" onclick="quickSelect(2)">2小时</button>
-        <button class="quick-btn" onclick="quickSelect(3)">3小时</button>
-        <button class="quick-btn" onclick="quickSelect(4)">4小时</button>
-      </div>
-    </div>
-    
-    <!-- 预约信息 -->
-    <div class="info-row"><span class="info-label">预约场地</span><span class="info-value" id="infoVenue">-</span></div>
-    <div class="info-row"><span class="info-label">预约日期</span><span class="info-value" id="infoDate">-</span></div>
-    <div class="info-row"><span class="info-label">开始时间</span><span class="info-value" id="infoStart">-</span></div>
-    <div class="info-row"><span class="info-label">结束时间</span><span class="info-value" id="infoEnd">-</span></div>
-    <div class="info-row"><span class="info-label">预约时长</span><span class="info-value" id="infoHours">-</span></div>
-    <div class="info-row"><span class="info-label">单价</span><span class="info-value" id="infoPrice">-</span></div>
-    <div class="info-row"><span class="info-label">应付金额</span><span class="info-value highlight" id="infoTotal">¥0.00</span></div>
-    
-    <button class="submit-btn" id="submitBtn" onclick="goBill()" disabled>请选择预约时间</button>
-  </div>
-</div>
 
-<!-- 账单确认弹窗 -->
+    <!-- 筛选区域 -->
+    <div class="wy-design-list_filter">
+        <div class="wy-design-list_other">
+            <select id="filter0" class="el-input__inner" style="width: 130px;">
+                <option value="">全部类型</option><option value="yumaoqiu">🏸 羽毛球</option><option value="lanqiu">🏀 篮球</option><option value="pingpang">🏓 乒乓球</option><option value="yujia">🧘 瑜伽</option><option value="youyong">🏊 游泳</option><option value="gym">💪 健身</option>
+            </select>
+        </div>
+        <div class="wy-design-list_other">
+            <select id="filter1" class="el-input__inner" style="width: 130px;">
+                <option value="">全部状态</option><option value="pending">待确认</option><option value="confirmed">已确认</option><option value="completed">已完成</option><option value="cancelled">已取消</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- 表格区域 -->
+    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
+        <div class="wy-design-table_bar">
+            <i class="wy-design-table_set el-icon-setting" title="列设置"></i>
+            <span class="wy-design-table_total">共 <em id="totalCount">0</em> 条</span>
+            <div class="wy-pages">
+                <div class="wy-pages_total">第<em id="currentPage">1</em>/<em id="totalPages">1</em>页</div>
+                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
+                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
+            </div>
+        </div>
+        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
+            <thead class="el-table__header">
+                <tr>
+                    <th><div class="cell">名称</div></th>
+                    <th><div class="cell">操作</div></th>
+                </tr>
+            </thead>
+            <tbody class="el-table__body" id="listBody">
+                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    
 <div class="bill-overlay" id="billOverlay" onclick="closeBill()"></div>
 <div class="bill-panel" id="billPanel">
   <div class="bill-title">📋 确认订单</div>
@@ -221,8 +90,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f5;
   </div>
 </div>
 
-<script>
-var UP={};
+
+
+    <script>
+    var UP={};
 var urlP=new URLSearchParams(location.search);
 var TOKEN=urlP.get('access_token');
 var ISDEV=urlP.get('isdev')||'0';
@@ -638,17 +509,6 @@ document.getElementById('bookDate').min=todayStr;
 // 默认设置为今天（方便用户快速操作）
 // document.getElementById('bookDate').value=todayStr;
 loadVenues();
-</script>
-
-<!-- 预约详情弹窗 -->
-<div class="bill-overlay" id="detailOverlay" onclick="if(event.target===this)closeDetail()"></div>
-<div class="bill-panel" id="detailPanel" style="width:360px;max-height:85vh;overflow-y:auto;display:none">
-  <div style="padding:20px 24px;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center">
-    <span style="font-size:16px;font-weight:700">📋 预约详情</span>
-    <span onclick="closeDetail()" style="cursor:pointer;font-size:18px;color:#999;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#f5f5f5">✕</span>
-  </div>
-  <div style="padding:16px 24px" id="detailContent"></div>
-  <div style="padding:12px 24px;border-top:1px solid #f0f0f0" id="detailActions"></div>
-</div>
+    </script>
 </body>
 </html>

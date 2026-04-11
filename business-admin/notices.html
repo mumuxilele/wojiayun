@@ -1,121 +1,109 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>公告管理</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f0f2f5;padding:20px}
-.toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px}
-.search-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.search-row input,.search-row select{padding:8px 12px;border:1px solid #d9d9d9;border-radius:6px;font-size:14px;outline:none}
-.search-row input:focus,.search-row select:focus{border-color:#1890ff}
-.btn{padding:8px 16px;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:500}
-.btn-primary{background:#1890ff;color:white}
-.btn-primary:hover{background:#096dd9}
-.btn-success{background:#52c41a;color:white}
-.btn-danger{background:#ff4d4f;color:white;padding:4px 10px;font-size:12px}
-.btn-default{background:white;border:1px solid #d9d9d9;color:#333;padding:4px 10px;font-size:12px}
-.btn-default:hover{border-color:#1890ff;color:#1890ff}
-.card{background:white;border-radius:8px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
-table{width:100%;border-collapse:collapse}
-th,td{padding:12px;text-align:left;border-bottom:1px solid #f0f0f0;font-size:14px}
-th{background:#fafafa;font-weight:500;color:#666}
-td{color:#333}
-tr:hover td{background:#fafcff}
-.tag{padding:3px 8px;border-radius:4px;font-size:12px;font-weight:500}
-.tag-general{background:#f0f0f0;color:#666}
-.tag-activity{background:#e6f7ff;color:#1890ff}
-.tag-urgent{background:#fff1f0;color:#ff4d4f}
-.tag-published{background:#f6ffed;color:#52c41a}
-.tag-draft{background:#fff7e6;color:#fa8c16}
-.importance-0{color:#999}
-.importance-1{color:#1890ff}
-.importance-2{color:#ff4d4f;font-weight:600}
-.actions{display:flex;gap:8px}
-.pagination{display:flex;justify-content:flex-end;align-items:center;margin-top:16px;gap:8px}
-.page-btn{padding:6px 12px;border:1px solid #d9d9d9;border-radius:6px;cursor:pointer;background:white;font-size:14px}
-.page-btn.active{background:#1890ff;color:white;border-color:#1890ff}
-.page-btn:hover:not(.active){border-color:#1890ff;color:#1890ff}
-.page-info{color:#666;font-size:14px}
-
-/* 弹窗 */
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>公告管理</title>
+    <link rel="stylesheet" href="../business-common/list-style.css">
+    <style>
+        /* 页面特有样式 */
+        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
+        .actions .link:hover { text-decoration: underline; }
+        .actions .link.danger { color: var(--el-color-danger); }
+        /* 弹窗样式保留 */
+        /* 弹窗 */
 .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:1000;display:none;align-items:center;justify-content:center}
-.modal-overlay.show{display:flex}
-.modal{background:white;border-radius:8px;padding:24px;width:600px;max-width:95vw;max-height:90vh;overflow-y:auto}
-.modal-title{font-size:18px;font-weight:600;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center}
-.modal-close{cursor:pointer;color:#999;font-size:20px;line-height:1}
-.modal-close:hover{color:#333}
-.form-row{margin-bottom:16px}
-.form-row label{display:block;font-size:14px;font-weight:500;color:#333;margin-bottom:6px}
-.form-row input,.form-row select,.form-row textarea{width:100%;padding:8px 12px;border:1px solid #d9d9d9;border-radius:6px;font-size:14px;outline:none;font-family:inherit}
-.form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-color:#1890ff;box-shadow:0 0 0 2px rgba(24,144,255,.2)}
-.form-row textarea{min-height:120px;resize:vertical}
-.form-row-inline{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid #f0f0f0}
-.required{color:#ff4d4f;margin-left:2px}
-
-/* 空态 */
-.empty{text-align:center;padding:60px 20px;color:#bbb}
-.empty-icon{font-size:48px;margin-bottom:12px}
-
-.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
-.stat-mini{background:white;border-radius:8px;padding:16px;text-align:center}
-.stat-mini .num{font-size:24px;font-weight:700;color:#1890ff}
-.stat-mini .label{font-size:12px;color:#999;margin-top:4px}
-</style>
+    </style>
 </head>
-<body>
+<body class="wy-design-list">
+    <!-- 顶部区域 -->
+    <div class="wy-design-list_top">
+        <div class="wy-design-list_top_title">
+            <h1 class="wy-design-list_title">公告管理</h1>
+            <div class="wy-design-list_space"></div>
+            <div class="wy-design-list_btn-group">
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
+                        <span>搜索</span>
+                    </button>
+                </div>
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
+                        <span>重置</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<div class="stats-row">
-    <div class="stat-mini"><div class="num" id="statTotal">0</div><div class="label">公告总数</div></div>
-    <div class="stat-mini"><div class="num" id="statPublished">0</div><div class="label">已发布</div></div>
-    <div class="stat-mini"><div class="num" id="statDraft">0</div><div class="label">草稿</div></div>
-    <div class="stat-mini"><div class="num" id="statUrgent">0</div><div class="label">紧急公告</div></div>
-</div>
-
-<div class="card">
-    <div class="toolbar">
-        <div class="search-row">
-            <input type="text" id="searchInput" placeholder="搜索标题..." style="width:200px" oninput="debounceSearch()">
-            <select id="filterStatus" onchange="loadNotices()">
+    <!-- 筛选区域 -->
+    <div class="wy-design-list_filter">
+        <div class="wy-design-list_other">
+            <div class="el-input el-input--small" style="width: 200px;">
+                <input type="text" id="searchInput" placeholder="搜索标题..." class="el-input__inner">
+            </div>
+        </div>
+        <div class="wy-design-list_other">
+            <select id="filter1" class="el-input__inner" style="width: 130px;">
+                
                 <option value="">全部状态</option>
                 <option value="published">已发布</option>
                 <option value="draft">草稿</option>
+            
             </select>
-            <select id="filterType" onchange="loadNotices()">
+        </div>
+        <div class="wy-design-list_other">
+            <select id="filter2" class="el-input__inner" style="width: 130px;">
+                
                 <option value="">全部类型</option>
                 <option value="general">普通</option>
                 <option value="activity">活动</option>
                 <option value="urgent">紧急</option>
+            
             </select>
         </div>
-        <button class="btn btn-primary" onclick="openCreate()">+ 新建公告</button>
+        <div class="wy-design-list_other">
+            <select id="filter3" class="el-input__inner" style="width: 130px;">
+                
+                    <option value="general">普通</option>
+                    <option value="activity">活动</option>
+                    <option value="urgent">紧急</option>
+                
+            </select>
+        </div>
     </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>标题</th>
-                <th>类型</th>
-                <th>重要程度</th>
-                <th>状态</th>
-                <th>生效期</th>
-                <th>创建人</th>
-                <th>创建时间</th>
-                <th>操作</th>
-            </tr>
-        </thead>
-        <tbody id="noticeTableBody">
-            <tr><td colspan="8" style="text-align:center;padding:40px;color:#bbb">加载中...</td></tr>
-        </tbody>
-    </table>
+    <!-- 表格区域 -->
+    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
+        <div class="wy-design-table_bar">
+            <i class="wy-design-table_set el-icon-setting" title="列设置"></i>
+            <span class="wy-design-table_total">共 <em id="totalCount">0</em> 条</span>
+            <div class="wy-pages">
+                <div class="wy-pages_total">第<em id="currentPage">1</em>/<em id="totalPages">1</em>页</div>
+                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
+                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
+            </div>
+        </div>
+        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
+            <thead class="el-table__header">
+                <tr>
+                    <th><div class="cell">标题</div></th>
+                    <th><div class="cell">类型</div></th>
+                    <th><div class="cell">重要程度</div></th>
+                    <th><div class="cell">状态</div></th>
+                    <th><div class="cell">生效期</div></th>
+                    <th><div class="cell">创建人</div></th>
+                    <th><div class="cell">创建时间</div></th>
+                    <th><div class="cell">操作</div></th>
+                </tr>
+            </thead>
+            <tbody class="el-table__body" id="listBody">
+                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</td></tr>
+            </tbody>
+        </table>
+    </div>
 
-    <div class="pagination" id="pagination"></div>
-</div>
-
-<!-- 新建/编辑弹窗 -->
+    
 <div class="modal-overlay" id="editModal">
     <div class="modal">
         <div class="modal-title">
@@ -178,8 +166,10 @@ tr:hover td{background:#fafcff}
     </div>
 </div>
 
-<script>
-const token = localStorage.getItem('admin_token') || new URLSearchParams(location.search).get('access_token') || parent?.token || '';
+
+
+    <script>
+    const token = localStorage.getItem('admin_token') || new URLSearchParams(location.search).get('access_token') || parent?.token || '';
 const isdev = new URLSearchParams(location.search).get('isdev') || '0';
 
 let currentPage = 1;
@@ -374,6 +364,6 @@ loadNotices();
 document.getElementById('editModal').addEventListener('click', function(e) {
     if (e.target === this) closeModal();
 });
-</script>
+    </script>
 </body>
 </html>

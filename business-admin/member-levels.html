@@ -4,257 +4,97 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>会员等级管理 - 管理后台</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.13/lib/theme-chalk/index.css">
+    <link rel="stylesheet" href="../business-common/list-style.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; }
-        .container { padding: 20px; }
-        
-        /* 顶部导航 */
-        .header { background: #fff; padding: 15px 20px; border-bottom: 1px solid #e4e7ed; display: flex; justify-content: space-between; align-items: center; }
-        .header h1 { font-size: 18px; color: #303133; }
-        .header-right { display: flex; align-items: center; gap: 15px; }
-        .user-info { color: #606266; font-size: 14px; }
-        
-        /* 卡片样式 */
-        .card { background: #fff; border-radius: 8px; margin-bottom: 20px; overflow: hidden; }
-        .card-header { padding: 15px 20px; border-bottom: 1px solid #e4e7ed; display: flex; justify-content: space-between; align-items: center; }
-        .card-header h2 { font-size: 16px; color: #303133; font-weight: 500; }
-        
-        /* 等级卡片 */
-        .level-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; padding: 20px; }
-        .level-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 20px; color: #fff; position: relative; overflow: hidden; }
-        .level-card.gold { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); }
-        .level-card.silver { background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%); color: #333; }
-        .level-card.bronze { background: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%); color: #333; }
-        .level-card::before { content: ''; position: absolute; top: -50%; right: -50%; width: 100%; height: 100%; background: rgba(255,255,255,0.1); border-radius: 50%; }
-        
-        .level-card .level-icon { font-size: 40px; margin-bottom: 10px; }
-        .level-card .level-name { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
-        .level-card .level-code { font-size: 12px; opacity: 0.8; margin-bottom: 15px; }
-        .level-card .level-stats { display: flex; flex-direction: column; gap: 8px; }
-        .level-card .stat-item { display: flex; justify-content: space-between; font-size: 14px; }
-        .level-card .stat-label { opacity: 0.8; }
-        .level-card .stat-value { font-weight: 500; }
-        
-        /* 统计表格 */
-        .stats-table { width: 100%; border-collapse: collapse; }
-        .stats-table th, .stats-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ebeef5; }
-        .stats-table th { background: #fafafa; color: #909399; font-weight: 500; font-size: 13px; }
-        .stats-table td { color: #606266; }
-        .stats-table tr:hover { background: #f5f7fa; }
-        
-        /* 按钮 */
-        .btn { padding: 8px 16px; border-radius: 4px; border: none; cursor: pointer; font-size: 14px; transition: all 0.3s; }
-        .btn-primary { background: #409eff; color: #fff; }
-        .btn-primary:hover { background: #66b1ff; }
-        .btn-success { background: #67c23a; color: #fff; }
-        .btn-warning { background: #e6a23c; color: #fff; }
-        .btn-danger { background: #f56c6c; color: #fff; }
-        .btn-info { background: #909399; color: #fff; }
-        
-        /* 搜索栏 */
-        .search-bar { display: flex; gap: 15px; padding: 15px 20px; background: #fafafa; border-bottom: 1px solid #e4e7ed; flex-wrap: wrap; }
-        .search-bar .input-group { display: flex; align-items: center; gap: 8px; }
-        .search-bar label { color: #909399; font-size: 14px; white-space: nowrap; }
-        .search-bar input { padding: 8px 12px; border: 1px solid #dcdfe6; border-radius: 4px; font-size: 14px; width: 200px; }
-        .search-bar input:focus { border-color: #409eff; outline: none; }
-        
-        /* 表格 */
-        .data-table { width: 100%; }
-        .data-table th { background: #fafafa; color: #606266; font-weight: 500; padding: 12px; text-align: left; font-size: 14px; border-bottom: 2px solid #e4e7ed; }
-        .data-table td { padding: 12px; border-bottom: 1px solid #ebeef5; color: #606266; font-size: 14px; }
-        .data-table tr:hover { background: #f5f7fa; }
-        
-        /* 标签 */
-        .tag { display: inline-block; padding: 3px 8px; border-radius: 3px; font-size: 12px; }
-        .tag-success { background: #f0f9eb; color: #67c23a; }
-        .tag-warning { background: #fdf6ec; color: #e6a23c; }
-        .tag-danger { background: #fef0f0; color: #f56c6c; }
-        .tag-info { background: #f4f4f5; color: #909399; }
-        
-        /* 分页 */
-        .pagination { display: flex; justify-content: flex-end; align-items: center; padding: 15px 20px; gap: 10px; }
-        
+        /* 页面特有样式 */
+        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
+        .actions .link:hover { text-decoration: underline; }
+        .actions .link.danger { color: var(--el-color-danger); }
+        /* 弹窗样式保留 */
         /* 弹窗 */
         .dialog-body { padding: 20px; }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; color: #606266; margin-bottom: 8px; font-size: 14px; }
-        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #dcdfe6; border-radius: 4px; font-size: 14px; }
-        .form-group textarea { min-height: 80px; resize: vertical; }
-        .form-row { display: flex; gap: 15px; }
-        .form-row .form-group { flex: 1; }
-        
-        /* 权益标签 */
-        .privilege-tags { display: flex; flex-wrap: wrap; gap: 8px; }
-        .privilege-tag { background: #ecf5ff; color: #409eff; padding: 4px 10px; border-radius: 4px; font-size: 12px; }
-        
-        /* 空状态 */
-        .empty-state { text-align: center; padding: 60px 20px; color: #909399; }
-        .empty-state .icon { font-size: 48px; margin-bottom: 15px; }
-        
-        /* 加载 */
-        .loading { text-align: center; padding: 40px; color: #909399; }
-        
-        /* 响应式 */
-        @media (max-width: 768px) {
-            .level-grid { grid-template-columns: 1fr; }
-            .search-bar { flex-direction: column; }
-            .search-bar input { width: 100%; }
-            .form-row { flex-direction: column; }
-        }
     </style>
 </head>
-<body>
-    <div id="app">
-        <!-- 顶部导航 -->
-        <div class="header">
-            <h1>🏆 会员等级管理</h1>
-            <div class="header-right">
-                <span class="user-info">当前用户：{{ userInfo.user_name || '管理员' }}</span>
-                <button class="btn btn-info" @click="goBack">返回首页</button>
+<body class="wy-design-list">
+    <!-- 顶部区域 -->
+    <div class="wy-design-list_top">
+        <div class="wy-design-list_top_title">
+            <h1 class="wy-design-list_title">会员等级管理 - 管理后台</h1>
+            <div class="wy-design-list_space"></div>
+            <div class="wy-design-list_btn-group">
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
+                        <span>搜索</span>
+                    </button>
+                </div>
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
+                        <span>重置</span>
+                    </button>
+                </div>
             </div>
         </div>
-        
-        <div class="container">
-            <!-- 会员等级卡片展示 -->
-            <div class="card">
-                <div class="card-header">
-                    <h2>会员等级体系</h2>
-                    <button class="btn btn-primary" @click="showAddDialog">新增等级</button>
-                </div>
-                <div class="level-grid" v-if="levels.length > 0">
-                    <div v-for="(level, index) in levels" :key="level.id" 
-                         class="level-card" 
-                         :class="getLevelClass(level.level_code)">
-                        <div class="level-icon">👑</div>
-                        <div class="level-name">{{ level.level_name }}</div>
-                        <div class="level-code">{{ level.level_code }}</div>
-                        <div class="level-stats">
-                            <div class="stat-item">
-                                <span class="stat-label">升级门槛</span>
-                                <span class="stat-value">¥{{ level.min_amount || 0 }}</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-label">折扣</span>
-                                <span class="stat-value">{{ (level.discount_rate * 10).toFixed(1) }}折</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-label">积分倍率</span>
-                                <span class="stat-value">{{ level.points_rate }}倍</span>
-                            </div>
-                        </div>
-                        <div style="margin-top: 15px;">
-                            <button class="btn btn-warning" style="font-size: 12px; padding: 5px 10px;" @click="editLevel(level)">编辑</button>
-                        </div>
-                    </div>
-                </div>
-                <div v-else class="empty-state">
-                    <div class="icon">📊</div>
-                    <div>暂无会员等级配置</div>
-                    <button class="btn btn-primary" style="margin-top: 15px;" @click="showAddDialog">创建第一个等级</button>
-                </div>
+    </div>
+
+    <!-- 筛选区域 -->
+    <div class="wy-design-list_filter">
+        <div class="wy-design-list_other">
+            <div class="el-input el-input--small" style="width: 200px;">
+                <input type="text" id="keyword" placeholder="请输入手机号" class="el-input__inner">
             </div>
-            
-            <!-- 会员统计 -->
-            <div class="card">
-                <div class="card-header">
-                    <h2>会员等级分布统计</h2>
-                </div>
-                <table class="stats-table">
-                    <thead>
-                        <tr>
-                            <th>等级</th>
-                            <th>会员数量</th>
-                            <th>累计消费总额</th>
-                            <th>人均消费</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="stat in statistics" :key="stat.level_code">
-                            <td>{{ stat.level_name }}</td>
-                            <td>{{ stat.count }}</td>
-                            <td>¥{{ (stat.total_amount || 0).toFixed(2) }}</td>
-                            <td>¥{{ (stat.avg_amount || 0).toFixed(2) }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            
-            <!-- 会员列表 -->
-            <div class="card">
-                <div class="card-header">
-                    <h2>会员列表</h2>
-                    <div>
-                        <button class="btn btn-primary" @click="refreshData">刷新</button>
-                    </div>
-                </div>
-                <div class="search-bar">
-                    <div class="input-group">
-                        <label>手机号:</label>
-                        <input v-model="searchParams.phone" placeholder="请输入手机号" @keyup.enter="searchMembers">
-                    </div>
-                    <div class="input-group">
-                        <label>等级:</label>
-                        <select v-model="searchParams.level">
+        </div>
+        <div class="wy-design-list_other">
+            <select id="filter1" class="el-input__inner" style="width: 130px;">
+                
                             <option value="">全部</option>
                             <option v-for="l in levels" :key="l.level_code" :value="l.level_code">{{ l.level_name }}</option>
-                        </select>
-                    </div>
-                    <button class="btn btn-primary" @click="searchMembers">搜索</button>
-                    <button class="btn btn-info" @click="resetSearch">重置</button>
-                </div>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>会员ID</th>
-                            <th>姓名</th>
-                            <th>手机号</th>
-                            <th>当前等级</th>
-                            <th>累计消费</th>
-                            <th>当前积分</th>
-                            <th>注册时间</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="member in members" :key="member.user_id">
-                            <td>{{ member.user_id }}</td>
-                            <td>{{ member.user_name || '-' }}</td>
-                            <td>{{ member.phone || '-' }}</td>
-                            <td>
-                                <span class="tag" :class="getLevelTagClass(member.member_level)">
-                                    {{ member.member_level_name || '普通会员' }}
-                                </span>
-                            </td>
-                            <td>¥{{ (member.total_consume || 0).toFixed(2) }}</td>
-                            <td>{{ member.points || 0 }}</td>
-                            <td>{{ member.created_at ? member.created_at.substring(0, 10) : '-' }}</td>
-                            <td>
-                                <button class="btn btn-info" style="font-size: 12px; padding: 4px 8px;" @click="viewMemberDetail(member)">详情</button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                <div v-if="members.length === 0" class="empty-state">
-                    <div class="icon">📭</div>
-                    <div>暂无会员数据</div>
-                </div>
-                <div class="pagination">
-                    <span>共 {{ totalMembers }} 条</span>
-                    <select v-model="pageSize" @change="loadMembers" style="padding: 5px;">
+                        
+            </select>
+        </div>
+        <div class="wy-design-list_other">
+            <select id="filter2" class="el-input__inner" style="width: 130px;">
+                
                         <option :value="10">10条/页</option>
                         <option :value="20">20条/页</option>
                         <option :value="50">50条/页</option>
-                    </select>
-                    <button class="btn btn-info" :disabled="currentPage === 1" @click="currentPage--; loadMembers()">上一页</button>
-                    <span>{{ currentPage }} / {{ totalPages }}</span>
-                    <button class="btn btn-info" :disabled="currentPage >= totalPages" @click="currentPage++; loadMembers()">下一页</button>
-                </div>
+                    
+            </select>
+        </div>
+    </div>
+
+    <!-- 表格区域 -->
+    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
+        <div class="wy-design-table_bar">
+            <i class="wy-design-table_set el-icon-setting" title="列设置"></i>
+            <span class="wy-design-table_total">共 <em id="totalCount">0</em> 条</span>
+            <div class="wy-pages">
+                <div class="wy-pages_total">第<em id="currentPage">1</em>/<em id="totalPages">1</em>页</div>
+                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
+                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
             </div>
         </div>
-        
-        <!-- 新增/编辑等级弹窗 -->
+        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
+            <thead class="el-table__header">
+                <tr>
+                    <th><div class="cell">等级</div></th>
+                    <th><div class="cell">会员数量</div></th>
+                    <th><div class="cell">累计消费总额</div></th>
+                    <th><div class="cell">人均消费</div></th>
+                    <th><div class="cell">会员ID</div></th>
+                    <th><div class="cell">姓名</div></th>
+                    <th><div class="cell">手机号</div></th>
+                    <th><div class="cell">当前等级</div></th>
+                    <th><div class="cell">累计消费</div></th>
+                    <th><div class="cell">当前积分</div></th>
+                </tr>
+            </thead>
+            <tbody class="el-table__body" id="listBody">
+                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    
         <div v-if="levelDialogVisible" class="dialog-overlay" @click.self="levelDialogVisible = false">
             <div class="dialog" style="width: 500px;">
                 <div class="dialog-header">
@@ -305,6 +145,8 @@
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/element-ui@2.15.13/lib/index.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios@0.27.2/dist/axios.min.js"></script>
+    
+
     <script>
     // XSS防护工具
     function escapeHtml(text) {

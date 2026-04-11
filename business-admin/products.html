@@ -4,110 +4,86 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>商品管理 - 管理后台</title>
+    <link rel="stylesheet" href="../business-common/list-style.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        :root { --primary: #1890ff; --success: #52c41a; --warning: #faad14; --danger: #ff4d4f; --border: #ebeef5; --bg: #f5f7fa; --text: #303133; --text2: #606266; --text3: #909399; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg); font-size: 14px; color: var(--text2); }
-        .layout { display: flex; min-height: 100vh; }
-        .sidebar { width: 200px; background: #2c3e50; min-height: 100vh; position: fixed; top: 0; left: 0; z-index: 100; overflow-y: auto; }
-        .sidebar-header { padding: 16px 20px; border-bottom: 1px solid #3d4f5f; }
-        .sidebar-header h5 { color: white; font-size: 16px; font-weight: 600; }
-        .sidebar a { color: #ecf0f1; text-decoration: none; padding: 12px 20px; display: block; font-size: 14px; transition: all .2s; }
-        .sidebar a:hover { background: #34495e; }
-        .sidebar a.active { background: #34495e; border-left: 3px solid var(--primary); }
-        .main { flex: 1; margin-left: 200px; padding: 20px; }
-        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .page-title { font-size: 18px; font-weight: 600; color: var(--text); }
-        .toolbar { background: white; padding: 14px 16px; border-radius: 6px; margin-bottom: 16px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
-        .toolbar input, .toolbar select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; background: white; }
-        .toolbar input:focus, .toolbar select:focus { border-color: var(--primary); outline: none; }
-        .toolbar input { width: 200px; }
-        .btn { padding: 8px 16px; border-radius: 4px; font-size: 13px; cursor: pointer; border: 1px solid var(--border); background: white; color: var(--text2); transition: all .2s; }
-        .btn:hover { color: var(--primary); border-color: var(--primary); }
-        .btn-primary { background: var(--primary); border-color: var(--primary); color: white; }
-        .btn-primary:hover { background: #40a9ff; border-color: #40a9ff; color: white; }
-        .btn-danger { background: var(--danger); border-color: var(--danger); color: white; }
-        .btn-danger:hover { opacity: .85; }
-        .btn-warning { background: var(--warning); border-color: var(--warning); color: white; }
-        .btn-success { background: var(--success); border-color: var(--success); color: white; }
-        .btn-sm { padding: 4px 10px; font-size: 12px; }
-        .card { background: white; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,.06); overflow: hidden; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th { padding: 12px 10px; background: var(--bg); color: var(--text); font-weight: 500; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
-        td { padding: 10px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-        tr:hover td { background: #fafafa; }
-        .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
-        .tag-active { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
-        .tag-inactive { background: #f5f5f5; color: #999; border: 1px solid #d9d9d9; }
-        .tag-low { background: #fff2e8; color: #fa541c; border: 1px solid #ffbb96; }
-        .prod-img { width: 44px; height: 44px; object-fit: cover; border-radius: 6px; border: 1px solid #f0f0f0; }
-        .prod-img-placeholder { width: 44px; height: 44px; border-radius: 6px; background: #f5f5f5; display: inline-flex; align-items: center; justify-content: center; font-size: 20px; }
-        .pagination { display: flex; gap: 4px; padding: 14px; justify-content: flex-end; align-items: center; }
-        .page-btn { padding: 5px 10px; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; font-size: 12px; background: white; }
-        .page-btn.active { background: var(--primary); border-color: var(--primary); color: white; }
-        .page-info { font-size: 12px; color: var(--text3); margin: 0 8px; }
-        .empty { text-align: center; padding: 60px; color: var(--text3); }
-        .loading { text-align: center; padding: 40px; color: var(--text3); }
-
+        /* 页面特有样式 */
+        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
+        .actions .link:hover { text-decoration: underline; }
+        .actions .link.danger { color: var(--el-color-danger); }
+        /* 弹窗样式保留 */
         /* 弹窗 */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.5); z-index: 300; align-items: center; justify-content: center; }
-        .modal-overlay.show { display: flex; }
-        .modal { background: white; border-radius: 8px; padding: 24px; width: 560px; max-width: 95vw; max-height: 85vh; overflow-y: auto; }
-        .modal-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
-        .form-row.full { grid-template-columns: 1fr; }
-        .form-group label { display: block; font-size: 13px; color: var(--text2); margin-bottom: 5px; }
-        .form-group label.required::before { content: '* '; color: var(--danger); }
-        .form-group input, .form-group select, .form-group textarea {
-            width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px;
-            font-size: 13px; transition: border .2s;
-        }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); outline: none; }
-        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
     </style>
 </head>
-<body>
-<div class="layout">
-    <div class="sidebar">
-        <div class="sidebar-header"><h5>管理后台</h5></div>
-        <a href="index.html">🏠 首页</a>
-        <a href="statistics.html">📊 数据统计</a>
-        <a href="venues.html">🏟️ 场地管理</a>
-        <a href="shops.html">🏪 门店管理</a>
-        <a href="products.html" class="active">📦 商品管理</a>
-        <a href="applications.html">📋 申请单</a>
-        <a href="orders.html">🧾 订单管理</a>
-        <a href="points.html">💎 积分管理</a>
-        <a href="coupons.html">🎫 优惠券</a>
-        <a href="users.html">👥 用户管理</a>
-        <a href="notices.html">📢 公告管理</a>
-        <a href="feedback.html">💬 意见反馈</a>
-    </div>
-    <div class="main">
-        <div class="page-header">
-            <div class="page-title">📦 商品管理</div>
-            <button class="btn btn-primary" onclick="openAddModal()">+ 新增商品</button>
-        </div>
-        <div class="toolbar">
-            <input type="text" id="searchKw" placeholder="商品名称/描述搜索" onkeyup="if(event.key==='Enter') loadList()">
-            <select id="filterShop" onchange="loadList()"><option value="">所有门店</option></select>
-            <select id="filterCategory" onchange="loadList()"><option value="">所有分类</option></select>
-            <select id="filterStatus" onchange="loadList()">
-                <option value="">全部状态</option>
-                <option value="active">上架</option>
-                <option value="inactive">下架</option>
-            </select>
-            <button class="btn btn-primary" onclick="loadList()">🔍 搜索</button>
-            <button class="btn" onclick="clearFilters()">清空</button>
-        </div>
-        <div class="card">
-            <div id="tableContent"><div class="loading">加载中...</div></div>
-            <div class="pagination" id="pagination"></div>
+<body class="wy-design-list">
+    <!-- 顶部区域 -->
+    <div class="wy-design-list_top">
+        <div class="wy-design-list_top_title">
+            <h1 class="wy-design-list_title">商品管理 - 管理后台</h1>
+            <div class="wy-design-list_space"></div>
+            <div class="wy-design-list_btn-group">
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
+                        <span>搜索</span>
+                    </button>
+                </div>
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
+                        <span>重置</span>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- 新增/编辑弹窗 -->
+    <!-- 筛选区域 -->
+    <div class="wy-design-list_filter">
+        <div class="wy-design-list_other">
+            <div class="el-input el-input--small" style="width: 200px;">
+                <input type="text" id="searchKw" placeholder="商品名称/描述搜索" class="el-input__inner">
+            </div>
+        </div>
+        <div class="wy-design-list_other">
+            <select id="filter1" class="el-input__inner" style="width: 130px;">
+                
+                    <option value="">全部状态</option>
+                    <option value="active">上架</option>
+                    <option value="inactive">下架</option>
+                
+            </select>
+        </div>
+    </div>
+
+    <!-- 表格区域 -->
+    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
+        <div class="wy-design-table_bar">
+            <i class="wy-design-table_set el-icon-setting" title="列设置"></i>
+            <span class="wy-design-table_total">共 <em id="totalCount">0</em> 条</span>
+            <div class="wy-pages">
+                <div class="wy-pages_total">第<em id="currentPage">1</em>/<em id="totalPages">1</em>页</div>
+                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
+                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
+            </div>
+        </div>
+        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
+            <thead class="el-table__header">
+                <tr>
+                    <th><div class="cell">商品</div></th>
+                    <th><div class="cell">价格</div></th>
+                    <th><div class="cell">库存</div></th>
+                    <th><div class="cell">分类</div></th>
+                    <th><div class="cell">门店</div></th>
+                    <th><div class="cell">状态</div></th>
+                    <th><div class="cell">操作</div></th>
+                </tr>
+            </thead>
+            <tbody class="el-table__body" id="listBody">
+                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    
 <div class="modal-overlay" id="formModal" onclick="handleOverlayClick(event)">
     <div class="modal" onclick="event.stopPropagation()">
         <div class="modal-title"><span id="modalTitle">新增商品</span><span style="cursor:pointer;color:#999" onclick="closeModal()">✕</span></div>
@@ -148,274 +124,206 @@
                 <textarea id="productDesc" rows="3" placeholder="请输入商品描述"></textarea>
             </div>
         </div>
-        <div class="form-row full">
-            <div class="form-group">
-                <label>图片URL（多个用逗号分隔）</label>
-                <input type="text" id="productImages" placeholder="https://...">
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="form-group">
-                <label>状态</label>
-                <select id="productStatus">
-                    <option value="active">上架</option>
-                    <option value="inactive">下架</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>排序权重</label>
-                <input type="number" id="productSort" placeholder="0" min="0">
-            </div>
-        </div>
         <div class="modal-footer">
-            <button class="btn" onclick="closeModal()">取消</button>
-            <button class="btn btn-primary" onclick="saveProduct()">保存</button>
+            <button type="button" class="el-button el-button--small" onclick="closeModal()">取消</button>
+            <button type="button" class="el-button el-button--primary el-button--small" onclick="submitForm()">保存</button>
         </div>
     </div>
 </div>
 
-<script>
-var urlParams = new URLSearchParams(location.search);
-var token = urlParams.get('access_token') || localStorage.getItem('admin_token');
-var isdev = urlParams.get('isdev') || localStorage.getItem('admin_isdev') || '0';
-if (!token) { document.body.innerHTML = '<div style="padding:60px;text-align:center;color:#999"><h2>请先登录</h2></div>'; throw new Error('No token'); }
-if (token) { localStorage.setItem('admin_token', token); localStorage.setItem('admin_isdev', isdev); }
 
-var currentPage = 1;
-var pageSize = 15;
-var shops = [];
 
-function api(p, method, body) {
-    var url = p + (p.includes('?') ? '&' : '?') + 'access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
-    var opts = { method: method || 'GET', headers: {} };
-    if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
-    return fetch(url, opts).then(function(r){ return r.json(); });
+    <script>
+    const token = localStorage.getItem('admin_token') || new URLSearchParams(location.search).get('access_token') || '';
+const isdev = new URLSearchParams(location.search).get('isdev') || '0';
+let currentPage = 1;
+let totalPages = 1;
+
+function authUrl(url) {
+    const sep = url.includes('?') ? '&' : '?';
+    return url + sep + 'access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
 }
 
-function loadShops() {
-    api('/api/admin/shops?page=1&page_size=100')
-    .then(function(d) {
-        if (d.success && d.data && d.data.items) {
-            shops = d.data.items;
-            var opts = '<option value="">所有门店</option>';
-            var opts2 = '<option value="">请选择门店</option>';
-            shops.forEach(function(s) {
-                opts += '<option value="' + s.id + '">' + (s.shop_name||'') + '</option>';
-                opts2 += '<option value="' + s.id + '">' + (s.shop_name||'') + '</option>';
-            });
-            document.getElementById('filterShop').innerHTML = opts;
-            document.getElementById('productShop').innerHTML = opts2;
-        }
-    });
-}
+async function loadList(page) {
+    currentPage = page || 1;
+    const kw = document.getElementById('searchKw').value;
+    const shopId = document.getElementById('filterShop').value;
+    const category = document.getElementById('filterCategory').value;
+    const status = document.getElementById('filterStatus').value;
 
-function loadCategories() {
-    api('/api/user/products/categories')
-    .then(function(d) {
-        if (d.success && d.data && d.data.length > 0) {
-            var opts = '<option value="">所有分类</option>';
-            d.data.forEach(function(c) {
-                opts += '<option value="' + (c.name||c) + '">' + (c.name||c) + ' (' + (c.count||0) + ')</option>';
-            });
-            document.getElementById('filterCategory').innerHTML = opts;
-        }
-    }).catch(function(){});
-}
-
-function loadList() {
-    var kw = document.getElementById('searchKw').value.trim();
-    var shopId = document.getElementById('filterShop').value;
-    var category = document.getElementById('filterCategory').value;
-    var status = document.getElementById('filterStatus').value;
-    var url = '/api/admin/products?page=' + currentPage + '&page_size=' + pageSize;
+    let url = '/api/admin/products?page=' + currentPage + '&page_size=20';
     if (kw) url += '&keyword=' + encodeURIComponent(kw);
     if (shopId) url += '&shop_id=' + shopId;
     if (category) url += '&category=' + encodeURIComponent(category);
     if (status) url += '&status=' + status;
-    
-    document.getElementById('tableContent').innerHTML = '<div class="loading">加载中...</div>';
-    api(url)
-    .then(function(d) {
-        if (!d.success || !d.data) {
-            document.getElementById('tableContent').innerHTML = '<div class="empty">加载失败</div>';
-            return;
-        }
-        var items = d.data.items || [];
-        var total = d.data.total || 0;
-        if (items.length === 0) {
-            document.getElementById('tableContent').innerHTML = '<div class="empty">暂无商品数据</div>';
-            document.getElementById('pagination').innerHTML = '';
-            return;
-        }
-        var html = '<table><thead><tr><th>图片</th><th>商品名称</th><th>分类</th><th>所属门店</th><th>价格</th><th>库存</th><th>销量</th><th>状态</th><th style="width:160px">操作</th></tr></thead><tbody>';
-        items.forEach(function(p) {
-            var imgHtml = '';
-            if (p.images) {
-                try {
-                    var imgs = JSON.parse(p.images);
-                    if (imgs && imgs[0]) {
-                        imgHtml = '<img src="' + imgs[0] + '" class="prod-img" onerror="this.style.display=\'none\'">';
-                    }
-                } catch(e) {}
+
+    try {
+        const res = await fetch(authUrl(url));
+        const data = await res.json();
+        if (data.success && data.data) {
+            const total = data.data.total || 0;
+            totalPages = Math.ceil(total / 20) || 1;
+            document.getElementById('totalCount').textContent = total;
+            document.getElementById('prevBtn').classList.toggle('disabled', currentPage <= 1);
+            document.getElementById('nextBtn').classList.toggle('disabled', currentPage >= totalPages);
+
+            const items = data.data.items || [];
+            if (items.length === 0) {
+                document.getElementById('tableContent').innerHTML = '<div style="text-align: center; padding: 60px; color: var(--el-text-secondary);">暂无数据</div>';
+                return;
             }
-            if (!imgHtml) imgHtml = '<div class="prod-img-placeholder">📦</div>';
-            var statusTag = p.status === 'active' 
-                ? '<span class="tag tag-active">上架</span>' 
-                : '<span class="tag tag-inactive">下架</span>';
-            var stockTag = parseInt(p.stock||0) <= 5 && p.status === 'active'
-                ? '<span class="tag tag-low">库存紧张</span>' : (p.stock || 0);
-            html += '<tr>'
-                + '<td>' + imgHtml + '</td>'
-                + '<td><div style="font-weight:500;color:#333">' + (p.product_name||'') + '</div>'
-                + (p.description ? '<div style="font-size:11px;color:#999;margin-top:2px">' + (p.description||'').substr(0,30) + '</div>' : '')
-                + '</td>'
-                + '<td>' + (p.category || '-') + '</td>'
-                + '<td>' + (p.shop_name || '-') + '</td>'
-                + '<td><span style="color:#f57c00;font-weight:600">¥' + parseFloat(p.price||0).toFixed(2) + '</span>'
-                + (p.original_price && p.original_price > p.price ? '<br><del style="font-size:11px;color:#bbb">¥' + parseFloat(p.original_price).toFixed(2) + '</del>' : '')
-                + '</td>'
-                + '<td>' + stockTag + '</td>'
-                + '<td>' + (p.sales_count || 0) + '</td>'
-                + '<td>' + statusTag + '</td>'
-                + '<td>'
-                + '<button class="btn btn-sm" onclick="openEditModal(' + p.id + ')">编辑</button> '
-                + '<button class="btn btn-sm btn-' + (p.status === 'active' ? 'warning' : 'success') + '" onclick="toggleStatus(' + p.id + ',\'' + p.status + '\')">' + (p.status === 'active' ? '下架' : '上架') + '</button> '
-                + '<button class="btn btn-sm btn-danger" onclick="deleteProduct(' + p.id + ')">删除</button>'
-                + '</td></tr>';
-        });
-        html += '</tbody></table>';
-        document.getElementById('tableContent').innerHTML = html;
-        
-        // 分页
-        var pages = Math.ceil(total / pageSize);
-        var phtml = '<span class="page-info">共 ' + total + ' 件商品</span>';
-        if (currentPage > 1) phtml += '<button class="page-btn" onclick="goPage(' + (currentPage-1) + ')">上一页</button>';
-        var start = Math.max(1, currentPage-2), end = Math.min(pages, currentPage+2);
-        for (var i = start; i <= end; i++) {
-            phtml += '<button class="page-btn' + (i===currentPage?' active':'') + '" onclick="goPage(' + i + ')">' + i + '</button>';
+            let html = `<table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
+                <thead class="el-table__header">
+                    <tr>
+                        <th><div class="cell">商品</div></th>
+                        <th><div class="cell">价格</div></th>
+                        <th><div class="cell">库存</div></th>
+                        <th><div class="cell">分类</div></th>
+                        <th><div class="cell">门店</div></th>
+                        <th><div class="cell">状态</div></th>
+                        <th><div class="cell">操作</div></th>
+                    </tr>
+                </thead>
+                <tbody class="el-table__body">`;
+            html += items.map(item => {
+                const img = item.images ? `<img src="${item.images[0]}" class="prod-img">` : '<div class="prod-img-placeholder">📦</div>';
+                const statusTag = item.status === 'active'
+                    ? '<span class="el-tag el-tag--success el-tag--small">上架</span>'
+                    : '<span class="el-tag el-tag--info el-tag--small">下架</span>';
+                return `<tr>
+                    <td><div class="cell" style="display:flex;align-items:center;gap:8px">${img}<span>${item.product_name || '-'}</span></div></td>
+                    <td><div class="cell">¥${parseFloat(item.price || 0).toFixed(2)}</div></td>
+                    <td><div class="cell">${item.stock || 0}</div></td>
+                    <td><div class="cell">${item.category_name || '-'}</div></td>
+                    <td><div class="cell">${item.shop_name || '-'}</div></td>
+                    <td><div class="cell">${statusTag}</div></td>
+                    <td><div class="cell actions">
+                        <a class="link" onclick="openEditModal(${item.id})">编辑</a>
+                        <a class="link danger" onclick="deleteProduct(${item.id})">删除</a>
+                    </div></td>
+                </tr>`;
+            }).join('');
+            html += '</tbody></table>';
+            document.getElementById('tableContent').innerHTML = html;
         }
-        if (currentPage < pages) phtml += '<button class="page-btn" onclick="goPage(' + (currentPage+1) + ')">下一页</button>';
-        document.getElementById('pagination').innerHTML = phtml;
-    })
-    .catch(function() {
-        document.getElementById('tableContent').innerHTML = '<div class="empty">加载失败，请检查网络或登录状态</div>';
-    });
+    } catch (e) {
+        document.getElementById('tableContent').innerHTML = '<div style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载失败</div>';
+    }
 }
 
-function goPage(p) { currentPage = p; loadList(); }
+function changePage(delta) { loadList(currentPage + delta); }
 function clearFilters() {
     document.getElementById('searchKw').value = '';
     document.getElementById('filterShop').value = '';
     document.getElementById('filterCategory').value = '';
     document.getElementById('filterStatus').value = '';
-    currentPage = 1; loadList();
+    loadList(1);
 }
 
+// 加载门店和分类下拉框
+async function loadFilters() {
+    try {
+        const [shopRes, catRes] = await Promise.all([
+            fetch(authUrl('/api/admin/shops?page=1&page_size=100')),
+            fetch(authUrl('/api/admin/categories'))
+        ]);
+        const shopData = await shopRes.json();
+        const catData = await catRes.json();
+
+        if (shopData.success && shopData.data) {
+            const shopSelects = [document.getElementById('filterShop'), document.getElementById('productShop')];
+            const options = shopData.data.items?.map(s => `<option value="${s.id}">${s.shop_name}</option>`).join('') || '';
+            shopSelects.forEach(s => { if(s) s.innerHTML += options; });
+        }
+        if (catData.success && catData.data) {
+            const catSelect = document.getElementById('filterCategory');
+            catSelect.innerHTML += catData.data.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+        }
+    } catch (e) {}
+}
+
+// 弹窗操作
 function openAddModal() {
     document.getElementById('editId').value = '';
     document.getElementById('modalTitle').textContent = '新增商品';
     document.getElementById('productName').value = '';
-    document.getElementById('productShop').value = '';
     document.getElementById('productPrice').value = '';
     document.getElementById('productOriginalPrice').value = '';
-    document.getElementById('productCategory').value = '';
     document.getElementById('productStock').value = '';
+    document.getElementById('productCategory').value = '';
     document.getElementById('productDesc').value = '';
-    document.getElementById('productImages').value = '';
-    document.getElementById('productStatus').value = 'active';
-    document.getElementById('productSort').value = '0';
+    document.getElementById('productShop').value = '';
     document.getElementById('formModal').classList.add('show');
 }
 
 function openEditModal(id) {
-    api('/api/admin/products/' + id)
-    .then(function(d) {
-        if (!d.success || !d.data) { alert('获取商品信息失败'); return; }
-        var p = d.data;
-        document.getElementById('editId').value = p.id;
-        document.getElementById('modalTitle').textContent = '编辑商品';
-        document.getElementById('productName').value = p.product_name || '';
-        document.getElementById('productShop').value = p.shop_id || '';
-        document.getElementById('productPrice').value = p.price || '';
-        document.getElementById('productOriginalPrice').value = p.original_price || '';
-        document.getElementById('productCategory').value = p.category || '';
-        document.getElementById('productStock').value = p.stock || 0;
-        document.getElementById('productDesc').value = p.description || '';
-        try {
-            var imgs = JSON.parse(p.images || '[]');
-            document.getElementById('productImages').value = imgs.join(', ');
-        } catch(e) { document.getElementById('productImages').value = p.images || ''; }
-        document.getElementById('productStatus').value = p.status || 'active';
-        document.getElementById('productSort').value = p.sort_order || 0;
-        document.getElementById('formModal').classList.add('show');
-    });
+    document.getElementById('editId').value = id;
+    document.getElementById('modalTitle').textContent = '编辑商品';
+    fetch(authUrl('/api/admin/products/' + id))
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && data.data) {
+                const p = data.data;
+                document.getElementById('productName').value = p.product_name || '';
+                document.getElementById('productPrice').value = p.price || '';
+                document.getElementById('productOriginalPrice').value = p.original_price || '';
+                document.getElementById('productStock').value = p.stock || '';
+                document.getElementById('productCategory').value = p.category_name || '';
+                document.getElementById('productDesc').value = p.description || '';
+                document.getElementById('productShop').value = p.shop_id || '';
+                document.getElementById('formModal').classList.add('show');
+            }
+        });
 }
 
-function closeModal() { document.getElementById('formModal').classList.remove('show'); }
-function handleOverlayClick(e) { if (e.target === document.getElementById('formModal')) closeModal(); }
+function closeModal() {
+    document.getElementById('formModal').classList.remove('show');
+}
 
-function saveProduct() {
-    var id = document.getElementById('editId').value;
-    var name = document.getElementById('productName').value.trim();
-    var shopId = document.getElementById('productShop').value;
-    var price = parseFloat(document.getElementById('productPrice').value);
-    if (!name) { alert('请输入商品名称'); return; }
-    if (!shopId) { alert('请选择所属门店'); return; }
-    if (isNaN(price) || price < 0) { alert('请输入有效价格'); return; }
-    
-    var imagesRaw = document.getElementById('productImages').value.trim();
-    var images = imagesRaw ? imagesRaw.split(/[,，]/).map(function(s){ return s.trim(); }).filter(Boolean) : [];
-    
-    var body = {
-        product_name: name,
-        shop_id: shopId,
-        price: price,
-        original_price: parseFloat(document.getElementById('productOriginalPrice').value) || null,
-        category: document.getElementById('productCategory').value.trim(),
+function handleOverlayClick(e) {
+    if (e.target === document.getElementById('formModal')) closeModal();
+}
+
+async function submitForm() {
+    const id = document.getElementById('editId').value;
+    const body = {
+        product_name: document.getElementById('productName').value.trim(),
+        price: parseFloat(document.getElementById('productPrice').value) || 0,
+        original_price: parseFloat(document.getElementById('productOriginalPrice').value) || 0,
         stock: parseInt(document.getElementById('productStock').value) || 0,
+        category_name: document.getElementById('productCategory').value.trim(),
         description: document.getElementById('productDesc').value.trim(),
-        images: JSON.stringify(images),
-        status: document.getElementById('productStatus').value,
-        sort_order: parseInt(document.getElementById('productSort').value) || 0
+        shop_id: document.getElementById('productShop').value
     };
-    
-    var method = id ? 'PUT' : 'POST';
-    var url = id ? '/api/admin/products/' + id : '/api/admin/products';
-    api(url, method, body)
-    .then(function(d) {
-        if (d.success) {
-            alert(id ? '商品更新成功' : '商品添加成功');
-            closeModal();
-            loadList();
-            loadCategories();
-        } else { alert(d.msg || '操作失败'); }
-    })
-    .catch(function() { alert('操作失败'); });
+    if (!body.product_name) { alert('请输入商品名称'); return; }
+    if (!body.shop_id) { alert('请选择所属门店'); return; }
+
+    const url = id ? '/api/admin/products/' + id : '/api/admin/products';
+    const method = id ? 'PUT' : 'POST';
+    try {
+        const res = await fetch(authUrl(url), {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (data.success) { closeModal(); loadList(currentPage); }
+        else { alert(data.msg || '保存失败'); }
+    } catch (e) { alert('保存失败'); }
 }
 
-function toggleStatus(id, currentStatus) {
-    var newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-    var action = newStatus === 'active' ? '上架' : '下架';
-    if (!confirm('确认' + action + '此商品？')) return;
-    api('/api/admin/products/' + id, 'PUT', {status: newStatus})
-    .then(function(d) {
-        if (d.success) { loadList(); }
-        else { alert(d.msg || '操作失败'); }
-    });
+async function deleteProduct(id) {
+    if (!confirm('确定要删除该商品吗？')) return;
+    try {
+        const res = await fetch(authUrl('/api/admin/products/' + id), { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) { loadList(currentPage); }
+        else { alert(data.msg || '删除失败'); }
+    } catch (e) { alert('删除失败'); }
 }
 
-function deleteProduct(id) {
-    if (!confirm('确认删除此商品？删除后不可恢复！')) return;
-    api('/api/admin/products/' + id, 'DELETE')
-    .then(function(d) {
-        if (d.success) { alert('删除成功'); loadList(); }
-        else { alert(d.msg || '删除失败'); }
-    });
-}
-
-loadShops();
-loadCategories();
-loadList();
-</script>
+loadFilters();
+loadList(1);
+    </script>
 </body>
 </html>

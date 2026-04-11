@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>优惠券管理 - 管理后台</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary-color: #1890ff;
+            --success-color: #52c41a;
+            --warning-color: #faad14;
+            --danger-color: #ff4d4f;
+            --text-primary: #303133;
+            --text-regular: #606266;
+            --text-secondary: #909399;
+            --border-color: #ebeef5;
+            --bg-white: #ffffff;
+            --bg-light: #f5f7fa;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif; background: var(--bg-light); font-size: 14px; color: var(--text-regular); min-height: 100vh; }
+        .layout { display: flex; min-height: 100vh; }
+        .sidebar { width: 200px; background: #2c3e50; min-height: 100vh; position: fixed; top: 0; left: 0; z-index: 100; }
+        .sidebar-header { padding: 16px 20px; border-bottom: 1px solid #3d4f5f; }
+        .sidebar-header h5 { color: white; font-size: 16px; font-weight: 600; }
+        .sidebar a { color: #ecf0f1; text-decoration: none; padding: 12px 20px; display: block; font-size: 14px; transition: all .2s; }
+        .sidebar a:hover { background: #34495e; }
+        .sidebar a.active { background: #34495e; border-left: 3px solid var(--primary-color); }
+        .main { flex: 1; margin-left: 200px; padding: 24px; }
+        .page-title { font-size: 18px; font-weight: 600; color: var(--text-primary); margin-bottom: 20px; }
+        .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+        .toolbar-left { display: flex; gap: 10px; align-items: center; }
+        .toolbar-right { display: flex; gap: 10px; }
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all .2s; }
+        .btn-primary { background: var(--primary-color); color: white; }
+        .btn-primary:hover { background: #40a9ff; }
+        .btn-success { background: var(--success-color); color: white; }
+        .btn-warning { background: var(--warning-color); color: white; }
+        .card { background: var(--bg-white); border-radius: 8px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,.06); border: 1px solid var(--border-color); }
+        .el-table { width: 100%; border: 1px solid var(--border-color); background-color: var(--bg-white); font-size: 13px; border-collapse: collapse; }
+        .el-table th { padding: 10px 12px; background-color: var(--bg-light); color: var(--text-primary); font-weight: 500; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .el-table td { padding: 12px; border-bottom: 1px solid var(--border-color); }
+        .el-table tr:hover > td { background-color: var(--bg-light); }
+        .status-tag { padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+        .status-active { background: #e6f7ff; color: #1890ff; }
+        .status-inactive { background: #f5f5f5; color: #999; }
+        .type-tag { padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+        .type-discount { background: #fff7e6; color: #fa8c16; }
+        .type-cash { background: #f6ffed; color: #52c41a; }
+        .type-points { background: #f9f0ff; color: #722ed1; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.5); z-index: 200; align-items: center; justify-content: center; }
+        .modal-overlay.show { display: flex; }
+        .modal { background: white; border-radius: 8px; width: 500px; max-width: 90%; max-height: 90vh; overflow-y: auto; }
+        .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .modal-title { font-size: 16px; font-weight: 600; }
+        .modal-close { width: 28px; height: 28px; border-radius: 50%; background: #f5f5f5; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; font-size: 16px; }
+        .modal-body { padding: 20px; }
+        .form-group { margin-bottom: 16px; }
+        .form-label { display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-regular); }
+        .form-input { width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; }
+        .form-input:focus { border-color: var(--primary-color); outline: none; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .modal-footer { padding: 12px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px; }
+        .empty { text-align: center; padding: 40px; color: var(--text-secondary); }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <div class="sidebar">
+            <div class="sidebar-header"><h5>管理后台</h5></div>
+            <a href="index.html">🏠 首页</a>
+            <a href="statistics.html">📊 数据统计</a>
+            <a href="venues.html">🏟️ 场地管理</a>
+            <a href="applications.html">📋 申请单</a>
+            <a href="orders.html">🧾 订单</a>
+            <a href="shops.html">🏪 门店</a>
+            <a href="points.html">💎 积分管理</a>
+            <a href="coupons.html" class="active">🎫 优惠券</a>
+            <a href="users.html">👥 用户管理</a>
+        </div>
+        <div class="main">
+            <h4 class="page-title">🎫 优惠券管理</h4>
+            
+            <div class="toolbar">
+                <div class="toolbar-left">
+                    <select id="filterStatus" class="form-input" style="width:120px" onchange="loadCoupons()">
+                        <option value="">全部状态</option>
+                        <option value="active">启用中</option>
+                        <option value="inactive">已停用</option>
+                    </select>
+                </div>
+                <div class="toolbar-right">
+                    <button class="btn btn-primary" onclick="openCreateModal()">➕ 新建优惠券</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div id="couponList" class="loading" style="text-align:center;padding:30px;color:#999">加载中...</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 新建/编辑弹窗 -->
+    <div class="modal-overlay" id="createModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title" id="modalTitle">新建优惠券</span>
+                <button class="modal-close" onclick="closeCreateModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">优惠券名称 *</label>
+                    <input type="text" class="form-input" id="couponName" placeholder="如：新用户专享8折券">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">类型 *</label>
+                        <select class="form-input" id="couponType">
+                            <option value="cash">现金券（直接抵扣金额）</option>
+                            <option value="discount">折扣券（如0.8表示8折）</option>
+                            <option value="points">积分券（赠送积分）</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">优惠值 *</label>
+                        <input type="number" class="form-input" id="discountValue" placeholder="折扣/金额" step="0.01">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">最低消费</label>
+                        <input type="number" class="form-input" id="minAmount" placeholder="0表示不限" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">最大优惠</label>
+                        <input type="number" class="form-input" id="maxDiscount" placeholder="折扣券可设置上限">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">兑换所需积分</label>
+                    <input type="number" class="form-input" id="pointsCost" placeholder="0表示免费发放">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">发放总量</label>
+                    <input type="number" class="form-input" id="totalCount" placeholder="0表示不限量">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">有效期开始</label>
+                        <input type="date" class="form-input" id="validFrom">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">有效期结束</label>
+                        <input type="date" class="form-input" id="validUntil">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeCreateModal()">取消</button>
+                <button class="btn btn-primary" onclick="submitCoupon()">保存</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 发放弹窗 -->
+    <div class="modal-overlay" id="issueModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">发放优惠券</span>
+                <button class="modal-close" onclick="closeIssueModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="issueCouponId">
+                <div class="form-group">
+                    <label class="form-label">用户ID列表（每行一个）</label>
+                    <textarea class="form-input" id="issueUserIds" rows="6" placeholder="user_001&#10;user_002&#10;user_003"></textarea>
+                </div>
+                <p style="font-size:12px;color:#999">单次最多发放100人</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeIssueModal()">取消</button>
+                <button class="btn btn-success" onclick="submitIssue()">确认发放</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- V30.0 定向发放弹窗 -->
+    <div class="modal-overlay" id="targetedModal">
+        <div class="modal" style="max-width:560px">
+            <div class="modal-header">
+                <span class="modal-title">定向发放 - <span id="targetedCouponName"></span></span>
+                <button class="modal-close" onclick="closeTargetedModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">会员等级（多选）</label>
+                    <div id="levelCheckboxes" style="display:flex;gap:14px;flex-wrap:wrap">
+                        <label style="display:flex;align-items:center;gap:4px;font-size:14px;cursor:pointer"><input type="checkbox" value="bronze"> 铜牌</label>
+                        <label style="display:flex;align-items:center;gap:4px;font-size:14px;cursor:pointer"><input type="checkbox" value="silver"> 银牌</label>
+                        <label style="display:flex;align-items:center;gap:4px;font-size:14px;cursor:pointer"><input type="checkbox" value="gold"> 金牌</label>
+                        <label style="display:flex;align-items:center;gap:4px;font-size:14px;cursor:pointer"><input type="checkbox" value="platinum"> 白金</label>
+                        <label style="display:flex;align-items:center;gap:4px;font-size:14px;cursor:pointer"><input type="checkbox" value="diamond"> 钻石</label>
+                    </div>
+                </div>
+                <div class="form-row" style="display:flex;gap:12px">
+                    <div class="form-group" style="flex:1">
+                        <label class="form-label">最低累计消费（元）</label>
+                        <input type="number" class="form-input" id="minConsume" placeholder="不限">
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label class="form-label">最高累计消费（元）</label>
+                        <input type="number" class="form-input" id="maxConsume" placeholder="不限">
+                    </div>
+                </div>
+                <div class="form-row" style="display:flex;gap:12px">
+                    <div class="form-group" style="flex:1">
+                        <label class="form-label">最低连续签到天数</label>
+                        <input type="number" class="form-input" id="minStreak" placeholder="不限">
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label class="form-label">沉睡天数（N天未下单）</label>
+                        <input type="number" class="form-input" id="inactiveDays" placeholder="不限">
+                    </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;margin-top:8px">
+                    <button class="btn" onclick="previewTargetCount()" style="flex:1">📊 预估覆盖人数</button>
+                    <span id="targetedPreviewResult" style="font-size:14px"></span>
+                </div>
+                <p style="font-size:12px;color:#999;margin-top:8px">单次最多发放5000人，已持有该券的用户自动跳过，发放后将推送站内通知</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeTargetedModal()">取消</button>
+                <button class="btn btn-success" onclick="submitTargetedIssue()">🚀 确认定向发放</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = new URLSearchParams(location.search).get('access_token') || localStorage.getItem('admin_token') || '';
+        const isDev = new URLSearchParams(location.search).get('isdev') || '0';
+        
+        function authUrl(url) {
+            return url + (url.includes('?') ? '&' : '?') + 'access_token=' + encodeURIComponent(token) + '&isdev=' + isDev;
+        }
+        
+        let editingId = null;
+        
+        async function loadCoupons() {
+            const status = document.getElementById('filterStatus').value;
+            let url = '/api/admin/coupons?page=1&page_size=100';
+            if (status) url += '&status=' + status;
+            
+            try {
+                const resp = await fetch(authUrl(url));
+                const data = await resp.json();
+                const el = document.getElementById('couponList');
+                
+                if (data.success && data.data && data.data.items && data.data.items.length) {
+                    const TYPE_MAP = { discount: '折扣券', cash: '现金券', points: '积分券' };
+                    const TYPE_CLASS = { discount: 'type-discount', cash: 'type-cash', points: 'type-points' };
+                    
+                    el.innerHTML = `<table class="el-table">
+                        <thead><tr>
+                            <th>ID</th><th>名称</th><th>类型</th><th>优惠值</th><th>最低消费</th>
+                            <th>兑换积分</th><th>已发/总量</th><th>有效期</th><th>状态</th><th>操作</th>
+                        </tr></thead>
+                        <tbody>${data.data.items.map(c => `
+                            <tr>
+                                <td>${c.id}</td>
+                                <td>${c.coupon_name || '-'}</td>
+                                <td><span class="type-tag ${TYPE_CLASS[c.coupon_type]}">${TYPE_MAP[c.coupon_type] || c.coupon_type}</span></td>
+                                <td>${c.coupon_type === 'discount' ? (c.discount_value * 10).toFixed(1) + '折' : '¥' + parseFloat(c.discount_value || 0).toFixed(2)}</td>
+                                <td>¥${parseFloat(c.min_amount || 0).toFixed(2)}</td>
+                                <td>${c.points_cost || 0}</td>
+                                <td>${c.used_count || 0}/${c.total_count || '不限'}</td>
+                                <td>${c.valid_from || '不限'} ~ ${c.valid_until || '不限'}</td>
+                                <td><span class="status-tag ${c.status === 'active' ? 'status-active' : 'status-inactive'}">${c.status === 'active' ? '启用中' : '已停用'}</span></td>
+                                <td>
+                                    <button class="btn" style="padding:4px 8px;font-size:12px" onclick="openIssueModal(${c.id})">手动发放</button>
+                                    <button class="btn btn-success" style="padding:4px 8px;font-size:12px" onclick="openTargetedModal(${c.id}, '${(c.coupon_name||'').replace(/'/g,'')}')">定向发放</button>
+                                    <button class="btn btn-warning" style="padding:4px 8px;font-size:12px" onclick="toggleStatus(${c.id}, '${c.status}')">${c.status === 'active' ? '停用' : '启用'}</button>
+                                </td>
+                            </tr>
+                        `).join('')}</tbody>
+                    </table>`;
+                } else {
+                    el.innerHTML = '<div class="empty">暂无优惠券数据</div>';
+                }
+            } catch (e) {
+                document.getElementById('couponList').innerHTML = '<div class="empty">加载失败</div>';
+            }
+        }
+        
+        function openCreateModal() {
+            editingId = null;
+            document.getElementById('modalTitle').textContent = '新建优惠券';
+            document.getElementById('couponName').value = '';
+            document.getElementById('couponType').value = 'cash';
+            document.getElementById('discountValue').value = '';
+            document.getElementById('minAmount').value = '0';
+            document.getElementById('maxDiscount').value = '';
+            document.getElementById('pointsCost').value = '0';
+            document.getElementById('totalCount').value = '0';
+            document.getElementById('validFrom').value = '';
+            document.getElementById('validUntil').value = '';
+            document.getElementById('createModal').classList.add('show');
+        }
+        
+        function closeCreateModal() {
+            document.getElementById('createModal').classList.remove('show');
+        }
+        
+        async function submitCoupon() {
+            const data = {
+                coupon_name: document.getElementById('couponName').value,
+                coupon_type: document.getElementById('couponType').value,
+                discount_value: parseFloat(document.getElementById('discountValue').value) || 0,
+                min_amount: parseFloat(document.getElementById('minAmount').value) || 0,
+                max_discount: document.getElementById('maxDiscount').value || null,
+                points_cost: parseInt(document.getElementById('pointsCost').value) || 0,
+                total_count: parseInt(document.getElementById('totalCount').value) || 0,
+                valid_from: document.getElementById('validFrom').value || null,
+                valid_until: document.getElementById('validUntil').value || null
+            };
+            
+            if (!data.coupon_name) { alert('请输入优惠券名称'); return; }
+            if (data.discount_value <= 0) { alert('请输入有效的优惠值'); return; }
+            
+            const url = editingId ? `/api/admin/coupons/${editingId}` : '/api/admin/coupons';
+            const method = editingId ? 'PUT' : 'POST';
+            
+            try {
+                const resp = await fetch(authUrl(url), {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await resp.json();
+                if (result.success) {
+                    alert(editingId ? '更新成功' : '创建成功');
+                    closeCreateModal();
+                    loadCoupons();
+                } else {
+                    alert(result.msg || '操作失败');
+                }
+            } catch (e) {
+                alert('操作失败');
+            }
+        }
+        
+        function openIssueModal(couponId) {
+            document.getElementById('issueCouponId').value = couponId;
+            document.getElementById('issueUserIds').value = '';
+            document.getElementById('issueModal').classList.add('show');
+        }
+        
+        function closeIssueModal() {
+            document.getElementById('issueModal').classList.remove('show');
+        }
+        
+        async function submitIssue() {
+            const couponId = document.getElementById('issueCouponId').value;
+            const userIds = document.getElementById('issueUserIds').value.split('\n').map(s => s.trim()).filter(s => s);
+            
+            if (!userIds.length) { alert('请输入用户ID'); return; }
+            
+            try {
+                const resp = await fetch(authUrl(`/api/admin/coupons/${couponId}/issue`), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_ids: userIds })
+                });
+                const result = await resp.json();
+                if (result.success) {
+                    alert(result.msg);
+                    closeIssueModal();
+                    loadCoupons();
+                } else {
+                    alert(result.msg || '发放失败');
+                }
+            } catch (e) {
+                alert('发放失败');
+            }
+        }
+
+        // ---- V30.0 定向发放 ----
+        let targetedCouponId = null;
+
+        function openTargetedModal(couponId, couponName) {
+            targetedCouponId = couponId;
+            document.getElementById('targetedCouponName').textContent = couponName;
+            document.getElementById('targetedPreviewResult').innerHTML = '';
+            document.getElementById('targetedModal').classList.add('show');
+        }
+        function closeTargetedModal() {
+            document.getElementById('targetedModal').classList.remove('show');
+        }
+
+        async function previewTargetCount() {
+            const body = buildTargetedBody();
+            try {
+                const resp = await fetch(authUrl('/api/admin/coupons/target-preview'), {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify(body)
+                });
+                const r = await resp.json();
+                if (r.success) {
+                    document.getElementById('targetedPreviewResult').innerHTML =
+                        `<span style="color:#667eea;font-weight:600">预计覆盖 ${r.data.estimated_count} 名会员</span>`;
+                } else {
+                    document.getElementById('targetedPreviewResult').innerHTML = `<span style="color:red">${r.msg}</span>`;
+                }
+            } catch(e) {
+                document.getElementById('targetedPreviewResult').innerHTML = '<span style="color:red">预估失败</span>';
+            }
+        }
+
+        function buildTargetedBody() {
+            const body = {};
+            const levels = [...document.querySelectorAll('#levelCheckboxes input:checked')].map(el => el.value);
+            if (levels.length) body.level_list = levels;
+            const minC = document.getElementById('minConsume').value;
+            const maxC = document.getElementById('maxConsume').value;
+            if (minC) body.min_total_consume = parseFloat(minC);
+            if (maxC) body.max_total_consume = parseFloat(maxC);
+            const minStreak = document.getElementById('minStreak').value;
+            if (minStreak) body.min_checkin_streak = parseInt(minStreak);
+            const inactiveDays = document.getElementById('inactiveDays').value;
+            if (inactiveDays) body.inactive_days = parseInt(inactiveDays);
+            return body;
+        }
+
+        async function submitTargetedIssue() {
+            if (!targetedCouponId) return;
+            const body = buildTargetedBody();
+            if (!confirm('确认按筛选条件定向发放优惠券？')) return;
+            try {
+                const resp = await fetch(authUrl(`/api/admin/coupons/${targetedCouponId}/targeted-issue`), {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify(body)
+                });
+                const r = await resp.json();
+                if (r.success) {
+                    alert(r.msg || '发放成功');
+                    closeTargetedModal();
+                    loadCoupons();
+                } else {
+                    alert(r.msg || '发放失败');
+                }
+            } catch(e) {
+                alert('发放失败，请重试');
+            }
+        }
+        
+        async function toggleStatus(couponId, currentStatus) {
+            const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+            try {
+                const resp = await fetch(authUrl(`/api/admin/coupons/${couponId}`), {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                const result = await resp.json();
+                if (result.success) {
+                    loadCoupons();
+                } else {
+                    alert(result.msg || '操作失败');
+                }
+            } catch (e) {
+                alert('操作失败');
+            }
+        }
+        
+        loadCoupons();
+    </script>
+</body>
+</html>
