@@ -11,21 +11,6 @@ const commonEnv = {
 
 module.exports = {
   apps: [
-    // 用户服务代理 - 端口 22307
-    {
-      name: 'wojiayun-node-service',
-      script: '/www/wwwroot/wojiayun/node-service/app.js',
-      cwd: '/www/wwwroot/wojiayun/node-service',
-      instances: 1,
-      autorestart: true,
-      watch: false,
-      max_memory_restart: '300M',
-      env: { NODE_ENV: 'production' },
-      log_file: '/var/log/pm2/wojiayun-node-service.log',
-      out_file: '/var/log/pm2/wojiayun-node-service-out.log',
-      error_file: '/var/log/pm2/wojiayun-node-service-error.log',
-      time: true
-    },
     // 聊天服务 - 端口 22309
     {
       name: 'wojiayun-chat',

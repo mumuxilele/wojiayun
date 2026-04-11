@@ -3501,9 +3501,9 @@ def admin_batch_product_status(user):
     if not ids or not isinstance(ids, list):
         return jsonify({'success': False, 'msg': '请选择商品'})
     if len(ids) > 50:
-        return jsonify({'success': False, 'msg': '单次操作不超过50个'}
+        return jsonify({'success': False, 'msg': '单次操作不超过50个'})
     if status not in ('active', 'inactive'):
-        return jsonify({'success': False, 'msg': '状态值无效，仅支持active/inactive'}
+        return jsonify({'success': False, 'msg': '状态值无效，仅支持active/inactive'})
 
     ec_id, project_id = get_data_scope()
     where = "id IN (%s)" % ','.join(['%s'] * len(ids))
@@ -3561,9 +3561,9 @@ def admin_create_product_category(user):
     sort_order = int(data.get('sort_order', 0))
 
     if not category_name:
-        return jsonify({'success': False, 'msg': '分类名称不能为空'}
+        return jsonify({'success': False, 'msg': '分类名称不能为空'})
     if len(category_name) > 100:
-        return jsonify({'success': False, 'msg': '分类名称不能超过100字'}
+        return jsonify({'success': False, 'msg': '分类名称不能超过100字'})
 
     ec_id = user.get('ec_id')
     project_id = user.get('project_id')
@@ -3667,7 +3667,7 @@ def admin_stock_warning_notify(user):
             try:
                 notification.send_notification(
                     user.get('user_id'), '库存预警',
-                    f"有 {len(items)} 个商品库存低于{threshold}件，请及时补货',
+                    f"有 {len(items)} 个商品库存低于{threshold}件，请及时补货",
                     notify_type='system',
                     ec_id=ec_id,
                     project_id=project_id
@@ -5068,7 +5068,7 @@ def admin_delete_backup(user, backup_id):
         return jsonify(result)
     except Exception as e:
         logging.error(f"删除备份失败: {e}")
-        return jsonify({'success': False, 'msg': f'删除失败: {str(e}')
+        return jsonify({'success': False, 'msg': f'删除失败: {str(e)}'})
 
 
 # ============ 走访台账模块（从22306合并） ============
