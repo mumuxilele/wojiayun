@@ -7,6 +7,8 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from datetime import datetime, timedelta
 import sys, os, time, json, logging
+import urllib.request
+import urllib.parse
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
@@ -22,6 +24,7 @@ from business_common.user_behavior_service import user_behavior_service as user_
 from business_common.product_spec_service import spec_service
 from business_common.product_qa_service import product_qa
 from business_common.points_mall import PointsMallService
+from business_common.fid_utils import generate_fid, generate_business_fid  # V47.0: FID生成工具
 
 
 app = Flask(__name__, static_folder='.', static_url_path='')
@@ -189,10 +192,11 @@ def create_application(user):
     images = json.dumps(valid_images)
 
     app_no = utils.generate_no('APP')
+    app_fid = generate_business_fid('app')  # V47.0: 生成FID主键
     db.execute(
-        "INSERT INTO business_applications (app_no,app_type,title,content,user_id,user_name,user_phone,ec_id,project_id,status,images,priority) "
-        "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,'pending',%s,%s)",
-        [app_no, app_type, title, content, user['user_id'], user['user_name'],
+        "INSERT INTO business_applications (fid,app_no,app_type,title,content,user_id,user_name,user_phone,ec_id,project_id,status,images,priority) "
+        "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'pending',%s,%s)",
+        [app_fid, app_no, app_type, title, content, user['user_id'], user['user_name'],
          user.get('phone'), user.get('ec_id'), user.get('project_id'), images, priority]
     )
     return jsonify({'success': True, 'msg': '提交成功', 'data': {'app_no': app_no}})
@@ -237,7 +241,7 @@ def cancel_application(user, app_id):
 
 # ============ 购物车 V32.0 ============
 
-from business_common.cart_service import cart_service
+from business_common.cart_service import cart
 
 
 @app.route('/api/cart', methods=['GET'])
@@ -1817,7 +1821,7 @@ def get_review_stats():
 
 @app.route('/api/user/search/history', methods=['GET'])
 @require_login
-def get_search_history(user):
+def get_user_search_history(user):
     """获取我的搜索历史"""
     search_type = request.args.get('type')  # venue/shop/product
     limit = min(int(request.args.get('limit', 10)), 20)
@@ -1890,7 +1894,7 @@ def add_search_history(user):
 
 @app.route('/api/user/search/history', methods=['DELETE'])
 @require_login
-def clear_search_history(user):
+def clear_user_search_history(user):
     """清空搜索历史"""
     try:
         db.execute("DELETE FROM business_search_history WHERE user_id=%s", [user['user_id']])
@@ -1938,7 +1942,7 @@ def get_my_favorites(user):
     offset = (page - 1) * page_size
     
     items = db.get_all(
-        """SELECT id, target_type, target_id, target_name, created_at 
+        """SELECT id, target_type, target_id, created_at 
            FROM business_favorites WHERE """ + where + " ORDER BY created_at DESC LIMIT %s OFFSET %s",
         params + [page_size, offset]
     )
@@ -1949,16 +1953,19 @@ def get_my_favorites(user):
             if item['target_type'] == 'venue':
                 detail = db.get_one("SELECT venue_name, price, images FROM business_venues WHERE id=%s", [item['target_id']])
                 if detail:
+                    item['target_name'] = detail.get('venue_name', '')
                     item['price'] = detail.get('price')
                     item['images'] = detail.get('images')
             elif item['target_type'] == 'shop':
                 detail = db.get_one("SELECT shop_name, address, phone FROM business_shops WHERE id=%s", [item['target_id']])
                 if detail:
+                    item['target_name'] = detail.get('shop_name', '')
                     item['address'] = detail.get('address')
                     item['phone'] = detail.get('phone')
             elif item['target_type'] == 'product':
                 detail = db.get_one("SELECT product_name, price, images FROM business_products WHERE id=%s", [item['target_id']])
                 if detail:
+                    item['target_name'] = detail.get('product_name', '')
                     item['price'] = detail.get('price')
                     item['images'] = detail.get('images')
         except:
@@ -2324,11 +2331,11 @@ def get_my_coupons(user):
     
     items = db.get_all(
         """SELECT uc.id, uc.coupon_code, uc.status, uc.used_at,
-                  c.coupon_name, c.coupon_type, c.discount_value, c.min_amount, c.max_discount,
-                  c.valid_from, c.valid_until
+                  c.coupon_name, c.coupon_type, c.discount_amount as discount_value, c.min_amount, c.max_discount,
+                  c.valid_from, c.valid_to as valid_until
            FROM business_user_coupons uc
            LEFT JOIN business_coupons c ON uc.coupon_id = c.id
-           WHERE """ + where + " ORDER BY uc.created_at DESC",
+           WHERE """ + where + " ORDER BY uc.received_at DESC",
         params
     )
     
@@ -3078,55 +3085,9 @@ def create_order(user):
 @require_login
 def get_user_profile(user):
     """获取个人中心综合信息"""
-    uid = user['user_id']
-    cache_key = f'user_profile_{uid}'
-    cached = cache_get(cache_key)
-    if cached:
-        return jsonify({'success': True, 'data': cached})
-
-    # 会员信息
-    member = db.get_one(
-        "SELECT user_id, user_name, phone, member_level, points, total_points, balance FROM business_members WHERE user_id=%s",
-        [uid]
-    )
-    if not member:
-        member = {'user_id': uid, 'points': 0, 'total_points': 0, 'balance': 0, 'member_level': 'bronze'}
-
-    # 未读通知
-    unread_notif = db.get_total(
-        "SELECT COUNT(*) FROM business_notifications WHERE user_id=%s AND is_read=0 AND deleted=0", [uid]
-    )
-    # 收藏数
-    fav_count = db.get_total("SELECT COUNT(*) FROM business_favorites WHERE user_id=%s", [uid])
-    # 可用优惠券
-    coupon_count = 0
-    try:
-        coupon_count = db.get_total(
-            """SELECT COUNT(*) FROM business_user_coupons uc
-               WHERE uc.user_id=%s AND uc.status='unused'
-               AND (SELECT valid_until FROM business_coupons c WHERE c.id=uc.coupon_id) >= CURDATE()""",
-            [uid]
-        )
-    except:
-        pass
-    # 评价数
-    review_count = 0
-    try:
-        review_count = db.get_total(
-            "SELECT COUNT(*) FROM business_reviews WHERE user_id=%s AND deleted=0", [uid]
-        )
-    except:
-        pass
-
-    data = {
-        'member': member,
-        'unread_notifications': unread_notif,
-        'favorites_count': fav_count,
-        'coupons_count': coupon_count,
-        'reviews_count': review_count
-    }
-    cache_set(cache_key, data, 30)
-    return jsonify({'success': True, 'data': data})
+    from business_common.user_service import get_user_service
+    user_service = get_user_service()
+    return jsonify(user_service.get_user_profile(user['user_id']))
 
 
 @app.route('/api/user/notification-preferences', methods=['GET'])
@@ -3942,7 +3903,7 @@ def get_seckill_orders(user):
 @app.route('/api/user/reviews', methods=['POST'])
 @require_login
 @rate_limiter.rate_limit(limit=10, window_seconds=60)
-def create_review(user):
+def create_review_user(user):
     """提交评价"""
     data = request.get_json() or {}
     target_type = data.get('target_type')  # order / shop / product / venue
@@ -4063,7 +4024,7 @@ def _update_review_stats(target_type, target_id):
 
 @app.route('/api/user/reviews', methods=['GET'])
 @require_login
-def get_my_reviews(user):
+def get_my_reviews_user(user):
     """获取我的评价列表"""
     page = int(request.args.get('page', 1))
     page_size = min(int(request.args.get('page_size', 20)), 50)
@@ -4688,7 +4649,7 @@ def get_points_mall_product_detail(goods_id):
 @app.route('/api/user/points-mall/exchange', methods=['POST'])
 @require_login
 @rate_limiter.rate_limit(limit=5, window_seconds=60)
-def exchange_points_goods(user):
+def exchange_points_goods_user(user):
     """积分兑换商品"""
     from business_common.points_mall import PointsMallService
     data = request.get_json() or {}
@@ -4855,7 +4816,7 @@ def get_user_achievements(user):
 
 @app.route('/api/user/points/exchanges', methods=['GET'])
 @require_login
-def get_points_exchanges(user):
+def get_points_exchanges_user(user):
     """V28.0: 获取用户积分兑换记录"""
     uid = user.get('user_id')
     page = max(1, int(request.args.get('page', 1)))
@@ -5719,6 +5680,208 @@ def check_lift_availability(user):
             'msg': '该时间段可用'
         }
     })
+
+
+# ============ V2 访客邀约转发接口 ============
+
+GUEST_SERVICE_URL = 'https://wj.wojiacloud.com/api/guest'
+
+@app.route('/api/v2/guest/invitations', methods=['GET'])
+@require_login
+def get_guest_invitations_v2(user):
+    """
+    V2版访客邀约列表 - 转发到访客服务
+    转发接口: https://wj.wojiacloud.com/api/guest/getGuestList
+    """
+    try:
+        # 获取参数
+        current = request.args.get('current', '1')
+        row_count = request.args.get('row_count', '10')
+        
+        # 从用户信息中获取token
+        token = request.args.get('access_token') or request.headers.get('Token', '')
+        
+        # 构建目标URL
+        timestamp = str(int(time.time() * 1000))
+        target_url = f"{GUEST_SERVICE_URL}/getGuestList?time={timestamp}&current={current}&rowCount={row_count}&access_token={urllib.parse.quote(token)}"
+        
+        logging.info(f"[GuestV2] 转发请求: {target_url.replace(token, '***')}")
+        
+        # 创建请求
+        req = urllib.request.Request(
+            target_url,
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        )
+        
+        # 发送请求
+        with urllib.request.urlopen(req, timeout=30) as response:
+            response_data = response.read().decode('utf-8')
+            
+        # 解析响应
+        result = json.loads(response_data)
+        
+        # 统一返回格式
+        if result.get('result') == 'success' or result.get('success'):
+            return jsonify({
+                'success': True,
+                'data': result.get('data', []),
+                'total': len(result.get('data', [])),
+                'page': int(current),
+                'page_size': int(row_count),
+                'msg': result.get('msg', '获取成功')
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'msg': result.get('msg', '获取访客列表失败'),
+                'data': []
+            })
+            
+    except urllib.error.HTTPError as e:
+        logging.error(f"[GuestV2] HTTP错误: {e.code} - {e.reason}")
+        return jsonify({'success': False, 'msg': f'访客服务异常: {e.reason}', 'data': []})
+    except urllib.error.URLError as e:
+        logging.error(f"[GuestV2] 网络错误: {e.reason}")
+        return jsonify({'success': False, 'msg': '访客服务连接失败', 'data': []})
+    except Exception as e:
+        logging.error(f"[GuestV2] 异常: {e}")
+        return jsonify({'success': False, 'msg': f'获取访客列表失败: {str(e)}', 'data': []})
+
+
+@app.route('/api/v2/guest/detail', methods=['GET'])
+@require_login
+def get_guest_detail_v2(user):
+    """
+    V2版访客详情 - 转发到访客服务
+    转发接口: https://wj.wojiacloud.com/api/guest/getGuestDetail
+    """
+    try:
+        guest_id = request.args.get('guest_id')
+        if not guest_id:
+            return jsonify({'success': False, 'msg': '缺少访客ID'})
+        
+        # 从用户信息中获取token
+        token = request.args.get('access_token') or request.headers.get('Token', '')
+        
+        # 构建目标URL
+        timestamp = str(int(time.time() * 1000))
+        target_url = f"{GUEST_SERVICE_URL}/getGuestDetail?time={timestamp}&guestId={urllib.parse.quote(guest_id)}&access_token={urllib.parse.quote(token)}"
+        
+        logging.info(f"[GuestV2] 转发详情请求: guest_id={guest_id}")
+        
+        # 创建请求
+        req = urllib.request.Request(
+            target_url,
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        )
+        
+        # 发送请求
+        with urllib.request.urlopen(req, timeout=30) as response:
+            response_data = response.read().decode('utf-8')
+            
+        # 解析响应
+        result = json.loads(response_data)
+        
+        if result.get('result') == 'success' or result.get('success'):
+            return jsonify({
+                'success': True,
+                'data': result.get('data', {}),
+                'msg': result.get('msg', '获取成功')
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'msg': result.get('msg', '获取访客详情失败')
+            })
+            
+    except Exception as e:
+        logging.error(f"[GuestV2] 详情异常: {e}")
+        return jsonify({'success': False, 'msg': f'获取访客详情失败: {str(e)}'})
+
+
+# ============ V2版房间管理接口 ============
+
+@app.route('/api/v2/rooms', methods=['GET'])
+@require_login
+def get_rooms_v2(user):
+    """
+    V2版获取房间列表 - 转发到访客服务
+    转发接口: https://wj.wojiacloud.com/api/guest/getRoomList
+    """
+    try:
+        # 获取参数
+        current = request.args.get('current', '1')
+        row_count = request.args.get('row_count', '10')
+        keyword = request.args.get('keyword', '')
+        
+        # 从用户信息中获取token
+        token = request.args.get('access_token') or request.headers.get('Token', '')
+        
+        # 构建目标URL
+        timestamp = str(int(time.time() * 1000))
+        target_url = f"{GUEST_SERVICE_URL}/getRoomList?time={timestamp}&current={current}&rowCount={row_count}"
+        
+        # 如果有搜索关键词，添加参数
+        if keyword:
+            target_url += f"&keyword={urllib.parse.quote(keyword)}"
+        
+        target_url += f"&access_token={urllib.parse.quote(token)}"
+        
+        logging.info(f"[RoomV2] 转发请求: {target_url.replace(token, '***')}")
+        
+        # 创建请求
+        req = urllib.request.Request(
+            target_url,
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept': 'application/json, text/plain, */*',
+                'Accept-Language': 'zh-CN,zh;q=0.9',
+                'Origin': 'https://wj.wojiacloud.com',
+                'Referer': 'https://wj.wojiacloud.com/'
+            }
+        )
+        
+        # 发送请求
+        with urllib.request.urlopen(req, timeout=30) as response:
+            response_data = response.read().decode('utf-8')
+            
+        # 解析响应
+        result = json.loads(response_data)
+        
+        # 统一返回格式
+        if result.get('result') == 'success' or result.get('success'):
+            return jsonify({
+                'success': True,
+                'data': result.get('data', []),
+                'total': result.get('total', len(result.get('data', []))),
+                'page': int(current),
+                'page_size': int(row_count),
+                'msg': result.get('msg', '获取成功')
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'msg': result.get('msg', '获取房间列表失败'),
+                'data': []
+            })
+            
+    except urllib.error.HTTPError as e:
+        logging.error(f"[RoomV2] HTTP错误: {e.code} - {e.reason}")
+        return jsonify({'success': False, 'msg': f'访客服务异常: {e.reason}', 'data': []})
+    except urllib.error.URLError as e:
+        logging.error(f"[RoomV2] 网络错误: {e.reason}")
+        return jsonify({'success': False, 'msg': '访客服务连接失败', 'data': []})
+    except Exception as e:
+        logging.error(f"[RoomV2] 异常: {e}")
+        return jsonify({'success': False, 'msg': f'获取房间列表失败: {str(e)}', 'data': []})
 
 
 if __name__ == '__main__':

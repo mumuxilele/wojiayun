@@ -196,7 +196,8 @@ let editId = null;
 
 // ============ 工具函数 ============
 function getToken() {
-    return localStorage.getItem('admin_token') || new URLSearchParams(window.location.search).get('access_token') || '';
+    // 只从URL参数获取token
+    return new URLSearchParams(window.location.search).get('access_token') || '';
 }
 
 function getHeaders() {
@@ -207,7 +208,9 @@ function getHeaders() {
 }
 
 function api(url, options = {}) {
-    return fetch(API_BASE + url + '?access_token=' + getToken(), {
+    // 正确处理URL中已存在的查询参数
+    const sep = url.includes('?') ? '&' : '?';
+    return fetch(API_BASE + url + sep + 'access_token=' + getToken(), {
         ...options,
         headers: getHeaders(),
         ...options.body && !(options.body instanceof FormData) ? { body: JSON.stringify(options.body) } : {}
@@ -334,7 +337,8 @@ function closeModal() {
 function editGoods(id) { openModal(id); }
 
 // ============ CRUD操作 ============
-document.getElementById('goodsForm').addEventListener('submit', function(e) {
+const goodsForm = document.getElementById('goodsForm');
+if (goodsForm) goodsForm.addEventListener('submit', function(e) {
     e.preventDefault();
     const id = document.getElementById('goodsId').value;
     const data = {

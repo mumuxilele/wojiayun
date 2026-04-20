@@ -217,24 +217,67 @@
         }
         
         function renderFormData() {
-            const formData = appData.form_data || {};
+            let formData = appData.form_data || {};
             const schema = appData.form_schema || {};
             const fields = schema.fields || [];
             
-            let html = '';
-            fields.forEach(field => {
-                const value = formData[field.name];
-                if (value) {
-                    html += `
+            // 如果 form_data 是字符串，尝试解析为对象
+            if (typeof formData === 'string') {
+                try {
+                    formData = JSON.parse(formData);
+                } catch (e) {
+                    // 解析失败，直接显示字符串
+                    document.getElementById('formDataList').innerHTML = `
                         <div class="info-row">
-                            <span class="info-label">${field.label}</span>
-                            <span class="info-value">${value}</span>
+                            <span class="info-label">详细内容</span>
+                            <span class="info-value">${formData}</span>
                         </div>
                     `;
+                    return;
                 }
-            });
+            }
+            
+            let html = '';
+            
+            // 如果有 schema 定义，按 schema 显示
+            if (fields.length > 0) {
+                fields.forEach(field => {
+                    const value = formData[field.name];
+                    if (value !== undefined && value !== null && value !== '') {
+                        html += `
+                            <div class="info-row">
+                                <span class="info-label">${field.label || field.name}</span>
+                                <span class="info-value">${formatValue(value)}</span>
+                            </div>
+                        `;
+                    }
+                });
+            } else {
+                // 没有 schema，直接遍历 form_data 显示
+                for (const [key, value] of Object.entries(formData)) {
+                    if (value !== undefined && value !== null && value !== '') {
+                        html += `
+                            <div class="info-row">
+                                <span class="info-label">${key}</span>
+                                <span class="info-value">${formatValue(value)}</span>
+                            </div>
+                        `;
+                    }
+                }
+            }
             
             document.getElementById('formDataList').innerHTML = html || '<div style="color: #999; padding: 20px;">暂无详细内容</div>';
+        }
+        
+        // 格式化显示值
+        function formatValue(value) {
+            if (typeof value === 'object') {
+                if (Array.isArray(value)) {
+                    return value.join(', ');
+                }
+                return JSON.stringify(value);
+            }
+            return String(value);
         }
         
         function renderAttachments() {

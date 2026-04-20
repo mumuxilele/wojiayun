@@ -2,85 +2,218 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>申请单列表 - 员工端</title>
-    <link rel="stylesheet" href="../business-common/list-style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>申请单列表</title>
     <style>
-        /* 页面特有样式 */
-        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
-        .actions .link:hover { text-decoration: underline; }
-        .actions .link.danger { color: var(--el-color-danger); }
-        /* 弹窗样式保留 */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif; 
+            background: #F8F9FA; 
+            height: 100%;
+            overflow: hidden;
+        }
         
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.45); z-index: 200; }
-        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: var(--el-bg-white); border-radius: 4px; width: 580px; max-width: 95vw; max-height: 85vh; flex-direction: column; z-index: 201; box-shadow: 0 4px 20px rgba(0,0,0,.18); }
-        .modal.show { display: flex; }
-        .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--el-border-color-light); display: flex; justify-content: space-between; align-items: center; }
-        .modal-title { font-size: 16px; font-weight: 600; color: var(--el-text-primary); }
-        .modal-close { background: none; border: none; width: 32px; height: 32px; border-radius: 4px; cursor: pointer; font-size: 16px; color: var(--el-text-secondary); display: flex; align-items: center; justify-content: center; }
-        .modal-close:hover { background: var(--el-bg-light); }
-        .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
-        .modal-footer { padding: 12px 20px; border-top: 1px solid var(--el-border-color-light); display: flex; justify-content: flex-end; gap: 10px; }
+        /* 固定头部区域 */
+        .header-fixed {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #F8F9FA;
+            padding: 12px 20px 16px;
+            z-index: 100;
+            border-bottom: 1px solid transparent;
+        }
+        .header-fixed.scrolled {
+            border-bottom-color: #E5E6EB;
+        }
+        
+        /* 搜索框 */
+        .search-bar {
+            background: #FFFFFF;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        }
+        .search-input {
+            width: 100%;
+            height: 40px;
+            padding: 0 12px;
+            border: 1px solid #E5E6EB;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #1D2129;
+            background: #F8F9FA;
+            outline: none;
+        }
+        .search-input:focus {
+            border-color: #30c2b3;
+        }
+        .search-input::placeholder {
+            color: #86909C;
+        }
+        
+        /* 筛选栏 */
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+        .filter-bar::-webkit-scrollbar {
+            display: none;
+        }
+        .filter-item {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            white-space: nowrap;
+            background: #FFFFFF;
+            color: #4E5969;
+            border: 1px solid #E5E6EB;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .filter-item.active {
+            background: #30c2b3;
+            color: #FFFFFF;
+            border-color: #30c2b3;
+        }
+        
+        /* 可滚动内容区域 */
+        .content-scroll {
+            height: 100%;
+            padding: 140px 20px 20px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        /* 列表卡片 */
+        .list-card {
+            background: #FFFFFF;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        }
+        .list-card:active {
+            background: #fafafa;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1D2129;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .status-tag {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #FFFFFF;
+            margin-left: 12px;
+            flex-shrink: 0;
+        }
+        .status-pending { background: #30c2b3; }
+        .status-processing { background: #FF7D00; }
+        .status-completed { background: #00B42A; }
+        .status-rejected { background: #F53F3F; }
+        
+        .card-info {
+            font-size: 14px;
+            color: #4E5969;
+            line-height: 1.8;
+        }
+        .card-info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+        .card-label {
+            color: #86909C;
+        }
+        .card-value {
+            color: #1D2129;
+            font-weight: 500;
+        }
+        .card-time {
+            font-size: 12px;
+            color: #86909C;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #F0F0F0;
+        }
+        
+        /* 空状态 */
+        .empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: #86909C;
+        }
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        .empty-text {
+            font-size: 14px;
+        }
+        
+        /* 加载更多 */
+        .load-more {
+            text-align: center;
+            padding: 20px;
+            color: #86909C;
+            font-size: 14px;
+        }
+        
+        /* 优先级标记 */
+        .priority {
+            color: #F53F3F;
+            font-weight: 500;
+        }
     </style>
 </head>
-<body class="wy-design-list">
-    <!-- 顶部区域 -->
-    <div class="wy-design-list_top">
-        <div class="wy-design-list_top_title">
-            <h1 class="wy-design-list_title">申请单列表 - 员工端</h1>
-            <div class="wy-design-list_space"></div>
-            <div class="wy-design-list_btn-group">
-                <div class="wy-design-list_btn">
-                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
-                        <span>搜索</span>
-                    </button>
-                </div>
-                <div class="wy-design-list_btn">
-                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
-                        <span>重置</span>
-                    </button>
-                </div>
-            </div>
+<body>
+    <!-- 固定头部 -->
+    <div class="header-fixed" id="headerFixed">
+        <!-- 搜索框 -->
+        <div class="search-bar">
+            <input type="text" class="search-input" id="keywordInput" placeholder="搜索申请人、标题">
+        </div>
+        
+        <!-- 筛选栏 -->
+        <div class="filter-bar">
+            <div class="filter-item active" data-status="">全部</div>
+            <div class="filter-item" data-status="pending">待处理</div>
+            <div class="filter-item" data-status="processing">处理中</div>
+            <div class="filter-item" data-status="completed">已完成</div>
+            <div class="filter-item" data-status="rejected">已拒绝</div>
         </div>
     </div>
-
-    <!-- 筛选区域 -->
-    <div class="wy-design-list_filter">
-        <div class="wy-design-list_other">
-            <div class="el-input el-input--small" style="width: 200px;">
-                <input type="text" id="keyword" placeholder="搜索关键词" class="el-input__inner">
-            </div>
-        </div>
-    </div>
-
-    <!-- 表格区域 -->
-    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
-        <div class="wy-design-table_bar">
-            <i class="wy-design-table_set el-icon-setting" title="列设置"></i>
-            <span class="wy-design-table_total">共 <em id="totalCount">0</em> 条</span>
-            <div class="wy-pages">
-                <div class="wy-pages_total">第<em id="currentPage">1</em>/<em id="totalPages">1</em>页</div>
-                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
-                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
-            </div>
-        </div>
-        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
-            <thead class="el-table__header">
-                <tr>
-                    <th><div class="cell">名称</div></th>
-                    <th><div class="cell">操作</div></th>
-                </tr>
-            </thead>
-            <tbody class="el-table__body" id="listBody">
-                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</td></tr>
-            </tbody>
-        </table>
-    </div>
-
     
+    <!-- 可滚动内容区域 -->
+    <div class="content-scroll" id="contentScroll">
+        <!-- 列表容器 -->
+        <div id="listContainer">
+            <div class="empty">
+                <div class="empty-icon">📋</div>
+                <div class="empty-text">加载中...</div>
+            </div>
+        </div>
+    </div>
 
     <script>
-    // Token 管理
+        // Token 管理
         const urlParams = new URLSearchParams(location.search);
         let token = urlParams.get('access_token');
         let isdev = urlParams.get('isdev') || '0';
@@ -94,21 +227,23 @@
         }
 
         if (!token) {
-            document.body.innerHTML = '<div class="login-tip"><h2>请先登录</h2></div>';
+            document.getElementById('listContainer').innerHTML = '<div class="empty"><div class="empty-text">请先登录</div></div>';
             throw new Error('No token');
         }
 
-        function goBack() {
-            location.href = 'index.html?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
-            return false;
-        }
-
         let currentStatus = '';
-
-        function getStatusClass(s) { return 'item-status status-' + (s || 'pending'); }
-        function getStatusText(s) { return {pending:'待处理',processing:'处理中',completed:'已完成',rejected:'已拒绝'}[s] || s; }
+        let currentKeyword = '';
+        let currentPage = 1;
+        let isLoading = false;
         
-        // 格式化时间 - 显示年月日时分秒
+        function getStatusClass(s) { 
+            return 'status-tag status-' + (s || 'pending'); 
+        }
+        
+        function getStatusText(s) { 
+            return {pending:'待处理', processing:'处理中', completed:'已完成', rejected:'已拒绝'}[s] || s; 
+        }
+        
         function formatTime(timeStr) {
             if (!timeStr) return '';
             let d = new Date(timeStr);
@@ -116,41 +251,106 @@
                 d = new Date(timeStr.replace(' ', 'T'));
             }
             if (isNaN(d.getTime())) return timeStr;
-            const year = d.getFullYear();
             const month = String(d.getMonth() + 1).padStart(2, '0');
             const day = String(d.getDate()).padStart(2, '0');
             const hour = String(d.getHours()).padStart(2, '0');
             const minute = String(d.getMinutes()).padStart(2, '0');
-            const second = String(d.getSeconds()).padStart(2, '0');
-            return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+            return `${month}-${day} ${hour}:${minute}`;
         }
-
-        async function loadList() {
-            const url = '/api/staff/applications?page=1&page_size=20' + (currentStatus ? '&status=' + currentStatus : '') + '&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+        
+        async function loadList(append = false) {
+            if (isLoading) return;
+            isLoading = true;
+            
+            if (!append) {
+                currentPage = 1;
+                document.getElementById('listContainer').innerHTML = '<div class="empty"><div class="empty-text">加载中...</div></div>';
+            }
+            
+            let url = '/api/staff/applications?page=' + currentPage + '&page_size=20';
+            if (currentStatus) url += '&status=' + currentStatus;
+            if (currentKeyword) url += '&keyword=' + encodeURIComponent(currentKeyword);
+            url += '&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+            
             try {
                 const res = await fetch(url);
                 const data = await res.json();
+                
                 if (data.success && data.data && data.data.items && data.data.items.length > 0) {
-                    document.getElementById('list').innerHTML = data.data.items.map(item => 
-                        '<div class="item" onclick="goToDetail(' + item.id + ')">' +
-                        '<div class="item-header"><span class="item-title">' + (item.title || '') + '</span><span class="' + getStatusClass(item.status) + '">' + getStatusText(item.status) + '</span></div>' +
-                        '<div class="item-info">申请人: ' + (item.user_name || '') + ' | ' + formatTime(item.created_at) + (item.priority > 1 ? ' | <span class="priority">优先级' + item.priority + '</span>' : '') + '</div></div>'
-                    ).join('');
+                    const html = data.data.items.map(item => {
+                        const priorityHtml = item.priority > 1 ? '<span class="priority">!优先</span>' : '';
+                        return `
+                            <div class="list-card" onclick="goToDetail(${item.id})">
+                                <div class="card-header">
+                                    <div class="card-title">${escapeHtml(item.title || '无标题')}</div>
+                                    <span class="${getStatusClass(item.status)}">${getStatusText(item.status)}</span>
+                                </div>
+                                <div class="card-info">
+                                    <div class="card-info-row">
+                                        <span><span class="card-label">申请人：</span>${escapeHtml(item.user_name || '-')}</span>
+                                        ${priorityHtml}
+                                    </div>
+                                    <div class="card-info-row">
+                                        <span><span class="card-label">类型：</span>${escapeHtml(item.app_type_name || item.app_type || '-')}</span>
+                                    </div>
+                                </div>
+                                <div class="card-time">提交时间：${formatTime(item.created_at)}</div>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                    if (append) {
+                        document.getElementById('listContainer').insertAdjacentHTML('beforeend', html);
+                    } else {
+                        document.getElementById('listContainer').innerHTML = html;
+                    }
+                    
+                    // 检查是否有更多数据
+                    if (data.data.items.length >= 20) {
+                        if (!document.getElementById('loadMore')) {
+                            document.getElementById('listContainer').insertAdjacentHTML('afterend', 
+                                '<div class="load-more" id="loadMore" onclick="loadMore()">点击加载更多</div>');
+                        }
+                    } else {
+                        const loadMoreEl = document.getElementById('loadMore');
+                        if (loadMoreEl) loadMoreEl.remove();
+                    }
                 } else if (data.msg && data.msg.includes('登录')) {
                     localStorage.removeItem('staff_token');
                     location.reload();
                 } else {
-                    document.getElementById('list').innerHTML = '<div class="empty">暂无申请单</div>';
+                    if (!append) {
+                        document.getElementById('listContainer').innerHTML = 
+                            '<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">暂无申请单</div></div>';
+                    }
                 }
             } catch(e) {
-                document.getElementById('list').innerHTML = '<div class="empty">加载失败</div>';
+                if (!append) {
+                    document.getElementById('listContainer').innerHTML = 
+                        '<div class="empty"><div class="empty-text">加载失败</div></div>';
+                }
+            } finally {
+                isLoading = false;
             }
         }
-
+        
+        function loadMore() {
+            currentPage++;
+            loadList(true);
+        }
+        
         function goToDetail(id) {
             location.href = 'application_detail.html?id=' + id + '&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
         }
-
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // 筛选事件
         document.querySelectorAll('.filter-item').forEach(el => {
             el.addEventListener('click', () => {
                 document.querySelectorAll('.filter-item').forEach(e => e.classList.remove('active'));
@@ -159,7 +359,26 @@
                 loadList();
             });
         });
-
+        
+        // 搜索事件
+        document.getElementById('keywordInput').addEventListener('input', (e) => {
+            currentKeyword = e.target.value;
+            clearTimeout(window.searchTimer);
+            window.searchTimer = setTimeout(() => loadList(), 500);
+        });
+        
+        // 滚动监听
+        const contentScroll = document.getElementById('contentScroll');
+        const headerFixed = document.getElementById('headerFixed');
+        contentScroll.addEventListener('scroll', () => {
+            if (contentScroll.scrollTop > 10) {
+                headerFixed.classList.add('scrolled');
+            } else {
+                headerFixed.classList.remove('scrolled');
+            }
+        });
+        
+        // 初始化加载
         loadList();
     </script>
 </body>

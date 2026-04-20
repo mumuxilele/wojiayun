@@ -2,8 +2,8 @@
     "namespace": "chat",
     "queries": {
         "saveMessage": {
-            "sql": "INSERT INTO chat_messages (msg_id, msg_type, content, sender_id, sender_name, sender_type, receiver_id, timestamp) VALUES (#{msgId}, #{msgType}, #{content}, #{senderId}, #{senderName}, #{senderType}, #{receiverId}, #{timestamp})",
-            "description": "保存聊天消息"
+            "sql": "INSERT INTO chat_messages (fid, msg_id, msg_type, content, sender_id, sender_name, sender_type, receiver_id, timestamp) VALUES (#{fid}, #{msgId}, #{msgType}, #{content}, #{senderId}, #{senderName}, #{senderType}, #{receiverId}, #{timestamp})",
+            "description": "保存聊天消息 - V47.0添加fid字段"
         },
         "getMessages": {
             "sql": "SELECT msg_id as id, msg_id, msg_type, content, sender_id as senderId, sender_name as senderName, sender_type, receiver_id as receiverId, timestamp FROM chat_messages WHERE sender_type = #{senderType} AND deleted = 0 ORDER BY timestamp DESC LIMIT #{limit} OFFSET #{offset}",

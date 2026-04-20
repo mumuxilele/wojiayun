@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>拼团活动管理 - 管理后台</title>
-    <link rel="stylesheet" href="../business-common/list-style.css">
+    <link rel="stylesheet" href="/business-common/list-style.css">
     <style>
         /* 页面特有样式 */
         .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
@@ -184,7 +184,8 @@ let currentStatus = '';
 let productsCache = [];
 
 function getToken() {
-    return localStorage.getItem('admin_token') || new URLSearchParams(window.location.search).get('access_token') || '';
+    // 只从URL参数获取token
+    return new URLSearchParams(window.location.search).get('access_token') || '';
 }
 
 function getHeaders() {
@@ -192,7 +193,8 @@ function getHeaders() {
 }
 
 function api(url, options = {}) {
-    return fetch(API_BASE + url + '?access_token=' + getToken(), { ...options, headers: getHeaders() }).then(r => r.json());
+    const sep = url.includes('?') ? '&' : '?';
+    return fetch(API_BASE + url + sep + 'access_token=' + getToken(), { ...options, headers: getHeaders() }).then(r => r.json());
 }
 
 function getStatusName(s) {
@@ -219,25 +221,27 @@ document.querySelectorAll('.tab').forEach(tab => {
 
 function loadData(page = 1) {
     currentPage = page;
-    const name = document.getElementById('searchName').value.trim();
+    const name = document.getElementById('searchName') ? document.getElementById('searchName').value.trim() : '';
     const params = new URLSearchParams({ page, page_size: pageSize });
     if (name) params.append('name', name);
     if (currentStatus) params.append('status', currentStatus);
-    document.getElementById('tableBody').innerHTML = '<tr><td colspan="9" class="loading">加载中...</td></tr>';
+    const tb = document.getElementById('tableBody');
+    if (tb) tb.innerHTML = '<tr><td colspan="9" class="loading">加载中...</td></tr>';
     api('/group-buy/activities?' + params.toString())
         .then(res => {
             if (res.success) {
                 renderTable(res.data.items || []);
                 renderPagination(res.data);
             } else {
-                document.getElementById('tableBody').innerHTML = '<tr><td colspan="9" class="empty">' + (res.msg || '加载失败') + '</td></tr>';
+                if (tb) tb.innerHTML = '<tr><td colspan="9" class="empty">' + (res.msg || '加载失败') + '</td></tr>';
             }
         });
 }
 
 function renderTable(items) {
+    const tb = document.getElementById('tableBody');
     if (!items || items.length === 0) {
-        document.getElementById('tableBody').innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">暂无数据</td></tr>';
+        if (tb) tb.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">暂无数据</td></tr>';
         return;
     }
     const html = items.map(item => {
@@ -327,7 +331,8 @@ function onProductChange() {
 
 function viewOrders(activityNo) { alert('查看活动 ' + activityNo + ' 的订单详情'); }
 
-document.getElementById('activityForm').addEventListener('submit', function(e) {
+const activityForm = document.getElementById('activityForm');
+if (activityForm) activityForm.addEventListener('submit', function(e) {
     e.preventDefault();
     const id = document.getElementById('activityId').value;
     const data = {

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>场地管理 - 管理后台</title>
-    <link rel="stylesheet" href="../business-common/list-style.css">
+    <link rel="stylesheet" href="/business-common/list-style.css">
     <style>
         /* 页面特有样式 */
         .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
@@ -180,8 +180,8 @@ function switchPage(page,el){
 // ===== 场地管理 =====
 function loadVenues(p){
   if(p)CP.venues=p;
-  var kw=document.getElementById('kw').value;
-  var st=document.getElementById('st').value;
+  var kw=document.getElementById('kw') ? document.getElementById('kw').value : '';
+  var st=document.getElementById('st') ? document.getElementById('st').value : '';
   var url='/venues?page='+CP.venues+'&page_size=10'+(kw?'&keyword='+encodeURIComponent(kw):'')+(st?'&status='+st:'');
   A(url).then(function(d){
     if(d.success&&d.data&&d.data.items){

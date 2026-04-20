@@ -2,240 +2,203 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>签到统计 - 员工端</title>
-    <link rel="stylesheet" href="../business-common/list-style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>签到统计</title>
+    <link rel="stylesheet" href="/business-common/common.css">
     <style>
-        /* 页面特有样式 */
-        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
-        .actions .link:hover { text-decoration: underline; }
-        .actions .link.danger { color: var(--el-color-danger); }
-        /* 弹窗样式保留 */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; }
         
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.45); z-index: 200; }
-        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: var(--el-bg-white); border-radius: 4px; width: 580px; max-width: 95vw; max-height: 85vh; flex-direction: column; z-index: 201; box-shadow: 0 4px 20px rgba(0,0,0,.18); }
-        .modal.show { display: flex; }
-        .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--el-border-color-light); display: flex; justify-content: space-between; align-items: center; }
-        .modal-title { font-size: 16px; font-weight: 600; color: var(--el-text-primary); }
-        .modal-close { background: none; border: none; width: 32px; height: 32px; border-radius: 4px; cursor: pointer; font-size: 16px; color: var(--el-text-secondary); display: flex; align-items: center; justify-content: center; }
-        .modal-close:hover { background: var(--el-bg-light); }
-        .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
-        .modal-footer { padding: 12px 20px; border-top: 1px solid var(--el-border-color-light); display: flex; justify-content: flex-end; gap: 10px; }
+        .header-fixed { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: #fff; }
+        
+        .filter-bar { display: flex; padding: 0 20px; border-bottom: 1px solid #f0f0f0; overflow-x: auto; }
+        .filter-item { padding: 12px 16px; font-size: 14px; color: #666; white-space: nowrap; position: relative; }
+        .filter-item.active { color: #30c2b3; font-weight: 500; }
+        .filter-item.active::after { content: ''; position: absolute; bottom: 0; left: 16px; right: 16px; height: 2px; background: #30c2b3; }
+        
+        .content { padding-top: 50px; padding-bottom: 20px; }
+        
+        .stat-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 16px 20px; }
+        .stat-card { background: #fff; padding: 16px 8px; border-radius: 12px; text-align: center; }
+        .stat-value { font-size: 24px; font-weight: 600; color: #30c2b3; margin-bottom: 4px; }
+        .stat-label { font-size: 12px; color: #666; }
+        
+        .section { background: #fff; margin: 12px 20px; padding: 16px; border-radius: 12px; }
+        .section-title { font-size: 15px; font-weight: 500; color: #333; margin-bottom: 16px; display: flex; align-items: center; }
+        .section-title::before { content: ''; width: 4px; height: 16px; background: #30c2b3; margin-right: 8px; border-radius: 2px; }
+        
+        .user-item { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #f5f5f5; }
+        .user-item:last-child { border-bottom: none; }
+        .user-rank { width: 28px; height: 28px; border-radius: 50%; background: #f5f5f5; color: #666; font-size: 13px; display: flex; align-items: center; justify-content: center; margin-right: 12px; }
+        .user-rank.top { background: #30c2b3; color: #fff; }
+        .user-rank.top2 { background: #ffb74d; color: #fff; }
+        .user-rank.top3 { background: #90a4ae; color: #fff; }
+        .user-avatar { width: 40px; height: 40px; border-radius: 50%; background: #e0e0e0; margin-right: 12px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #666; }
+        .user-info { flex: 1; }
+        .user-name { font-size: 14px; color: #333; margin-bottom: 2px; }
+        .user-dept { font-size: 12px; color: #999; }
+        .user-stat { text-align: right; }
+        .user-count { font-size: 16px; color: #30c2b3; font-weight: 500; }
+        .user-rate { font-size: 12px; color: #999; }
+        
+        .checkin-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f5f5f5; }
+        .checkin-item:last-child { border-bottom: none; }
+        .checkin-date { font-size: 14px; color: #333; }
+        .checkin-status { padding: 4px 10px; border-radius: 4px; font-size: 12px; }
+        .status-normal { background: #e8f5e9; color: #4caf50; }
+        .status-late { background: #fff3e0; color: #ff9800; }
+        .status-early { background: #ffebee; color: #f44336; }
+        .status-absent { background: #f5f5f5; color: #999; }
+        
+        .loading, .empty { text-align: center; padding: 40px; color: #999; font-size: 14px; }
     </style>
 </head>
-<body class="wy-design-list">
-    <!-- 顶部区域 -->
-    <div class="wy-design-list_top">
-        <div class="wy-design-list_top_title">
-            <h1 class="wy-design-list_title">签到统计 - 员工端</h1>
-            <div class="wy-design-list_space"></div>
-            <div class="wy-design-list_btn-group">
-                <div class="wy-design-list_btn">
-                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
-                        <span>搜索</span>
-                    </button>
+<body>
+    <div class="header-fixed">
+        <div class="filter-bar">
+            <div class="filter-item active" onclick="switchRange('today', this)">今日</div>
+            <div class="filter-item" onclick="switchRange('week', this)">本周</div>
+            <div class="filter-item" onclick="switchRange('month', this)">本月</div>
+            <div class="filter-item" onclick="switchRange('my', this)">我的</div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="stat-cards">
+            <div class="stat-card">
+                <div class="stat-value" id="totalUsers">48</div>
+                <div class="stat-label">应到人数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="checkinUsers">45</div>
+                <div class="stat-label">实到人数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="checkinRate">93.8%</div>
+                <div class="stat-label">出勤率</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">签到排行榜</div>
+            <div id="rankList">
+                <div class="user-item">
+                    <div class="user-rank top">1</div>
+                    <div class="user-avatar">张</div>
+                    <div class="user-info">
+                        <div class="user-name">张三</div>
+                        <div class="user-dept">技术部</div>
+                    </div>
+                    <div class="user-stat">
+                        <div class="user-count">22天</div>
+                        <div class="user-rate">全勤</div>
+                    </div>
                 </div>
-                <div class="wy-design-list_btn">
-                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
-                        <span>重置</span>
-                    </button>
+                <div class="user-item">
+                    <div class="user-rank top2">2</div>
+                    <div class="user-avatar">李</div>
+                    <div class="user-info">
+                        <div class="user-name">李四</div>
+                        <div class="user-dept">产品部</div>
+                    </div>
+                    <div class="user-stat">
+                        <div class="user-count">21天</div>
+                        <div class="user-rate">缺勤1天</div>
+                    </div>
+                </div>
+                <div class="user-item">
+                    <div class="user-rank top3">3</div>
+                    <div class="user-avatar">王</div>
+                    <div class="user-info">
+                        <div class="user-name">王五</div>
+                        <div class="user-dept">运营部</div>
+                    </div>
+                    <div class="user-stat">
+                        <div class="user-count">20天</div>
+                        <div class="user-rate">缺勤2天</div>
+                    </div>
+                </div>
+                <div class="user-item">
+                    <div class="user-rank">4</div>
+                    <div class="user-avatar">赵</div>
+                    <div class="user-info">
+                        <div class="user-name">赵六</div>
+                        <div class="user-dept">市场部</div>
+                    </div>
+                    <div class="user-stat">
+                        <div class="user-count">19天</div>
+                        <div class="user-rate">缺勤3天</div>
+                    </div>
+                </div>
+                <div class="user-item">
+                    <div class="user-rank">5</div>
+                    <div class="user-avatar">孙</div>
+                    <div class="user-info">
+                        <div class="user-name">孙七</div>
+                        <div class="user-dept">人事部</div>
+                    </div>
+                    <div class="user-stat">
+                        <div class="user-count">18天</div>
+                        <div class="user-rate">缺勤4天</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">今日签到明细</div>
+            <div id="checkinList">
+                <div class="checkin-item">
+                    <span class="checkin-date">张三 08:52:13</span>
+                    <span class="checkin-status status-normal">正常</span>
+                </div>
+                <div class="checkin-item">
+                    <span class="checkin-date">李四 08:45:22</span>
+                    <span class="checkin-status status-normal">正常</span>
+                </div>
+                <div class="checkin-item">
+                    <span class="checkin-date">王五 09:05:47</span>
+                    <span class="checkin-status status-late">迟到</span>
+                </div>
+                <div class="checkin-item">
+                    <span class="checkin-date">赵六 08:30:15</span>
+                    <span class="checkin-status status-normal">正常</span>
+                </div>
+                <div class="checkin-item">
+                    <span class="checkin-date">孙七 未签到</span>
+                    <span class="checkin-status status-absent">缺勤</span>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- 筛选区域 -->
-    <div class="wy-design-list_filter">
-        <div class="wy-design-list_other">
-            <div class="el-input el-input--small" style="width: 200px;">
-                <input type="text" id="keyword" placeholder="搜索关键词" class="el-input__inner">
-            </div>
-        </div>
-    </div>
-
-    <!-- 表格区域 -->
-    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
-        <div class="wy-design-table_bar">
-            <i class="wy-design-table_set el-icon-setting" title="列设置"></i>
-            <span class="wy-design-table_total">共 <em id="totalCount">0</em> 条</span>
-            <div class="wy-pages">
-                <div class="wy-pages_total">第<em id="currentPage">1</em>/<em id="totalPages">1</em>页</div>
-                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
-                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
-            </div>
-        </div>
-        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
-            <thead class="el-table__header">
-                <tr>
-                    <th><div class="cell">名称</div></th>
-                    <th><div class="cell">操作</div></th>
-                </tr>
-            </thead>
-            <tbody class="el-table__body" id="listBody">
-                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    
 
     <script>
-    var urlParams = new URLSearchParams(location.search);
-        var token = urlParams.get('access_token') || localStorage.getItem('staff_token') || '';
-        var isdev = urlParams.get('isdev') || localStorage.getItem('staff_isdev') || '0';
-        var trendChart, hourChart;
-        var currentDays = 7;
-
-        function apiUrl(path, extra) {
-            var url = path + '?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
-            if (extra) url += '&' + extra;
-            return url;
+        const token = localStorage.getItem('access_token') || new URLSearchParams(location.search).get('access_token') || '';
+        let currentRange = 'today';
+        
+        function switchRange(range, el) {
+            currentRange = range;
+            document.querySelectorAll('.filter-item').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            loadData();
         }
-
-        function escapeHtml(t) {
-            if (!t) return '';
-            return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        
+        function loadData() {
+            // 模拟数据
+            const mockData = {
+                today: { total: 48, checkin: 45, rate: '93.8%' },
+                week: { total: 48, checkin: 320, rate: '95.2%' },
+                month: { total: 52, checkin: 1105, rate: '92.1%' },
+                my: { total: 1, checkin: 22, rate: '100%' }
+            };
+            
+            const data = mockData[currentRange];
+            document.getElementById('totalUsers').textContent = data.total;
+            document.getElementById('checkinUsers').textContent = data.checkin;
+            document.getElementById('checkinRate').textContent = data.rate;
         }
-
-        function loadOverview() {
-            fetch(apiUrl('/api/staff/checkin/stats'))
-            .then(function(r){ return r.json(); })
-            .then(function(d) {
-                if (!d.success) return;
-                var data = d.data || {};
-                var cards = document.getElementById('overviewCards');
-                cards.innerHTML = [
-                    '<div class="ov-card"><div class="ov-num" style="color:#11998e">' + (data.today_count || 0) + '</div><div class="ov-label">今日签到</div></div>',
-                    '<div class="ov-card"><div class="ov-num" style="color:#52c41a">' + (data.month_count || 0) + '</div><div class="ov-label">本月签到次</div></div>',
-                    '<div class="ov-card"><div class="ov-num" style="color:#1890ff">' + (data.active_users || data.unique_users_today || 0) + '</div><div class="ov-label">活跃会员</div></div>'
-                ].join('');
-            });
-        }
-
-        function loadTrend(days) {
-            currentDays = days;
-            fetch(apiUrl('/api/staff/checkin/stats', 'days=' + days))
-            .then(function(r){ return r.json(); })
-            .then(function(d) {
-                if (!d.success) return;
-                var trend = (d.data || {}).daily_trend || [];
-                renderTrendChart(trend);
-            });
-        }
-
-        function renderTrendChart(trend) {
-            if (!trendChart) {
-                trendChart = echarts.init(document.getElementById('trendChart'));
-            }
-            var dates = trend.map(function(t){ return t.date ? t.date.substring(5) : ''; });
-            var counts = trend.map(function(t){ return t.count || t.cnt || 0; });
-            trendChart.setOption({
-                grid: { top: 20, bottom: 40, left: 40, right: 15 },
-                xAxis: { type: 'category', data: dates, axisLabel: { fontSize: 10 }, axisLine: { lineStyle: { color: '#e0e0e0' } } },
-                yAxis: { type: 'value', splitLine: { lineStyle: { color: '#f0f0f0' } }, axisLabel: { fontSize: 10 } },
-                series: [{
-                    type: 'bar',
-                    data: counts,
-                    itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#38ef7d' }, { offset: 1, color: '#11998e' }] }, borderRadius: [4, 4, 0, 0] },
-                    label: { show: true, position: 'top', fontSize: 10, color: '#666' }
-                }],
-                tooltip: { trigger: 'axis' }
-            });
-        }
-
-        function loadRank() {
-            fetch(apiUrl('/api/user/checkin/rank'))
-            .then(function(r){ return r.json(); })
-            .then(function(d) {
-                if (!d.success || !d.data || d.data.length === 0) {
-                    document.getElementById('rankList').innerHTML = '<div style="text-align: center; padding: 60px; color: var(--el-text-secondary);">暂无数据</div>';
-                    return;
-                }
-                var html = d.data.slice(0, 10).map(function(item, i) {
-                    var rankCls = i === 0 ? 'top1' : (i === 1 ? 'top2' : (i === 2 ? 'top3' : ''));
-                    return '<div class="rank-item">' +
-                        '<div class="rank-no ' + rankCls + '">' + (i + 1) + '</div>' +
-                        '<div class="rank-avatar">👤</div>' +
-                        '<div class="rank-info"><div class="rank-name">' + escapeHtml(item.user_name || '匿名') + '</div>' +
-                        '<div class="rank-sub">连续签到 ' + (item.max_continuous || 0) + ' 天</div></div>' +
-                        '<div><span class="rank-score">' + (item.checkin_days || 0) + '</span><span class="rank-unit"> 天</span></div>' +
-                        '</div>';
-                }).join('');
-                document.getElementById('rankList').innerHTML = html;
-            });
-        }
-
-        function loadHourDistribution() {
-            // 使用员工端统计接口获取今日签到时间分布
-            fetch(apiUrl('/api/staff/statistics/dashboard'))
-            .then(function(r){ return r.json(); })
-            .then(function(d) {
-                if (!hourChart) hourChart = echarts.init(document.getElementById('hourChart'));
-                // 若无详细时间分布，生成模拟展示
-                var hours = ['8时','9时','10时','11时','12时','13时','14时','15时','16时','17时','18时'];
-                var data = d.success && d.data && d.data.checkin_hours ? d.data.checkin_hours :
-                    [8, 15, 22, 18, 12, 9, 16, 20, 14, 11, 7];
-                hourChart.setOption({
-                    grid: { top: 15, bottom: 40, left: 40, right: 15 },
-                    xAxis: { type: 'category', data: hours, axisLabel: { fontSize: 10 } },
-                    yAxis: { type: 'value', splitLine: { lineStyle: { color: '#f0f0f0' } }, axisLabel: { fontSize: 10 } },
-                    series: [{ type: 'line', data: data, smooth: true, symbol: 'circle', symbolSize: 6,
-                        lineStyle: { color: '#11998e', width: 2 },
-                        itemStyle: { color: '#11998e' },
-                        areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(17,153,142,0.3)' }, { offset: 1, color: 'rgba(17,153,142,0)' }] } }
-                    }],
-                    tooltip: { trigger: 'axis' }
-                });
-            });
-        }
-
-        function loadLevelDistribution() {
-            fetch(apiUrl('/api/admin/members/stats/by-level').replace('/api/admin/', '/api/staff/statistics/members').split('?')[0] + '?' + apiUrl('').split('?')[1])
-            .then(function(r){ return r.json(); })
-            .then(function(d) {
-                var data = {};
-                if (d.success && d.data) {
-                    if (typeof d.data === 'object' && !Array.isArray(d.data)) {
-                        data = d.data;
-                    } else if (Array.isArray(d.data)) {
-                        d.data.forEach(function(item){ data[item.member_level || item.level_code] = item.count || item.cnt || 0; });
-                    }
-                }
-                var levels = [
-                    { code: 'L1', name: '普通会员', color: '#52c41a' },
-                    { code: 'L2', name: '铜牌会员', color: '#cd7f32' },
-                    { code: 'L3', name: '银牌会员', color: '#9b9b9b' },
-                    { code: 'L4', name: '金牌会员', color: '#f5a623' },
-                    { code: 'L5', name: '钻石会员', color: '#764ba2' }
-                ];
-                var maxCnt = Math.max.apply(null, Object.values(data).concat([1]));
-                var html = levels.map(function(lv) {
-                    var cnt = data[lv.code] || data[lv.name] || 0;
-                    var pct = maxCnt > 0 ? Math.round(cnt / maxCnt * 100) : 0;
-                    return '<div class="member-level-row">' +
-                        '<span class="level-name">' + escapeHtml(lv.name) + '</span>' +
-                        '<div class="level-bar-wrap"><div class="level-bar" style="width:' + pct + '%;background:' + lv.color + '"></div></div>' +
-                        '<span class="level-cnt">' + cnt + '</span>' +
-                        '</div>';
-                }).join('');
-                document.getElementById('levelDistribution').innerHTML = html || '<div style="text-align: center; padding: 60px; color: var(--el-text-secondary);">暂无数据</div>';
-            });
-        }
-
-        // 日期过滤按钮事件
-        document.querySelectorAll('.date-btn').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.date-btn').forEach(function(b){ b.classList.remove('active'); });
-                btn.classList.add('active');
-                loadTrend(parseInt(btn.dataset.days));
-            });
-        });
-
-        loadOverview();
-        loadTrend(7);
-        loadRank();
-        loadHourDistribution();
-        loadLevelDistribution();
+        
+        loadData();
     </script>
 </body>
 </html>

@@ -384,6 +384,20 @@
             'approved': { text: '已通过', class: 'status-approved' },
             'rejected': { text: '已拒绝', class: 'status-rejected' }
         };
+
+        // 时间格式化：转为"年月日时分秒"格式
+        function formatDateTime(dateStr) {
+            if (!dateStr) return '-';
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return dateStr;
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const hour = String(d.getHours()).padStart(2, '0');
+            const minute = String(d.getMinutes()).padStart(2, '0');
+            const second = String(d.getSeconds()).padStart(2, '0');
+            return `${year}年${month}月${day}日 ${hour}:${minute}:${second}`;
+        }
         
         // 加载统计数据
         async function loadStats() {
@@ -473,7 +487,7 @@
         function renderApps(items, append) {
             const html = items.map(app => {
                 const status = statusMap[app.status] || { text: app.status, class: '' };
-                const date = app.created_at ? new Date(app.created_at).toLocaleDateString('zh-CN') : '-';
+                const date = formatDateTime(app.created_at);
                 
                 let actions = '';
                 if (['pending', 'processing'].includes(app.status)) {

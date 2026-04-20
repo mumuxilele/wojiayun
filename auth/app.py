@@ -13,6 +13,12 @@ import pymysql
 from urllib.parse import quote
 import os
 import json
+import uuid
+import random
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from business_common.fid_utils import generate_fid  # V47.0: FID生成工具
 
 app = Flask(__name__, static_folder='.', static_url_path='')
 
@@ -130,15 +136,16 @@ def find_or_create_account(customer_id, name, extra_info):
             logger.info(f"Account updated: {customer_id}")
             return account
         else:
-            # 创建新账户
+            # 创建新账户 - V47.0: 添加fid字段
             token = generate_token(customer_id, name)
+            account_fid = generate_fid()  # V47.0: 生成FID主键
             cursor.execute(
-                '''INSERT INTO auth_accounts (provider, customer_id, name, extra_info, token)
-                   VALUES (%s, %s, %s, %s, %s)''',
-                ('customer', customer_id, name or f'customer_{customer_id}', extra_info, token)
+                '''INSERT INTO auth_accounts (fid, provider, customer_id, name, extra_info, token)
+                   VALUES (%s, %s, %s, %s, %s, %s)''',
+                (account_fid, 'customer', customer_id, name or f'customer_{customer_id}', extra_info, token)
             )
             conn.commit()
-            account_id = cursor.lastrowid
+            account_id = account_fid  # V47.0: 使用FID作为账户ID
             logger.info(f"Account created: {customer_id}")
             return {
                 'id': account_id,

@@ -31,6 +31,7 @@ from typing import Dict, List, Optional, Any
 from . import db
 from .service_base import BaseService
 from .decorators import require_login
+from .fid_utils import generate_fid, generate_business_fid  # V47.0: FID生成工具
 
 logger = logging.getLogger(__name__)
 
@@ -105,23 +106,24 @@ class MemberService(BaseService):
             # 3. 加密密码 - V35.0使用bcrypt
             hashed_password = self._hash_password(password, PASSWORD_VERSION_CURRENT) if password else None
 
-            # 4. 创建会员记录 - V35.0新增password_version字段
+            # 4. 创建会员记录 - V35.0新增password_version字段, V47.0新增fid字段
             now = datetime.now()
+            member_fid = generate_business_fid('member')  # V47.0: 生成FID主键
             sql = """
                 INSERT INTO business_members (
-                    user_id, phone, nickname, password, password_version,
+                    fid, user_id, phone, nickname, password, password_version,
                     ec_id, project_id, member_level, member_grade,
                     points, total_points, balance, growth_value,
                     created_at, updated_at,
                     last_checkin_date, checkin_streak
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
 
             # 默认初始积分
             initial_points = 100
 
             params = [
-                user_id, phone, nickname or f'用户{phone[-4:]}', hashed_password, PASSWORD_VERSION_CURRENT,
+                member_fid, user_id, phone, nickname or f'用户{phone[-4:]}', hashed_password, PASSWORD_VERSION_CURRENT,
                 ec_id, project_id, 1, '普通会员',
                 initial_points, initial_points, 0, 0,
                 now, now, None, 0
@@ -841,18 +843,19 @@ class MemberService(BaseService):
                       change_reason: str, balance_before: int = None,
                       balance_after: int = None, ec_id: int = 1,
                       project_id: int = 1, **kwargs) -> Dict[str, Any]:
-        """记录积分变动日志"""
+        """记录积分变动日志 - V47.0: 添加fid字段"""
         try:
+            log_fid = generate_fid()  # V47.0: 生成日志FID
             sql = """
                 INSERT INTO business_points_log (
-                    user_id, points, change_type, change_reason,
+                    fid, user_id, points, change_type, change_reason,
                     balance_before, balance_after, order_no,
                     ec_id, project_id, created_at
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
             """
 
             params = [
-                user_id, points, change_type, change_reason,
+                log_fid, user_id, points, change_type, change_reason,
                 balance_before, balance_after, kwargs.get('order_no'),
                 ec_id, project_id
             ]

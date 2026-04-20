@@ -209,8 +209,11 @@
     </div>
 
     <script>
-        const token = localStorage.getItem('admin_token') || new URLSearchParams(location.search).get('access_token');
-        const isdev = new URLSearchParams(location.search).get('isdev') || '0';
+        // URL参数优先级高于localStorage（允许通过URL更换token）
+        const urlParams = new URLSearchParams(location.search);
+        const urlToken = urlParams.get('access_token');
+        const token = urlToken || localStorage.getItem('admin_token');
+        const isdev = urlParams.get('isdev') || '0';
         if (token) localStorage.setItem('admin_token', token);
         
         // V20.0: XSS防护 - 统一HTML转义函数
@@ -288,6 +291,23 @@
             }
         }
 
+        // 状态中文映射
+        const STATUS_MAP_CN = { pending: '待处理', processing: '处理中', completed: '已完成', rejected: '已拒绝', cancelled: '已撤销' };
+        
+        // 时间格式化：转为"年月日时分秒"格式
+        function formatDateTime(dateStr) {
+            if (!dateStr) return '-';
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return dateStr;
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const hour = String(d.getHours()).padStart(2, '0');
+            const minute = String(d.getMinutes()).padStart(2, '0');
+            const second = String(d.getSeconds()).padStart(2, '0');
+            return `${year}年${month}月${day}日 ${hour}:${minute}:${second}`;
+        }
+        
         // V19.0: ECharts实例
         let orderTrendChart, appStatusChart, incomeSourceChart;
         
@@ -312,9 +332,11 @@
                 const res = await fetch('/api/admin/applications?page=1&page_size=10&access_token=' + encodeURIComponent(token) + '&isdev=' + isdev);
                 const data = await res.json();
                 if (data.success && data.data && data.data.items) {
-                    document.getElementById('recentApps').innerHTML = data.data.items.map(item => 
-                        '<tr><td>' + escHtml(item.app_no) + '</td><td>' + escHtml(item.title) + '</td><td>' + escHtml(item.user_name) + '</td><td><span class="status status-' + escHtml(item.status || 'pending') + '">' + escHtml(item.status || 'pending') + '</span></td><td>' + escHtml(item.created_at) + '</td><td class="actions"><a onclick="viewApp(' + item.id + ')">查看</a></td></tr>'
-                    ).join('') || '<tr><td colspan="6" style="text-align:center;padding:30px;">暂无数据</td></tr>';
+                    document.getElementById('recentApps').innerHTML = data.data.items.map(item => {
+                        const statusText = STATUS_MAP_CN[item.status] || item.status || '待处理';
+                        const statusClass = item.status || 'pending';
+                        return '<tr><td>' + escHtml(item.app_no) + '</td><td>' + escHtml(item.title) + '</td><td>' + escHtml(item.user_name) + '</td><td><span class="status status-' + statusClass + '">' + statusText + '</span></td><td>' + formatDateTime(item.created_at) + '</td><td class="actions"><a onclick="viewApp(' + item.id + ')">查看</a></td></tr>';
+                    }).join('') || '<tr><td colspan="6" style="text-align:center;padding:30px;">暂无数据</td></tr>';
                 }
             } catch(e) { console.error(e); }
             
@@ -416,7 +438,8 @@
             if (!panel) return;
             
             try {
-                const res = await fetch('/api/staff/applications/overdue?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev);
+                // 调用 staff 服务 (端口 22312) 的 API
+                const res = await fetch('http://47.98.238.209:22312/api/staff/applications/overdue?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev);
                 const data = await res.json();
                 
                 if (data.success && data.data) {
@@ -526,11 +549,78 @@
             } catch(e) { alert('删除失败'); }
         }
 
-        function viewApp(id) { alert('查看申请 ' + id); }
+        function viewApp(id) { 
+            viewApplication(id); 
+        }
+        
+        async function viewApplication(id) {
+            currentViewId = id;
+            document.getElementById('viewBody').innerHTML = '<div style="text-align:center;padding:30px;color:#909399">加载中...</div>';
+            document.getElementById('viewOverlay').style.display = 'block';
+            document.getElementById('viewModal').classList.add('show');
+            
+            try {
+                const res = await fetch('/api/admin/applications/' + id + '?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev);
+                const data = await res.json();
+                if (!data.success || !data.data) {
+                    document.getElementById('viewBody').innerHTML = '<div style="text-align:center;padding:30px;color:#f00">获取详情失败</div>';
+                    return;
+                }
+                const item = data.data;
+                const status = item.status || 'pending';
+                document.getElementById('viewBody').innerHTML = `
+                    <div class="detail-row"><span class="detail-label">申请单号</span><span class="detail-value">${item.app_no || '-'}</span></div>
+                    <div class="detail-row"><span class="detail-label">类型</span><span class="detail-value">${TYPE_MAP[item.app_type] || item.app_type || '-'}</span></div>
+                    <div class="detail-row"><span class="detail-label">标题</span><span class="detail-value"><strong>${item.title || '-'}</strong></span></div>
+                    <div class="detail-row"><span class="detail-label">状态</span><span class="detail-value">${STATUS_MAP_CN[status] || status}</span></div>
+                    <div class="detail-row"><span class="detail-label">申请人</span><span class="detail-value">${item.user_name || '-'}</span></div>
+                    <div class="detail-row"><span class="detail-label">联系电话</span><span class="detail-value">${item.user_phone || '-'}</span></div>
+                    <div class="detail-row"><span class="detail-label">提交时间</span><span class="detail-value">${formatDateTime(item.created_at)}</span></div>
+                    <div class="detail-row"><span class="detail-label">更新时间</span><span class="detail-value">${formatDateTime(item.updated_at)}</span></div>
+                    ${item.content ? '<div class="detail-section"><div class="detail-section-title">申请内容</div><div style="line-height:1.8">' + item.content.replace(/\n/g, '<br>') + '</div></div>' : ''}
+                    ${item.result ? '<div class="detail-section"><div class="detail-section-title">处理结果</div><div style="line-height:1.8">' + item.result.replace(/\n/g, '<br>') + '</div></div>' : ''}
+                `;
+            } catch (e) {
+                document.getElementById('viewBody').innerHTML = '<div style="text-align:center;padding:30px;color:#f00">加载失败</div>';
+            }
+        }
+        
+        function closeView() {
+            document.getElementById('viewOverlay').style.display = 'none';
+            document.getElementById('viewModal').classList.remove('show');
+        }
+        
+        // 类型映射
+        const TYPE_MAP = { repair: '报修', booking: '预约', complaint: '投诉', consult: '咨询', other: '其他' };
 
         // 初始化
         loadUserInfo();
         loadDashboard();
     </script>
+    
+    <!-- 详情弹窗 -->
+    <style>
+        .view-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; }
+        .view-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 8px; width: 600px; max-height: 80vh; overflow: hidden; z-index: 1001; }
+        .view-modal.show { display: block; }
+        .view-header { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+        .view-header h3 { font-size: 16px; margin: 0; }
+        .view-close { cursor: pointer; font-size: 20px; color: #999; }
+        .view-close:hover { color: #333; }
+        .view-body { padding: 20px; max-height: 60vh; overflow-y: auto; }
+        .detail-row { display: flex; padding: 8px 0; border-bottom: 1px solid #f9f9f9; }
+        .detail-label { width: 100px; color: #666; flex-shrink: 0; }
+        .detail-value { flex: 1; color: #333; }
+        .detail-section { margin-top: 15px; padding-top: 15px; border-top: 1px solid #f0f0f0; }
+        .detail-section-title { font-weight: 600; margin-bottom: 8px; color: #333; }
+    </style>
+    <div class="view-overlay" id="viewOverlay" onclick="if(event.target===this)closeView()"></div>
+    <div class="view-modal" id="viewModal">
+        <div class="view-header">
+            <h3>申请单详情</h3>
+            <span class="view-close" onclick="closeView()">×</span>
+        </div>
+        <div class="view-body" id="viewBody"></div>
+    </div>
 </body>
 </html>

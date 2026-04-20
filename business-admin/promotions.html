@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>营销促销管理</title>
-    <link rel="stylesheet" href="../business-common/list-style.css">
+    <link rel="stylesheet" href="/business-common/list-style.css">
     <style>
         /* 页面特有样式 */
         .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
@@ -148,15 +148,16 @@ var TYPE_CSS = { 'seckill':'type-seckill', 'full_reduce':'type-full_reduce', 'di
 async function loadList(page) {
     page = page || 1;
     currentPage = page;
-    var keyword = document.getElementById('searchInput').value.trim();
-    var type = document.getElementById('typeFilter').value;
-    var status = document.getElementById('statusFilter').value;
+    var keyword = document.getElementById('searchInput') ? document.getElementById('searchInput').value.trim() : '';
+    var type = document.getElementById('filter1') ? document.getElementById('filter1').value : '';
+    var status = document.getElementById('filter2') ? document.getElementById('filter2').value : '';
     var url = api('/api/admin/promotions') + '&page=' + page + '&page_size=20';
     if (keyword) url += '&keyword=' + encodeURIComponent(keyword);
     if (type) url += '&type=' + type;
     if (status) url += '&status=' + status;
 
-    var tbody = document.getElementById('tableBody');
+    var tbody = document.getElementById('listBody');
+    if (!tbody) return;
     tbody.innerHTML = '<tr class="loading-row"><td colspan="9">加载中...</td></tr>';
 
     try {
@@ -165,10 +166,10 @@ async function loadList(page) {
         var items = (d.data && d.data.items) || [];
         var total = (d.data && d.data.total) || 0;
 
-        if (!items.length) {
-            tbody.innerHTML = '<tr class="empty-row"><td colspan="9">暂无活动数据</td></tr>';
+                if (!items.length) {
+            if (tbody) tbody.innerHTML = '<tr class="empty-row"><td colspan="9">暂无活动数据</td></tr>';
         } else {
-            tbody.innerHTML = items.map(function(p) {
+            if (tbody) tbody.innerHTML = items.map(function(p) {
                 var typeLabel = TYPE_LABELS[p.promo_type] || p.promo_type;
                 var typeCss = TYPE_CSS[p.promo_type] || '';
                 var rule = getRuleText(p);
@@ -414,10 +415,12 @@ function escH(s) {
 }
 
 // 点击弹窗外关闭
-document.getElementById('createModal').addEventListener('click', function(e) {
+const createModal = document.getElementById('createModal');
+if (createModal) createModal.addEventListener('click', function(e) {
     if (e.target === this) closeCreate();
 });
-document.getElementById('statsModal').addEventListener('click', function(e) {
+const statsModal = document.getElementById('statsModal');
+if (statsModal) statsModal.addEventListener('click', function(e) {
     if (e.target === this) closeStatsModal();
 });
 

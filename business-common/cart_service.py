@@ -13,6 +13,7 @@ from datetime import datetime
 from . import db
 from .cache_service import cache_delete
 from .exception_handler import try_except, handle_unknown_error
+from .fid_utils import generate_fid  # V47.0: FID生成工具
 
 logger = logging.getLogger(__name__)
 
@@ -235,12 +236,13 @@ class CartService:
                 if quantity > stock:
                     return {'success': False, 'msg': f'库存不足，当前库存{stock}件', 'cart_count': cart_count}
 
-                # 新增
+                # 新增 - V47.0: 添加fid字段
+                cart_fid = generate_fid()
                 db.execute(
                     """INSERT INTO business_cart
-                       (user_id, product_id, sku_id, quantity, selected, ec_id, project_id)
-                       VALUES (%s, %s, %s, %s, 1, %s, %s)""",
-                    [user_id, product_id, sku_id, quantity, ec_id, project_id]
+                       (fid, user_id, product_id, sku_id, quantity, selected, ec_id, project_id)
+                       VALUES (%s, %s, %s, %s, %s, 1, %s, %s)""",
+                    [cart_fid, user_id, product_id, sku_id, quantity, ec_id, project_id]
                 )
                 msg = f'已加入购物车'
 

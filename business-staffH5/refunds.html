@@ -2,337 +2,721 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>退款管理 - 员工端</title>
-    <link rel="stylesheet" href="../business-common/list-style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>退款管理</title>
     <style>
-        /* 页面特有样式 */
-        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
-        .actions .link:hover { text-decoration: underline; }
-        .actions .link.danger { color: var(--el-color-danger); }
-        /* 弹窗样式保留 */
-        /* 拒绝原因弹窗 */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; display: none; justify-content: center; align-items: center; padding: 20px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif; 
+            background: #F8F9FA; 
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        /* 固定头部区域 */
+        .header-fixed {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #F8F9FA;
+            padding: 12px 20px 16px;
+            z-index: 100;
+            border-bottom: 1px solid transparent;
+        }
+        .header-fixed.scrolled {
+            border-bottom-color: #E5E6EB;
+        }
+        
+        /* 搜索框 */
+        .search-bar {
+            background: #FFFFFF;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        }
+        .search-input {
+            width: 100%;
+            height: 40px;
+            padding: 0 12px;
+            border: 1px solid #E5E6EB;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #1D2129;
+            background: #F8F9FA;
+            outline: none;
+        }
+        .search-input:focus {
+            border-color: #30c2b3;
+        }
+        .search-input::placeholder {
+            color: #86909C;
+        }
+        
+        /* 筛选栏 */
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+        .filter-bar::-webkit-scrollbar {
+            display: none;
+        }
+        .filter-item {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            white-space: nowrap;
+            background: #FFFFFF;
+            color: #4E5969;
+            border: 1px solid #E5E6EB;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .filter-item.active {
+            background: #30c2b3;
+            color: #FFFFFF;
+            border-color: #30c2b3;
+        }
+        
+        /* 可滚动内容区域 */
+        .content-scroll {
+            height: 100%;
+            padding: 140px 20px 20px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        /* 统计栏 */
+        .stats-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .stat-item {
+            flex: 1;
+            background: #FFFFFF;
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        }
+        .stat-num {
+            font-size: 20px;
+            font-weight: 600;
+            color: #30c2b3;
+        }
+        .stat-label {
+            font-size: 11px;
+            color: #86909C;
+            margin-top: 4px;
+        }
+        
+        /* 列表卡片 */
+        .list-card {
+            background: #FFFFFF;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        }
+        .list-card:active {
+            background: #fafafa;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .card-order-no {
+            font-size: 14px;
+            color: #86909C;
+            font-family: monospace;
+        }
+        .card-amount {
+            font-size: 20px;
+            color: #F53F3F;
+            font-weight: 600;
+        }
+        .status-tag {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #FFFFFF;
+        }
+        .status-pending { background: #FF7D00; }
+        .status-approved { background: #00B42A; }
+        .status-rejected { background: #F53F3F; }
+        
+        .card-goods {
+            font-size: 15px;
+            color: #1D2129;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        .card-reason {
+            font-size: 14px;
+            color: #4E5969;
+            background: #F8F9FA;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+        .card-info {
+            font-size: 14px;
+            color: #86909C;
+            margin-bottom: 12px;
+        }
+        
+        /* 操作按钮区域 */
+        .card-actions {
+            display: flex;
+            gap: 8px;
+            padding-top: 12px;
+            border-top: 1px solid #F0F0F0;
+        }
+        .action-btn {
+            flex: 1;
+            height: 36px;
+            border-radius: 6px;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-view {
+            background: #F0F0F0;
+            color: #4E5969;
+        }
+        .btn-approve {
+            background: #30c2b3;
+            color: #FFFFFF;
+        }
+        .btn-reject {
+            background: #F53F3F;
+            color: #FFFFFF;
+        }
+        
+        /* 空状态 */
+        .empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: #86909C;
+        }
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        .empty-text {
+            font-size: 14px;
+        }
+        
+        /* 加载更多 */
+        .load-more {
+            text-align: center;
+            padding: 20px;
+            color: #86909C;
+            font-size: 14px;
+        }
+        
+        /* 弹窗样式 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 1000;
+            align-items: flex-end;
+            justify-content: center;
+        }
+        .modal-overlay.show {
+            display: flex;
+        }
+        .modal-content {
+            background: #FFFFFF;
+            border-radius: 16px 16px 0 0;
+            width: 100%;
+            max-height: 80vh;
+            padding: 20px;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1D2129;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #F0F0F0;
+            border: none;
+            font-size: 20px;
+            color: #86909C;
+            cursor: pointer;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-label {
+            display: block;
+            font-size: 14px;
+            color: #4E5969;
+            margin-bottom: 8px;
+        }
+        .form-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px;
+            border: 1px solid #E5E6EB;
+            border-radius: 8px;
+            font-size: 16px;
+            color: #1D2129;
+            background: #FFFFFF;
+            resize: none;
+            outline: none;
+        }
+        .form-textarea:focus {
+            border-color: #30c2b3;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        .modal-btn {
+            flex: 1;
+            height: 48px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+        }
+        .modal-btn-cancel {
+            background: #F0F0F0;
+            color: #4E5969;
+        }
+        .modal-btn-confirm {
+            background: #30c2b3;
+            color: #FFFFFF;
+        }
+        
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 2000;
+        }
+        
+        /* 详情弹窗特殊样式 */
+        .detail-section {
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #F0F0F0;
+        }
+        .detail-section:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-size: 13px;
+            color: #86909C;
+            margin-bottom: 4px;
+        }
+        .detail-value {
+            font-size: 15px;
+            color: #1D2129;
+            font-weight: 500;
+        }
+        .detail-amount {
+            font-size: 28px;
+            color: #F53F3F;
+            font-weight: 700;
+        }
     </style>
 </head>
-<body class="wy-design-list">
-    <!-- 顶部区域 -->
-    <div class="wy-design-list_top">
-        <div class="wy-design-list_top_title">
-            <h1 class="wy-design-list_title">退款管理 - 员工端</h1>
-            <div class="wy-design-list_space"></div>
-            <div class="wy-design-list_btn-group">
-                <div class="wy-design-list_btn">
-                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
-                        <span>搜索</span>
-                    </button>
-                </div>
-                <div class="wy-design-list_btn">
-                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
-                        <span>重置</span>
-                    </button>
-                </div>
-            </div>
+<body>
+    <!-- 固定头部 -->
+    <div class="header-fixed" id="headerFixed">
+        <!-- 搜索框 -->
+        <div class="search-bar">
+            <input type="text" class="search-input" id="keywordInput" placeholder="搜索订单号、用户名">
+        </div>
+        
+        <!-- 筛选栏 -->
+        <div class="filter-bar">
+            <div class="filter-item active" data-status="">全部</div>
+            <div class="filter-item" data-status="pending">待处理</div>
+            <div class="filter-item" data-status="approved">已批准</div>
+            <div class="filter-item" data-status="rejected">已拒绝</div>
         </div>
     </div>
-
-    <!-- 筛选区域 -->
-    <div class="wy-design-list_filter">
-        <div class="wy-design-list_other">
-            <div class="el-input el-input--small" style="width: 200px;">
-                <input type="text" id="keyword" placeholder="搜索关键词" class="el-input__inner">
-            </div>
-        </div>
-    </div>
-
-    <!-- 表格区域 -->
-    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
-        <div class="wy-design-table_bar">
-            <i class="wy-design-table_set el-icon-setting" title="列设置"></i>
-            <span class="wy-design-table_total">共 <em id="totalCount">0</em> 条</span>
-            <div class="wy-pages">
-                <div class="wy-pages_total">第<em id="currentPage">1</em>/<em id="totalPages">1</em>页</div>
-                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
-                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
-            </div>
-        </div>
-        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
-            <thead class="el-table__header">
-                <tr>
-                    <th><div class="cell">名称</div></th>
-                    <th><div class="cell">操作</div></th>
-                </tr>
-            </thead>
-            <tbody class="el-table__body" id="listBody">
-                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</td></tr>
-            </tbody>
-        </table>
-    </div>
-
     
-    <div class="confirm-modal" id="confirmApproveModal">
-        <div class="confirm-card">
-            <div class="confirm-icon">✅</div>
-            <div class="confirm-title">确认批准退款？</div>
-            <div class="confirm-desc">退款金额将原路返回给用户，请确认操作。</div>
-            <div class="confirm-actions">
-                <button class="confirm-cancel" onclick="closeConfirmApprove()">取消</button>
-                <button class="confirm-ok" onclick="doApprove()">确认批准</button>
+    <!-- 可滚动内容区域 -->
+    <div class="content-scroll" id="contentScroll">
+        <!-- 统计栏 -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-num" id="statPending">0</div>
+                <div class="stat-label">待处理</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-num" id="statApproved">0</div>
+                <div class="stat-label">已批准</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-num" id="statRejected">0</div>
+                <div class="stat-label">已拒绝</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-num" id="statTotal">¥0</div>
+                <div class="stat-label">总金额</div>
+            </div>
+        </div>
+        
+        <!-- 列表容器 -->
+        <div id="listContainer">
+            <div class="empty">
+                <div class="empty-icon">💰</div>
+                <div class="empty-text">加载中...</div>
             </div>
         </div>
     </div>
-
     
+    <!-- 批准确认弹窗 -->
+    <div class="modal-overlay" id="approveModal">
+        <div class="modal-content">
+            <div class="modal-title">✅ 确认批准退款？</div>
+            <p style="text-align:center;color:#86909C;margin-bottom:20px;">退款金额将原路返回给用户</p>
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn-cancel" onclick="closeApproveModal()">取消</button>
+                <button class="modal-btn modal-btn-confirm" onclick="confirmApprove()">确认批准</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 拒绝弹窗 -->
+    <div class="modal-overlay" id="rejectModal">
+        <div class="modal-content">
+            <div class="modal-title">❌ 拒绝退款</div>
+            <div class="form-group">
+                <label class="form-label">拒绝原因</label>
+                <textarea class="form-textarea" id="rejectReason" placeholder="请输入拒绝原因"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn-cancel" onclick="closeRejectModal()">取消</button>
+                <button class="modal-btn modal-btn-confirm" onclick="confirmReject()">确认拒绝</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 详情弹窗 -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal-content" style="max-height:85vh;overflow-y:auto;">
+            <div class="modal-title">退款详情</div>
+            <div class="detail-section" style="text-align:center;">
+                <div class="detail-amount" id="detailAmount">¥0.00</div>
+                <div id="detailStatus"></div>
+            </div>
+            <div class="detail-section">
+                <div class="detail-label">订单号</div>
+                <div class="detail-value" id="detailOrderNo">-</div>
+            </div>
+            <div class="detail-section">
+                <div class="detail-label">用户信息</div>
+                <div class="detail-value" id="detailUser">-</div>
+            </div>
+            <div class="detail-section">
+                <div class="detail-label">申请时间</div>
+                <div class="detail-value" id="detailTime">-</div>
+            </div>
+            <div class="detail-section">
+                <div class="detail-label">退款原因</div>
+                <div class="detail-value" id="detailReason">-</div>
+            </div>
+            <div class="modal-actions" id="detailActions">
+                <button class="modal-btn modal-btn-cancel" onclick="rejectFromDetail()">拒绝</button>
+                <button class="modal-btn modal-btn-confirm" onclick="approveFromDetail()">批准</button>
+            </div>
+        </div>
+    </div>
 
     <script>
-    var urlParams = new URLSearchParams(location.search);
-        var token = urlParams.get('access_token') || localStorage.getItem('staff_token');
-        var isdev = urlParams.get('isdev') || localStorage.getItem('staff_isdev') || '0';
+        const urlParams = new URLSearchParams(location.search);
+        let token = urlParams.get('access_token') || localStorage.getItem('staff_token');
+        let isdev = urlParams.get('isdev') || localStorage.getItem('staff_isdev') || '0';
         
-        var page = 1;
-        var pageSize = 15;
-        var total = 0;
-        var totalPages = 0;
-        var currentStatus = '';
-        var refunds = [];
-        var currentRefund = null;
-        var currentDetailRefund = null;
+        if (!token) {
+            document.getElementById('listContainer').innerHTML = '<div class="empty"><div class="empty-text">请先登录</div></div>';
+            throw new Error('No token');
+        }
+
+        let page = 1;
+        let pageSize = 15;
+        let currentStatus = '';
+        let refunds = [];
+        let currentRefund = null;
 
         function apiUrl(path) {
             return path + (path.indexOf('?') >= 0 ? '&' : '?') + 'access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
         }
 
-        function loadRefunds() {
-            var url = '/api/staff/orders/pending-refunds?page=' + page + '&page_size=' + pageSize;
+        async function loadRefunds(append = false) {
+            if (!append) {
+                page = 1;
+                document.getElementById('listContainer').innerHTML = '<div class="empty"><div class="empty-text">加载中...</div></div>';
+            }
+            
+            let url = '/api/staff/orders/pending-refunds?page=' + page + '&page_size=' + pageSize;
             if (currentStatus) url += '&status=' + currentStatus;
+            const keyword = document.getElementById('keywordInput').value.trim();
+            if (keyword) url += '&keyword=' + encodeURIComponent(keyword);
             
-            document.getElementById('refundList').innerHTML = '<div class="loading">加载中...</div>';
-            
-            fetch(apiUrl(url)).then(function(r){return r.json()}).then(function(d){
+            try {
+                const res = await fetch(apiUrl(url));
+                const d = await res.json();
+                
                 if (d.success) {
                     refunds = d.data.items || [];
-                    total = d.data.total || 0;
-                    totalPages = Math.ceil(total / pageSize);
-                    renderRefunds();
-                    renderStats(d.data.stats);
-                    renderPagination();
+                    if (d.data.stats) {
+                        document.getElementById('statPending').textContent = d.data.stats.pending || 0;
+                        document.getElementById('statApproved').textContent = d.data.stats.approved || 0;
+                        document.getElementById('statRejected').textContent = d.data.stats.rejected || 0;
+                        document.getElementById('statTotal').textContent = '¥' + ((d.data.stats.total_refund || 0).toFixed(0));
+                    }
+                    renderRefunds(append);
                 } else {
-                    document.getElementById('refundList').innerHTML = '<div class="empty"><div class="empty-icon">😕</div>加载失败</div>';
+                    document.getElementById('listContainer').innerHTML = '<div class="empty"><div class="empty-icon">😕</div><div class="empty-text">加载失败</div></div>';
                 }
-            }).catch(function(){
-                document.getElementById('refundList').innerHTML = '<div class="empty"><div class="empty-icon">😕</div>网络错误</div>';
-            });
+            } catch(e) {
+                document.getElementById('listContainer').innerHTML = '<div class="empty"><div class="empty-icon">😕</div><div class="empty-text">网络错误</div></div>';
+            }
         }
 
-        function renderStats(stats) {
-            if (!stats) return;
-            document.getElementById('statPending').textContent = stats.pending || 0;
-            document.getElementById('statApproved').textContent = stats.approved || 0;
-            document.getElementById('statRejected').textContent = stats.rejected || 0;
-            document.getElementById('statTotal').textContent = '¥' + ((stats.total_refund || 0).toFixed(0));
-        }
-
-        function renderRefunds() {
+        function renderRefunds(append = false) {
             if (refunds.length === 0) {
-                document.getElementById('refundList').innerHTML = '<div class="empty"><div class="empty-icon">✅</div>暂无退款申请</div>';
+                document.getElementById('listContainer').innerHTML = '<div class="empty"><div class="empty-icon">✅</div><div class="empty-text">暂无退款申请</div></div>';
                 return;
             }
             
-            document.getElementById('refundList').innerHTML = refunds.map(function(r) {
-                var statusMap = {pending:'待处理', approved:'已批准', rejected:'已拒绝'};
-                var statusClass = {pending:'status-pending', approved:'status-approved', rejected:'status-rejected'};
-                var isPending = r.order_status === 'refunding';
-                return '<div class="refund-item">' +
-                    '<div class="refund-header">' +
-                        '<span class="refund-order-no">' + (r.order_no || '') + '</span>' +
-                        '<span class="refund-amount">¥' + ((r.actual_amount || 0).toFixed(2)) + '</span>' +
+            const html = refunds.map(function(r) {
+                const statusMap = {pending:'待处理', approved:'已批准', rejected:'已拒绝'};
+                const statusClass = {pending:'status-pending', approved:'status-approved', rejected:'status-rejected'};
+                const isPending = r.refund_status === 'pending' || r.order_status === 'refunding';
+                
+                return '<div class="list-card" onclick="showDetail(' + r.id + ')">' +
+                    '<div class="card-header">' +
+                        '<span class="card-order-no">' + (r.order_no || '') + '</span>' +
+                        '<span class="card-amount">¥' + ((r.actual_amount || 0).toFixed(2)) + '</span>' +
                     '</div>' +
-                    '<div class="refund-title">' + (r.title || '商品退款') + '</div>' +
-                    '<div class="refund-reason">' + (r.refund_reason || '用户主动申请退款') + '</div>' +
-                    '<div class="refund-meta">' +
-                        '<span>' + (r.user_name || '未知用户') + ' | ' + (r.created_at || '') + '</span>' +
-                        '<span class="status-badge ' + (statusClass[r.refund_status] || statusClass.pending) + '">' + (statusMap[r.refund_status] || statusMap.pending) + '</span>' +
+                    '<div class="card-goods">' + (r.goods_name || '商品退款') + '</div>' +
+                    '<div class="card-reason">' + (r.refund_reason || '用户主动申请退款') + '</div>' +
+                    '<div class="card-info">' + (r.user_name || '未知用户') + ' | ' + (r.created_at || '') + '</div>' +
+                    '<div style="text-align:right;margin-top:8px;">' +
+                        '<span class="status-tag ' + (statusClass[r.refund_status] || statusClass.pending) + '">' + (statusMap[r.refund_status] || statusMap.pending) + '</span>' +
                     '</div>' +
-                    (isPending ? '<div class="refund-actions">' +
-                        '<button class="action-btn btn-view" onclick="showDetail(' + refunds.indexOf(r) + ')">查看详情</button>' +
-                        '<button class="action-btn btn-approve" onclick="approveRefund(' + r.id + ')">批准</button>' +
-                        '<button class="action-btn btn-reject" onclick="showRejectModal(' + r.id + ')">拒绝</button>' +
-                    '</div>' : '<div class="refund-actions">' +
-                        '<button class="action-btn btn-view" onclick="showDetail(' + refunds.indexOf(r) + ')">查看详情</button>' +
-                    '</div>') +
+                    (isPending ? '<div class="card-actions">' +
+                        '<button class="action-btn btn-view" onclick="event.stopPropagation();showDetail(' + r.id + ')">查看</button>' +
+                        '<button class="action-btn btn-approve" onclick="event.stopPropagation();approveRefund(' + r.id + ')">批准</button>' +
+                        '<button class="action-btn btn-reject" onclick="event.stopPropagation();showRejectModal(' + r.id + ')">拒绝</button>' +
+                    '</div>' : '') +
                 '</div>';
             }).join('');
-        }
-
-        function renderPagination() {
-            var pagination = document.getElementById('pagination');
-            if (totalPages <= 1) {
-                pagination.style.display = 'none';
-                return;
-            }
-            pagination.style.display = 'flex';
-            document.getElementById('pageInfo').textContent = page + '/' + totalPages;
-            document.getElementById('prevBtn').disabled = page <= 1;
-            document.getElementById('nextBtn').disabled = page >= totalPages;
-        }
-
-        function prevPage() {
-            if (page > 1) {
-                page--;
-                loadRefunds();
-            }
-        }
-
-        function nextPage() {
-            if (page < totalPages) {
-                page++;
-                loadRefunds();
-            }
-        }
-
-        // 状态筛选
-        document.querySelectorAll('.filter-tag').forEach(function(el){
-            el.addEventListener('click', function(){
-                document.querySelectorAll('.filter-tag').forEach(function(e){ e.classList.remove('active'); });
-                el.classList.add('active');
-                currentStatus = el.dataset.status;
-                page = 1;
-                loadRefunds();
-            });
-        });
-
-        // 批准退款
-        function approveRefund(orderId) {
-            currentRefund = orderId;
-            document.getElementById('confirmApproveModal').classList.add('show');
-        }
-
-        function closeConfirmApprove() {
-            document.getElementById('confirmApproveModal').classList.remove('show');
-            currentRefund = null;
-        }
-
-        function doApprove() {
-            if (!currentRefund) return;
-            closeConfirmApprove();
-            showToast('处理中...');
             
-            fetch(apiUrl('/api/staff/orders/' + currentRefund + '/refund'), {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({action: 'approve'})
-            }).then(function(r){return r.json()}).then(function(d){
-                if (d.success) {
-                    showToast('退款已批准');
-                    loadRefunds();
-                } else {
-                    showToast(d.msg || '操作失败');
-                }
-            }).catch(function(){
-                showToast('网络错误');
-            });
-        }
-
-        // 拒绝退款
-        function showRejectModal(orderId) {
-            currentRefund = orderId;
-            document.getElementById('rejectReason').value = '';
-            document.getElementById('rejectModal').classList.add('show');
-        }
-
-        function closeRejectModal() {
-            document.getElementById('rejectModal').classList.remove('show');
-            currentRefund = null;
-        }
-
-        function confirmReject() {
-            if (!currentRefund) return;
-            var reason = document.getElementById('rejectReason').value.trim();
-            closeRejectModal();
-            showToast('处理中...');
+            if (append) {
+                document.getElementById('listContainer').insertAdjacentHTML('beforeend', html);
+            } else {
+                document.getElementById('listContainer').innerHTML = html;
+            }
             
-            fetch(apiUrl('/api/staff/orders/' + currentRefund + '/refund'), {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({action: 'reject', remark: reason})
-            }).then(function(r){return r.json()}).then(function(d){
-                if (d.success) {
-                    showToast('退款已拒绝');
-                    loadRefunds();
-                } else {
-                    showToast(d.msg || '操作失败');
+            if (refunds.length >= pageSize) {
+                if (!document.getElementById('loadMore')) {
+                    document.getElementById('listContainer').insertAdjacentHTML('afterend', 
+                        '<div class="load-more" id="loadMore" onclick="loadMore()">点击加载更多</div>');
                 }
-            }).catch(function(){
-                showToast('网络错误');
-            });
+            }
+        }
+        
+        function loadMore() {
+            page++;
+            loadRefunds(true);
         }
 
-        // 详情弹窗
-        function showDetail(idx) {
-            var r = refunds[idx];
-            currentDetailRefund = r;
+        function showDetail(id) {
+            const r = refunds.find(item => item.id === id);
+            if (!r) return;
+            currentRefund = r;
             
             document.getElementById('detailAmount').textContent = '¥' + ((r.actual_amount || 0).toFixed(2));
             
-            var statusMap = {pending:'待处理', approved:'已批准', rejected:'已拒绝', refunding:'退款中'};
-            var statusClass = {pending:'status-pending', approved:'status-approved', rejected:'status-rejected', refunding:'status-pending'};
-            document.getElementById('detailStatus').innerHTML = '<span class="status-badge ' + (statusClass[r.refund_status] || statusClass.pending) + '">' + (statusMap[r.refund_status] || statusMap.pending) + '</span>';
+            const statusMap = {pending:'待处理', approved:'已批准', rejected:'已拒绝'};
+            const statusClass = {pending:'status-pending', approved:'status-approved', rejected:'status-rejected'};
+            document.getElementById('detailStatus').innerHTML = '<span class="status-tag ' + (statusClass[r.refund_status] || statusClass.pending) + '">' + (statusMap[r.refund_status] || statusMap.pending) + '</span>';
             
             document.getElementById('detailOrderNo').textContent = r.order_no || '-';
             document.getElementById('detailUser').textContent = (r.user_name || '未知用户') + (r.phone ? ' (' + r.phone + ')' : '');
             document.getElementById('detailTime').textContent = r.created_at || '-';
             document.getElementById('detailReason').textContent = r.refund_reason || '用户主动申请退款';
             
-            // 商品列表
-            var productsHtml = '<div style="text-align:center;color:#999;padding:15px">暂无商品信息</div>';
-            if (r.items && r.items.length > 0) {
-                productsHtml = r.items.map(function(item) {
-                    return '<div class="product-item">' +
-                        '<div class="product-img">📦</div>' +
-                        '<div class="product-info">' +
-                            '<div class="product-name">' + (item.product_name || '商品') + '</div>' +
-                            '<div class="product-spec">x' + item.quantity + '</div>' +
-                        '</div>' +
-                        '<div class="product-price">¥' + ((item.price || 0) * (item.quantity || 1)).toFixed(2) + '</div>' +
-                    '</div>';
-                }).join('');
-            }
-            document.getElementById('detailProducts').innerHTML = productsHtml;
-            
-            // 操作按钮
-            document.getElementById('detailActions').style.display = r.order_status === 'refunding' ? 'flex' : 'none';
-            document.getElementById('detailActions').style.gap = '10px';
+            const isPending = r.refund_status === 'pending' || r.order_status === 'refunding';
+            document.getElementById('detailActions').style.display = isPending ? 'flex' : 'none';
             
             document.getElementById('detailModal').classList.add('show');
         }
 
         function closeDetail() {
             document.getElementById('detailModal').classList.remove('show');
-            currentDetailRefund = null;
         }
 
         function approveFromDetail() {
-            if (currentDetailRefund) {
+            if (currentRefund) {
                 closeDetail();
-                approveRefund(currentDetailRefund.id);
+                approveRefund(currentRefund.id);
             }
         }
 
         function rejectFromDetail() {
-            if (currentDetailRefund) {
-                var id = currentDetailRefund.id;
+            if (currentRefund) {
+                const id = currentRefund.id;
                 closeDetail();
                 showRejectModal(id);
             }
         }
 
+        // 批准退款
+        function approveRefund(orderId) {
+            currentRefund = refunds.find(r => r.id === orderId);
+            document.getElementById('approveModal').classList.add('show');
+        }
+
+        function closeApproveModal() {
+            document.getElementById('approveModal').classList.remove('show');
+        }
+
+        async function confirmApprove() {
+            if (!currentRefund) return;
+            closeApproveModal();
+            showToast('处理中...');
+            
+            try {
+                const res = await fetch(apiUrl('/api/staff/orders/' + currentRefund.id + '/refund'), {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({action: 'approve'})
+                });
+                const d = await res.json();
+                if (d.success) {
+                    showToast('退款已批准');
+                    loadRefunds();
+                } else {
+                    showToast(d.msg || '操作失败');
+                }
+            } catch(e) {
+                showToast('网络错误');
+            }
+        }
+
+        // 拒绝退款
+        function showRejectModal(orderId) {
+            currentRefund = refunds.find(r => r.id === orderId);
+            document.getElementById('rejectReason').value = '';
+            document.getElementById('rejectModal').classList.add('show');
+        }
+
+        function closeRejectModal() {
+            document.getElementById('rejectModal').classList.remove('show');
+        }
+
+        async function confirmReject() {
+            if (!currentRefund) return;
+            const reason = document.getElementById('rejectReason').value.trim();
+            closeRejectModal();
+            showToast('处理中...');
+            
+            try {
+                const res = await fetch(apiUrl('/api/staff/orders/' + currentRefund.id + '/refund'), {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({action: 'reject', remark: reason})
+                });
+                const d = await res.json();
+                if (d.success) {
+                    showToast('退款已拒绝');
+                    loadRefunds();
+                } else {
+                    showToast(d.msg || '操作失败');
+                }
+            } catch(e) {
+                showToast('网络错误');
+            }
+        }
+
         function showToast(msg) {
-            var toast = document.createElement('div');
+            const toast = document.createElement('div');
             toast.className = 'toast';
             toast.textContent = msg;
             document.body.appendChild(toast);
             setTimeout(function(){ toast.remove(); }, 2000);
         }
+
+        // 筛选事件
+        document.querySelectorAll('.filter-item').forEach(el => {
+            el.addEventListener('click', () => {
+                document.querySelectorAll('.filter-item').forEach(e => e.classList.remove('active'));
+                el.classList.add('active');
+                currentStatus = el.dataset.status;
+                loadRefunds();
+            });
+        });
+
+        // 搜索事件
+        document.getElementById('keywordInput').addEventListener('input', () => {
+            clearTimeout(window.searchTimer);
+            window.searchTimer = setTimeout(() => loadRefunds(), 500);
+        });
+
+        // 点击遮罩关闭弹窗
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) this.classList.remove('show');
+            });
+        });
+        
+        // 滚动监听
+        const contentScroll = document.getElementById('contentScroll');
+        const headerFixed = document.getElementById('headerFixed');
+        contentScroll.addEventListener('scroll', () => {
+            if (contentScroll.scrollTop > 10) {
+                headerFixed.classList.add('scrolled');
+            } else {
+                headerFixed.classList.remove('scrolled');
+            }
+        });
 
         // 初始加载
         loadRefunds();

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>公告管理</title>
-    <link rel="stylesheet" href="../business-common/list-style.css">
+    <link rel="stylesheet" href="/business-common/list-style.css">
     <style>
         /* 页面特有样式 */
         .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
@@ -169,7 +169,8 @@
 
 
     <script>
-    const token = localStorage.getItem('admin_token') || new URLSearchParams(location.search).get('access_token') || parent?.token || '';
+    // 只从URL参数获取token
+const token = new URLSearchParams(location.search).get('access_token') || '';
 const isdev = new URLSearchParams(location.search).get('isdev') || '0';
 
 let currentPage = 1;
@@ -191,9 +192,9 @@ function debounceSearch() {
 }
 
 async function loadNotices() {
-    const keyword = document.getElementById('searchInput').value.trim();
-    const status = document.getElementById('filterStatus').value;
-    const notice_type = document.getElementById('filterType').value;
+    const keyword = document.getElementById('searchInput') ? document.getElementById('searchInput').value.trim() : '';
+    const status = document.getElementById('filterStatus') ? document.getElementById('filterStatus').value : '';
+    const notice_type = document.getElementById('filterType') ? document.getElementById('filterType').value : '';
 
     let q = `?page=${currentPage}&page_size=10`;
     if (keyword) q += `&keyword=${encodeURIComponent(keyword)}`;
@@ -361,7 +362,8 @@ async function deleteNotice(id) {
 loadNotices();
 
 // 点击遮罩关闭弹窗
-document.getElementById('editModal').addEventListener('click', function(e) {
+const editModal = document.getElementById('editModal');
+if (editModal) editModal.addEventListener('click', function(e) {
     if (e.target === this) closeModal();
 });
     </script>

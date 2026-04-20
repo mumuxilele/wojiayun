@@ -27,6 +27,7 @@ from typing import Dict, List, Optional, Any
 from . import db
 from .service_base import BaseService
 from .repository_base import ProductRepository
+from .fid_utils import generate_fid, generate_business_fid  # V47.0: FID生成工具
 
 logger = logging.getLogger(__name__)
 

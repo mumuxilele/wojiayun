@@ -309,12 +309,44 @@
             fetch(url).then(function(r){return r.json()}).then(function(d){
                 if(d.success && d.data && d.data.items && d.data.items.length > 0) {
                     document.getElementById('pendingList').innerHTML = d.data.items.map(function(item){
-                        return '<div class="record-item" onclick="goTo(\'application_detail.html?id=' + item.id + '\')"><div class="record-icon">📋</div><div class="record-info"><div class="record-title">' + escapeHtml(item.title||'') + '</div><div class="record-desc">' + escapeHtml(item.user_name||'') + ' | ' + escapeHtml(item.created_at||'') + '</div></div><span class="record-status status-pending">待处理</span></div>';
+                        return '<div class="record-item" onclick="goTo(\'application_detail.html?id=' + item.id + '\')"><div class="record-icon">📋</div><div class="record-info"><div class="record-title">' + escapeHtml(item.title||'') + '</div><div class="record-desc">' + escapeHtml(item.user_name||'') + ' | ' + formatDate(item.created_at) + '</div></div><span class="record-status status-pending">待处理</span></div>';
                     }).join('');
                 } else {
                     document.getElementById('pendingList').innerHTML = '<div class="empty">暂无待处理申请</div>';
                 }
             });
+        }
+        
+        // 格式化日期显示
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            try {
+                var date = new Date(dateStr);
+                var now = new Date();
+                var diff = now - date;
+                
+                // 小于1小时显示"X分钟前"
+                if (diff < 3600000) {
+                    var minutes = Math.floor(diff / 60000);
+                    return minutes < 1 ? '刚刚' : minutes + '分钟前';
+                }
+                // 小于24小时显示"X小时前"
+                if (diff < 86400000) {
+                    return Math.floor(diff / 3600000) + '小时前';
+                }
+                // 小于7天显示"X天前"
+                if (diff < 604800000) {
+                    return Math.floor(diff / 86400000) + '天前';
+                }
+                // 否则显示具体日期 MM-DD HH:mm
+                var month = (date.getMonth() + 1).toString().padStart(2, '0');
+                var day = date.getDate().toString().padStart(2, '0');
+                var hours = date.getHours().toString().padStart(2, '0');
+                var minutes = date.getMinutes().toString().padStart(2, '0');
+                return month + '-' + day + ' ' + hours + ':' + minutes;
+            } catch (e) {
+                return dateStr;
+            }
         }
 
         document.querySelectorAll('.filter-tag').forEach(function(el){

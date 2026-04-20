@@ -595,9 +595,29 @@
                 if (data.success === true) {
                     currentUser = data.data;
                     console.log('用户:', currentUser.userName || currentUser.empName);
+                    
+                    // 异步同步员工数据（一小时内只同步一次）
+                    syncEmployees();
                 }
             } catch(e) {
                 console.error('获取用户信息失败:', e);
+            }
+        }
+        
+        // 同步员工数据
+        async function syncEmployees() {
+            if (!accessToken) return;
+            
+            try {
+                // 异步调用，不等待结果
+                fetch(`${API_BASE}/api/staff/employees/sync-async?access_token=${encodeURIComponent(accessToken)}`, {
+                    method: 'POST'
+                }).catch(err => {
+                    // 静默失败，不影响用户体验
+                    console.log('员工同步请求已发送');
+                });
+            } catch(e) {
+                // 忽略错误
             }
         }
         

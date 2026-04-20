@@ -14,9 +14,18 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from business_common import config, db, auth, utils, audit_log, error_handler, rate_limiter, notification, export_service, OrderStatusTransition, analytics_service
+from business_common.fid_utils import generate_fid, generate_business_fid  # V47.0: FID生成工具
 
 app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
+
+# ============ 静态文件代理 ============
+# 代理 business-common 目录下的静态文件（CSS、JS等）
+@app.route('/business-common/<path:filename>')
+def serve_business_common(filename):
+    """代理访问 business-common 目录下的静态文件"""
+    business_common_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'business-common')
+    return send_from_directory(business_common_dir, filename)
 
 # 注册全局错误处理器
 error_handler.register_error_handlers(app)
@@ -83,25 +92,22 @@ def require_admin(f):
 @app.before_request
 def check_admin():
     # V15安全修复：仅排除健康检查和静态资源
-    exempt_paths = ['/health']
+    exempt_paths = ['/health', '/debugtest']
     if request.path in exempt_paths:
         return None
 
-    # 静态资源免认证（CSS/JS/图片）
+    # 静态资源免认证（CSS/JS/图片/HTML）
+    # HTML文件免认证，由前端JS检查token并处理登录跳转
     if request.path.endswith('.css') or request.path.endswith('.js') or \
        request.path.endswith('.png') or request.path.endswith('.jpg') or \
        request.path.endswith('.jpeg') or request.path.endswith('.gif') or \
        request.path.endswith('.ico') or request.path.endswith('.svg') or \
-       request.path.startswith('/uploads/'):
+       request.path.endswith('.html') or request.path.endswith('.htm') or \
+       request.path.startswith('/uploads/') or request.path.startswith('/business-common/'):
         return None
 
-    # HTML页面需要认证检查 - API正常验证，HTML返回登录提示
-    if request.path.endswith('.html') or request.path == '/':
-        user = get_current_admin()
-        if not user:
-            # 对于HTML页面请求，返回JSON提示前端跳转登录
-            return jsonify({'success': False, 'msg': '请先登录', 'code': 401})
-        g.admin_user = user
+    # 根路径返回index.html，免认证
+    if request.path == '/':
         return None
 
     # API认证检查
@@ -356,7 +362,6 @@ def admin_top_products(user):
 
 
 @app.route('/api/admin/statistics/refund-analysis', methods=['GET'])
-
 @require_admin
 def admin_refund_analysis(user):
     """退款分析接口：近30天退款趋势"""
@@ -2328,6 +2333,63 @@ def export_orders():
         headers={'Content-Disposition': 'attachment; filename=orders.csv'}
     )
 
+# ============ 会员管理 ============
+
+@app.route('/api/admin/members', methods=['GET'])
+def admin_list_members():
+    """会员列表查询"""
+    user = get_current_admin()
+    if not user:
+        return jsonify({'success': False, 'msg': '请先登录'})
+    
+    # 获取查询参数
+    page = int(request.args.get('page', 1))
+    page_size = int(request.args.get('page_size', 10))
+    phone = request.args.get('phone', '').strip()
+    level = request.args.get('level', '').strip()
+    
+    # 构建查询条件
+    where = "deleted=0"
+    params = []
+    
+    # 数据隔离
+    where, params = add_scope_filter(where, params)
+    
+    if phone:
+        where += " AND phone LIKE %s"
+        params.append(f'%{phone}%')
+    
+    if level:
+        where += " AND member_level=%s"
+        params.append(level)
+    
+    # 查询总数
+    count_sql = f"SELECT COUNT(*) as cnt FROM business_members WHERE {where}"
+    total = db.get_one(count_sql, params)
+    total_count = total['cnt'] if total else 0
+    
+    # 查询列表
+    offset = (page - 1) * page_size
+    sql = f"""SELECT id, user_id, phone, member_name, member_level,
+               points, total_points, created_at, updated_at
+               FROM business_members
+               WHERE {where}
+               ORDER BY created_at DESC
+               LIMIT %s OFFSET %s"""
+    params.extend([page_size, offset])
+    
+    rows = db.get_all(sql, params)
+    
+    return jsonify({
+        'success': True,
+        'data': {
+            'items': rows or [],
+            'total': total_count,
+            'page': page,
+            'page_size': page_size
+        }
+    })
+
 # ============ 会员等级分布统计 ============
 
 @app.route('/api/admin/members/stats/by-level', methods=['GET'])
@@ -2378,46 +2440,8 @@ def admin_venues_hot():
     )
     return jsonify({'success': True, 'data': rows or []})
 
-# ============ 评价管理 ============
-
-@app.route('/api/admin/reviews', methods=['GET'])
-def admin_list_reviews():
-    """评价列表"""
-    user = get_current_admin()
-    if not user:
-        return jsonify({'success': False, 'msg': '请先登录'})
-    page = int(request.args.get('page', 1))
-    page_size = min(int(request.args.get('page_size', 20)), 50)
-    target_type = request.args.get('target_type')
-    rating = request.args.get('rating')
-
-    where = "deleted=0"
-    params = []
-    if target_type:
-        where += " AND target_type=%s"; params.append(target_type)
-    if rating:
-        where += " AND rating=%s"; params.append(rating)
-    where, params = add_scope_filter(where, params)
-
-    try:
-        total = db.get_total("SELECT COUNT(*) FROM business_reviews WHERE " + where, params)
-        offset = (page - 1) * page_size
-        items = db.get_all(
-            """SELECT id, user_name, target_type, target_id, target_name, rating, content, 
-                      reply, replied_at, created_at
-               FROM business_reviews WHERE """ + where + " ORDER BY created_at DESC LIMIT %s OFFSET %s",
-            params + [page_size, offset]
-        )
-        return jsonify({'success': True, 'data': {
-            'items': items or [],
-            'total': total,
-            'page': page,
-            'page_size': page_size,
-            'pages': (total + page_size - 1) // page_size if total else 0
-        }})
-    except Exception as e:
-        logging.warning(f"评价列表查询失败: {e}")
-        return jsonify({'success': True, 'data': {'items': [], 'total': 0, 'page': page, 'page_size': page_size, 'pages': 0}})
+# ============ 评价管理（回复和统计）============
+# 注意：评价列表在 V21.0 新版本中定义（见文件后面）
 
 @app.route('/api/admin/reviews/<review_id>/reply', methods=['POST'])
 def admin_reply_review(review_id):
@@ -3586,7 +3610,7 @@ def admin_update_product_category(cat_id):
     """更新商品分类"""
     user = get_current_admin()
     if not user:
-        return jsonify({'success': False, 'msg': '请先登录'}
+        return jsonify({'success': False, 'msg': '请先登录'})
     data = request.get_json() or {}
 
     allowed = ['category_name', 'parent_id', 'icon', 'sort_order', 'status']
@@ -3598,7 +3622,7 @@ def admin_update_product_category(cat_id):
             params.append(data[f])
 
     if not updates:
-        return jsonify({'success': False, 'msg': '没有更新内容'}
+        return jsonify({'success': False, 'msg': '没有更新内容'})
 
     updates.append("updated_at=NOW()")
     params.append(cat_id)
@@ -3692,7 +3716,7 @@ def admin_orders_advanced_search():
     """V14新增：订单高级搜索（时间范围+金额区间+商品类型）"""
     user = get_current_admin()
     if not user:
-        return jsonify({'success': False, 'msg': '请先登录'}
+        return jsonify({'success': False, 'msg': '请先登录'})
 
     page = int(request.args.get('page', 1))
     page_size = min(int(request.args.get('page_size', 20)), 50)
@@ -5165,15 +5189,17 @@ def create_visit(user):
     cursor = conn.cursor()
     
     now = datetime.datetime.now()
+    visit_fid = generate_business_fid('visit')  # V47.0: 生成FID主键
     
     sql = '''
         INSERT INTO visit_records 
-        (company_name, region, visitor, visitor_name, visit_time, category, content, 
+        (fid, company_name, region, visitor, visitor_name, visit_time, category, content, 
          ec_id, project_id, creator, create_time)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     '''
     
     cursor.execute(sql, (
+        visit_fid,
         data.get('companyName'),
         data.get('region', ''),
         data.get('staffId'),
@@ -5187,7 +5213,7 @@ def create_visit(user):
         now
     ))
     
-    record_id = cursor.lastrowid
+    record_id = visit_fid  # V47.0: 使用FID作为记录ID
     conn.commit()
     cursor.close()
     conn.close()

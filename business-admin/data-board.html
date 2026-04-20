@@ -177,7 +177,8 @@ const API_BASE = '/api/admin';
 let trendChart, sourceChart;
 
 function getToken() {
-    return localStorage.getItem('admin_token') || new URLSearchParams(window.location.search).get('access_token') || '';
+    // 只从URL参数获取token
+    return new URLSearchParams(window.location.search).get('access_token') || '';
 }
 
 function api(url) {
@@ -335,7 +336,8 @@ function refreshData() { loadStats(); }
 document.addEventListener('DOMContentLoaded', function() {
     initCharts();
     loadStats();
-    document.getElementById('dateRange').addEventListener('change', refreshData);
+    const dateRange = document.getElementById('dateRange');
+    if (dateRange) dateRange.addEventListener('change', refreshData);
 });
 </script>
 </body>

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>商品管理 - 管理后台</title>
-    <link rel="stylesheet" href="../business-common/list-style.css">
+    <link rel="stylesheet" href="/business-common/list-style.css">
     <style>
         /* 页面特有样式 */
         .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
@@ -134,7 +134,8 @@
 
 
     <script>
-    const token = localStorage.getItem('admin_token') || new URLSearchParams(location.search).get('access_token') || '';
+    // 只从URL参数获取token
+const token = new URLSearchParams(location.search).get('access_token') || '';
 const isdev = new URLSearchParams(location.search).get('isdev') || '0';
 let currentPage = 1;
 let totalPages = 1;
@@ -146,10 +147,10 @@ function authUrl(url) {
 
 async function loadList(page) {
     currentPage = page || 1;
-    const kw = document.getElementById('searchKw').value;
-    const shopId = document.getElementById('filterShop').value;
-    const category = document.getElementById('filterCategory').value;
-    const status = document.getElementById('filterStatus').value;
+    const kw = document.getElementById('searchKw') ? document.getElementById('searchKw').value : '';
+    const shopId = document.getElementById('filterShop') ? document.getElementById('filterShop').value : '';
+    const category = document.getElementById('filterCategory') ? document.getElementById('filterCategory').value : '';
+    const status = document.getElementById('filter1') ? document.getElementById('filter1').value : '';
 
     let url = '/api/admin/products?page=' + currentPage + '&page_size=20';
     if (kw) url += '&keyword=' + encodeURIComponent(kw);
@@ -225,7 +226,7 @@ async function loadFilters() {
     try {
         const [shopRes, catRes] = await Promise.all([
             fetch(authUrl('/api/admin/shops?page=1&page_size=100')),
-            fetch(authUrl('/api/admin/categories'))
+            fetch(authUrl('/api/admin/product-categories'))
         ]);
         const shopData = await shopRes.json();
         const catData = await catRes.json();
@@ -237,7 +238,7 @@ async function loadFilters() {
         }
         if (catData.success && catData.data) {
             const catSelect = document.getElementById('filterCategory');
-            catSelect.innerHTML += catData.data.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+            if (catSelect) catSelect.innerHTML += catData.data.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
         }
     } catch (e) {}
 }

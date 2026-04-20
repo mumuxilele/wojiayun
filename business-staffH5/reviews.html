@@ -2,331 +2,263 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>评价管理</title>
-    <link rel="stylesheet" href="../business-common/list-style.css">
+    <link rel="stylesheet" href="/business-common/common.css">
     <style>
-        /* 页面特有样式 */
-        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
-        .actions .link:hover { text-decoration: underline; }
-        .actions .link.danger { color: var(--el-color-danger); }
-        /* 弹窗样式保留 */
-        /* ---- 回复弹窗 ---- */
-.mask{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:none}
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; }
+        
+        .header-fixed { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: #fff; }
+        
+        .search-bar { display: flex; gap: 10px; padding: 12px 20px; border-bottom: 1px solid #f0f0f0; }
+        .search-input { flex: 1; display: flex; align-items: center; background: #f5f5f5; border-radius: 20px; padding: 8px 15px; }
+        .search-input input { flex: 1; border: none; background: transparent; font-size: 14px; outline: none; }
+        .filter-btn { padding: 8px 15px; background: #f5f5f5; border-radius: 20px; font-size: 14px; color: #666; }
+        
+        .filter-bar { display: flex; padding: 0 20px; border-bottom: 1px solid #f0f0f0; overflow-x: auto; }
+        .filter-item { padding: 12px 16px; font-size: 14px; color: #666; white-space: nowrap; position: relative; }
+        .filter-item.active { color: #30c2b3; font-weight: 500; }
+        .filter-item.active::after { content: ''; position: absolute; bottom: 0; left: 16px; right: 16px; height: 2px; background: #30c2b3; }
+        
+        .content { padding-top: 100px; padding-bottom: 20px; }
+        
+        .review-card { background: #fff; margin: 12px 20px; padding: 16px; border-radius: 12px; }
+        .review-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .reviewer-info { display: flex; align-items: center; gap: 10px; }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; background: #30c2b3; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 16px; }
+        .reviewer-name { font-size: 15px; font-weight: 500; color: #333; }
+        .review-time { font-size: 12px; color: #999; margin-top: 2px; }
+        .rating { color: #ff9500; font-size: 14px; }
+        
+        .review-content { font-size: 14px; color: #333; line-height: 1.6; margin-bottom: 12px; }
+        .review-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+        .tag { padding: 4px 10px; background: #f0f9f8; color: #30c2b3; border-radius: 4px; font-size: 12px; }
+        
+        .review-target { background: #f8f8f8; padding: 10px; border-radius: 8px; font-size: 13px; color: #666; }
+        .target-label { color: #999; }
+        .target-name { color: #333; font-weight: 500; }
+        
+        .reply-section { margin-top: 12px; padding-top: 12px; border-top: 1px solid #f0f0f0; }
+        .reply-content { font-size: 13px; color: #666; background: #f8f8f8; padding: 10px; border-radius: 8px; }
+        .reply-label { color: #30c2b3; font-weight: 500; }
+        
+        .action-bar { display: flex; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f0f0f0; }
+        .action-btn { flex: 1; padding: 10px; text-align: center; border-radius: 6px; font-size: 14px; }
+        .action-btn.primary { background: #30c2b3; color: #fff; }
+        .action-btn.default { background: #f5f5f5; color: #666; }
+        
+        .loading, .empty { text-align: center; padding: 40px; color: #999; font-size: 14px; }
+        
+        .panel { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; border-radius: 16px 16px 0 0; transform: translateY(100%); transition: transform 0.3s; z-index: 200; max-height: 70vh; }
+        .panel.show { transform: translateY(0); }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #f0f0f0; }
+        .panel-title { font-size: 16px; font-weight: 500; }
+        .panel-close { font-size: 20px; color: #999; }
+        .panel-body { padding: 20px; max-height: 50vh; overflow-y: auto; }
+        
+        .form-item { margin-bottom: 16px; }
+        .form-label { font-size: 14px; color: #666; margin-bottom: 8px; display: block; }
+        .form-input { width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; }
+        
+        .mask { position: fixed; inset: 0; background: rgba(0,0,0,0.5); opacity: 0; visibility: hidden; transition: all 0.3s; z-index: 150; }
+        .mask.show { opacity: 1; visibility: visible; }
     </style>
 </head>
-<body class="wy-design-list">
-    <!-- 顶部区域 -->
-    <div class="wy-design-list_top">
-        <div class="wy-design-list_top_title">
-            <h1 class="wy-design-list_title">评价管理</h1>
-            <div class="wy-design-list_space"></div>
-            <div class="wy-design-list_btn-group">
-                <div class="wy-design-list_btn">
-                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
-                        <span>搜索</span>
-                    </button>
-                </div>
-                <div class="wy-design-list_btn">
-                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
-                        <span>重置</span>
-                    </button>
-                </div>
+<body>
+    <div class="header-fixed">
+        <div class="search-bar">
+            <div class="search-input">
+                <span>🔍</span>
+                <input type="text" id="searchInput" placeholder="搜索评价内容/用户">
             </div>
+            <div class="filter-btn" onclick="showFilter()">筛选</div>
+        </div>
+        <div class="filter-bar">
+            <div class="filter-item active" data-type="all" onclick="switchTab(this, 'all')">全部</div>
+            <div class="filter-item" data-type="good" onclick="switchTab(this, 'good')">好评</div>
+            <div class="filter-item" data-type="medium" onclick="switchTab(this, 'medium')">中评</div>
+            <div class="filter-item" data-type="bad" onclick="switchTab(this, 'bad')">差评</div>
+            <div class="filter-item" data-type="pending" onclick="switchTab(this, 'pending')">待回复</div>
         </div>
     </div>
 
-    <!-- 筛选区域 -->
-    <div class="wy-design-list_filter">
-        <div class="wy-design-list_other">
-            <div class="el-input el-input--small" style="width: 200px;">
-                <input type="text" id="searchInput" placeholder="搜索评价内容..." class="el-input__inner">
-            </div>
-        </div>
-        <div class="wy-design-list_other">
-            <select id="filter1" class="el-input__inner" style="width: 130px;">
-                
-    <option value="">全部评分</option>
-    <option value="5">⭐⭐⭐⭐⭐ 5星</option>
-    <option value="4">⭐⭐⭐⭐ 4星</option>
-    <option value="3">⭐⭐⭐ 3星</option>
-    <option value="2">⭐⭐ 2星</option>
-    <option value="1">⭐ 1星</option>
-  
-            </select>
-        </div>
-        <div class="wy-design-list_other">
-            <select id="filter2" class="el-input__inner" style="width: 130px;">
-                
-    <option value="">全部类型</option>
-    <option value="order">订单评价</option>
-    <option value="product">商品评价</option>
-    <option value="venue">场地评价</option>
-    <option value="shop">门店评价</option>
-  
-            </select>
-        </div>
-    </div>
+    <div class="content" id="reviewList"></div>
 
-    <!-- 表格区域 -->
-    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
-        <div class="wy-design-table_bar">
-            <i class="wy-design-table_set el-icon-setting" title="列设置"></i>
-            <span class="wy-design-table_total">共 <em id="totalCount">0</em> 条</span>
-            <div class="wy-pages">
-                <div class="wy-pages_total">第<em id="currentPage">1</em>/<em id="totalPages">1</em>页</div>
-                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
-                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
-            </div>
-        </div>
-        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
-            <thead class="el-table__header">
-                <tr>
-                    <th><div class="cell">名称</div></th>
-                    <th><div class="cell">操作</div></th>
-                </tr>
-            </thead>
-            <tbody class="el-table__body" id="listBody">
-                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</td></tr>
-            </tbody>
-        </table>
-    </div>
-
+    <div class="mask" id="mask" onclick="closePanel()"></div>
     
-<div class="mask" id="mask" onclick="closeMask()"></div>
-<div class="reply-modal" id="replyModal">
-  <div class="modal-title">
-    <span>回复评价</span>
-    <span class="modal-close" onclick="closeReplyModal()">✕</span>
-  </div>
-  <div class="modal-user" id="modalUserInfo"></div>
-  <textarea class="reply-textarea" id="replyText" placeholder="输入回复内容，让顾客感受到您的用心服务..." maxlength="300"
-    oninput="document.getElementById('charCount').textContent=this.value.length+'/300'"></textarea>
-  <div class="char-count"><span id="charCount">0/300</span></div>
-  <div class="modal-btns">
-    <button class="btn-cancel" onclick="closeReplyModal()">取消</button>
-    <button class="btn-submit" id="replySubmitBtn" onclick="submitReply()">提交回复</button>
-  </div>
-</div>
+    <div class="panel" id="filterPanel">
+        <div class="panel-header">
+            <span class="panel-title">筛选条件</span>
+            <span class="panel-close" onclick="closePanel()">×</span>
+        </div>
+        <div class="panel-body">
+            <div class="form-item">
+                <label class="form-label">时间范围</label>
+                <select class="form-input" id="timeRange">
+                    <option value="">全部时间</option>
+                    <option value="today">今天</option>
+                    <option value="week">最近7天</option>
+                    <option value="month">最近30天</option>
+                </select>
+            </div>
+            <div class="form-item">
+                <label class="form-label">评分</label>
+                <select class="form-input" id="ratingFilter">
+                    <option value="">全部评分</option>
+                    <option value="5">5星</option>
+                    <option value="4">4星</option>
+                    <option value="3">3星</option>
+                    <option value="2">2星及以下</option>
+                </select>
+            </div>
+            <button class="action-btn primary" onclick="applyFilter()" style="width:100%;margin-top:20px;">应用筛选</button>
+        </div>
+    </div>
 
-<div class="toast" id="toast"></div>
+    <div class="panel" id="replyPanel">
+        <div class="panel-header">
+            <span class="panel-title">回复评价</span>
+            <span class="panel-close" onclick="closePanel()">×</span>
+        </div>
+        <div class="panel-body">
+            <div class="form-item">
+                <label class="form-label">回复内容</label>
+                <textarea class="form-input" id="replyContent" rows="4" placeholder="请输入回复内容"></textarea>
+            </div>
+            <button class="action-btn primary" onclick="submitReply()" style="width:100%;margin-top:20px;">提交回复</button>
+        </div>
+    </div>
 
-
-
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="/business-common/common.js"></script>
     <script>
-    const TOKEN = new URLSearchParams(location.search).get('access_token') || '';
-const API = (p) => p + (p.includes('?') ? '&' : '?') + 'access_token=' + TOKEN;
-
-let page = 1, totalPages = 1;
-let statusFilter = '';
-let currentReplyId = null;
-
-function showToast(msg, duration=1800) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), duration);
-}
-
-function renderStars(rating, size='16px') {
-  let s = '';
-  for(let i=1;i<=5;i++) s += `<span class="star" style="font-size:${size};color:${i<=rating?'#ffd700':'#e0e0e0'}">${i<=rating?'★':'☆'}</span>`;
-  return s;
-}
-
-const TYPE_MAP = { order:'订单', product:'商品', venue:'场地', shop:'门店' };
-
-function renderCard(r) {
-  const replied = r.reply_content && r.reply_content.trim();
-  const replyBtn = replied
-    ? `<button class="act-btn act-replied">已回复</button>`
-    : `<button class="act-btn act-reply" onclick="openReplyModal(${r.id},'${(r.user_name||'用户').replace(/'/g,'')}','${(r.content||'').replace(/'/g,'').slice(0,50)}')">回复</button>`;
-
-  return `<div class="review-card" id="rc-${r.id}">
-    <div class="rc-head">
-      <div class="rc-avatar">${(r.is_anonymous ? '匿' : (r.user_name||'用')[0]).toUpperCase()}</div>
-      <div class="rc-user-info">
-        <div class="rc-user-name">${r.is_anonymous ? '匿名用户' : (r.user_name||'用户')}</div>
-        <div class="rc-meta">${(r.created_at||'').slice(0,16)}</div>
-      </div>
-      <div class="rc-rating">${renderStars(r.rating)}</div>
-      <div class="rc-type-badge">${TYPE_MAP[r.target_type]||r.target_type||'评价'}</div>
-    </div>
-    <div class="rc-body">
-      ${r.target_name ? `<div class="rc-target">📌 ${r.target_name}</div>` : ''}
-      <div class="rc-content">${r.content || '<span style="color:#bbb">（无文字评价）</span>'}</div>
-      ${r.images ? renderImages(r.images) : ''}
-    </div>
-    ${replied ? `<div class="rc-reply"><div class="rc-reply-label">🗣️ 商家回复</div><div class="rc-reply-text">${r.reply_content}</div></div>` : ''}
-    <div class="rc-actions">
-      ${replyBtn}
-      <button class="act-btn act-delete" onclick="deleteReview(${r.id})">删除</button>
-    </div>
-  </div>`;
-}
-
-function renderImages(images) {
-  try {
-    const arr = typeof images === 'string' ? JSON.parse(images) : images;
-    if (!arr || !arr.length) return '';
-    return '<div class="rc-images">' + arr.map(img => `<img class="rc-img" src="${img}" onerror="this.style.display='none'">`).join('') + '</div>';
-  } catch(e) { return ''; }
-}
-
-async function loadStats() {
-  try {
-    const res = await fetch(API('/api/staff/reviews/statistics')).then(r=>r.json());
-    if (!res.success) return;
-    const d = res.data;
-    document.getElementById('statTotal').textContent = d.total_reviews ?? 0;
-    document.getElementById('statAvg').textContent = (d.avg_rating || 0).toFixed(1) + '★';
-    document.getElementById('statToday').textContent = d.today_new ?? 0;
-    document.getElementById('statUnreplied').textContent = d.unreplied ?? 0;
-
-    // 渲染评分分布
-    if (d.total_reviews > 0) {
-      const dist = d.rating_distribution || {};
-      const total = d.total_reviews || 1;
-      let barsHtml = '';
-      for (let s=5; s>=1; s--) {
-        const cnt = dist[s] || 0;
-        const pct = Math.round(cnt/total*100);
-        barsHtml += `<div class="star-row">
-          <span class="star-label">${s}★</span>
-          <div class="star-bar-bg"><div class="star-bar" style="width:${pct}%"></div></div>
-          <span class="star-count">${cnt}</span>
-        </div>`;
-      }
-      document.getElementById('bigAvg').textContent = (d.avg_rating||0).toFixed(1);
-      document.getElementById('starBars').innerHTML = barsHtml;
-      document.getElementById('ratingOverview').style.display = 'block';
-    }
-  } catch(e) {}
-}
-
-async function loadReviews(reset=true) {
-  if (reset) { page = 1; document.getElementById('reviewList').innerHTML = '<div class="loading">加载中...</div>'; }
-  const rating = document.getElementById('ratingFilter').value;
-  const type   = document.getElementById('typeFilter').value;
-  const kw     = document.getElementById('searchInput').value.trim();
-
-  let url = `/api/staff/reviews?page=${page}&page_size=15`;
-  if (rating) url += '&rating=' + rating;
-  if (type)   url += '&target_type=' + type;
-  if (kw)     url += '&keyword=' + encodeURIComponent(kw);
-  if (statusFilter === 'unreplied') url += '&unreplied=1';
-  if (statusFilter === 'replied')   url += '&replied=1';
-  if (statusFilter === 'low')       url += '&max_rating=2';
-
-  try {
-    const res = await fetch(API(url)).then(r=>r.json());
-    const d = res.data || {};
-    const items = d.items || [];
-    totalPages = Math.ceil((d.total||0) / 15);
-
-    if (reset) {
-      if (!items.length) {
-        document.getElementById('reviewList').innerHTML = '<div class="empty"><div class="empty-icon">💬</div><div>暂无评价记录</div></div>';
-        document.getElementById('loadMoreWrap').style.display = 'none';
-        return;
-      }
-      document.getElementById('reviewList').innerHTML = items.map(renderCard).join('');
-    } else {
-      document.getElementById('reviewList').insertAdjacentHTML('beforeend', items.map(renderCard).join(''));
-    }
-
-    const lm = document.getElementById('loadMoreWrap');
-    const btn = document.getElementById('loadMoreBtn');
-    if (page < totalPages) {
-      lm.style.display = 'block';
-      btn.textContent = `加载更多（第${page}/${totalPages}页）`;
-    } else {
-      lm.style.display = page > 1 ? 'block' : 'none';
-      btn.textContent = '已加载全部';
-      btn.onclick = null;
-    }
-  } catch(e) {
-    document.getElementById('reviewList').innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><div>加载失败，请重试</div></div>';
-  }
-}
-
-function loadMore() {
-  if (page < totalPages) { page++; loadReviews(false); }
-}
-
-function filterByStatus(s) {
-  statusFilter = s;
-  document.querySelectorAll('.filter-item').forEach(el => el.classList.remove('active'));
-  event.target.classList.add('active');
-  loadReviews();
-}
-
-// ---- 回复弹窗 ----
-function openReplyModal(id, userName, contentPreview) {
-  currentReplyId = id;
-  document.getElementById('modalUserInfo').innerHTML = `<b>${userName}</b>：${contentPreview}${contentPreview.length>=50?'...':''}`;
-  document.getElementById('replyText').value = '';
-  document.getElementById('charCount').textContent = '0/300';
-  document.getElementById('replyModal').classList.add('show');
-  document.getElementById('mask').classList.add('show');
-  document.body.style.overflow = 'hidden';
-  setTimeout(() => document.getElementById('replyText').focus(), 300);
-}
-function closeReplyModal() {
-  document.getElementById('replyModal').classList.remove('show');
-  closeMask();
-}
-function closeMask() {
-  document.getElementById('mask').classList.remove('show');
-  document.body.style.overflow = '';
-}
-
-async function submitReply() {
-  const content = document.getElementById('replyText').value.trim();
-  if (!content) { showToast('请输入回复内容'); return; }
-  const btn = document.getElementById('replySubmitBtn');
-  btn.disabled = true;
-  btn.textContent = '提交中...';
-  try {
-    const res = await fetch(API('/api/staff/reviews/' + currentReplyId + '/reply'), {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({reply_content: content})
-    }).then(r=>r.json());
-    if (res.success) {
-      showToast('回复成功！');
-      closeReplyModal();
-      // 局部更新卡片，避免整页刷新
-      setTimeout(() => loadReviews(), 500);
-    } else {
-      showToast(res.msg || '回复失败');
-    }
-  } catch(e) {
-    showToast('网络异常');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '提交回复';
-  }
-}
-
-async function deleteReview(id) {
-  if (!confirm('确认删除该评价？此操作不可恢复。')) return;
-  try {
-    const res = await fetch(API('/api/staff/reviews/' + id), {method:'DELETE'}).then(r=>r.json());
-    if (res.success) {
-      showToast('已删除');
-      const card = document.getElementById('rc-' + id);
-      if (card) card.style.opacity = '0.3';
-      setTimeout(() => { if (card) card.remove(); }, 400);
-    } else {
-      showToast(res.msg || '删除失败');
-    }
-  } catch(e) { showToast('操作失败'); }
-}
-
-// 初始化
-loadStats();
-loadReviews();
+        let currentType = 'all';
+        let currentReviewId = null;
+        let page = 1;
+        let loading = false;
+        
+        const accessToken = getUrlParam('access_token') || sessionStorage.getItem('access_token');
+        const ecId = getUrlParam('ec_id') || sessionStorage.getItem('ec_id');
+        const projectId = getUrlParam('project_id') || sessionStorage.getItem('project_id');
+        const baseUrl = window.location.origin;
+        
+        function getUrlParam(name) {
+            const params = new URLSearchParams(window.location.search);
+            return params.get(name);
+        }
+        
+        function switchTab(el, type) {
+            document.querySelectorAll('.filter-item').forEach(item => item.classList.remove('active'));
+            el.classList.add('active');
+            currentType = type;
+            page = 1;
+            loadReviews();
+        }
+        
+        function showFilter() {
+            document.getElementById('mask').classList.add('show');
+            document.getElementById('filterPanel').classList.add('show');
+        }
+        
+        function showReply(id) {
+            currentReviewId = id;
+            document.getElementById('mask').classList.add('show');
+            document.getElementById('replyPanel').classList.add('show');
+        }
+        
+        function closePanel() {
+            document.getElementById('mask').classList.remove('show');
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('show'));
+        }
+        
+        function applyFilter() {
+            closePanel();
+            page = 1;
+            loadReviews();
+        }
+        
+        function submitReply() {
+            const content = document.getElementById('replyContent').value.trim();
+            if (!content) {
+                showToast('请输入回复内容');
+                return;
+            }
+            closePanel();
+            showToast('回复成功');
+            document.getElementById('replyContent').value = '';
+        }
+        
+        function renderStar(rating) {
+            return '★'.repeat(rating) + '☆'.repeat(5 - rating);
+        }
+        
+        function loadReviews() {
+            const list = document.getElementById('reviewList');
+            if (page === 1) list.innerHTML = '<div class="loading">加载中...</div>';
+            
+            // 模拟数据
+            const mockData = [
+                { id: 1, reviewer: '张三', avatar: '张', time: '2024-01-15 14:30', rating: 5, content: '服务非常好，环境也很棒，下次还会再来！', tags: ['服务热情', '环境好'], target: '会议室A', hasReply: true, reply: '感谢您的认可，我们会继续努力！' },
+                { id: 2, reviewer: '李四', avatar: '李', time: '2024-01-15 12:00', rating: 4, content: '整体不错，就是预约流程可以再简化一些。', tags: ['体验良好'], target: '工位B12', hasReply: false },
+                { id: 3, reviewer: '王五', avatar: '王', time: '2024-01-14 16:45', rating: 5, content: '非常满意的体验，工作人员很专业。', tags: ['专业', '效率高'], target: '洽谈室C', hasReply: true, reply: '谢谢您的支持！' }
+            ];
+            
+            setTimeout(() => {
+                let html = '';
+                mockData.forEach(item => {
+                    html += `
+                        <div class="review-card">
+                            <div class="review-header">
+                                <div class="reviewer-info">
+                                    <div class="avatar">${item.avatar}</div>
+                                    <div>
+                                        <div class="reviewer-name">${item.reviewer}</div>
+                                        <div class="review-time">${item.time}</div>
+                                    </div>
+                                </div>
+                                <div class="rating">${renderStar(item.rating)}</div>
+                            </div>
+                            <div class="review-content">${item.content}</div>
+                            <div class="review-tags">${item.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+                            <div class="review-target">
+                                <span class="target-label">评价对象：</span>
+                                <span class="target-name">${item.target}</span>
+                            </div>
+                            ${item.hasReply ? `
+                                <div class="reply-section">
+                                    <div class="reply-content">
+                                        <span class="reply-label">商家回复：</span>${item.reply}
+                                    </div>
+                                </div>
+                            ` : ''}
+                            ${!item.hasReply ? `
+                                <div class="action-bar">
+                                    <button class="action-btn primary" onclick="showReply(${item.id})">回复</button>
+                                    <button class="action-btn default">举报</button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                });
+                list.innerHTML = html;
+            }, 300);
+        }
+        
+        document.getElementById('searchInput').addEventListener('input', debounce(function() {
+            page = 1;
+            loadReviews();
+        }, 300));
+        
+        function debounce(fn, delay) {
+            let timer = null;
+            return function() {
+                if (timer) clearTimeout(timer);
+                timer = setTimeout(() => fn.apply(this, arguments), delay);
+            };
+        }
+        
+        loadReviews();
     </script>
 </body>
 </html>

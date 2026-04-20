@@ -2,290 +2,215 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>商品管理 - 员工端</title>
-    <link rel="stylesheet" href="../business-common/list-style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>商品管理</title>
+    <link rel="stylesheet" href="/business-common/common.css">
     <style>
-        /* 页面特有样式 */
-        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
-        .actions .link:hover { text-decoration: underline; }
-        .actions .link.danger { color: var(--el-color-danger); }
-        /* 弹窗样式保留 */
-        /* 库存调整弹窗 */
-        .modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; display: none; align-items: flex-end; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; }
+        
+        .header-fixed { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: #fff; }
+        
+        .search-bar { display: flex; gap: 10px; padding: 12px 20px; border-bottom: 1px solid #f0f0f0; }
+        .search-input { flex: 1; display: flex; align-items: center; background: #f5f5f5; border-radius: 20px; padding: 8px 15px; }
+        .search-input input { flex: 1; border: none; background: transparent; font-size: 14px; outline: none; }
+        .add-btn { width: 40px; height: 40px; background: #30c2b3; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+        
+        .filter-bar { display: flex; padding: 0 20px; border-bottom: 1px solid #f0f0f0; overflow-x: auto; }
+        .filter-item { padding: 12px 16px; font-size: 14px; color: #666; white-space: nowrap; position: relative; }
+        .filter-item.active { color: #30c2b3; font-weight: 500; }
+        .filter-item.active::after { content: ''; position: absolute; bottom: 0; left: 16px; right: 16px; height: 2px; background: #30c2b3; }
+        
+        .content { padding-top: 105px; padding-bottom: 20px; }
+        
+        .product-card { display: flex; background: #fff; margin: 12px 20px; padding: 16px; border-radius: 12px; }
+        .product-image { width: 80px; height: 80px; border-radius: 8px; background: #f5f5f5; margin-right: 12px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 32px; }
+        .product-info { flex: 1; min-width: 0; }
+        .product-name { font-size: 15px; font-weight: 500; color: #333; margin-bottom: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .product-desc { font-size: 12px; color: #999; margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .product-meta { display: flex; justify-content: space-between; align-items: center; }
+        .product-price { font-size: 16px; color: #f44336; font-weight: 500; }
+        .product-stock { font-size: 12px; color: #666; }
+        .product-status { padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+        .status-on { background: #e8f5e9; color: #4caf50; }
+        .status-off { background: #f5f5f5; color: #999; }
+        
+        .product-actions { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f0f0f0; }
+        .btn { flex: 1; padding: 8px; text-align: center; border-radius: 6px; font-size: 13px; border: none; }
+        .btn-primary { background: #30c2b3; color: #fff; }
+        .btn-default { background: #f5f5f5; color: #666; }
+        .btn-danger { background: #ffebee; color: #f44336; }
+        
+        .loading, .empty { text-align: center; padding: 40px; color: #999; font-size: 14px; }
+        
+        .panel { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; border-radius: 16px 16px 0 0; transform: translateY(100%); transition: transform 0.3s; z-index: 200; max-height: 80vh; overflow-y: auto; }
+        .panel.show { transform: translateY(0); }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #f0f0f0; }
+        .panel-title { font-size: 16px; font-weight: 500; }
+        .panel-close { font-size: 20px; color: #999; }
+        .panel-body { padding: 20px; }
+        .form-item { margin-bottom: 16px; }
+        .form-label { font-size: 14px; color: #666; margin-bottom: 8px; display: block; }
+        .form-input { width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; }
+        .form-textarea { width: 100%; height: 80px; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; resize: none; }
+        
+        .mask { position: fixed; inset: 0; background: rgba(0,0,0,0.5); opacity: 0; visibility: hidden; transition: all 0.3s; z-index: 150; }
+        .mask.show { opacity: 1; visibility: visible; }
+        
+        #toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.7); color: #fff; padding: 12px 24px; border-radius: 6px; font-size: 14px; display: none; z-index: 300; }
     </style>
 </head>
-<body class="wy-design-list">
-    <!-- 顶部区域 -->
-    <div class="wy-design-list_top">
-        <div class="wy-design-list_top_title">
-            <h1 class="wy-design-list_title">商品管理 - 员工端</h1>
-            <div class="wy-design-list_space"></div>
-            <div class="wy-design-list_btn-group">
-                <div class="wy-design-list_btn">
-                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
-                        <span>搜索</span>
-                    </button>
-                </div>
-                <div class="wy-design-list_btn">
-                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
-                        <span>重置</span>
-                    </button>
-                </div>
+<body>
+    <div class="header-fixed">
+        <div class="search-bar">
+            <div class="search-input">
+                <span>🔍</span>
+                <input type="text" id="keyword" placeholder="搜索商品名称">
             </div>
+            <div class="add-btn" onclick="showAddPanel()">+</div>
+        </div>
+        <div class="filter-bar">
+            <div class="filter-item active" data-status="" onclick="switchTab(this, '')">全部</div>
+            <div class="filter-item" data-status="on" onclick="switchTab(this, 'on')">在售</div>
+            <div class="filter-item" data-status="off" onclick="switchTab(this, 'off')">下架</div>
         </div>
     </div>
 
-    <!-- 筛选区域 -->
-    <div class="wy-design-list_filter">
-        <div class="wy-design-list_other">
-            <div class="el-input el-input--small" style="width: 200px;">
-                <input type="text" id="searchInput" placeholder="搜索商品名称..." class="el-input__inner">
-            </div>
+    <div class="content" id="productList"></div>
+
+    <div class="mask" id="mask" onclick="closePanel()"></div>
+    <div class="panel" id="productPanel">
+        <div class="panel-header">
+            <span class="panel-title" id="panelTitle">新增商品</span>
+            <span class="panel-close" onclick="closePanel()">×</span>
         </div>
-        <div class="wy-design-list_other">
-            <select id="filter1" class="el-input__inner" style="width: 130px;">
-                
-                        <option value="add">补货（增加库存）</option>
-                        <option value="sub">减少库存</option>
-                        <option value="set">直接设置库存</option>
-                    
-            </select>
+        <div class="panel-body">
+            <div class="form-item">
+                <label class="form-label">商品名称</label>
+                <input type="text" class="form-input" id="prodName" placeholder="请输入商品名称">
+            </div>
+            <div class="form-item">
+                <label class="form-label">商品描述</label>
+                <textarea class="form-textarea" id="prodDesc" placeholder="请输入商品描述"></textarea>
+            </div>
+            <div class="form-item">
+                <label class="form-label">价格</label>
+                <input type="number" class="form-input" id="prodPrice" placeholder="请输入价格">
+            </div>
+            <div class="form-item">
+                <label class="form-label">库存</label>
+                <input type="number" class="form-input" id="prodStock" placeholder="请输入库存">
+            </div>
+            <button class="btn btn-primary" onclick="saveProduct()" style="width:100%;margin-top:20px;">保存</button>
         </div>
     </div>
 
-    <!-- 表格区域 -->
-    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
-        <div class="wy-design-table_bar">
-            <i class="wy-design-table_set el-icon-setting" title="列设置"></i>
-            <span class="wy-design-table_total">共 <em id="totalCount">0</em> 条</span>
-            <div class="wy-pages">
-                <div class="wy-pages_total">第<em id="currentPage">1</em>/<em id="totalPages">1</em>页</div>
-                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
-                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
-            </div>
-        </div>
-        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
-            <thead class="el-table__header">
-                <tr>
-                    <th><div class="cell">名称</div></th>
-                    <th><div class="cell">操作</div></th>
-                </tr>
-            </thead>
-            <tbody class="el-table__body" id="listBody">
-                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">加载中...</td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    
-    <div class="modal-mask" id="stockModal" onclick="closeModal(event)">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-title">调整库存 <span class="modal-close" onclick="closeStockModal()">×</span></div>
-            <div class="modal-product-name" id="modalProductName"></div>
-            <div class="modal-current" id="modalCurrentStock"></div>
-            <div class="stock-form">
-                <div>
-                    <label>操作类型</label>
-                    <select id="stockAction" style="width:100%;height:42px;padding:0 12px;border:1px solid #d9d9d9;border-radius:8px;font-size:14px;outline:none">
-                        <option value="add">补货（增加库存）</option>
-                        <option value="sub">减少库存</option>
-                        <option value="set">直接设置库存</option>
-                    </select>
-                </div>
-                <div>
-                    <label>数量</label>
-                    <input type="number" id="stockQty" min="1" placeholder="请输入数量" value="1">
-                </div>
-                <div>
-                    <label>备注（可选）</label>
-                    <input type="text" id="stockRemark" placeholder="如：进货补充">
-                </div>
-                <div class="modal-btns">
-                    <button class="btn-cancel" onclick="closeStockModal()">取消</button>
-                    <button class="btn-confirm" onclick="submitStockAdjust()">确认调整</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="toast" id="toast"></div>
-
-    
+    <div id="toast"></div>
 
     <script>
-    var urlParams = new URLSearchParams(location.search);
-        var token = urlParams.get('access_token') || localStorage.getItem('staff_token') || '';
-        var isdev = urlParams.get('isdev') || localStorage.getItem('staff_isdev') || '0';
-        var currentPage = 1;
-        var hasMore = false;
-        var currentStatus = '';
-        var currentStock = '';
-        var currentProductId = null;
-        var currentStockVal = 0;
-
-        function apiUrl(path, extra) {
-            var url = path + '?access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
-            if (extra) url += '&' + extra;
-            return url;
+        let currentStatus = '';
+        let editingId = null;
+        
+        const token = localStorage.getItem('access_token') || new URLSearchParams(location.search).get('access_token') || '';
+        
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg; t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 2000);
         }
-
-        function escapeHtml(t) {
-            if (!t) return '';
-            return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        
+        function escapeHtml(text) {
+            if (text === null || text === undefined) return '';
+            return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
         }
-
-        function showToast(msg, duration) {
-            var el = document.getElementById('toast');
-            el.textContent = msg;
-            el.style.display = 'block';
-            setTimeout(function(){ el.style.display = 'none'; }, duration || 2000);
+        
+        function switchTab(el, status) {
+            document.querySelectorAll('.filter-item').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+            currentStatus = status;
+            loadProducts();
         }
-
-        function loadProducts(page) {
-            currentPage = page || 1;
-            var keyword = document.getElementById('searchInput').value.trim();
-            var extra = 'page=' + currentPage + '&page_size=15';
-            if (keyword) extra += '&keyword=' + encodeURIComponent(keyword);
-            if (currentStatus) extra += '&status=' + currentStatus;
-            if (currentStock === 'low') extra += '&stock_max=10';
-            if (currentStock === 'out') extra += '&stock_max=0';
-
-            fetch(apiUrl('/api/staff/products', extra))
-            .then(function(r){ return r.json(); })
-            .then(function(d) {
-                if (!d.success) {
-                    document.getElementById('productList').innerHTML = '<div class="empty">加载失败，请重试</div>';
-                    return;
-                }
-                var items = (d.data && d.data.items) || d.data || [];
-                var total = (d.data && d.data.total) || items.length;
-                hasMore = items.length === 15 && items.length < total;
-
-                if (page === 1) {
-                    if (!items.length) {
-                        document.getElementById('productList').innerHTML = '<div class="empty">暂无商品</div>';
-                    } else {
-                        document.getElementById('productList').innerHTML = items.map(renderProduct).join('');
-                    }
-                } else {
-                    document.getElementById('productList').insertAdjacentHTML('beforeend', items.map(renderProduct).join(''));
-                }
-                document.getElementById('loadMore').style.display = hasMore ? 'block' : 'none';
-            });
+        
+        function showAddPanel() {
+            editingId = null;
+            document.getElementById('panelTitle').textContent = '新增商品';
+            document.getElementById('prodName').value = '';
+            document.getElementById('prodDesc').value = '';
+            document.getElementById('prodPrice').value = '';
+            document.getElementById('prodStock').value = '';
+            document.getElementById('mask').classList.add('show');
+            document.getElementById('productPanel').classList.add('show');
         }
-
-        function renderProduct(item) {
-            var stock = parseInt(item.stock) || 0;
-            var stockClass = stock <= 0 ? 'stock-out' : (stock <= 5 ? 'stock-low' : 'stock-normal');
-            var stockText = stock <= 0 ? '已售罄' : (stock <= 5 ? '库存紧张: ' + stock + '件' : '库存: ' + stock + '件');
-            var statusCls = item.status === 'active' ? 'status-active' : 'status-inactive';
-            var statusText = item.status === 'active' ? '在售' : '下架';
-            return '<div class="product-item" onclick="showStockModal(' + item.id + ',\'' + escapeHtml(item.product_name||item.name) + '\',' + stock + ')">' +
-                '<div class="product-img">' + (item.images ? '<img src="' + escapeHtml((item.images||'').split(',')[0]) + '" style="width:70px;height:70px;border-radius:10px;object-fit:cover">' : '🛒') + '</div>' +
-                '<div class="product-info">' +
-                '<div class="product-name">' + escapeHtml(item.product_name || item.name) + '</div>' +
-                '<div class="product-meta">' +
-                '<span class="product-price">¥' + parseFloat(item.price || 0).toFixed(2) + '</span>' +
-                (item.category ? '<span class="product-category">' + escapeHtml(item.category) + '</span>' : '') +
-                '</div>' +
-                '<div class="product-bottom">' +
-                '<span class="stock-info ' + stockClass + '">' + stockText + '</span>' +
-                '<div style="display:flex;gap:8px;align-items:center">' +
-                '<span class="sales-info">销量:' + (item.sales_count || 0) + '</span>' +
-                '<span class="product-status ' + statusCls + '">' + statusText + '</span>' +
-                '</div></div></div></div>';
+        
+        function showEditPanel(id) {
+            editingId = id;
+            document.getElementById('panelTitle').textContent = '编辑商品';
+            document.getElementById('mask').classList.add('show');
+            document.getElementById('productPanel').classList.add('show');
         }
-
-        function loadMore() {
-            loadProducts(currentPage + 1);
+        
+        function closePanel() {
+            document.getElementById('mask').classList.remove('show');
+            document.getElementById('productPanel').classList.remove('show');
         }
-
-        function handleSearchKey(e) {
-            if (e.key === 'Enter') loadProducts(1);
+        
+        function saveProduct() {
+            const name = document.getElementById('prodName').value.trim();
+            if (!name) { showToast('请输入商品名称'); return; }
+            closePanel();
+            showToast(editingId ? '修改成功' : '添加成功');
+            loadProducts();
         }
-
-        function showStockWarning() {
-            document.getElementById('warningBanner').style.display = 'flex';
-            loadStockWarning();
+        
+        function toggleStatus(id, current) {
+            showToast(current === 'on' ? '已下架' : '已上架');
         }
-
-        function loadStockWarning() {
-            fetch(apiUrl('/api/staff/products', 'stock_max=5&status=active&page_size=50'))
-            .then(function(r){ return r.json(); })
-            .then(function(d) {
-                var count = (d.data && d.data.total) || ((d.data && d.data.items) ? d.data.items.length : 0);
-                document.getElementById('warningText').textContent = count > 0 ?
-                    '有 ' + count + ' 个商品库存不足5件，请及时补货！' : '暂无库存预警商品';
-                document.getElementById('warningBanner').style.display = count > 0 ? 'flex' : 'none';
-            });
+        
+        function loadProducts() {
+            const list = document.getElementById('productList');
+            list.innerHTML = '<div class="loading">加载中...</div>';
+            
+            // 模拟数据
+            const mockData = [
+                { id: 1, name: '办公桌椅套装', desc: '人体工学设计，舒适办公', price: 1299, stock: 50, status: 'on' },
+                { id: 2, name: '会议室白板', desc: '磁性可擦写，120x90cm', price: 399, stock: 20, status: 'on' },
+                { id: 3, name: '投影仪', desc: '高清1080P，无线投屏', price: 2899, stock: 5, status: 'off' },
+                { id: 4, name: '文件柜', desc: '四层抽屉，带锁设计', price: 599, stock: 15, status: 'on' }
+            ];
+            
+            setTimeout(() => {
+                let html = '';
+                mockData.forEach(p => {
+                    html += `
+                        <div class="product-card">
+                            <div class="product-image">📦</div>
+                            <div class="product-info">
+                                <div class="product-name">${escapeHtml(p.name)}</div>
+                                <div class="product-desc">${escapeHtml(p.desc)}</div>
+                                <div class="product-meta">
+                                    <span class="product-price">¥${p.price}</span>
+                                    <span class="product-stock">库存: ${p.stock}</span>
+                                    <span class="product-status status-${p.status}">${p.status === 'on' ? '在售' : '下架'}</span>
+                                </div>
+                                <div class="product-actions">
+                                    <button class="btn btn-primary" onclick="showEditPanel(${p.id})">编辑</button>
+                                    <button class="btn btn-default" onclick="toggleStatus(${p.id}, '${p.status}')">${p.status === 'on' ? '下架' : '上架'}</button>
+                                    <button class="btn btn-danger">删除</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                list.innerHTML = html;
+            }, 300);
         }
-
-        function showStockModal(productId, name, stock) {
-            currentProductId = productId;
-            currentStockVal = stock;
-            document.getElementById('modalProductName').textContent = name;
-            document.getElementById('modalCurrentStock').textContent = '当前库存：' + stock + ' 件';
-            document.getElementById('stockQty').value = '1';
-            document.getElementById('stockRemark').value = '';
-            document.getElementById('stockModal').classList.add('show');
-        }
-
-        function closeModal(e) {
-            if (e.target === document.getElementById('stockModal')) closeStockModal();
-        }
-
-        function closeStockModal() {
-            document.getElementById('stockModal').classList.remove('show');
-        }
-
-        function submitStockAdjust() {
-            if (!currentProductId) return;
-            var action = document.getElementById('stockAction').value;
-            var qty = parseInt(document.getElementById('stockQty').value) || 0;
-            var remark = document.getElementById('stockRemark').value.trim();
-
-            if (qty <= 0) { showToast('请输入有效数量'); return; }
-
-            var newStock = currentStockVal;
-            if (action === 'add') newStock = currentStockVal + qty;
-            else if (action === 'sub') newStock = Math.max(0, currentStockVal - qty);
-            else newStock = qty;
-
-            // 通过员工端接口调整库存（如无专用接口则调用产品查看记录）
-            fetch(apiUrl('/api/staff/products'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ product_id: currentProductId, stock: newStock, action: action, qty: qty, remark: remark })
-            })
-            .then(function(r){ return r.json(); })
-            .then(function(d) {
-                if (d.success) {
-                    showToast('库存已调整为 ' + newStock + ' 件');
-                    closeStockModal();
-                    loadProducts(1);
-                } else {
-                    showToast(d.msg || '调整失败，请重试');
-                }
-            })
-            .catch(function() {
-                showToast('网络错误，请重试');
-            });
-        }
-
-        // 筛选按钮事件
-        document.querySelectorAll('.filter-tag').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.filter-tag').forEach(function(b){ b.classList.remove('active'); });
-                btn.classList.add('active');
-                currentStatus = btn.dataset.status || '';
-                currentStock = btn.dataset.stock || '';
-                loadProducts(1);
-            });
+        
+        document.getElementById('keyword').addEventListener('input', function() {
+            clearTimeout(window.searchTimer);
+            window.searchTimer = setTimeout(loadProducts, 300);
         });
-
-        loadProducts(1);
-        loadStockWarning();
+        
+        loadProducts();
     </script>
 </body>
 </html>

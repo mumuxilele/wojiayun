@@ -419,7 +419,7 @@
                     await loadCopyData();
                 }
                 
-                renderForm();
+                await renderForm();
                 
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('appForm').style.display = 'block';
@@ -455,10 +455,50 @@
             }
         }
         
+        // 房间列表缓存
+        let roomListCache = null;
+        
+        // 加载房间列表
+        async function loadRoomList() {
+            if (roomListCache) return roomListCache;
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/v2/rooms?current=1&row_count=100&access_token=${token}`);
+                const data = await res.json();
+                
+                if (data.success && data.data) {
+                    roomListCache = data.data.map(room => ({
+                        value: room.roomId || room.id,
+                        label: room.roomName || room.name || '未命名房间'
+                    }));
+                    return roomListCache;
+                }
+                return [];
+            } catch (e) {
+                console.error('加载房间列表失败:', e);
+                return [];
+            }
+        }
+        
         // 渲染表单
-        function renderForm() {
+        async function renderForm() {
             const schema = appType.form_schema || {};
             const fields = schema.fields || [];
+            
+            // 检查是否有加班区域/房间字段
+            const hasRoomField = fields.some(f => 
+                f.name === 'overtime_area' || 
+                f.name === 'room' || 
+                f.name === 'area' ||
+                f.label?.includes('加班区域') ||
+                f.label?.includes('房间') ||
+                f.type === 'room'
+            );
+            
+            // 如果有房间字段，先加载房间列表
+            if (hasRoomField) {
+                await loadRoomList();
+            }
             
             let html = `
                 <div class="card">
@@ -578,10 +618,22 @@
                     `;
                     break;
                 case 'select':
+                    // 判断是否是加班区域/房间字段
+                    const isRoomField = name === 'overtime_area' || name === 'room' || name === 'area' ||
+                                       label?.includes('加班区域') || label?.includes('房间');
+                    
+                    // 如果是房间字段，优先使用房间列表；否则使用预定义选项
+                    let selectOptions;
+                    if (isRoomField && roomListCache) {
+                        selectOptions = roomListCache;
+                    } else {
+                        selectOptions = options || [];
+                    }
+                    
                     inputHtml = `
                         <select class="form-select" name="${name}" ${required ? 'required' : ''}>
                             <option value="">请选择${label}</option>
-                            ${(options || []).map(opt => `<option value="${opt.value || opt}" ${value === (opt.value || opt) ? 'selected' : ''}>${opt.label || opt}</option>`).join('')}
+                            ${selectOptions.map(opt => `<option value="${opt.value || opt}" ${value === (opt.value || opt) ? 'selected' : ''}>${opt.label || opt}</option>`).join('')}
                         </select>
                     `;
                     break;

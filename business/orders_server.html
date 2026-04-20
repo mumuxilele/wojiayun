@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订单中心</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding-bottom: 60px;
+        }
+        
+        .header {
+            background: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #e8e8e8;
+        }
+        
+        .back-btn {
+            font-size: 24px;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+        
+        .header h1 {
+            font-size: 18px;
+            flex: 1;
+        }
+        
+        /* 状态Tab */
+        .status-tabs {
+            background: white;
+            display: flex;
+            overflow-x: auto;
+            padding: 10px 0;
+            border-bottom: 1px solid #e8e8e8;
+            margin-bottom: 10px;
+        }
+        
+        .status-tab {
+            flex-shrink: 0;
+            padding: 10px 15px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 14px;
+            color: #666;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .status-tab.active {
+            color: #1890ff;
+            border-bottom-color: #1890ff;
+        }
+        
+        /* 订单列表 */
+        .orders-list {
+            padding: 10px;
+        }
+        
+        .order-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .order-card:active {
+            transform: scale(0.98);
+        }
+        
+        .order-header {
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #f0f0f0;
+            background-color: #fafafa;
+        }
+        
+        .order-id {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        .order-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-pending {
+            background-color: #fff7e6;
+            color: #d46b08;
+        }
+        
+        .status-processing {
+            background-color: #e6f7ff;
+            color: #1890ff;
+        }
+        
+        .status-completed {
+            background-color: #f6ffed;
+            color: #52c41a;
+        }
+        
+        .status-cancelled {
+            background-color: #fff2f0;
+            color: #ff4d4f;
+        }
+        
+        .order-content {
+            padding: 12px 15px;
+            display: flex;
+            gap: 12px;
+        }
+        
+        .order-image {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #1890ff 0%, #52c41a 100%);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            flex-shrink: 0;
+        }
+        
+        .order-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        .order-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        
+        .order-desc {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 6px;
+        }
+        
+        .order-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .order-price {
+            font-size: 14px;
+            font-weight: bold;
+            color: #1890ff;
+        }
+        
+        .order-action {
+            font-size: 12px;
+            color: #1890ff;
+            cursor: pointer;
+        }
+        
+        /* 模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: flex-end;
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            width: 100%;
+            border-radius: 8px 8px 0 0;
+            padding: 20px;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .detail-section {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .detail-section:last-child {
+            border-bottom: none;
+        }
+        
+        .detail-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .detail-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .detail-label {
+            color: #999;
+        }
+        
+        .detail-value {
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background-color: #1890ff;
+            color: white;
+        }
+        
+        .btn-primary:active {
+            background-color: #0050b3;
+        }
+        
+        .btn-secondary {
+            background-color: #f0f0f0;
+            color: #333;
+            border: 1px solid #d9d9d9;
+        }
+        
+        .btn-secondary:active {
+            background-color: #e8e8e8;
+        }
+        
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        .empty-text {
+            font-size: 14px;
+        }
+        
+        /* 底部导航 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: white;
+            border-top: 1px solid #e8e8e8;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            color: #666;
+            font-size: 12px;
+            flex: 1;
+            height: 100%;
+        }
+        
+        .nav-item.active {
+            color: #1890ff;
+        }
+        
+        .nav-icon {
+            font-size: 24px;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <button class="back-btn" onclick="goBack()">←</button>
+        <h1>订单中心</h1>
+    </div>
+    
+    <div class="status-tabs" id="statusTabs">
+        <button class="status-tab active" onclick="switchStatus('all')">全部</button>
+        <button class="status-tab" onclick="switchStatus('pending')">待支付</button>
+        <button class="status-tab" onclick="switchStatus('processing')">进行中</button>
+        <button class="status-tab" onclick="switchStatus('completed')">已完成</button>
+        <button class="status-tab" onclick="switchStatus('cancelled')">已取消</button>
+    </div>
+    
+    <div class="loading" id="loading">加载中...</div>
+    
+    <div class="orders-list" id="ordersList">
+        <!-- 订单卡片将动态插入 -->
+    </div>
+    
+    <!-- 订单详情模态框 -->
+    <div class="modal" id="detailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>订单详情</h2>
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+            
+            <div class="detail-section">
+                <div class="detail-title">订单信息</div>
+                <div class="detail-item">
+                    <span class="detail-label">订单号</span>
+                    <span class="detail-value" id="detailOrderId">-</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">下单时间</span>
+                    <span class="detail-value" id="detailOrderTime">-</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">订单状态</span>
+                    <span class="detail-value" id="detailStatus">-</span>
+                </div>
+            </div>
+            
+            <div class="detail-section">
+                <div class="detail-title">商品信息</div>
+                <div class="detail-item">
+                    <span class="detail-label">商品名称</span>
+                    <span class="detail-value" id="detailProductName">-</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">数量</span>
+                    <span class="detail-value" id="detailQuantity">-</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">单价</span>
+                    <span class="detail-value" id="detailPrice">-</span>
+                </div>
+            </div>
+            
+            <div class="detail-section">
+                <div class="detail-title">金额信息</div>
+                <div class="detail-item">
+                    <span class="detail-label">商品金额</span>
+                    <span class="detail-value" id="detailSubtotal">-</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">配送费</span>
+                    <span class="detail-value" id="detailShipping">-</span>
+                </div>
+                <div class="detail-item" style="font-size: 14px; font-weight: bold;">
+                    <span class="detail-label">合计</span>
+                    <span class="detail-value" id="detailTotal">-</span>
+                </div>
+            </div>
+            
+            <div class="detail-section">
+                <div class="detail-title">收货信息</div>
+                <div class="detail-item">
+                    <span class="detail-label">收货地址</span>
+                    <span class="detail-value" id="detailAddress">-</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">联系电话</span>
+                    <span class="detail-value" id="detailPhone">-</span>
+                </div>
+            </div>
+            
+            <div class="action-buttons" id="actionButtons">
+                <!-- 操作按钮将动态插入 -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- 底部导航 -->
+    <div class="bottom-nav">
+        <a class="nav-item active" href="orders.html">
+            <div class="nav-icon">📦</div>
+            <div>订单</div>
+        </a>
+        <a class="nav-item" href="index.html">
+            <div class="nav-icon">🏠</div>
+            <div>首页</div>
+        </a>
+        <a class="nav-item" href="member.html">
+            <div class="nav-icon">👑</div>
+            <div>会员</div>
+        </a>
+        <a class="nav-item" href="profile.html">
+            <div class="nav-icon">👤</div>
+            <div>我的</div>
+        </a>
+    </div>
+    
+    <script>
+        let currentStatus = 'all';
+        let currentOrder = null;
+        
+        // 获取URL参数
+        function getUrlParam(name) {
+            const url = new URL(window.location.href);
+            return url.searchParams.get(name);
+        }
+        
+        // 统一API请求函数
+        async function apiRequest(endpoint, method = 'GET', data = null) {
+            const accessToken = getUrlParam('access_token') || 'demo_token';
+            const isDev = getUrlParam('isdev') || 'true';
+            const apiUrl = location.origin;
+            
+            const url = new URL(apiUrl + endpoint);
+            url.searchParams.append('access_token', accessToken);
+            url.searchParams.append('isdev', isDev);
+            
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+                
+                if (data && method !== 'GET') {
+                    options.body = JSON.stringify(data);
+                }
+                
+                const response = await fetch(url.toString(), options);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+        
+        // 返回上一页
+        function goBack() {
+            const accessToken = getUrlParam('access_token') || 'demo_token';
+            const isDev = getUrlParam('isdev') || 'true';
+            window.location.href = `index.html?access_token=${accessToken}&isdev=${isDev}`;
+        }
+        
+        // 切换状态
+        function switchStatus(status) {
+            currentStatus = status;
+            
+            document.querySelectorAll('.status-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            loadOrders();
+        }
+        
+        // 加载订单列表
+        async function loadOrders() {
+            try {
+                document.getElementById('loading').classList.add('show');
+                
+                let endpoint = '/api/business/orders';
+                if (currentStatus !== 'all') {
+                    endpoint += `?status=${currentStatus}`;
+                }
+                
+                const response = await apiRequest(endpoint);
+                
+                const list = document.getElementById('ordersList');
+                list.innerHTML = '';
+                
+                if (response.code === 0 && response.data && response.data.length > 0) {
+                    response.data.forEach(order => {
+                        const card = createOrderCard(order);
+                        list.appendChild(card);
+                    });
+                } else {
+                    list.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">📭</div>
+                            <div class="empty-text">暂无订单</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Failed to load orders:', error);
+            } finally {
+                document.getElementById('loading').classList.remove('show');
+            }
+        }
+        
+        // 创建订单卡片
+        function createOrderCard(order) {
+            const card = document.createElement('div');
+            card.className = 'order-card';
+            
+            const statusClass = `status-${order.status}`;
+            const statusText = getStatusText(order.status);
+            const icon = getOrderIcon(order.type);
+            
+            card.innerHTML = `
+                <div class="order-header">
+                    <div class="order-id">订单号: ${order.id}</div>
+                    <div class="order-status ${statusClass}">${statusText}</div>
+                </div>
+                <div class="order-content">
+                    <div class="order-image">${icon}</div>
+                    <div class="order-info">
+                        <div class="order-name">${order.product_name}</div>
+                        <div class="order-desc">${order.quantity}件 · ${order.create_time}</div>
+                        <div class="order-footer">
+                            <div class="order-price">¥${order.total_price}</div>
+                            <div class="order-action" onclick="openDetailModal(event)">详情</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            card.dataset.order = JSON.stringify(order);
+            return card;
+        }
+        
+        // 获取状态文本
+        function getStatusText(status) {
+            const statusMap = {
+                'pending': '待支付',
+                'processing': '进行中',
+                'completed': '已完成',
+                'cancelled': '已取消'
+            };
+            return statusMap[status] || status;
+        }
+        
+        // 获取订单图标
+        function getOrderIcon(type) {
+            const iconMap = {
+                'food': '🍽️',
+                'drink': '☕',
+                'venue': '🏢',
+                'laundry': '👕',
+                'carwash': '🚗'
+            };
+            return iconMap[type] || '📦';
+        }
+        
+        // 打开详情模态框
+        function openDetailModal(event) {
+            event.stopPropagation();
+            const card = event.target.closest('.order-card');
+            currentOrder = JSON.parse(card.dataset.order);
+            
+            // 填充详情
+            document.getElementById('detailOrderId').textContent = currentOrder.id;
+            document.getElementById('detailOrderTime').textContent = currentOrder.create_time;
+            document.getElementById('detailStatus').textContent = getStatusText(currentOrder.status);
+            document.getElementById('detailProductName').textContent = currentOrder.product_name;
+            document.getElementById('detailQuantity').textContent = currentOrder.quantity;
+            document.getElementById('detailPrice').textContent = '¥' + currentOrder.price;
+            document.getElementById('detailSubtotal').textContent = '¥' + (currentOrder.price * currentOrder.quantity);
+            document.getElementById('detailShipping').textContent = '¥' + (currentOrder.shipping_fee || 0);
+            document.getElementById('detailTotal').textContent = '¥' + currentOrder.total_price;
+            document.getElementById('detailAddress').textContent = currentOrder.address || '-';
+            document.getElementById('detailPhone').textContent = currentOrder.phone || '-';
+            
+            // 生成操作按钮
+            generateActionButtons(currentOrder.status);
+            
+            document.getElementById('detailModal').classList.add('show');
+        }
+        
+        // 生成操作按钮
+        function generateActionButtons(status) {
+            const container = document.getElementById('actionButtons');
+            container.innerHTML = '';
+            
+            if (status === 'pending') {
+                container.innerHTML = `
+                    <button class="btn btn-primary" onclick="payOrder()">立即支付</button>
+                    <button class="btn btn-secondary" onclick="cancelOrder()">取消订单</button>
+                `;
+            } else if (status === 'processing') {
+                container.innerHTML = `
+                    <button class="btn btn-primary" onclick="trackOrder()">查看物流</button>
+                    <button class="btn btn-secondary" onclick="contactService()">联系客服</button>
+                `;
+            } else if (status === 'completed') {
+                container.innerHTML = `
+                    <button class="btn btn-primary" onclick="rateOrder()">评价</button>
+                    <button class="btn btn-secondary" onclick="reorder()">再次购买</button>
+                `;
+            } else if (status === 'cancelled') {
+                container.innerHTML = `
+                    <button class="btn btn-primary" onclick="reorder()">重新下单</button>
+                `;
+            }
+        }
+        
+        // 关闭模态框
+        function closeModal() {
+            document.getElementById('detailModal').classList.remove('show');
+        }
+        
+        // 操作函数
+        function payOrder() {
+            alert('跳转到支付页面');
+            closeModal();
+        }
+        
+        function cancelOrder() {
+            if (confirm('确定要取消订单吗？')) {
+                alert('订单已取消');
+                closeModal();
+                loadOrders();
+            }
+        }
+        
+        function trackOrder() {
+            alert('物流信息：已发货，预计明天送达');
+        }
+        
+        function contactService() {
+            alert('已连接客服，请稍候...');
+        }
+        
+        function rateOrder() {
+            alert('感谢您的评价！');
+            closeModal();
+        }
+        
+        function reorder() {
+            alert('已添加到购物车');
+            closeModal();
+        }
+        
+        // 页面加载
+        window.addEventListener('load', () => {
+            loadOrders();
+        });
+    </script>
+</body>
+</html>

@@ -6,11 +6,9 @@
 2. 沉淀复杂统计查询，缓解 business-admin/app.py 继续膨胀
 3. 输出产品经理可直接使用的经营洞察、转化漏斗与风险预警
 """
-from __future__ import annotations
-
 import logging
 from datetime import date, datetime, timedelta
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional, Any
 
 from . import db
 

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>通知管理 - 管理中心</title>
-    <link rel="stylesheet" href="../business-common/list-style.css">
+    <link rel="stylesheet" href="/business-common/list-style.css">
     <style>
         /* 页面特有样式 */
         .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
@@ -150,17 +150,17 @@
     }
     
     function resetFilter() {
-        document.getElementById('filterType').value = '';
-        document.getElementById('filterRead').value = '';
-        document.getElementById('filterKeyword').value = '';
+        if (document.getElementById('filterType')) document.getElementById('filterType').value = '';
+        if (document.getElementById('filterRead')) document.getElementById('filterRead').value = '';
+        if (document.getElementById('filterKeyword')) document.getElementById('filterKeyword').value = '';
         currentPage = 1;
         loadNotifications();
     }
     
     async function loadNotifications() {
-        const type = document.getElementById('filterType').value;
-        const isRead = document.getElementById('filterRead').value;
-        const keyword = document.getElementById('filterKeyword').value;
+        const type = document.getElementById('filterType') ? document.getElementById('filterType').value : '';
+        const isRead = document.getElementById('filterRead') ? document.getElementById('filterRead').value : '';
+        const keyword = document.getElementById('filterKeyword') ? document.getElementById('filterKeyword').value : '';
         
         // 管理端需要直接查询数据库，使用管理端接口
         let url = `${API}/api/admin/notifications?page=${currentPage}&page_size=20`;

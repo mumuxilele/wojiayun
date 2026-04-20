@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>数据统计 - 管理后台</title>
-    <link rel="stylesheet" href="../business-common/list-style.css">
+    <link rel="stylesheet" href="/business-common/list-style.css">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <style>
         /* 页面特有样式 */
         .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
@@ -97,21 +98,26 @@
                 const data = await resp.json();
                 if (data.success && data.data) {
                     const d = data.data;
-                    document.getElementById('todayOrders').textContent = d.today_orders ?? 0;
-                    document.getElementById('totalOrders').textContent = d.total_orders ?? 0;
-                    document.getElementById('todayApps').textContent = d.today_applications ?? 0;
-                    document.getElementById('pendingApps').textContent = d.pending_applications ?? 0;
-                    document.getElementById('todayIncome').textContent = parseFloat(d.today_income || 0).toFixed(2);
-                    document.getElementById('totalIncome').textContent = parseFloat(d.total_income || 0).toFixed(2);
+                    // 安全设置元素内容
+                    const setText = (id, val) => {
+                        const el = document.getElementById(id);
+                        if (el) el.textContent = val;
+                    };
+                    setText('todayOrders', d.today_orders ?? 0);
+                    setText('totalOrders', d.total_orders ?? 0);
+                    setText('todayApps', d.today_applications ?? 0);
+                    setText('pendingApps', d.pending_applications ?? 0);
+                    setText('todayIncome', parseFloat(d.today_income || 0).toFixed(2));
+                    setText('totalIncome', parseFloat(d.total_income || 0).toFixed(2));
                     // V10 新增指标
-                    if (document.getElementById('todayCheckins')) document.getElementById('todayCheckins').textContent = d.today_checkins ?? 0;
-                    if (document.getElementById('monthCheckins')) document.getElementById('monthCheckins').textContent = d.month_checkins ?? 0;
-                    if (document.getElementById('usedCouponsToday')) document.getElementById('usedCouponsToday').textContent = d.used_coupons_today ?? 0;
-                    if (document.getElementById('activeCoupons')) document.getElementById('activeCoupons').textContent = d.total_active_coupons ?? 0;
-                    if (document.getElementById('totalMembers')) document.getElementById('totalMembers').textContent = d.total_members ?? 0;
-                    if (document.getElementById('todayMembers')) document.getElementById('todayMembers').textContent = d.today_members ?? 0;
-                    if (document.getElementById('lowStockProducts')) document.getElementById('lowStockProducts').textContent = d.low_stock_products ?? 0;
-                    if (document.getElementById('pendingBookings')) document.getElementById('pendingBookings').textContent = d.pending_bookings ?? 0;
+                    setText('todayCheckins', d.today_checkins ?? 0);
+                    setText('monthCheckins', d.month_checkins ?? 0);
+                    setText('usedCouponsToday', d.used_coupons_today ?? 0);
+                    setText('activeCoupons', d.total_active_coupons ?? 0);
+                    setText('totalMembers', d.total_members ?? 0);
+                    setText('todayMembers', d.today_members ?? 0);
+                    setText('lowStockProducts', d.low_stock_products ?? 0);
+                    setText('pendingBookings', d.pending_bookings ?? 0);
                 }
             } catch (e) { console.error('loadStats', e); }
         }
@@ -122,6 +128,8 @@
 
         async function loadTrend(days) {
             currentDays = days;
+            const chartEl = document.getElementById('trendChart');
+            if (!chartEl) return; // 元素不存在则跳过
             try {
                 const [orderResp, appResp] = await Promise.all([
                     fetch(authUrl('/api/admin/orders/trend?days=' + days)),
@@ -139,7 +147,7 @@
                 const appCnts = apps.map(r => r.app_cnt);
 
                 if (!trendChart) {
-                    trendChart = echarts.init(document.getElementById('trendChart'));
+                    trendChart = echarts.init(chartEl);
                     window.addEventListener('resize', () => trendChart.resize());
                 }
                 trendChart.setOption({
@@ -171,6 +179,8 @@
 
         // ========== 申请单状态饼图（新接口，一次请求） ==========
         async function loadAppChart() {
+            const chartEl = document.getElementById('appStatusChart');
+            if (!chartEl) return; // 元素不存在则跳过
             try {
                 const resp = await fetch(authUrl('/api/admin/applications/stats/by-status'));
                 const data = await resp.json();
@@ -181,7 +191,7 @@
                     .map(([k, v]) => ({ name: STATUS_MAP[k] || k, value: v, itemStyle: { color: COLOR_MAP[k] } }))
                     .filter(d => d.value > 0);
 
-                const chart = echarts.init(document.getElementById('appStatusChart'));
+                const chart = echarts.init(chartEl);
                 chart.setOption({
                     tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
                     legend: { bottom: 0, itemWidth: 12, itemHeight: 12, textStyle: { fontSize: 12 } },
@@ -197,6 +207,8 @@
 
         // ========== 申请单类型饼图（新接口） ==========
         async function loadAppTypeChart() {
+            const chartEl = document.getElementById('appTypeChart');
+            if (!chartEl) return; // 元素不存在则跳过
             try {
                 const resp = await fetch(authUrl('/api/admin/applications/stats/by-type'));
                 const data = await resp.json();
@@ -206,7 +218,7 @@
                     .map(([k, v]) => ({ name: TYPE_MAP[k] || k, value: v }))
                     .filter(d => d.value > 0);
 
-                const chart = echarts.init(document.getElementById('appTypeChart'));
+                const chart = echarts.init(chartEl);
                 chart.setOption({
                     tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
                     legend: { bottom: 0, itemWidth: 12, itemHeight: 12, textStyle: { fontSize: 12 } },
@@ -223,6 +235,8 @@
 
         // ========== 预约状态图 ==========
         async function loadBookingChart() {
+            const chartEl = document.getElementById('bookingStatusChart');
+            if (!chartEl) return; // 元素不存在则跳过
             try {
                 const resp = await fetch(authUrl('/api/admin/venue-statistics'));
                 const data = await resp.json();
@@ -232,10 +246,14 @@
                     pending = data.data.pending_bookings || 0;
                     completed = data.data.completed_bookings || 0;
                     confirmed = Math.max(0, total - pending - completed);
-                    document.getElementById('venueBookings').textContent = total;
-                    document.getElementById('pendingBookings').textContent = pending;
+                    const setText = (id, val) => {
+                        const el = document.getElementById(id);
+                        if (el) el.textContent = val;
+                    };
+                    setText('venueBookings', total);
+                    setText('pendingBookings', pending);
                 }
-                const chart = echarts.init(document.getElementById('bookingStatusChart'));
+                const chart = echarts.init(chartEl);
                 const pieData = [
                     { name: '待确认', value: pending },
                     { name: '已确认', value: confirmed },
@@ -257,10 +275,11 @@
 
         // ========== 场地列表 ==========
         async function loadVenueStats() {
+            const el = document.getElementById('venueStats');
+            if (!el) return; // 元素不存在则跳过
             try {
                 const resp = await fetch(authUrl('/api/admin/venues?page=1&page_size=50'));
                 const data = await resp.json();
-                const el = document.getElementById('venueStats');
                 if (data.success && data.data && data.data.items && data.data.items.length) {
                     const TYPE_MAP = { yumaoqiu: '🏸 羽毛球', lanqiu: '🏀 篮球', pingpang: '🏓 乒乓球', yujia: '🧘 瑜伽', youyong: '🏊 游泳', gym: '💪 健身', other: '📌 其他' };
                     el.innerHTML = `<table class="el-table">
@@ -276,15 +295,18 @@
                 } else {
                     el.innerHTML = '<div class="loading">暂无场地数据</div>';
                 }
-            } catch (e) { document.getElementById('venueStats').innerHTML = '<div class="loading">加载失败</div>'; }
+            } catch (e) { 
+                if (el) el.innerHTML = '<div class="loading">加载失败</div>'; 
+            }
         }
 
         // ========== 积分概览 ==========
         async function loadPointsStats() {
+            const el = document.getElementById('pointsStats');
+            if (!el) return; // 元素不存在则跳过
             try {
                 const resp = await fetch(authUrl('/api/admin/points/stats'));
                 const data = await resp.json();
-                const el = document.getElementById('pointsStats');
                 if (data.success && data.data) {
                     const d = data.data;
                     el.innerHTML = `
@@ -295,11 +317,13 @@
                 } else {
                     el.innerHTML = '<div class="loading">加载失败</div>';
                 }
-            } catch (e) { document.getElementById('pointsStats').innerHTML = '<div class="loading">加载失败</div>'; }
+            } catch (e) { el.innerHTML = '<div class="loading">加载失败</div>'; }
         }
 
         // ========== 会员等级分布图 ==========
         async function loadMemberLevelChart() {
+            const chartEl = document.getElementById('memberLevelChart');
+            if (!chartEl) return; // 元素不存在则跳过
             try {
                 const resp = await fetch(authUrl('/api/admin/members/stats/by-level'));
                 const data = await resp.json();
@@ -308,7 +332,7 @@
                 const pieData = Object.entries(data.success ? (data.data || {}) : {})
                     .map(([k, v]) => ({ name: LEVEL_MAP[k] || k, value: v, itemStyle: { color: LEVEL_COLOR[k] || '#ccc' } }))
                     .filter(d => d.value > 0);
-                const chart = echarts.init(document.getElementById('memberLevelChart'));
+                const chart = echarts.init(chartEl);
                 chart.setOption({
                     tooltip: { trigger: 'item', formatter: '{b}: {c}人 ({d}%)' },
                     legend: { bottom: 0, itemWidth: 12, itemHeight: 12, textStyle: { fontSize: 12 } },
@@ -324,10 +348,11 @@
 
         // ========== 场地热度排行榜 ==========
         async function loadVenueHot() {
+            const el = document.getElementById('venueHotList');
+            if (!el) return; // 元素不存在则跳过
             try {
                 const resp = await fetch(authUrl('/api/admin/venues/stats/hot'));
                 const data = await resp.json();
-                const el = document.getElementById('venueHotList');
                 if (data.success && data.data && data.data.length) {
                     const TYPE_MAP = { yumaoqiu: '🏸', lanqiu: '🏀', pingpang: '🏓', yujia: '🧘', youyong: '🏊', gym: '💪', other: '🏟️' };
                     const maxCnt = Math.max(...data.data.map(v => v.book_cnt || 0)) || 1;
@@ -352,17 +377,11 @@
                 } else {
                     el.innerHTML = '<div class="loading">暂无场地预约数据</div>';
                 }
-            } catch (e) { document.getElementById('venueHotList').innerHTML = '<div class="loading">加载失败</div>'; }
+            } catch (e) { el.innerHTML = '<div class="loading">加载失败</div>'; }
         }
 
         function refreshAll() {
-            // 显示loading状态
-            document.querySelectorAll('.stat-num').forEach(el => el.textContent = '...');
-            document.getElementById('venueStats').innerHTML = '<div class="loading">加载中...</div>';
-            document.getElementById('pointsStats').innerHTML = '<div class="loading">加载中...</div>';
-            document.getElementById('venueHotList').innerHTML = '<div class="loading">加载中...</div>';
-            
-            // 并行加载所有数据
+            // 并行加载所有数据（各函数内部会检查元素是否存在）
             Promise.all([
                 loadStats(),
                 loadTrend(currentDays),
@@ -374,7 +393,6 @@
                 loadPointsStats(),
                 loadVenueHot()
             ]).then(() => {
-                // 刷新完成，可以添加成功提示
                 console.log('数据刷新完成');
             }).catch(err => {
                 console.error('数据刷新失败:', err);

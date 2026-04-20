@@ -20,6 +20,7 @@ import os
 import requests
 from datetime import datetime, timedelta
 from . import db
+from .fid_utils import generate_fid, generate_business_fid  # V47.0: FID生成工具
 
 logger = logging.getLogger(__name__)
 
@@ -176,14 +177,15 @@ class PaymentService:
                 return {'success': False, 'msg': f'超出日支付限额，当前剩余额度: ¥{remaining:.2f}'}
 
         pay_no = f"PAY{datetime.now().strftime('%Y%m%d%H%M%S')}{uuid.uuid4().hex[:6].upper()}"
+        pay_fid = generate_business_fid('pay')  # V47.0: 生成FID主键
 
         try:
             db.execute(
                 """INSERT INTO business_payments
-                   (pay_no, order_type, order_id, amount, user_id, user_name,
+                   (fid, pay_no, order_type, order_id, amount, user_id, user_name,
                     channel, status, ec_id, project_id, expire_at)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, 'pending', %s, %s, DATE_ADD(NOW(), INTERVAL 30 MINUTE))""",
-                [pay_no, order_type, order_id, amount, user_id, user_name,
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'pending', %s, %s, DATE_ADD(NOW(), INTERVAL 30 MINUTE))""",
+                [pay_fid, pay_no, order_type, order_id, amount, user_id, user_name,
                  channel, ec_id, project_id]
             )
 
@@ -1270,10 +1272,11 @@ class PaymentService:
             detail: 详细信息
         """
         try:
+            log_fid = generate_fid()  # V47.0: 生成日志FID
             db.execute("""
-                INSERT INTO business_payment_logs (pay_no, action, detail, created_at)
-                VALUES (%s, %s, %s, NOW())
-            """, [pay_no, action, json.dumps(detail or {}, ensure_ascii=False)])
+                INSERT INTO business_payment_logs (fid, pay_no, action, detail, created_at)
+                VALUES (%s, %s, %s, %s, NOW())
+            """, [log_fid, pay_no, action, json.dumps(detail or {}, ensure_ascii=False)])
         except Exception as e:
             logger.warning(f"支付日志记录失败: {e}")
 
@@ -1346,12 +1349,13 @@ def _post_payment_hooks(pay_record, pay_no):
                        WHERE user_id = %s""",
                     [points_earned, points_earned, user_id]
                 )
+                plog_fid = generate_business_fid('plog')  # V47.0: 生成积分日志FID
                 db.execute(
                     """INSERT INTO business_points_log
-                       (user_id, log_type, points, balance_after, description, ec_id, project_id)
-                       SELECT %s, 'earn', %s, points, %s, %s, %s
+                       (fid, user_id, log_type, points, balance_after, description, ec_id, project_id)
+                       SELECT %s, %s, 'earn', %s, points, %s, %s, %s
                        FROM business_members WHERE user_id=%s""",
-                    [user_id, points_earned,
+                    [plog_fid, user_id, points_earned,
                      f'订单支付获得积分（×{points_rate:.1f}倍率）',
                      ec_id, project_id, user_id]
                 )

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>退款管理 - 社区商业服务</title>
-    <link rel="stylesheet" href="../business-common/list-style.css">
+    <link rel="stylesheet" href="/business-common/list-style.css">
     <style>
         /* 页面特有样式 */
         .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
@@ -147,7 +147,9 @@ function fmtDate(v) { return v ? v.replace('T',' ').slice(0,16) : '—'; }
 function fmtAmt(v) { return v != null ? '¥' + parseFloat(v).toFixed(2) : '—'; }
 
 function getToken() {
-  return localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token') || '';
+  // 优先从URL参数获取token（支持iframe传递和直接访问）
+  const urlToken = new URLSearchParams(location.search).get('access_token');
+  return urlToken || localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token') || '';
 }
 
 async function apiFetch(url, opt={}) {
@@ -236,11 +238,12 @@ function renderReasons(reasons) {
 async function loadData(p) {
   if (p) page = p;
   selectedIds.clear();
-  document.getElementById('check-all').checked = false;
+  const checkAllEl = document.getElementById('check-all');
+  if (checkAllEl) checkAllEl.checked = false;
   
-  const kw = document.getElementById('kw').value.trim();
-  const status = document.getElementById('statusFilter').value;
-  const days = document.getElementById('dateFilter').value;
+  const kw = document.getElementById('filter1') ? document.getElementById('filter1').value.trim() : '';
+  const status = document.getElementById('filter2') ? document.getElementById('filter2').value : '';
+  const days = document.getElementById('filter3') ? document.getElementById('filter3').value : '';
   
   let url = `/api/admin/orders?page=${page}&page_size=20`;
   if (kw) url += '&keyword=' + encodeURIComponent(kw);
@@ -249,7 +252,8 @@ async function loadData(p) {
   else url += '&order_status=refunding,refunded';  // 默认只显示退款相关
   if (days) url += '&days=' + days;
 
-  const tbody = document.getElementById('tbody');
+  const tbody = document.getElementById('listBody');
+  if (!tbody) { console.error('listBody元素未找到'); return; }
   tbody.innerHTML = '<tr><td colspan="9" class="loading"><span class="spinner"></span>加载中...</td></tr>';
 
   try {
@@ -405,9 +409,9 @@ async function submitAudit(action) {
 
 // ======================== 导出CSV ========================
 function exportCSV() {
-  const kw = document.getElementById('kw').value.trim();
-  const status = document.getElementById('statusFilter').value || 'refunding,refunded';
-  const days = document.getElementById('dateFilter').value;
+  const kw = document.getElementById('filter1') ? document.getElementById('filter1').value.trim() : '';
+  const status = document.getElementById('filter2') ? document.getElementById('filter2').value : 'refunding,refunded';
+  const days = document.getElementById('filter3') ? document.getElementById('filter3').value : '';
   let url = `/api/admin/export/orders?order_status=${status}&format=csv`;
   if (kw) url += '&keyword=' + encodeURIComponent(kw);
   if (days) url += '&days=' + days;
@@ -419,7 +423,8 @@ function exportCSV() {
 
 // ======================== ESC关闭弹窗 ========================
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
-document.getElementById('overlay').addEventListener('click', e => { if (e.target === document.getElementById('overlay')) closeModal(); });
+const overlay = document.getElementById('overlay');
+if (overlay) overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
 
 // ======================== 初始化 ========================
 (async function init() {

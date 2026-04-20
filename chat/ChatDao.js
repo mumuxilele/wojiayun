@@ -27,6 +27,16 @@ class ChatDao {
     }
 
     /**
+     * V47.0: 生成FID主键
+     */
+    generateFid() {
+        const ts = Date.now().toString();
+        const rnd = Math.random().toString();
+        const uuid = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36);
+        return crypto.createHash('md5').update(ts + rnd + uuid).digest('hex');
+    }
+
+    /**
      * 初始化数据库表
      */
     async initTable() {
@@ -88,16 +98,18 @@ class ChatDao {
     }
 
     /**
-     * 保存消息
+     * 保存消息 - V47.0: 添加fid字段
      */
     async saveMessage(msg) {
         const conn = await this.getConnection();
         try {
             const msgId = msg.id || this.generateId();
+            const fid = this.generateFid(); // V47.0: 生成FID主键
             
-            // 直接执行SQL，支持sessionId
-            const sql = `INSERT INTO chat_messages (msg_id, msg_type, content, sender_id, sender_name, sender_type, receiver_id, session_id, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            // 直接执行SQL，支持sessionId，V47.0添加fid字段
+            const sql = `INSERT INTO chat_messages (fid, msg_id, msg_type, content, sender_id, sender_name, sender_type, receiver_id, session_id, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
             const params = [
+                fid, // V47.0: FID主键
                 msgId,
                 msg.msgType || 'text',
                 msg.content || '',

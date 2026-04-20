@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>反馈管理 - 管理中心</title>
-    <link rel="stylesheet" href="../business-common/list-style.css">
+    <link rel="stylesheet" href="/business-common/list-style.css">
     <style>
         /* 页面特有样式 */
         .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
@@ -126,17 +126,17 @@
     }
     
     function resetFilter() {
-        document.getElementById('filterType').value = '';
-        document.getElementById('filterStatus').value = '';
-        document.getElementById('filterKeyword').value = '';
+        if (document.getElementById('filterType')) document.getElementById('filterType').value = '';
+        if (document.getElementById('filterStatus')) document.getElementById('filterStatus').value = '';
+        if (document.getElementById('filterKeyword')) document.getElementById('filterKeyword').value = '';
         currentPage = 1;
         loadFeedback();
     }
     
     async function loadFeedback() {
-        const type = document.getElementById('filterType').value;
-        const status = document.getElementById('filterStatus').value;
-        const keyword = document.getElementById('filterKeyword').value;
+        const type = document.getElementById('filterType') ? document.getElementById('filterType').value : '';
+        const status = document.getElementById('filterStatus') ? document.getElementById('filterStatus').value : '';
+        const keyword = document.getElementById('filterKeyword') ? document.getElementById('filterKeyword').value : '';
         
         let url = `${API}/api/admin/feedback?page=${currentPage}&page_size=20`;
         if (type) url += `&feedback_type=${type}`;
@@ -212,9 +212,9 @@
         let fbData = null;
         // 从列表获取基本信息
         try {
-            const type = document.getElementById('filterType').value;
-            const status = document.getElementById('filterStatus').value;
-            const keyword = document.getElementById('filterKeyword').value;
+            const type = document.getElementById('filterType') ? document.getElementById('filterType').value : '';
+            const status = document.getElementById('filterStatus') ? document.getElementById('filterStatus').value : '';
+            const keyword = document.getElementById('filterKeyword') ? document.getElementById('filterKeyword').value : '';
             let url = `${API}/api/admin/feedback?page=1&page_size=100`;
             if (type) url += `&feedback_type=${type}`;
             if (status) url += `&status=${status}`;

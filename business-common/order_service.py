@@ -27,6 +27,7 @@ from typing import Dict, List, Optional, Any, Tuple
 from . import db
 from .service_base import BaseService, CRUDService
 from .order_status import OrderStatus, OrderStatusTransition, OrderStatusValidator
+from .fid_utils import generate_fid, generate_business_fid
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +102,7 @@ class OrderService(BaseService):
 
     def __init__(self):
         super().__init__()
-        self.validator = OrderStatusValidator()
+        # validator 需要订单状态参数，在使用时创建
 
     def health_check(self) -> Dict[str, Any]:
         """服务健康检查"""
@@ -195,8 +196,9 @@ class OrderService(BaseService):
                     discount_amount = discount_result['discount']
                     total_amount = total_amount - discount_amount
 
-            # 3. 生成订单号
+            # 3. 生成订单号和FID
             order_no = self._generate_order_no()
+            order_fid = generate_business_fid('order')  # V47.0: 生成FID主键
 
             # 4. 保存订单主表
             now = datetime.now()
@@ -204,15 +206,15 @@ class OrderService(BaseService):
 
             order_sql = """
                 INSERT INTO business_orders (
-                    order_no, order_type, user_id, ec_id, project_id,
+                    fid, order_no, order_type, user_id, ec_id, project_id,
                     total_amount, discount_amount, actual_amount,
                     address_id, remark, order_status, pay_status,
                     created_at, updated_at, expire_time
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
 
             order_params = [
-                order_no, order_type, user_id, ec_id, project_id,
+                order_fid, order_no, order_type, user_id, ec_id, project_id,
                 total_amount + discount_amount, discount_amount, total_amount,
                 address_id, remark, 'pending', 'unpaid',
                 now, now, expire_time
@@ -220,20 +222,20 @@ class OrderService(BaseService):
 
             db.execute(order_sql, order_params)
 
-            # 获取订单ID
-            order_result = db.get_one("SELECT LAST_INSERT_ID() as id")
-            order_id = order_result['id'] if order_result else 0
+            # V47.0: 直接使用fid作为订单ID
+            order_id = order_fid
 
-            # 5. 保存订单明细
+            # 5. 保存订单明细（V47.0: 使用order_fid）
             for detail in product_details:
+                detail_fid = generate_fid()  # 生成明细FID
                 detail_sql = """
                     INSERT INTO business_order_details (
-                        order_id, product_id, sku_id, product_name,
+                        fid, order_fid, product_id, sku_id, product_name,
                         sku_info, quantity, price, amount
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """
                 detail_params = [
-                    order_id, detail['product_id'], detail['sku_id'],
+                    detail_fid, order_fid, detail['product_id'], detail['sku_id'],
                     detail['product_name'], detail['sku_info'],
                     detail['quantity'], detail['price'], detail['amount']
                 ]

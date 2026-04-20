@@ -15,6 +15,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from business_common import config, db, auth, utils, error_handler, notification, rate_limiter, OrderStatusTransition
 from business_common.cache_service import cache_get, cache_set, cache_delete
+from business_common.employee_sync_service import employee_sync, init_employee_sync
 
 # 图片上传目录
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), 'uploads')
@@ -26,6 +27,9 @@ CORS(app)
 
 # 注册全局错误处理器
 error_handler.register_error_handlers(app)
+
+# 初始化员工同步服务
+init_employee_sync(db, cache_get and cache_set and type('cache', (), {'get': cache_get, 'set': cache_set}) or None)
 
 @app.after_request
 def add_headers(response):
@@ -2774,3 +2778,125 @@ def staff_ship_points_exchange(user, exchange_id):
         admin_user=user
     )
     return jsonify(result)
+
+
+# ============ 员工数据同步 ============
+
+@app.route('/api/staff/employees/sync', methods=['POST'])
+@require_staff
+def sync_employees(user):
+    """
+    同步企业员工数据
+    
+    从第三方API获取企业所有员工信息并同步到本地表
+    限制：一小时内只同步一次
+    
+    请求参数（从用户信息获取）:
+    - ec_id: 企业ID
+    - project_id: 项目ID
+    - access_token: 访问令牌
+    """
+    if not employee_sync:
+        return jsonify({'success': False, 'msg': '员工同步服务未初始化'})
+    
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    
+    if not ec_id:
+        return jsonify({'success': False, 'msg': '缺少企业ID'})
+    
+    # 获取access_token
+    access_token = request.args.get('access_token') or request.headers.get('Token')
+    if not access_token:
+        return jsonify({'success': False, 'msg': '缺少访问令牌'})
+    
+    # 执行同步
+    result = employee_sync.sync_employees(access_token, ec_id, project_id)
+    return jsonify(result)
+
+
+@app.route('/api/staff/employees/sync-async', methods=['POST'])
+@require_staff
+def sync_employees_async(user):
+    """
+    异步同步企业员工数据
+    
+    立即返回，后台执行同步
+    """
+    if not employee_sync:
+        return jsonify({'success': False, 'msg': '员工同步服务未初始化'})
+    
+    ec_id = user.get('ec_id')
+    project_id = user.get('project_id')
+    
+    if not ec_id:
+        return jsonify({'success': False, 'msg': '缺少企业ID'})
+    
+    # 获取access_token
+    access_token = request.args.get('access_token') or request.headers.get('Token')
+    if not access_token:
+        return jsonify({'success': False, 'msg': '缺少访问令牌'})
+    
+    # 异步执行同步
+    employee_sync.sync_employees_async(access_token, ec_id, project_id)
+    return jsonify({'success': True, 'msg': '同步任务已启动'})
+
+
+@app.route('/api/staff/employees', methods=['GET'])
+@require_staff
+def get_employees(user):
+    """
+    获取员工列表
+    
+    查询参数:
+    - keyword: 搜索关键词（姓名）
+    - page: 页码
+    - page_size: 每页数量
+    """
+    ec_id = user.get('ec_id')
+    
+    keyword = request.args.get('keyword', '').strip()
+    page = max(1, int(request.args.get('page', 1)))
+    page_size = min(50, max(1, int(request.args.get('page_size', 20))))
+    offset = (page - 1) * page_size
+    
+    where = "FECID = %s AND FStatus = 1 AND FIsDelete = 0"
+    params = [ec_id]
+    
+    if keyword:
+        where += " AND FName LIKE %s"
+        params.append(f"%{keyword}%")
+    
+    # 查询总数
+    total = db.get_total(f"SELECT COUNT(*) FROM t_pc_employee WHERE {where}", params.copy())
+    
+    # 查询列表
+    employees = db.get_all(
+        f"""
+        SELECT FID, FName, FPhone, FEmail, FJobTitle, FUserUrl, FCreateTime, FUpdateTime
+        FROM t_pc_employee 
+        WHERE {where}
+        ORDER BY FUpdateTime DESC
+        LIMIT %s OFFSET %s
+        """,
+        params + [page_size, offset]
+    ) or []
+    
+    return jsonify({
+        'success': True,
+        'data': {
+            'items': employees,
+            'total': total,
+            'page': page,
+            'page_size': page_size
+        }
+    })
+
+# 提供 business-common 静态文件支持
+# 使用硬编码路径确保正确性
+COMMON_STATIC_DIR = '/www/wwwroot/wojiayun/business-common'
+
+@app.route('/business-common/<path:filename>')
+def serve_common_static(filename):
+    """提供上级目录 business-common 的静态文件"""
+    return send_from_directory(COMMON_STATIC_DIR, filename)
