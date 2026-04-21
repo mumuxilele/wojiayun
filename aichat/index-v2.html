@@ -1001,14 +1001,14 @@
 
         /* Widget 组件样式 - 独立卡片风格 */
         .widget-card {
-            background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
             border-radius: 12px;
             padding: 16px 18px;
             margin: 10px 0;
             box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
             border: 1px solid rgba(48, 194, 179, 0.08);
-            width: 66.67%;
+            width: 100%;
             max-width: 400px;
+            box-sizing: border-box;
         }
 
         .widget-col {
@@ -1026,10 +1026,33 @@
             gap: 10px;
         }
 
+        .widget-box {
+            box-sizing: border-box;
+        }
+
+        .widget-clickable {
+            box-sizing: border-box;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .widget-clickable:active {
+            opacity: 0.85;
+        }
+
         .widget-text {
             font-size: 15px;
             color: #333;
             line-height: 1.6;
+        }
+
+        .widget-title {
+            line-height: 1.4;
+        }
+
+        .widget-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .widget-badge {
@@ -2046,6 +2069,72 @@
             }
         }
 
+        // 辅助：解析尺寸 token
+        function parseSize(size) {
+            const map = { 'xs': '10px', 'sm': '12px', 'md': '14px', 'lg': '16px', 'xl': '20px', '2xl': '24px', '3xl': '32px', '4xl': '40px' };
+            return map[size] || size || '14px';
+        }
+
+        // 辅助：解析间距 token
+        function parseGap(gap) {
+            if (typeof gap === 'number') return gap + 'px';
+            // 兼容 "{1}" 格式的 gap
+            if (typeof gap === 'string') {
+                const cleaned = gap.replace(/[{}]/g, '').trim();
+                const num = parseFloat(cleaned);
+                if (!isNaN(num)) {
+                    const map = { '0.5': '4px', '1': '8px', '1.5': '12px', '2': '16px', '3': '24px', '4': '32px' };
+                    return map[String(num)] || (num + 'px');
+                }
+            }
+            return '8px';
+        }
+
+        // 辅助：解析圆角 token
+        function parseRadius(radius) {
+            const map = { 'sm': '4px', 'md': '8px', 'lg': '12px', 'xl': '16px', '2xl': '20px', 'full': '9999px' };
+            return map[radius] || radius || '0';
+        }
+
+        // 辅助：解析 padding token（兼容数字和 { x: 2, y: 4 } 对象格式）
+        function parsePadding(padding) {
+            if (typeof padding === 'number') return padding + 'px';
+            if (typeof padding === 'string') {
+                // 兼容 "{ x: 2, y: 4 }" 格式
+                const cleaned = padding.replace(/[{}]/g, '').trim();
+                const num = parseFloat(cleaned);
+                if (!isNaN(num)) {
+                    const map = { '1': '4px', '2': '8px', '3': '12px', '4': '16px', '5': '20px', '6': '24px' };
+                    return map[String(num)] || (num + 'px');
+                }
+                return padding;
+            }
+            if (typeof padding === 'object' && padding !== null) {
+                const x = parsePadding(padding.x);
+                const y = parsePadding(padding.y);
+                return `${y} ${x}`;
+            }
+            return '0';
+        }
+
+        // 辅助：解析颜色 token
+        function parseColor(color) {
+            const map = {
+                'primary': '#30c2b3',
+                'secondary': '#666',
+                'tertiary': '#999',
+                'danger': '#ff4d4f',
+                'warning': '#faad14',
+                'success': '#52c41a',
+            };
+            return map[color] || color || '#333';
+        }
+
+        // 辅助：解析字重
+        function parseWeight(weight) {
+            return weight === 'bold' ? '700' : weight === 'medium' ? '500' : weight === 'light' ? '300' : '400';
+        }
+
         // 递归渲染 Widget 节点
         function renderWidgetNode(node, state, widgetId, widgetRunId) {
             if (!node || !node.type) return '';
@@ -2054,38 +2143,109 @@
             let html = '';
 
             switch (type) {
-                case 'Card':
-                    html = `<div class="widget-card">${renderChildren(node.children, state, widgetId, widgetRunId)}</div>`;
+                case 'Card': {
+                    const bg = node.background || '';
+                    const size = node.size === 'lg' ? 'max-width: 420px;' : node.size === 'sm' ? 'max-width: 320px;' : '';
+                    html = `<div class="widget-card" style="${bg ? 'background:' + bg + ';' : ''} ${size}">${renderChildren(node.children, state, widgetId, widgetRunId)}</div>`;
                     break;
+                }
 
-                case 'Col':
-                    html = `<div class="widget-col" style="gap: ${node.gap || 0}px;">${renderChildren(node.children, state, widgetId, widgetRunId)}</div>`;
+                case 'Col': {
+                    const gap = parseGap(node.gap);
+                    const align = node.align === 'center' ? 'align-items: center;' : node.align === 'stretch' ? 'align-items: stretch;' : '';
+                    const flex = node.flex ? 'flex: ' + node.flex + ';' : '';
+                    const justify = node.justify === 'center' ? 'justify-content: center;' : '';
+                    html = `<div class="widget-col" style="gap: ${gap}; ${align} ${flex} ${justify}">${renderChildren(node.children, state, widgetId, widgetRunId)}</div>`;
                     break;
+                }
 
-                case 'Row':
-                    html = `<div class="widget-row" style="align-items: ${node.align || 'center'};">${renderChildren(node.children, state, widgetId, widgetRunId)}</div>`;
+                case 'Row': {
+                    const gap = parseGap(node.gap);
+                    const align = node.align || 'center';
+                    const justify = node.justify === 'between' ? 'justify-content: space-between;' : node.justify === 'center' ? 'justify-content: center;' : node.justify === 'start' ? 'justify-content: flex-start;' : '';
+                    const wrap = node.wrap ? 'flex-wrap: wrap;' : '';
+                    html = `<div class="widget-row" style="align-items: ${align}; ${justify} gap: ${gap}; ${wrap}">${renderChildren(node.children, state, widgetId, widgetRunId)}</div>`;
                     break;
+                }
 
-                case 'Text':
-                    const textValue = node.value || state[node.value] || '';
-                    const textColor = node.color === 'secondary' ? 'color: #666;' : '';
-                    const minWidth = node.minLines ? `min-height: ${node.minLines * 20}px;` : '';
-                    html = `<span class="widget-text" style="${textColor} ${minWidth}">${textValue}</span>`;
+                case 'Box': {
+                    const bg = node.background || '';
+                    const padding = parsePadding(node.padding);
+                    const radius = parseRadius(node.radius);
+                    const border = node.border ? 'border: ' + node.border + ';' : '';
+                    html = `<div class="widget-box" style="background: ${bg}; padding: ${padding}; border-radius: ${radius}; ${border}">${renderChildren(node.children, state, widgetId, widgetRunId)}</div>`;
                     break;
+                }
 
-                case 'Badge':
+                case 'Clickable': {
+                    const bg = node.background || '';
+                    const padding = parsePadding(node.padding);
+                    const radius = parseRadius(node.radius);
+                    const actionData = node.onClickAction ? JSON.stringify(node.onClickAction).replace(/"/g, '&quot;') : '';
+                    const clickableId = 'widget-click-' + Math.random().toString(36).substr(2, 9);
+
+                    if (actionData) {
+                        setTimeout(() => {
+                            const el = document.getElementById(clickableId);
+                            if (el) {
+                                el.onclick = function() {
+                                    handleWidgetAction(this, this.getAttribute('data-action'), this.getAttribute('data-widget-id'), this.getAttribute('data-widget-run-id'));
+                                };
+                            }
+                        }, 0);
+                    }
+
+                    html = `<div id="${clickableId}" class="widget-clickable" style="background: ${bg}; padding: ${padding}; border-radius: ${radius};" data-action="${actionData}" data-widget-id="${widgetId}" data-widget-run-id="${widgetRunId}">${renderChildren(node.children, state, widgetId, widgetRunId)}</div>`;
+                    break;
+                }
+
+                case 'Text': {
+                    const textValue = node.value || '';
+                    const color = parseColor(node.color);
+                    const size = parseSize(node.size);
+                    const weight = parseWeight(node.weight);
+                    const flex = node.flex ? 'flex: ' + node.flex + ';' : '';
+                    const minLines = node.minLines ? `min-height: ${node.minLines * 20}px;` : '';
+                    html = `<span class="widget-text" style="color: ${color}; font-size: ${size}; font-weight: ${weight}; ${flex} ${minLines}">${textValue}</span>`;
+                    break;
+                }
+
+                case 'Title': {
+                    const titleValue = node.value || '';
+                    const color = parseColor(node.color);
+                    const size = parseSize(node.size);
+                    const weight = parseWeight(node.weight);
+                    html = `<span class="widget-title" style="color: ${color}; font-size: ${size}; font-weight: ${weight};">${titleValue}</span>`;
+                    break;
+                }
+
+                case 'Icon': {
+                    const iconName = node.name || '';
+                    const color = parseColor(node.color);
+                    const size = parseSize(node.size);
+                    // 使用 SVG 图标映射
+                    const iconMap = {
+                        'dashboard': '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>',
+                    };
+                    const iconSvg = iconMap[iconName] || `<span style="font-style:italic;">[${iconName}]</span>`;
+                    html = `<span class="widget-icon" style="color: ${color}; font-size: ${size}; width: ${size}; height: ${size};">${iconSvg}</span>`;
+                    break;
+                }
+
+                case 'Badge': {
                     const badgeColor = node.color === 'danger' ? '#ff4d4f' :
                                       node.color === 'warning' ? '#faad14' :
                                       node.color === 'success' ? '#52c41a' : '#30c2b3';
                     const label = node.label || '';
                     html = `<span class="widget-badge" style="background: ${badgeColor};">${label}</span>`;
                     break;
+                }
 
                 case 'Divider':
                     html = `<div class="widget-divider ${node.flush ? 'flush' : ''}"></div>`;
                     break;
 
-                case 'Button':
+                case 'Button': {
                     const btnStyle = node.style === 'primary' ? 'widget-btn-primary' : 'widget-btn-default';
                     const btnLabel = node.label || '';
                     const actionData = node.onClickAction ? JSON.stringify(node.onClickAction).replace(/"/g, '&quot;') : '';
@@ -2112,6 +2272,7 @@
                             data-widget-id="${widgetId}"
                             data-widget-run-id="${widgetRunId}">${btnLabel}</button>`;
                     break;
+                }
 
                 default:
                     if (node.children) {

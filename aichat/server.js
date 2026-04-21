@@ -73,7 +73,17 @@ app.use('/sdk', express.static(require('path').join(__dirname, '../aichat-sdk/di
 // 辅助函数：发起 HTTPS 请求
 function makeHttpsRequest(options, postData = null) {
     return new Promise((resolve, reject) => {
-        const req = https.request(options, (res) => {
+        // 强制使用 IPv4，避免 IPv6 不可达导致崩溃
+        const dns = require('dns');
+        const opts = {
+            ...options,
+            family: 4,
+            lookup: (hostname, _opts, callback) => {
+                dns.lookup(hostname, { family: 4 }, callback);
+            },
+            servername: options.hostname,
+        };
+        const req = https.request(opts, (res) => {
             let data = '';
             res.on('data', (chunk) => {
                 data += chunk;
@@ -89,7 +99,13 @@ function makeHttpsRequest(options, postData = null) {
         });
 
         req.on('error', (e) => {
+            console.error('HTTPS request error:', e.message);
             reject(e);
+        });
+
+        req.setTimeout(15000, () => {
+            console.error('HTTPS request timeout:', options.hostname + options.path);
+            req.destroy(new Error('Request timeout'));
         });
 
         if (postData) {
@@ -209,7 +225,7 @@ app.post('/api/chat', async (req, res) => {
         res.setHeader('X-Accel-Buffering', 'no');
 
         // 发起腾讯云请求
-        const options = {
+        const tencentOptions = {
             hostname: 'wss.lke.cloud.tencent.com',
             port: 443,
             path: '/v1/qbot/chat/sse',
@@ -217,10 +233,16 @@ app.post('/api/chat', async (req, res) => {
             headers: {
                 'Content-Type': 'application/json',
                 'Content-Length': Buffer.byteLength(JSON.stringify(requestBody))
-            }
+            },
+            // 强制 IPv4
+            family: 4,
+            lookup: (hostname, _opts, callback) => {
+                require('dns').lookup(hostname, { family: 4 }, callback);
+            },
+            servername: 'wss.lke.cloud.tencent.com',
         };
 
-        const tencentReq = https.request(options, (tencentRes) => {
+        const tencentReq = https.request(tencentOptions, (tencentRes) => {
             tencentRes.on('data', (chunk) => {
                 // 直接转发数据
                 res.write(chunk);
@@ -514,7 +536,7 @@ app.get('/health', (req, res) => {
 });
 
 // 启动服务
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`🤖 AI Chat 服务已启动`);
     console.log(`📍 本地地址: http://localhost:${PORT}`);
     console.log(`📍 健康检查: http://localhost:${PORT}/health`);
