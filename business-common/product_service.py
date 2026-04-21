@@ -46,7 +46,7 @@ def _validate_order_by(order_by: str) -> str:
     """
     if not order_by:
         return 'created_at DESC'
-    
+
     # 移除所有SQL关键字和注释
     dangerous_patterns = [
         r'(?i)\b(union|select|insert|update|delete|drop|exec|execute|script)\b',
@@ -56,20 +56,20 @@ def _validate_order_by(order_by: str) -> str:
         if re.search(pattern, order_by):
             logger.warning(f"SQL注入攻击尝试被拦截: {order_by}")
             return 'created_at DESC'
-    
+
     # 解析字段和方向
     parts = [p.strip() for p in order_by.split()]
     field = parts[0] if parts else 'created_at'
     direction = parts[1].upper() if len(parts) > 1 else 'DESC'
-    
+
     # 白名单验证
     if field not in ALLOWED_PRODUCT_ORDER_FIELDS:
         logger.warning(f"order_by字段不在白名单中: {field}, 使用默认值")
         field = 'created_at'
-    
+
     if direction not in ALLOWED_ORDER_DIRS:
         direction = 'DESC'
-    
+
     return f"{field} {direction}"
 
 
@@ -222,7 +222,91 @@ class ProductService(BaseService):
             self.increment_view_count(product_id)
 
         return product
-
+    
+    def get_product_detail_for_user(self, product_id: int, user_id: str = None) -> Optional[Dict]:
+        """
+        获取商品详情（用户端增强版）
+        包含：基本信息 + 店铺信息 + SKU + 会员价 + 浏览足迹
+        """
+        import json
+        
+        # 基本信息
+        product = db.get_one("""
+            SELECT p.*, s.shop_name, s.address as shop_address, s.phone as shop_phone 
+            FROM business_products p
+            LEFT JOIN business_shops s ON p.shop_id=s.id
+            WHERE p.id=%s AND p.status='active' AND p.deleted=0
+        """, [product_id])
+        
+        if not product:
+            return None
+        
+        # 更新浏览数
+        self.increment_view_count(product_id)
+        product['view_count'] = int(product.get('view_count') or 0) + 1
+        
+        # 获取SKU列表
+        product['skus'] = self.get_product_skus(product_id)
+        
+        # 记录浏览足迹
+        if user_id:
+            try:
+                images_list = []
+                if product.get('images'):
+                    try:
+                        images_list = json.loads(product['images']) if isinstance(product['images'], str) else product.get('images', [])
+                    except:
+                        images_list = []
+                
+                db.execute("""
+                    INSERT INTO business_recently_viewed 
+                    (user_id, view_type, target_id, target_name, target_image, target_price, viewed_at)
+                    VALUES (%s, 'product', %s, %s, %s, %s, NOW())
+                    ON DUPLICATE KEY UPDATE
+                    target_name = VALUES(target_name),
+                    target_image = VALUES(target_image),
+                    target_price = VALUES(target_price),
+                    viewed_at = NOW()
+                """, [user_id, product_id, product.get('product_name', ''),
+                      images_list[0] if images_list else '', product.get('price', 0)])
+            except:
+                pass
+        
+        # 计算会员价
+        if user_id:
+            try:
+                member = db.get_one(
+                    "SELECT member_level, member_grade FROM business_members WHERE user_id=%s",
+                    [user_id]
+                )
+                if member:
+                    level_info = db.get_one(
+                        "SELECT level_name, discount_rate FROM business_member_levels WHERE level_code=%s",
+                        [member.get('member_level', 'L1')]
+                    )
+                    if level_info and level_info.get('discount_rate'):
+                        discount_rate = float(level_info['discount_rate'])
+                        if discount_rate < 1.0:
+                            regular_price = float(product.get('price', 0))
+                            member_price = round(regular_price * discount_rate, 2)
+                            product['member_price'] = member_price
+                            product['member_discount'] = discount_rate
+                            product['member_level_name'] = level_info['level_name']
+                            product['member_savings'] = round(regular_price - member_price, 2)
+                            product['is_member_price_active'] = True
+                            
+                            # 为每个SKU计算会员价
+                            for sku in product.get('skus', []):
+                                try:
+                                    sku['member_price'] = round(float(sku.get('price', 0)) * discount_rate, 2)
+                                    sku['member_savings'] = round(float(sku.get('price', 0)) - sku['member_price'], 2)
+                                except:
+                                    pass
+            except:
+                pass
+        
+        return product
+    
     def get_products(self, ec_id: int, project_id: int = None,
                     category_id: int = None, keyword: str = None,
                     status: str = 'active', page: int = 1,
@@ -230,7 +314,7 @@ class ProductService(BaseService):
         """获取商品列表"""
         # V43.0安全修复：验证order_by参数防止SQL注入
         safe_order_by = _validate_order_by(order_by)
-        
+
         conditions = ["deleted = 0"]
         params = [ec_id]
 
