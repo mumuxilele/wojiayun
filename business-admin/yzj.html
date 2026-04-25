@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>云之家聊天机器人 - 管理中心</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: #f0f2f5; 
+            min-height: 100vh;
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        
+        /* 页面标题 */
+        .page-header { 
+            background: white; 
+            padding: 20px 24px; 
+            border-radius: 8px; 
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .page-header h1 { 
+            font-size: 20px; 
+            font-weight: 600; 
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .page-header .subtitle {
+            font-size: 14px;
+            color: #6b7280;
+            margin-top: 8px;
+        }
+        
+        /* 统计卡片 */
+        .stats-grid { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 16px; 
+            margin-bottom: 20px;
+        }
+        .stat-card { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .stat-label { 
+            font-size: 14px; 
+            color: #6b7280; 
+            margin-bottom: 8px;
+        }
+        .stat-value { 
+            font-size: 28px; 
+            font-weight: 600; 
+            color: #1f2937;
+        }
+        .stat-trend { 
+            font-size: 12px; 
+            color: #10b981; 
+            margin-top: 4px;
+        }
+        
+        /* 内容区域 */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+        }
+        
+        /* 侧边栏 */
+        .sidebar {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            overflow: hidden;
+        }
+        .sidebar-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e5e7eb;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .menu-list {
+            list-style: none;
+        }
+        .menu-item {
+            padding: 14px 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #4b5563;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+        .menu-item:hover {
+            background: #f9fafb;
+            color: #00d1a0;
+        }
+        .menu-item.active {
+            background: #e6f9f3;
+            color: #00d1a0;
+            border-left-color: #00d1a0;
+        }
+        .menu-item .icon {
+            font-size: 18px;
+        }
+        
+        /* 主内容区 */
+        .main-content {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            min-height: 600px;
+        }
+        .section-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        /* 按钮样式 */
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-primary {
+            background: #00d1a0;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #00b98e;
+        }
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #4b5563;
+        }
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+        .btn-danger {
+            background: #fef2f2;
+            color: #ef4444;
+        }
+        .btn-danger:hover {
+            background: #fee2e2;
+        }
+        
+        /* 表单样式 */
+        .form-section {
+            padding: 24px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+        .form-input,
+        .form-textarea,
+        .form-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+        .form-input:focus,
+        .form-textarea:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: #00d1a0;
+        }
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        .form-hint {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+        
+        /* 消息类型选择 */
+        .msg-type-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .msg-type-card {
+            padding: 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .msg-type-card:hover {
+            border-color: #00d1a0;
+        }
+        .msg-type-card.active {
+            border-color: #00d1a0;
+            background: #e6f9f3;
+        }
+        .msg-type-card .icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        .msg-type-card .label {
+            font-size: 14px;
+            color: #374151;
+        }
+        
+        /* 卡片消息预览 */
+        .card-preview {
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+        .card-preview-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 12px;
+        }
+        .wx-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            max-width: 400px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .wx-card-header {
+            padding: 12px 16px;
+            background: #00d1a0;
+            color: white;
+        }
+        .wx-card-title {
+            font-weight: 600;
+            font-size: 15px;
+        }
+        .wx-card-body {
+            padding: 16px;
+        }
+        .wx-card-content {
+            font-size: 14px;
+            color: #4b5563;
+            line-height: 1.6;
+        }
+        .wx-card-footer {
+            padding: 12px 16px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        /* 表格样式 */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .data-table th,
+        .data-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .data-table th {
+            background: #f9fafb;
+            font-weight: 500;
+            font-size: 13px;
+            color: #6b7280;
+            text-transform: uppercase;
+        }
+        .data-table tbody tr:hover {
+            background: #f9fafb;
+        }
+        
+        /* 状态标签 */
+        .status-tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status-success {
+            background: #d1fae5;
+            color: #059669;
+        }
+        .status-failed {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        .status-pending {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        
+        /* Tab 切换 */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 0 24px;
+        }
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #6b7280;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .tab:hover {
+            color: #374151;
+        }
+        .tab.active {
+            color: #00d1a0;
+            border-bottom-color: #00d1a0;
+        }
+        
+        /* 隐藏/显示 */
+        .hidden { display: none !important; }
+        .tab-content { padding: 24px; }
+        
+        /* 响应式 */
+        @media (max-width: 1024px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .msg-type-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 页面标题 -->
+        <div class="page-header">
+            <h1>🤖 云之家聊天机器人</h1>
+            <div class="subtitle">基于云之家开放平台 IM 接口，实现群组消息推送、机器人管理等功能</div>
+        </div>
+        
+        <!-- 统计卡片 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">机器人数量</div>
+                <div class="stat-value" id="robotCount">0</div>
+                <div class="stat-trend">已启用</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">今日发送消息</div>
+                <div class="stat-value" id="todayMessages">0</div>
+                <div class="stat-trend">+12% 较昨日</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">消息送达率</div>
+                <div class="stat-value" id="deliveryRate">98.5%</div>
+                <div class="stat-trend">运行良好</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">群组数量</div>
+                <div class="stat-value" id="groupCount">0</div>
+                <div class="stat-trend">已绑定</div>
+            </div>
+        </div>
+        
+        <!-- 内容区域 -->
+        <div class="content-grid">
+            <!-- 侧边菜单 -->
+            <div class="sidebar">
+                <div class="sidebar-header">功能菜单</div>
+                <ul class="menu-list">
+                    <li class="menu-item active" data-section="send-msg" onclick="switchSection('send-msg')">
+                        <span class="icon">📤</span>
+                        <span>发送消息</span>
+                    </li>
+                    <li class="menu-item" data-section="robot-config" onclick="switchSection('robot-config')">
+                        <span class="icon">⚙️</span>
+                        <span>机器人配置</span>
+                    </li>
+                    <li class="menu-item" data-section="msg-templates" onclick="switchSection('msg-templates')">
+                        <span class="icon">📝</span>
+                        <span>消息模板</span>
+                    </li>
+                    <li class="menu-item" data-section="send-history" onclick="switchSection('send-history')">
+                        <span class="icon">📜</span>
+                        <span>发送记录</span>
+                    </li>
+                    <li class="menu-item" data-section="group-manage" onclick="switchSection('group-manage')">
+                        <span class="icon">👥</span>
+                        <span>群组管理</span>
+                    </li>
+                    <li class="menu-item" data-section="api-docs" onclick="switchSection('api-docs')">
+                        <span class="icon">📚</span>
+                        <span>API 文档</span>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- 主内容区 -->
+            <div class="main-content">
+                <!-- 发送消息 -->
+                <div id="section-send-msg" class="section-content">
+                    <div class="section-header">
+                        <span class="section-title">发送消息</span>
+                    </div>
+                    <div class="form-section">
+                        <!-- 消息类型选择 -->
+                        <div class="form-group">
+                            <label class="form-label">消息类型</label>
+                            <div class="msg-type-grid">
+                                <div class="msg-type-card active" data-type="text" onclick="selectMsgType('text')">
+                                    <div class="icon">📝</div>
+                                    <div class="label">文本消息</div>
+                                </div>
+                                <div class="msg-type-card" data-type="markdown" onclick="selectMsgType('markdown')">
+                                    <div class="icon">📄</div>
+                                    <div class="label">Markdown</div>
+                                </div>
+                                <div class="msg-type-card" data-type="card" onclick="selectMsgType('card')">
+                                    <div class="icon">🎴</div>
+                                    <div class="label">卡片消息</div>
+                                </div>
+                                <div class="msg-type-card" data-type="image" onclick="selectMsgType('image')">
+                                    <div class="icon">🖼️</div>
+                                    <div class="label">图片消息</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 目标群组 -->
+                        <div class="form-group">
+                            <label class="form-label">目标群组</label>
+                            <select class="form-select" id="targetGroup">
+                                <option value="">请选择群组</option>
+                            </select>
+                            <div class="form-hint">选择要发送消息的群组，可多选</div>
+                        </div>
+                        
+                        <!-- 文本消息表单 -->
+                        <div id="form-text" class="msg-form">
+                            <div class="form-group">
+                                <label class="form-label">消息内容</label>
+                                <textarea class="form-textarea" id="textContent" placeholder="请输入要发送的文本消息..."></textarea>
+                                <div class="form-hint">支持 @某人 提醒功能</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Markdown 表单 -->
+                        <div id="form-markdown" class="msg-form hidden">
+                            <div class="form-group">
+                                <label class="form-label">Markdown 内容</label>
+                                <textarea class="form-textarea" id="markdownContent" placeholder="请输入 Markdown 格式的消息内容..."></textarea>
+                                <div class="form-hint">支持 Markdown 语法：# 标题、**粗体**、*斜体*、[链接](url) 等</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 卡片消息表单 -->
+                        <div id="form-card" class="msg-form hidden">
+                            <div class="form-group">
+                                <label class="form-label">卡片标题</label>
+                                <input type="text" class="form-input" id="cardTitle" placeholder="请输入卡片标题">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">卡片内容</label>
+                                <textarea class="form-textarea" id="cardContent" placeholder="请输入卡片内容..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">跳转链接</label>
+                                <input type="text" class="form-input" id="cardUrl" placeholder="https://...">
+                            </div>
+                            <div class="card-preview">
+                                <div class="card-preview-title">预览</div>
+                                <div class="wx-card">
+                                    <div class="wx-card-header">
+                                        <div class="wx-card-title" id="previewCardTitle">卡片标题</div>
+                                    </div>
+                                    <div class="wx-card-body">
+                                        <div class="wx-card-content" id="previewCardContent">卡片内容预览</div>
+                                    </div>
+                                    <div class="wx-card-footer">
+                                        <span style="font-size: 12px; color: #6b7280;">点击查看详情</span>
+                                        <span style="font-size: 12px; color: #00d1a0;">→</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 图片消息表单 -->
+                        <div id="form-image" class="msg-form hidden">
+                            <div class="form-group">
+                                <label class="form-label">图片 URL</label>
+                                <input type="text" class="form-input" id="imageUrl" placeholder="请输入图片 URL">
+                                <div class="form-hint">支持 JPG、PNG 格式，大小不超过 2MB</div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group" style="margin-top: 24px;">
+                            <button class="btn btn-primary" onclick="sendMessage()">
+                                <span>📤</span> 发送消息
+                            </button>
+                            <button class="btn btn-secondary" onclick="saveAsTemplate()">
+                                <span>💾</span> 存为模板
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 机器人配置 -->
+                <div id="section-robot-config" class="section-content hidden">
+                    <div class="section-header">
+                        <span class="section-title">机器人配置</span>
+                        <button class="btn btn-primary" onclick="showAddRobotModal()">
+                            <span>+</span> 添加机器人
+                        </button>
+                    </div>
+                    <div class="tab-content">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>机器人名称</th>
+                                    <th>Webhook 地址</th>
+                                    <th>状态</th>
+                                    <th>创建时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="robotList">
+                                <!-- 动态加载 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- 消息模板 -->
+                <div id="section-msg-templates" class="section-content hidden">
+                    <div class="section-header">
+                        <span class="section-title">消息模板</span>
+                        <button class="btn btn-primary" onclick="showAddTemplateModal()">
+                            <span>+</span> 新建模板
+                        </button>
+                    </div>
+                    <div class="tab-content">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>模板名称</th>
+                                    <th>消息类型</th>
+                                    <th>内容预览</th>
+                                    <th>使用次数</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="templateList">
+                                <!-- 动态加载 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- 发送记录 -->
+                <div id="section-send-history" class="section-content hidden">
+                    <div class="section-header">
+                        <span class="section-title">发送记录</span>
+                    </div>
+                    <div class="tabs">
+                        <div class="tab active" onclick="switchHistoryTab('all')">全部</div>
+                        <div class="tab" onclick="switchHistoryTab('success')">成功</div>
+                        <div class="tab" onclick="switchHistoryTab('failed')">失败</div>
+                    </div>
+                    <div class="tab-content">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>发送时间</th>
+                                    <th>消息类型</th>
+                                    <th>目标群组</th>
+                                    <th>发送内容</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyList">
+                                <!-- 动态加载 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- 群组管理 -->
+                <div id="section-group-manage" class="section-content hidden">
+                    <div class="section-header">
+                        <span class="section-title">群组管理</span>
+                        <button class="btn btn-primary" onclick="syncGroups()">
+                            <span>🔄</span> 同步群组
+                        </button>
+                    </div>
+                    <div class="tab-content">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>群组名称</th>
+                                    <th>群组ID</th>
+                                    <th>成员数量</th>
+                                    <th>绑定机器人</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="groupList">
+                                <!-- 动态加载 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- API 文档 -->
+                <div id="section-api-docs" class="section-content hidden">
+                    <div class="section-header">
+                        <span class="section-title">云之家开放平台 API 文档</span>
+                    </div>
+                    <div class="tab-content">
+                        <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                            <h3 style="font-size: 16px; margin-bottom: 12px;">📌 接口基础信息</h3>
+                            <p style="font-size: 14px; color: #4b5563; line-height: 1.8;">
+                                <strong>API 网关：</strong>https://open.yunzhijia.com/openapi/im/chatbot<br>
+                                <strong>鉴权方式：</strong>AccessToken + AppKey + AppSecret 签名<br>
+                                <strong>请求格式：</strong>JSON<br>
+                                <strong>字符编码：</strong>UTF-8
+                            </p>
+                        </div>
+                        
+                        <h3 style="font-size: 16px; margin-bottom: 12px;">🔑 鉴权参数</h3>
+                        <table class="data-table" style="margin-bottom: 20px;">
+                            <thead>
+                                <tr>
+                                    <th>参数名</th>
+                                    <th>类型</th>
+                                    <th>必填</th>
+                                    <th>说明</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>accessToken</td>
+                                    <td>string</td>
+                                    <td>是</td>
+                                    <td>访问令牌</td>
+                                </tr>
+                                <tr>
+                                    <td>appKey</td>
+                                    <td>string</td>
+                                    <td>是</td>
+                                    <td>应用标识</td>
+                                </tr>
+                                <tr>
+                                    <td>timestamp</td>
+                                    <td>long</td>
+                                    <td>是</td>
+                                    <td>时间戳(毫秒)</td>
+                                </tr>
+                                <tr>
+                                    <td>sign</td>
+                                    <td>string</td>
+                                    <td>是</td>
+                                    <td>签名(sha256)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <h3 style="font-size: 16px; margin-bottom: 12px;">📤 发送消息接口</h3>
+                        <div style="background: #1f2937; color: #e5e7eb; padding: 16px; border-radius: 8px; font-family: monospace; font-size: 13px; line-height: 1.6; overflow-x: auto;">
+POST /api/yzj/chatbot/send<br>
+Content-Type: application/json<br><br>
+{
+  "robotId": "bot_xxx",
+  "groupId": "grp_xxx",
+  "msgType": "text",
+  "content": {
+    "text": "消息内容"
+  }
+}
+                        </div>
+                        
+                        <h3 style="font-size: 16px; margin: 20px 0 12px;">📥 响应示例</h3>
+                        <div style="background: #1f2937; color: #e5e7eb; padding: 16px; border-radius: 8px; font-family: monospace; font-size: 13px; line-height: 1.6; overflow-x: auto;">
+{
+  "success": true,
+  "code": 200,
+  "msg": "发送成功",
+  "data": {
+    "messageId": "msg_xxx",
+    "sendTime": "2024-01-15 10:30:00"
+  }
+}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let currentMsgType = 'text';
+        let currentHistoryTab = 'all';
+        
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStats();
+            loadGroups();
+            loadRobots();
+            loadTemplates();
+            loadHistory();
+            
+            // 卡片预览实时更新
+            document.getElementById('cardTitle').addEventListener('input', updateCardPreview);
+            document.getElementById('cardContent').addEventListener('input', updateCardPreview);
+        });
+        
+        // 切换功能板块
+        function switchSection(sectionId) {
+            // 更新菜单状态
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector(`[data-section="${sectionId}"]`).classList.add('active');
+            
+            // 显示对应内容
+            document.querySelectorAll('.section-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            document.getElementById(`section-${sectionId}`).classList.remove('hidden');
+        }
+        
+        // 切换消息类型
+        function selectMsgType(type) {
+            currentMsgType = type;
+            document.querySelectorAll('.msg-type-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            document.querySelector(`[data-type="${type}"]`).classList.add('active');
+            
+            // 显示对应表单
+            document.querySelectorAll('.msg-form').forEach(form => {
+                form.classList.add('hidden');
+            });
+            document.getElementById(`form-${type}`).classList.remove('hidden');
+        }
+        
+        // 更新卡片预览
+        function updateCardPreview() {
+            const title = document.getElementById('cardTitle').value || '卡片标题';
+            const content = document.getElementById('cardContent').value || '卡片内容预览';
+            document.getElementById('previewCardTitle').textContent = title;
+            document.getElementById('previewCardContent').textContent = content;
+        }
+        
+        // 获取 URL 参数
+        function getUrlParams() {
+            const params = {};
+            const search = window.location.search.substring(1);
+            if (search) {
+                search.split('&').forEach(pair => {
+                    const [key, value] = pair.split('=');
+                    params[decodeURIComponent(key)] = decodeURIComponent(value || '');
+                });
+            }
+            return params;
+        }
+        
+        // 加载统计数据
+        async function loadStats() {
+            try {
+                const params = getUrlParams();
+                const response = await fetch(`/api/admin/yzj/stats?access_token=${params.access_token || ''}`);
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('robotCount').textContent = data.data.robotCount || 0;
+                    document.getElementById('todayMessages').textContent = data.data.todayMessages || 0;
+                    document.getElementById('deliveryRate').textContent = (data.data.deliveryRate || 0) + '%';
+                    document.getElementById('groupCount').textContent = data.data.groupCount || 0;
+                }
+            } catch (error) {
+                console.error('加载统计数据失败:', error);
+            }
+        }
+        
+        // 加载群组列表
+        async function loadGroups() {
+            try {
+                const params = getUrlParams();
+                const response = await fetch(`/api/admin/yzj/groups?access_token=${params.access_token || ''}`);
+                const data = await response.json();
+                if (data.success) {
+                    // 填充下拉框
+                    const select = document.getElementById('targetGroup');
+                    select.innerHTML = '<option value="">请选择群组</option>';
+                    data.data.forEach(group => {
+                        select.innerHTML += `<option value="${group.groupId}">${group.groupName}</option>`;
+                    });
+                    
+                    // 填充群组表格
+                    const tbody = document.getElementById('groupList');
+                    tbody.innerHTML = data.data.map(group => `
+                        <tr>
+                            <td>${group.groupName}</td>
+                            <td>${group.groupId}</td>
+                            <td>${group.memberCount || '-'}</td>
+                            <td>${group.robotName || '-'}</td>
+                            <td>
+                                <button class="btn btn-secondary" onclick="bindRobot('${group.groupId}')">绑定机器人</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('加载群组列表失败:', error);
+            }
+        }
+        
+        // 加载机器人列表
+        async function loadRobots() {
+            try {
+                const params = getUrlParams();
+                const response = await fetch(`/api/admin/yzj/robots?access_token=${params.access_token || ''}`);
+                const data = await response.json();
+                if (data.success) {
+                    const tbody = document.getElementById('robotList');
+                    tbody.innerHTML = data.data.map(robot => `
+                        <tr>
+                            <td>${robot.robotName}</td>
+                            <td style="font-size: 12px; color: #6b7280; max-width: 300px; overflow: hidden; text-overflow: ellipsis;">${robot.webhookUrl}</td>
+                            <td><span class="status-tag ${robot.status === 'active' ? 'status-success' : 'status-failed'}">${robot.status === 'active' ? '启用' : '禁用'}</span></td>
+                            <td>${robot.createdAt}</td>
+                            <td>
+                                <button class="btn btn-secondary" onclick="editRobot('${robot.robotId}')">编辑</button>
+                                <button class="btn btn-danger" onclick="deleteRobot('${robot.robotId}')">删除</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('加载机器人列表失败:', error);
+            }
+        }
+        
+        // 加载模板列表
+        async function loadTemplates() {
+            try {
+                const params = getUrlParams();
+                const response = await fetch(`/api/admin/yzj/templates?access_token=${params.access_token || ''}`);
+                const data = await response.json();
+                if (data.success) {
+                    const tbody = document.getElementById('templateList');
+                    tbody.innerHTML = data.data.map(template => `
+                        <tr>
+                            <td>${template.templateName}</td>
+                            <td>${getMsgTypeLabel(template.msgType)}</td>
+                            <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis;">${template.contentPreview}</td>
+                            <td>${template.useCount || 0}</td>
+                            <td>
+                                <button class="btn btn-secondary" onclick="useTemplate('${template.templateId}')">使用</button>
+                                <button class="btn btn-secondary" onclick="editTemplate('${template.templateId}')">编辑</button>
+                                <button class="btn btn-danger" onclick="deleteTemplate('${template.templateId}')">删除</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('加载模板列表失败:', error);
+            }
+        }
+        
+        // 加载发送记录
+        async function loadHistory() {
+            try {
+                const params = getUrlParams();
+                const response = await fetch(`/api/admin/yzj/history?status=${currentHistoryTab}&access_token=${params.access_token || ''}`);
+                const data = await response.json();
+                if (data.success) {
+                    const tbody = document.getElementById('historyList');
+                    tbody.innerHTML = data.data.map(record => `
+                        <tr>
+                            <td>${record.sendTime}</td>
+                            <td>${getMsgTypeLabel(record.msgType)}</td>
+                            <td>${record.groupName}</td>
+                            <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">${record.contentPreview}</td>
+                            <td><span class="status-tag ${record.status === 'success' ? 'status-success' : record.status === 'failed' ? 'status-failed' : 'status-pending'}">${record.status === 'success' ? '成功' : record.status === 'failed' ? '失败' : '发送中'}</span></td>
+                            <td>
+                                <button class="btn btn-secondary" onclick="viewDetail('${record.recordId}')">详情</button>
+                                ${record.status === 'failed' ? `<button class="btn btn-primary" onclick="resend('${record.recordId}')">重发</button>` : ''}
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('加载发送记录失败:', error);
+            }
+        }
+        
+        // 获取消息类型标签
+        function getMsgTypeLabel(type) {
+            const labels = {
+                'text': '📝 文本',
+                'markdown': '📄 Markdown',
+                'card': '🎴 卡片',
+                'image': '🖼️ 图片'
+            };
+            return labels[type] || type;
+        }
+        
+        // 发送消息
+        async function sendMessage() {
+            const params = getUrlParams();
+            const groupId = document.getElementById('targetGroup').value;
+            if (!groupId) {
+                alert('请选择目标群组');
+                return;
+            }
+            
+            let content = {};
+            switch (currentMsgType) {
+                case 'text':
+                    content = { text: document.getElementById('textContent').value };
+                    break;
+                case 'markdown':
+                    content = { markdown: document.getElementById('markdownContent').value };
+                    break;
+                case 'card':
+                    content = {
+                        card: {
+                            title: document.getElementById('cardTitle').value,
+                            content: document.getElementById('cardContent').value,
+                            url: document.getElementById('cardUrl').value
+                        }
+                    };
+                    break;
+                case 'image':
+                    content = { imageUrl: document.getElementById('imageUrl').value };
+                    break;
+            }
+            
+            try {
+                const response = await fetch(`/api/admin/yzj/send?access_token=${params.access_token || ''}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        groupId: groupId,
+                        msgType: currentMsgType,
+                        content: content
+                    })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert('消息发送成功！');
+                    loadHistory();
+                    loadStats();
+                } else {
+                    alert('发送失败：' + data.msg);
+                }
+            } catch (error) {
+                alert('发送出错：' + error.message);
+            }
+        }
+        
+        // 保存为模板
+        function saveAsTemplate() {
+            alert('保存模板功能开发中...');
+        }
+        
+        // 切换历史记录标签
+        function switchHistoryTab(tab) {
+            currentHistoryTab = tab;
+            document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            loadHistory();
+        }
+        
+        // 其他功能占位
+        function showAddRobotModal() { alert('添加机器人功能开发中...'); }
+        function showAddTemplateModal() { alert('新建模板功能开发中...'); }
+        function syncGroups() { alert('同步群组功能开发中...'); }
+        function bindRobot(groupId) { alert('绑定机器人：' + groupId); }
+        function editRobot(robotId) { alert('编辑机器人：' + robotId); }
+        function deleteRobot(robotId) { alert('删除机器人：' + robotId); }
+        function useTemplate(templateId) { alert('使用模板：' + templateId); }
+        function editTemplate(templateId) { alert('编辑模板：' + templateId); }
+        function deleteTemplate(templateId) { alert('删除模板：' + templateId); }
+        function viewDetail(recordId) { alert('查看详情：' + recordId); }
+        function resend(recordId) { alert('重新发送：' + recordId); }
+    </script>
+</body>
+</html>
