@@ -2,159 +2,79 @@
 //  AIChatSDK.h
 //  AIChatSDK
 //
-//  Created by wojiacloud on 2026/04/08.
+//  AI 智能助手聊天 SDK - Objective-C 接口
+//  使用 self.navigationController pushViewController: 调用
 //
 
 #import <UIKit/UIKit.h>
-#import <WebKit/WebKit.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
-/**
- * AI Chat SDK 配置类
- */
+#pragma mark - 配置类
+
 @interface AIChatConfig : NSObject
 
-/**
- * 访问令牌（必填）
- */
+/// 访问令牌（必填）
 @property (nonatomic, copy) NSString *accessToken;
 
-/**
- * API 地址（可选，默认为 "/api"）
- */
+/// API 地址（可选，默认 "/api"）
 @property (nonatomic, copy, nullable) NSString *apiUrl;
 
-/**
- * 自定义变量（可选）
- * 支持的键：empName, empId, userId, userName, department, role 等
- */
+/// 页面标题（可选，默认 "AI智能助手"）
+@property (nonatomic, copy, nullable) NSString *pageTitle;
+
+/// 自定义变量（可选）
 @property (nonatomic, copy, nullable) NSDictionary<NSString *, NSString *> *customVariables;
 
-/**
- * 主题（可选，默认为 light）
- * 可选值：light, dark
- */
-@property (nonatomic, copy, nullable) NSString *theme;
-
-/**
- * 是否启用语音输入（可选，默认为 YES）
- */
+/// 是否启用语音输入（可选，默认 YES）
 @property (nonatomic, assign) BOOL enableVoice;
 
-/**
- * 占位符文本（可选）
- */
-@property (nonatomic, copy, nullable) NSString *placeholder;
-
-/**
- * 欢迎消息（可选）
- */
-@property (nonatomic, copy, nullable) NSString *welcomeMessage;
-
-/**
- * 便捷初始化方法
- */
+/// 便捷初始化
 + (instancetype)configWithAccessToken:(NSString *)accessToken;
 
+/// 完整初始化
++ (instancetype)configWithAccessToken:(NSString *)accessToken apiUrl:(nullable NSString *)apiUrl;
+
 @end
 
-/**
- * AI Chat SDK 代理协议
- */
-@protocol AIChatSDKDelegate <NSObject>
+#pragma mark - 代理协议
 
+@protocol AIChatViewControllerDelegate <NSObject>
 @optional
-
-/**
- * 收到新消息
- */
-- (void)aiChatDidReceiveMessage:(NSDictionary *)message;
-
-/**
- * 发送消息
- */
-- (void)aiChatDidSendMessage:(NSDictionary *)message;
-
-/**
- * 发生错误
- */
-- (void)aiChatDidError:(NSError *)error;
-
-/**
- * 语音识别结果
- */
-- (void)aiChatVoiceRecognitionResult:(NSString *)text;
-
+- (void)aiChatDidSendMessage:(NSString *)content;
+- (void)aiChatDidReceiveMessage:(NSString *)content;
+- (void)aiChatDidError:(NSString *)errorMessage;
+- (void)aiChatDidClose;
 @end
 
-/**
- * AI Chat SDK 主类
- */
+#pragma mark - SDK 主类
+
 @interface AIChatSDK : NSObject
 
-/**
- * SDK 版本
- */
+/// SDK 版本
 + (NSString *)version;
 
-/**
- * 创建聊天视图控制器
- * @param config SDK 配置
- * @return 聊天视图控制器
- */
-+ (UIViewController *)createChatViewControllerWithConfig:(AIChatConfig *)config;
-
-/**
- * 创建聊天视图控制器（便捷方法）
- * @param accessToken 访问令牌
- * @return 聊天视图控制器
- */
+/// 创建聊天控制器（推荐）
+/// @param accessToken 访问令牌
+/// @return 可直接 push 到 navigationController
 + (UIViewController *)createChatViewControllerWithAccessToken:(NSString *)accessToken;
 
-/**
- * 创建聊天视图控制器（完整参数）
- * @param accessToken 访问令牌
- * @param apiUrl API 地址
- * @param customVariables 自定义变量
- * @return 聊天视图控制器
- */
+/// 创建聊天控制器（完整参数）
+/// @param accessToken 访问令牌
+/// @param apiUrl API 地址
+/// @param pageTitle 页面标题
+/// @param customVariables 自定义变量
+/// @return 聊天控制器
 + (UIViewController *)createChatViewControllerWithAccessToken:(NSString *)accessToken
-                                                      apiUrl:(nullable NSString *)apiUrl
+                                                       apiUrl:(nullable NSString *)apiUrl
+                                                    pageTitle:(nullable NSString *)pageTitle
                                               customVariables:(nullable NSDictionary<NSString *, NSString *> *)customVariables;
 
-/**
- * 创建聊天视图（用于嵌入）
- * @param frame 视图尺寸
- * @param config SDK 配置
- * @return 聊天视图
- */
-+ (UIView *)createChatViewWithFrame:(CGRect)frame
-                             config:(AIChatConfig *)config;
+/// 使用配置对象创建
++ (UIViewController *)createChatViewControllerWithConfig:(AIChatConfig *)config;
 
-/**
- * 创建聊天视图（便捷方法）
- * @param frame 视图尺寸
- * @param accessToken 访问令牌
- * @return 聊天视图
- */
-+ (UIView *)createChatViewWithFrame:(CGRect)frame
-                        accessToken:(NSString *)accessToken;
-
-/**
- * 设置代理
- */
-+ (void)setDelegate:(id<AIChatSDKDelegate>)delegate;
-
-/**
- * 设置调试模式
- */
-+ (void)setDebugMode:(BOOL)enable;
-
-/**
- * 清理资源
- */
-+ (void)cleanup;
+/// 设置日志级别（0=关闭, 1=错误, 2=警告, 3=信息, 4=调试）
++ (void)setLogLevel:(NSInteger)level;
 
 @end
 
