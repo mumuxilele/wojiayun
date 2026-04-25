@@ -164,6 +164,58 @@ class ApplicationService(BaseService):
             self.logger.error(f"获取用户统计失败: {e}")
             return self.error('获取统计失败')
     
+    # ============ 修改申请 ============
+    
+    def update_application(self,
+                          app_id: int,
+                          user_id: str = None,
+                          data: dict = None,
+                          only_pending: bool = False) -> Dict[str, Any]:
+        """修改申请
+        
+        Args:
+            app_id: 申请ID
+            user_id: 用户ID（用户端修改时校验归属）
+            data: 修改数据
+            only_pending: 是否仅允许修改待处理的申请
+        """
+        try:
+            if not data:
+                return self.error('无更新内容')
+            
+            # 查询原申请
+            app_data = self.app_repo.find_by_id(app_id)
+            if not app_data:
+                return self.error('申请不存在')
+            
+            # 归属校验
+            if user_id and app_data.get('user_id') != user_id:
+                return self.error('申请不存在或无权修改')
+            
+            # 状态校验
+            if only_pending and app_data.get('status') != Application.STATUS_PENDING:
+                return self.error('申请不存在或无法修改')
+            
+            # 只允许修改的字段
+            allowed_fields = ['title', 'content', 'images', 'remark', 'form_data', 'attachments']
+            updates = {}
+            for field in allowed_fields:
+                if field in data:
+                    updates[field] = data[field]
+            
+            if not updates:
+                return self.error('无更新内容')
+            
+            affected = self.app_repo.update(app_id, updates)
+            if affected > 0:
+                self.logger.info('修改申请成功: id=%s', app_id)
+                return self.success(msg='修改成功')
+            return self.error('修改失败')
+            
+        except Exception as e:
+            self.logger.error('修改申请失败: %s', e)
+            return self.error('修改失败')
+    
     # ============ 操作申请 ============
     
     def cancel_application(self, 

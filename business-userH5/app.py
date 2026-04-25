@@ -1,30 +1,42 @@
 #!/usr/bin/env python3
 """
-社区商业 - 用户端 H5 服务
+社区商业 - 用户端 H5 服务（MVC 架构）
 端口: 22311
+路由层仅处理 HTTP 请求/响应，业务逻辑委托给 Service 层
 """
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import sys
 import os
+import logging
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from business_common import config, db, auth, utils
+from business_common import config, auth, error_handler
+from business_common.services import ApplicationService, OrderService, ProductService
+from business_common.services import UserService as _unused
+from business_common.models import Application
+from business_common.repositories.booking_repository import BookingRepository
+from business_common.repositories.shop_repository import ShopRepository
+from business_common.repositories.product_repository import ProductRepository
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
 
 app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
 
+error_handler.register_error_handlers(app)
+
+
 # ============ 用户认证 ============
 
 def get_current_user():
-    """获取当前用户"""
     token = request.args.get('access_token') or request.headers.get('Token')
     isdev = request.args.get('isdev') or '0'
     return auth.verify_user(token, isdev) if token else None
 
+
 def require_login(f):
-    """登录装饰器"""
     from functools import wraps
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -34,107 +46,61 @@ def require_login(f):
         return f(user, *args, **kwargs)
     return decorated
 
+
 # ============ 申请单 API ============
 
 @app.route('/api/user/applications', methods=['GET'])
 @require_login
 def get_user_applications(user):
     """获取我的申请列表"""
-    page = int(request.args.get('page', 1))
-    page_size = int(request.args.get('page_size', 20))
-    status = request.args.get('status')
-    
-    where = "user_id=%s AND deleted=0"
-    params = [user['user_id']]
-    
-    if status:
-        where += " AND status=%s"
-        params.append(status)
-    
-    # 获取总数
-    total = db.get_total(f"SELECT COUNT(*) FROM business_applications WHERE {where}", params)
-    
-    # 获取列表
-    offset = (page - 1) * page_size
-    sql = f"SELECT * FROM business_applications WHERE {where} ORDER BY created_at DESC LIMIT %s OFFSET %s"
-    params.append(page_size)
-    params.append(offset)
-    items = db.get_all(sql, params)
-    
-    return jsonify({'success': True, 'data': {
-        'items': items,
-        'total': total,
-        'page': page,
-        'page_size': page_size
-    }})
+    svc = ApplicationService()
+    return jsonify(svc.get_user_applications(
+        user_id=user['user_id'],
+        status=request.args.get('status'),
+        page=int(request.args.get('page', 1)),
+        page_size=int(request.args.get('page_size', 20))
+    ))
+
 
 @app.route('/api/user/applications', methods=['POST'])
 @require_login
 def create_application(user):
     """提交新申请"""
     data = request.get_json() or {}
-    
-    app_type = data.get('app_type')
-    title = data.get('title')
-    content = data.get('content', '')
-    images = data.get('images', '[]')
-    
-    if not app_type or not title:
-        return jsonify({'success': False, 'msg': '请填写必要信息'})
-    
-    app_no = utils.generate_no('APP')
-    
-    sql = """INSERT INTO business_applications 
-        (app_no, app_type, title, content, user_id, user_name, user_phone, ec_id, project_id, status, images)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'pending', %s)"""
-    
-    db.execute(sql, [
-        app_no, app_type, title, content,
-        user['user_id'], user['user_name'], user['phone'],
-        user.get('ec_id'), user.get('project_id'),
-        images
-    ])
-    
-    return jsonify({'success': True, 'msg': '提交成功', 'data': {'app_no': app_no}})
+    svc = ApplicationService()
+    return jsonify(svc.create_application(
+        user_id=user['user_id'],
+        user_name=user['user_name'],
+        type_code=data.get('app_type', ''),
+        title=data.get('title', ''),
+        ec_id=user.get('ec_id'),
+        project_id=user.get('project_id'),
+        attachments=data.get('images', []) if isinstance(data.get('images'), list) else None,
+        remark=data.get('content', '')
+    ))
 
-@app.route('/api/user/applications/<app_id>', methods=['GET'])
+
+@app.route('/api/user/applications/<int:app_id>', methods=['GET'])
 @require_login
 def get_application_detail(user, app_id):
     """获取申请详情"""
-    sql = "SELECT * FROM business_applications WHERE id=%s AND user_id=%s AND deleted=0"
-    app = db.get_one(sql, [app_id, user['user_id']])
-    
-    if not app:
-        return jsonify({'success': False, 'msg': '申请不存在'})
-    
-    return jsonify({'success': True, 'data': app})
+    svc = ApplicationService()
+    return jsonify(svc.get_application_detail(app_id))
 
-@app.route('/api/user/applications/<app_id>', methods=['PUT'])
+
+@app.route('/api/user/applications/<int:app_id>', methods=['PUT'])
 @require_login
 def update_application(user, app_id):
-    """修改申请(只能修改待处理的)"""
+    """修改申请（只能修改待处理的）"""
     data = request.get_json() or {}
-    
-    # 检查是否是自己的申请且状态为待处理
-    sql = "SELECT * FROM business_applications WHERE id=%s AND user_id=%s AND status='pending' AND deleted=0"
-    app = db.get_one(sql, [app_id, user['user_id']])
-    
-    if not app:
-        return jsonify({'success': False, 'msg': '申请不存在或无法修改'})
-    
-    # 更新
-    updates = []
-    params = []
-    for field in ['title', 'content', 'images']:
-        if field in data:
-            updates.append(f"{field}=%s")
-            params.append(data[field])
-    
-    if updates:
-        params.append(app_id)
-        db.execute(f"UPDATE business_applications SET {','.join(updates)} WHERE id=%s", params)
-    
-    return jsonify({'success': True, 'msg': '修改成功'})
+    svc = ApplicationService()
+    return jsonify(svc.update_application(
+        app_id=app_id,
+        user_id=user['user_id'],
+        data=data,
+        only_pending=True
+    ))
+
 
 # ============ 订单 API ============
 
@@ -142,75 +108,44 @@ def update_application(user, app_id):
 @require_login
 def get_user_orders(user):
     """获取我的订单"""
-    page = int(request.args.get('page', 1))
-    page_size = int(request.args.get('page_size', 20))
-    status = request.args.get('status')
-    
-    where = "user_id=%s AND deleted=0"
-    params = [user['user_id']]
-    
-    if status:
-        where += " AND status=%s"
-        params.append(status)
-    
-    total = db.get_total(f"SELECT COUNT(*) FROM business_orders WHERE {where}", params)
-    
-    offset = (page - 1) * page_size
-    sql = f"SELECT * FROM business_orders WHERE {where} ORDER BY created_time DESC LIMIT %s OFFSET %s"
-    params.extend([page_size, offset])
-    orders = db.get_all(sql, params)
-    
-    return jsonify({'success': True, 'data': {
-        'items': orders,
-        'total': total,
-        'page': page,
-        'page_size': page_size
-    }})
+    svc = OrderService()
+    return jsonify(svc.get_user_orders(
+        user_id=user['user_id'],
+        status=request.args.get('status'),
+        page=int(request.args.get('page', 1)),
+        page_size=int(request.args.get('page_size', 20))
+    ))
+
 
 @app.route('/api/user/orders', methods=['POST'])
 @require_login
 def create_order(user):
     """创建订单"""
     data = request.get_json() or {}
-    
-    shop_id = data.get('shop_id')
     items = data.get('items', [])
-    
-    if not shop_id or not items:
-        return jsonify({'success': False, 'msg': '参数不完整'})
-    
-    order_no = utils.generate_no('ORD')
-    total_amount = sum(item.get('price', 0) * item.get('quantity', 1) for item in items)
-    
-    sql = """INSERT INTO business_orders 
-        (order_no, user_id, user_name, shop_id, total_amount, status, pay_status)
-        VALUES (%s, %s, %s, %s, %s, 'pending', 'unpaid')"""
-    
-    order_id = db.execute(sql, [order_no, user['user_id'], user['user_name'], shop_id, total_amount])
-    
-    # 插入订单项
-    for item in items:
-        item_sql = """INSERT INTO business_order_items 
-            (order_id, product_id, product_name, price, quantity)
-            VALUES (%s, %s, %s, %s, %s)"""
-        db.execute(item_sql, [order_id, item.get('product_id'), item.get('product_name'), item.get('price'), item.get('quantity', 1)])
-    
-    return jsonify({'success': True, 'msg': '订单创建成功', 'data': {'order_no': order_no, 'order_id': order_id}})
+    if not items:
+        return jsonify({'success': False, 'msg': '订单商品不能为空'})
+    svc = OrderService()
+    return jsonify(svc.create_order(
+        user_id=user['user_id'],
+        user_name=user['user_name'],
+        items=items,
+        ec_id=user.get('ec_id'),
+        project_id=user.get('project_id'),
+        receiver_name=data.get('receiver_name'),
+        receiver_phone=data.get('receiver_phone'),
+        receiver_address=data.get('receiver_address'),
+        remark=data.get('remark')
+    ))
 
-@app.route('/api/user/orders/<order_id>/pay', methods=['POST'])
+
+@app.route('/api/user/orders/<int:order_id>/pay', methods=['POST'])
 @require_login
 def pay_order(user, order_id):
     """支付订单"""
-    sql = "SELECT * FROM business_orders WHERE id=%s AND user_id=%s AND status='pending' AND deleted=0"
-    order = db.get_one(sql, [order_id, user['user_id']])
-    
-    if not order:
-        return jsonify({'success': False, 'msg': '订单不存在或状态异常'})
-    
-    # 模拟支付
-    db.execute("UPDATE business_orders SET status='paid', pay_status='paid', pay_time=NOW() WHERE id=%s", [order_id])
-    
-    return jsonify({'success': True, 'msg': '支付成功'})
+    svc = OrderService()
+    return jsonify(svc.pay_order(order_id, user_id=user['user_id']))
+
 
 # ============ 预约 API ============
 
@@ -218,31 +153,33 @@ def pay_order(user, order_id):
 @require_login
 def get_user_bookings(user):
     """获取我的预约"""
-    sql = "SELECT * FROM business_venue_bookings WHERE user_id=%s AND deleted=0 ORDER BY booking_time DESC"
-    bookings = db.get_all(sql, [user['user_id']])
+    repo = BookingRepository()
+    bookings = repo.find_by_user(user['user_id'])
     return jsonify({'success': True, 'data': bookings})
+
 
 # ============ 门店/商品 API ============
 
 @app.route('/api/shops', methods=['GET'])
 def get_shops():
     """获取门店列表"""
+    repo = ShopRepository()
     shop_type = request.args.get('type')
-    if shop_type:
-        shops = db.get_all("SELECT * FROM business_shops WHERE shop_type=%s AND status='open' AND deleted=0", [shop_type])
-    else:
-        shops = db.get_all("SELECT * FROM business_shops WHERE status='open' AND deleted=0")
+    shops = repo.find_open_shops(shop_type=shop_type)
     return jsonify({'success': True, 'data': shops})
+
 
 @app.route('/api/products', methods=['GET'])
 def get_products():
     """获取商品列表"""
+    repo = ProductRepository()
     shop_id = request.args.get('shop_id')
     if shop_id:
-        products = db.get_all("SELECT * FROM business_products WHERE shop_id=%s AND status='available' AND deleted=0", [shop_id])
+        products = repo.find_by_field('shop_id', shop_id, limit=200)
     else:
-        products = db.get_all("SELECT * FROM business_products WHERE status='available' AND deleted=0")
+        products = repo.find_by_field('status', 'available', limit=200)
     return jsonify({'success': True, 'data': products})
+
 
 # ============ 健康检查 ============
 
@@ -250,18 +187,21 @@ def get_products():
 def health():
     return jsonify({'success': True, 'module': 'user-h5', 'status': 'ok'})
 
+
 # ============ 静态文件 ============
 
 @app.route('/')
 def index():
     return send_from_directory('.', 'index.html')
 
+
 @app.route('/<path:filename>')
 def static_files(filename):
     return send_from_directory('.', filename)
 
+
 # ============ 启动 ============
 
 if __name__ == '__main__':
-    print(f"用户端 H5 服务启动在端口 {config.PORTS['user']}")
+    print("用户端 H5 服务启动在端口 " + str(config.PORTS['user']))
     app.run(host='0.0.0.0', port=config.PORTS['user'], debug=False)
