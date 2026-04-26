@@ -2044,6 +2044,34 @@
         // 当前 widget 数据（用于按钮点击时发送）
         let currentWidgetData = null;
 
+        // 递归替换 view 模板中的 {placeholder} 为 state 中的值
+        function processWidgetTemplate(view, state) {
+            if (!view) return view;
+            if (typeof view === 'string') {
+                return view.replace(/\{(\w+)\}/g, function(match, key) {
+                    if (state && state.hasOwnProperty(key)) {
+                        var val = state[key];
+                        if (val === null || val === undefined) return '';
+                        return String(val);
+                    }
+                    return match;
+                });
+            }
+            if (Array.isArray(view)) {
+                return view.map(function(item) { return processWidgetTemplate(item, state); });
+            }
+            if (typeof view === 'object' && view !== null) {
+                var result = {};
+                for (var key in view) {
+                    if (view.hasOwnProperty(key)) {
+                        result[key] = processWidgetTemplate(view[key], state);
+                    }
+                }
+                return result;
+            }
+            return view;
+        }
+
         // 渲染 Widget 组件（自定义渲染，不使用 SDK）
         function renderWidget(widgetData) {
             if (!widgetData || !widgetData.view) {
@@ -2051,8 +2079,11 @@
             }
 
             try {
-                const view = typeof widgetData.view === 'string' ? JSON.parse(widgetData.view) : widgetData.view;
-                const state = typeof widgetData.state === 'string' ? JSON.parse(widgetData.state) : (widgetData.state || {});
+                var rawView = typeof widgetData.view === 'string' ? JSON.parse(widgetData.view) : widgetData.view;
+                var state = typeof widgetData.state === 'string' ? JSON.parse(widgetData.state) : (widgetData.state || {});
+
+                // 关键修复：用 state 中的值替换 view 模板中的 {placeholder}
+                var view = processWidgetTemplate(rawView, state);
 
                 // 保存当前 widget 数据
                 currentWidgetData = {
@@ -2061,7 +2092,7 @@
                     state: state
                 };
 
-                // 直接使用自定义渲染函数渲染 widget
+                // 使用处理后的 view 渲染 widget
                 return renderWidgetNode(view, state, widgetData.widget_id, widgetData.widget_run_id);
             } catch (e) {
                 console.error('渲染 Widget 失败:', e);
