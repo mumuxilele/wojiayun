@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>私宴包间</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f5}
+.header{background:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e8e8e8;position:sticky;top:0;z-index:10}
+.back{font-size:22px;cursor:pointer;background:none;border:none}
+.header h1{font-size:17px}
+.rooms{padding:12px}
+.room-card{background:#fff;border-radius:12px;margin-bottom:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.room-img{width:100%;height:160px;object-fit:cover;background:#f0f0f0}
+.room-info{padding:14px}
+.room-info h3{font-size:16px;margin-bottom:6px}
+.room-meta{display:flex;gap:16px;font-size:12px;color:#666;margin-bottom:8px}
+.room-meta span{display:flex;align-items:center;gap:4px}
+.room-price{color:#ff4d4f;font-size:18px;font-weight:600}
+.room-price small{font-size:12px;font-weight:400}
+.room-desc{font-size:12px;color:#999;margin:8px 0}
+.room-facilities{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.room-facilities span{font-size:11px;padding:3px 8px;background:#f0f5ff;color:#1890ff;border-radius:4px}
+.book-btn{width:100%;padding:12px;background:#1890ff;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:none;align-items:flex-end}
+.modal.show{display:flex}
+.modal-content{background:#fff;width:100%;border-radius:16px 16px 0 0;padding:20px;max-height:80vh;overflow-y:auto}
+.modal-content h2{font-size:16px;margin-bottom:16px;display:flex;justify-content:space-between}
+.modal-content .close{cursor:pointer;font-size:20px;color:#999}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:13px;color:#666;margin-bottom:6px}
+.form-group input,.form-group textarea{width:100%;padding:10px;border:1px solid #e8e8e8;border-radius:8px;font-size:14px}
+.submit{width:100%;padding:14px;background:#1890ff;color:#fff;border:none;border-radius:10px;font-size:15px;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="header"><button class="back" onclick="history.back()">‹</button><h1>私宴包间</h1></div>
+<div class="rooms" id="rooms"><div style="text-align:center;padding:40px;color:#999">加载中...</div></div>
+
+<div class="modal" id="bookingModal">
+  <div class="modal-content">
+    <h2>预约包间 <span class="close" onclick="closeModal()">✕</span></h2>
+    <div id="selectedRoom"></div>
+    <div class="form-group"><label>预约日期</label><input type="date" id="bookDate"></div>
+    <div class="form-group"><label>开始时间</label><input type="time" id="bookStart" value="18:00"></div>
+    <div class="form-group"><label>结束时间</label><input type="time" id="bookEnd" value="21:00"></div>
+    <div class="form-group"><label>用餐人数</label><input type="number" id="bookGuests" placeholder="请输入人数"></div>
+    <div class="form-group"><label>定制需求</label><textarea id="bookRequest" rows="3" placeholder="如需特殊布置、菜单定制等请填写"></textarea></div>
+    <button class="submit" onclick="submitBooking()">提交预约</button>
+  </div>
+</div>
+
+<script>
+const API_BASE='';
+let selectedRoomId=null;
+function getToken(){return localStorage.getItem('access_token')||''}
+function api(p,o={}){return fetch(API_BASE+p+(p.includes('?')?'&':'?')+'access_token='+getToken(),{headers:{'Content-Type':'application/json','Token':getToken()},...o}).then(r=>r.json())}
+
+api('/api/taishan/banquet/rooms').then(res=>{
+  const list=res.data||[];
+  const el=document.getElementById('rooms');
+  if(!list.length){el.innerHTML='<div style="text-align:center;padding:40px;color:#999">暂无包间</div>';return}
+  el.innerHTML=list.map(r=>{
+    const facilities=r.facilities?(typeof r.facilities==='string'?r.facilities.split(','):r.facilities):[];
+    return `<div class="room-card">
+      <img class="room-img" src="${r.image||''}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 160%22><rect fill=%22%23f5f5f5%22 width=%22400%22 height=%22160%22/><text x=%22200%22 y=%2284%22 text-anchor=%22middle%22 fill=%22%23ccc%22 font-size=%2216%22>包间图片</text></svg>'">
+      <div class="room-info">
+        <h3>${r.name}</h3>
+        <div class="room-meta">
+          <span>👥 容纳${r.capacity}人</span>
+          <span>💰 最低消费¥${Number(r.min_consumption||0).toFixed(0)}</span>
+        </div>
+        <div class="room-price">¥${Number(r.price).toFixed(0)}<small>/场</small></div>
+        <div class="room-desc">${r.description||''}</div>
+        ${facilities.length?`<div class="room-facilities">${facilities.map(f=>`<span>${f.trim()}</span>`).join('')}</div>`:''}
+        <button class="book-btn" onclick="openBooking(${r.id},'${r.name}',${r.price})">立即预约</button>
+      </div>
+    </div>`;
+  }).join('');
+})
+
+function openBooking(id,name,price){
+  selectedRoomId=id;
+  document.getElementById('selectedRoom').innerHTML=`<div style="padding:10px;background:#f0f5ff;border-radius:8px;margin-bottom:14px;font-size:14px">预约包间: <b>${name}</b> · ¥${Number(price).toFixed(0)}/场</div>`;
+  document.getElementById('bookDate').value=new Date(Date.now()+86400000).toISOString().split('T')[0];
+  document.getElementById('bookingModal').classList.add('show');
+}
+function closeModal(){document.getElementById('bookingModal').classList.remove('show')}
+
+function submitBooking(){
+  if(!selectedRoomId)return;
+  const data={
+    room_id:selectedRoomId,
+    booking_date:document.getElementById('bookDate').value,
+    start_time:document.getElementById('bookStart').value,
+    end_time:document.getElementById('bookEnd').value,
+    guest_count:parseInt(document.getElementById('bookGuests').value)||0,
+    custom_request:document.getElementById('bookRequest').value
+  };
+  if(!data.booking_date){alert('请选择日期');return}
+  api('/api/taishan/banquet/bookings',{method:'POST',body:JSON.stringify(data)}).then(res=>{
+    if(res.success){alert('预约成功!');closeModal()}
+    else alert(res.msg||'预约失败')
+  })
+}
+</script>
+</body>
+</html>

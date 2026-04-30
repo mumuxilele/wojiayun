@@ -1,0 +1,316 @@
+/* ============================================
+   泰山城投 - 管理端专用样式
+   ============================================ */
+
+/* === 管理端布局 === */
+.admin-layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* === 侧边栏 === */
+.sidebar {
+    width: 220px;
+    background: #001529;
+    color: #fff;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    overflow-y: auto;
+    z-index: 100;
+}
+.sidebar-logo {
+    padding: 20px 16px;
+    font-size: 18px;
+    font-weight: 600;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.sidebar-logo .icon { font-size: 24px; }
+.sidebar-menu { padding: 8px 0; }
+.menu-group-title {
+    padding: 12px 16px 4px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    color: rgba(255,255,255,0.65);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+}
+.menu-item:hover { color: #fff; background: rgba(255,255,255,0.05); }
+.menu-item.active {
+    color: #fff;
+    background: var(--ts-primary);
+}
+.menu-item .icon { font-size: 16px; width: 20px; text-align: center; }
+
+/* === 主内容区 === */
+.admin-main {
+    flex: 1;
+    margin-left: 220px;
+    background: #f0f2f5;
+}
+
+/* === 顶部栏 === */
+.admin-topbar {
+    background: #fff;
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+.admin-topbar .title { font-size: 16px; font-weight: 600; }
+.admin-topbar .user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+/* === 页面内容 === */
+.admin-content { padding: 24px; }
+
+/* === 仪表盘卡片 === */
+.dashboard-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+.dashboard-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+.dashboard-card .card-title {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 8px;
+}
+.dashboard-card .card-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #333;
+}
+.dashboard-card .card-footer {
+    margin-top: 12px;
+    font-size: 12px;
+    color: #999;
+}
+
+/* === 管理表格 === */
+.admin-table {
+    width: 100%;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+.admin-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.admin-table th, .admin-table td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 14px;
+}
+.admin-table th {
+    background: #fafafa;
+    font-weight: 500;
+    color: #666;
+}
+.admin-table td { color: #333; }
+.admin-table tr:hover td { background: #f5f5f5; }
+.admin-table .actions { display: flex; gap: 8px; }
+
+/* === 表格工具栏 === */
+.table-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+.table-toolbar .left { display: flex; gap: 10px; }
+.table-toolbar .right { display: flex; gap: 10px; }
+
+/* === 分页 === */
+.pagination {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    padding: 16px;
+}
+.pagination .page-btn {
+    padding: 6px 12px;
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 13px;
+}
+.pagination .page-btn.active {
+    background: var(--ts-primary);
+    color: #fff;
+    border-color: var(--ts-primary);
+}
+.pagination .page-info { font-size: 13px; color: #666; }
+
+/* === 管理端弹窗 === */
+.admin-modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 1000;
+    display: none;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 100px;
+}
+.admin-modal.show { display: flex; }
+.admin-modal-content {
+    background: #fff;
+    border-radius: 8px;
+    width: 520px;
+    max-height: 70vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.admin-modal-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.admin-modal-header h3 { font-size: 16px; font-weight: 600; }
+.admin-modal-header .close {
+    cursor: pointer;
+    font-size: 18px;
+    color: #999;
+    background: none;
+    border: none;
+}
+.admin-modal-body { padding: 24px; }
+.admin-modal-footer {
+    padding: 12px 24px;
+    border-top: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* === 管理端表单 === */
+.admin-form .form-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+.admin-form .form-row .form-group { flex: 1; }
+.admin-form label {
+    display: block;
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+.admin-form .required::after {
+    content: '*';
+    color: #ff4d4f;
+    margin-left: 4px;
+}
+.admin-form input, .admin-form select, .admin-form textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.admin-form input:focus, .admin-form select:focus, .admin-form textarea:focus {
+    border-color: var(--ts-primary);
+    box-shadow: 0 0 0 2px rgba(24,144,255,0.1);
+}
+.admin-form textarea { height: 80px; resize: vertical; }
+
+/* === 管理端按钮 === */
+.admin-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    border: 1px solid #d9d9d9;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.admin-btn-primary {
+    background: var(--ts-primary);
+    color: #fff;
+    border-color: var(--ts-primary);
+}
+.admin-btn-primary:hover { background: var(--ts-primary-dark); }
+.admin-btn-danger { color: var(--ts-danger); border-color: var(--ts-danger); }
+.admin-btn-danger:hover { background: #fff1f0; }
+.admin-btn-success { color: var(--ts-success); border-color: var(--ts-success); }
+.admin-btn-success:hover { background: #f6ffed; }
+
+/* === 状态标签 (管理端) === */
+.admin-status {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+.admin-status-success { background: #f6ffed; color: #52c41a; }
+.admin-status-warning { background: #fff7e6; color: #faad14; }
+.admin-status-error { background: #fff1f0; color: #ff4d4f; }
+.admin-status-info { background: #e6f7ff; color: #1890ff; }
+.admin-status-default { background: #f5f5f5; color: #999; }
+
+/* === 统计图表区 === */
+.chart-container {
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    margin-bottom: 16px;
+}
+.chart-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: #333;
+}
+
+/* === 响应式 === */
+@media (max-width: 1200px) {
+    .dashboard-cards { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+    .sidebar { display: none; }
+    .admin-main { margin-left: 0; }
+    .dashboard-cards { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>泰山城投 - 员工工作台</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/business-common/static/css/taishan-base.css">
+    <link rel="stylesheet" href="/business-common/static/css/taishan-staff.css">
+</head>
+<body>
+    <div class="staff-header">
+        <h1>泰山城投 · 员工工作台</h1>
+        <div class="subtitle" id="staffName">员工端</div>
+    </div>
+    
+    <div class="staff-stats">
+        <div class="stat-item">
+            <div class="num" id="todayOrders">0</div>
+            <div class="label">今日订单</div>
+        </div>
+        <div class="stat-item">
+            <div class="num" id="pendingOrders">0</div>
+            <div class="label">待处理</div>
+        </div>
+        <div class="stat-item">
+            <div class="num" id="todayBookings">0</div>
+            <div class="label">今日预约</div>
+        </div>
+    </div>
+    
+    <div class="staff-tabs" id="moduleTabs">
+        <div class="staff-tab active" data-module="cafeteria">食堂</div>
+        <div class="staff-tab" data-module="banquet">包间</div>
+        <div class="staff-tab" data-module="drink">饮品</div>
+        <div class="staff-tab" data-module="sports">场馆</div>
+        <div class="staff-tab" data-module="carwash">洗车</div>
+        <div class="staff-tab" data-module="laundry">洗衣</div>
+        <div class="staff-tab" data-module="member">会员</div>
+        <div class="staff-tab" data-module="community">社区</div>
+    </div>
+    
+    <div class="content" id="mainContent">
+        <!-- 动态内容区 -->
+    </div>
+    
+    <!-- 状态更新弹窗 -->
+    <div class="modal-overlay" id="statusModal">
+        <div class="modal">
+            <h3>更新状态</h3>
+            <div class="form-group">
+                <label>选择新状态</label>
+                <select class="form-control" id="newStatus"></select>
+            </div>
+            <div class="form-group" id="remarkGroup" style="display:none;">
+                <label>备注</label>
+                <textarea class="form-control" id="statusRemark" placeholder="请输入备注信息"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-outline" onclick="closeModal()">取消</button>
+                <button class="btn btn-primary" onclick="confirmStatusUpdate()">确认</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 积分发放弹窗 -->
+    <div class="modal-overlay" id="pointsModal">
+        <div class="modal">
+            <h3>发放积分</h3>
+            <div class="form-group">
+                <label>用户ID</label>
+                <input type="text" class="form-control" id="pointsUserId" placeholder="请输入用户ID">
+            </div>
+            <div class="form-group">
+                <label>积分数量</label>
+                <input type="number" class="form-control" id="pointsAmount" placeholder="请输入积分数量">
+            </div>
+            <div class="form-group">
+                <label>说明</label>
+                <textarea class="form-control" id="pointsDesc" placeholder="请输入积分发放说明"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-outline" onclick="closePointsModal()">取消</button>
+                <button class="btn btn-primary" onclick="confirmGrantPoints()">确认发放</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+        let currentModule = 'cafeteria';
+        let currentStatus = '';
+        let currentPage = 1;
+        
+        function getToken() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('access_token') || localStorage.getItem('staff_token') || '';
+        }
+        
+        async function api(url, options = {}) {
+            const token = getToken();
+            const separator = url.includes('?') ? '&' : '?';
+            const fullUrl = `${API_BASE}${url}${separator}access_token=${token}`;
+            
+            try {
+                const resp = await fetch(fullUrl, {
+                    headers: { 'Content-Type': 'application/json', 'Token': token },
+                    ...options
+                });
+                return await resp.json();
+            } catch (e) {
+                console.error('API Error:', e);
+                return { success: false, msg: '网络错误' };
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            initTabs();
+            loadModule('cafeteria');
+        });
+        
+        function initTabs() {
+            document.querySelectorAll('.staff-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.staff-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    currentModule = tab.dataset.module;
+                    currentPage = 1;
+                    currentStatus = '';
+                    loadModule(currentModule);
+                });
+            });
+        }
+        
+        function loadModule(module) {
+            switch(module) {
+                case 'cafeteria': case 'drink': case 'carwash': case 'laundry':
+                    renderOrderModule(module); break;
+                case 'banquet': case 'sports':
+                    renderBookingModule(module); break;
+                case 'member':
+                    renderMemberModule(); break;
+                case 'community':
+                    renderCommunityModule(); break;
+            }
+        }
+        
+        function renderOrderModule(module) {
+            const statuses = {
+                cafeteria: [{ value: '', label: '全部' }, { value: 'pending', label: '待付款' }, { value: 'paid', label: '已付款' }, { value: 'cooking', label: '制作中' }, { value: 'completed', label: '已完成' }, { value: 'cancelled', label: '已取消' }],
+                drink: [{ value: '', label: '全部' }, { value: 'pending', label: '待付款' }, { value: 'paid', label: '已付款' }, { value: 'making', label: '制作中' }, { value: 'delivering', label: '配送中' }, { value: 'completed', label: '已完成' }, { value: 'cancelled', label: '已取消' }],
+                carwash: [{ value: '', label: '全部' }, { value: 'pending', label: '待付款' }, { value: 'paid', label: '已付款' }, { value: 'washing', label: '清洗中' }, { value: 'completed', label: '已完成' }, { value: 'cancelled', label: '已取消' }],
+                laundry: [{ value: '', label: '全部' }, { value: 'pending', label: '待付款' }, { value: 'paid', label: '已付款' }, { value: 'washing', label: '清洗中' }, { value: 'delivering', label: '配送中' }, { value: 'completed', label: '已完成' }, { value: 'cancelled', label: '已取消' }]
+            };
+            
+            document.getElementById('mainContent').innerHTML = `
+                <div class="filter-bar" id="statusFilter">
+                    ${statuses[module].map(s => `<div class="filter-btn ${s.value === currentStatus ? 'active' : ''}" data-status="${s.value}">${s.label}</div>`).join('')}
+                </div>
+                <div id="orderList"><div class="loading">加载中...</div></div>
+            `;
+            
+            document.querySelectorAll('#statusFilter .filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('#statusFilter .filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentStatus = btn.dataset.status;
+                    currentPage = 1;
+                    loadOrders(module);
+                });
+            });
+            
+            loadOrders(module);
+        }
+        
+        async function loadOrders(module) {
+            const listEl = document.getElementById('orderList');
+            listEl.innerHTML = '<div class="loading">加载中...</div>';
+            
+            const url = `/api/staff/taishan/${module}/orders?page=${currentPage}&page_size=20${currentStatus ? '&status=' + currentStatus : ''}`;
+            const res = await api(url);
+            
+            if (!res.success || !res.data || res.data.length === 0) {
+                listEl.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>暂无订单数据</p></div>';
+                return;
+            }
+            
+            const statusLabels = { pending: '待付款', paid: '已付款', cooking: '制作中', making: '制作中', washing: '清洗中', delivering: '配送中', completed: '已完成', cancelled: '已取消' };
+            const nextStatusMap = {
+                cafeteria: { paid: 'cooking', cooking: 'completed' },
+                drink: { paid: 'making', making: 'delivering', delivering: 'completed' },
+                carwash: { paid: 'washing', washing: 'completed' },
+                laundry: { paid: 'washing', washing: 'delivering', delivering: 'completed' }
+            };
+            
+            listEl.innerHTML = res.data.map(order => `
+                <div class="order-card">
+                    <div class="order-header">
+                        <span class="order-no">${order.order_no || '#' + order.id}</span>
+                        <span class="status-badge status-${order.status}">${statusLabels[order.status] || order.status}</span>
+                    </div>
+                    <div class="order-info">
+                        <div class="info-row"><span class="info-label">用户</span><span class="info-value">${order.user_name || order.user_id || '-'}</span></div>
+                        ${order.table_no ? `<div class="info-row"><span class="info-label">桌号</span><span class="info-value">${order.table_no}</span></div>` : ''}
+                        ${order.license_plate ? `<div class="info-row"><span class="info-label">车牌号</span><span class="info-value">${order.license_plate}</span></div>` : ''}
+                        <div class="info-row"><span class="info-label">金额</span><span class="info-value price">¥${(order.total_amount || 0).toFixed(2)}</span></div>
+                        <div class="info-row"><span class="info-label">时间</span><span class="info-value">${order.created_at || '-'}</span></div>
+                    </div>
+                    <div class="order-actions">
+                        ${nextStatusMap[module] && nextStatusMap[module][order.status] ? `<button class="btn btn-primary" onclick="updateOrderStatus('${module}', ${order.id}, '${nextStatusMap[module][order.status]}')">${statusLabels[nextStatusMap[module][order.status]] || '下一步'}</button>` : ''}
+                        ${order.status !== 'completed' && order.status !== 'cancelled' ? `<button class="btn btn-danger" onclick="updateOrderStatus('${module}', ${order.id}, 'cancelled')">取消</button>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function renderBookingModule(module) {
+            const statuses = [{ value: '', label: '全部' }, { value: 'pending', label: '待确认' }, { value: 'confirmed', label: '已确认' }, { value: 'using', label: '使用中' }, { value: 'completed', label: '已完成' }, { value: 'cancelled', label: '已取消' }, { value: 'rejected', label: '已拒绝' }];
+            
+            document.getElementById('mainContent').innerHTML = `
+                <div class="filter-bar" id="statusFilter">
+                    ${statuses.map(s => `<div class="filter-btn ${s.value === currentStatus ? 'active' : ''}" data-status="${s.value}">${s.label}</div>`).join('')}
+                </div>
+                <div id="bookingList"><div class="loading">加载中...</div></div>
+            `;
+            
+            document.querySelectorAll('#statusFilter .filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('#statusFilter .filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentStatus = btn.dataset.status;
+                    currentPage = 1;
+                    loadBookings(module);
+                });
+            });
+            
+            loadBookings(module);
+        }
+        
+        async function loadBookings(module) {
+            const listEl = document.getElementById('bookingList');
+            listEl.innerHTML = '<div class="loading">加载中...</div>';
+            
+            const url = `/api/staff/taishan/${module}/bookings?page=${currentPage}&page_size=20${currentStatus ? '&status=' + currentStatus : ''}`;
+            const res = await api(url);
+            
+            if (!res.success || !res.data || res.data.length === 0) {
+                listEl.innerHTML = '<div class="empty-state"><i class="fas fa-calendar-check"></i><p>暂无预约数据</p></div>';
+                return;
+            }
+            
+            const statusLabels = { pending: '待确认', confirmed: '已确认', using: '使用中', completed: '已完成', cancelled: '已取消', rejected: '已拒绝' };
+            
+            listEl.innerHTML = res.data.map(booking => `
+                <div class="order-card">
+                    <div class="order-header">
+                        <span class="order-no">${booking.booking_no || '#' + booking.id}</span>
+                        <span class="status-badge status-${booking.status}">${statusLabels[booking.status] || booking.status}</span>
+                    </div>
+                    <div class="order-info">
+                        <div class="info-row"><span class="info-label">${module === 'banquet' ? '包间' : '场馆'}</span><span class="info-value">${booking.room_name || booking.venue_name || '-'}</span></div>
+                        <div class="info-row"><span class="info-label">用户</span><span class="info-value">${booking.user_name || booking.user_id || '-'}</span></div>
+                        <div class="info-row"><span class="info-label">预约日期</span><span class="info-value">${booking.booking_date || '-'}</span></div>
+                        <div class="info-row"><span class="info-label">时间段</span><span class="info-value">${booking.start_time || ''} - ${booking.end_time || ''}</span></div>
+                        ${booking.contact_phone ? `<div class="info-row"><span class="info-label">联系电话</span><span class="info-value">${booking.contact_phone}</span></div>` : ''}
+                    </div>
+                    <div class="order-actions">
+                        ${booking.status === 'pending' ? `<button class="btn btn-success" onclick="updateBookingStatus('${module}', ${booking.id}, 'confirmed')">确认</button><button class="btn btn-danger" onclick="updateBookingStatus('${module}', ${booking.id}, 'rejected')">拒绝</button>` : ''}
+                        ${booking.status === 'confirmed' ? `<button class="btn btn-primary" onclick="updateBookingStatus('${module}', ${booking.id}, 'using')">开始使用</button>` : ''}
+                        ${booking.status === 'using' ? `<button class="btn btn-success" onclick="updateBookingStatus('${module}', ${booking.id}, 'completed')">完成</button>` : ''}
+                        ${booking.status !== 'completed' && booking.status !== 'cancelled' && booking.status !== 'rejected' ? `<button class="btn btn-outline" onclick="updateBookingStatus('${module}', ${booking.id}, 'cancelled')">取消</button>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function renderMemberModule() {
+            document.getElementById('mainContent').innerHTML = `
+                <div class="member-search">
+                    <div class="search-bar">
+                        <input type="text" class="search-input" id="memberSearchInput" placeholder="输入用户ID查询会员">
+                        <button class="btn btn-primary" onclick="searchMember()">查询</button>
+                    </div>
+                    <div id="memberResult"></div>
+                    <button class="btn btn-warning btn-block mt-16" onclick="openPointsModal()"><i class="fas fa-gift"></i> 发放积分</button>
+                </div>
+            `;
+        }
+        
+        function renderCommunityModule() {
+            document.getElementById('mainContent').innerHTML = `
+                <div class="search-bar">
+                    <input type="text" class="search-input" id="activityIdInput" placeholder="输入活动ID查看报名">
+                    <button class="btn btn-primary" onclick="loadSignups()">查询</button>
+                </div>
+                <div id="signupList"></div>
+            `;
+        }
+        
+        async function loadSignups() {
+            const activityId = document.getElementById('activityIdInput').value.trim();
+            if (!activityId) { alert('请输入活动ID'); return; }
+            
+            const listEl = document.getElementById('signupList');
+            listEl.innerHTML = '<div class="loading">加载中...</div>';
+            
+            const res = await api(`/api/staff/taishan/community/activities/${activityId}/signups`);
+            
+            if (!res.success || !res.data || res.data.length === 0) {
+                listEl.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><p>暂无报名数据</p></div>';
+                return;
+            }
+            
+            listEl.innerHTML = res.data.map(signup => `
+                <div class="activity-signup">
+                    <div class="signup-header">
+                        <span class="signup-name">${signup.user_name || '用户' + signup.user_id}</span>
+                        <span class="signup-time">${signup.created_at || ''}</span>
+                    </div>
+                    <div class="signup-phone">联系电话: ${signup.phone || '-'}</div>
+                </div>
+            `).join('');
+        }
+        
+        async function updateOrderStatus(module, orderId, status) {
+            if (!confirm(`确认将订单状态更新为"${getStatusLabel(status)}"吗？`)) return;
+            const res = await api(`/api/staff/taishan/${module}/orders/${orderId}/status`, { method: 'POST', body: JSON.stringify({ status }) });
+            if (res.success) { alert('状态更新成功'); loadOrders(module); } else { alert(res.msg || '更新失败'); }
+        }
+        
+        async function updateBookingStatus(module, bookingId, status) {
+            if (!confirm(`确认将预约状态更新为"${getStatusLabel(status)}"吗？`)) return;
+            const res = await api(`/api/staff/taishan/${module}/bookings/${bookingId}/status`, { method: 'POST', body: JSON.stringify({ status }) });
+            if (res.success) { alert('状态更新成功'); loadBookings(module); } else { alert(res.msg || '更新失败'); }
+        }
+        
+        function getStatusLabel(status) {
+            const labels = { pending: '待处理', paid: '已付款', cooking: '制作中', making: '制作中', washing: '清洗中', delivering: '配送中', completed: '已完成', cancelled: '已取消', confirmed: '已确认', using: '使用中', rejected: '已拒绝' };
+            return labels[status] || status;
+        }
+        
+        function openPointsModal() { document.getElementById('pointsModal').classList.add('show'); }
+        function closePointsModal() { document.getElementById('pointsModal').classList.remove('show'); }
+        
+        async function confirmGrantPoints() {
+            const userId = document.getElementById('pointsUserId').value.trim();
+            const points = parseInt(document.getElementById('pointsAmount').value);
+            const desc = document.getElementById('pointsDesc').value.trim();
+            
+            if (!userId) { alert('请输入用户ID'); return; }
+            if (!points || points <= 0) { alert('请输入有效的积分数量'); return; }
+            
+            const res = await api('/api/staff/taishan/member/grant-points', { method: 'POST', body: JSON.stringify({ user_id: userId, points, description: desc || '手动发放' }) });
+            if (res.success) { alert('积分发放成功'); closePointsModal(); } else { alert(res.msg || '发放失败'); }
+        }
+        
+        function closeModal() { document.getElementById('statusModal').classList.remove('show'); }
+    </script>
+</body>
+</html>

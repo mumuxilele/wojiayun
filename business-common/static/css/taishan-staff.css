@@ -1,0 +1,137 @@
+/* ============================================
+   泰山城投 - 员工端 H5 专用样式
+   ============================================ */
+
+/* === 员工端头部 === */
+.staff-header {
+    background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+    color: #fff;
+    padding: 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+.staff-header h1 { font-size: 20px; font-weight: 600; }
+.staff-header .subtitle { font-size: 13px; opacity: 0.8; margin-top: 4px; }
+
+/* === 员工端统计栏 === */
+.staff-stats {
+    display: flex;
+    background: #fff;
+    margin: -10px 15px 15px;
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    position: relative;
+    z-index: 10;
+}
+.staff-stats .stat-item { flex: 1; text-align: center; }
+.staff-stats .stat-item .num { font-size: 24px; font-weight: 700; color: #1e3a5f; }
+.staff-stats .stat-item .label { font-size: 12px; color: #999; margin-top: 4px; }
+
+/* === 员工端Tab === */
+.staff-tabs {
+    display: flex;
+    background: #fff;
+    padding: 0 15px;
+    border-bottom: 1px solid #eee;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+.staff-tab {
+    padding: 12px 16px;
+    font-size: 14px;
+    color: #666;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.3s;
+    flex-shrink: 0;
+}
+.staff-tab.active {
+    color: #1e3a5f;
+    border-bottom-color: #1e3a5f;
+    font-weight: 600;
+}
+
+/* === 订单卡片 (员工端) === */
+.order-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.order-card .order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+.order-card .order-no { font-size: 13px; color: #999; }
+.order-card .order-status {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+}
+.order-card .order-info { margin-bottom: 12px; }
+.order-card .order-info .info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 14px;
+}
+.order-card .order-info .info-label { color: #999; }
+.order-card .order-info .info-value { color: #333; font-weight: 500; }
+.order-card .order-items {
+    background: #f9f9f9;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 12px;
+}
+.order-card .order-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 13px;
+}
+.order-card .order-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+/* === 会员搜索 === */
+.member-search {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 15px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.member-info {
+    background: #f0f7ff;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 10px;
+}
+.member-info .name { font-size: 16px; font-weight: 600; color: #1e3a5f; }
+.member-info .points { font-size: 24px; font-weight: 700; color: #f57c00; margin: 8px 0; }
+
+/* === 活动报名列表 === */
+.activity-signup {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.signup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.signup-name { font-size: 15px; font-weight: 600; }
+.signup-time { font-size: 12px; color: #999; }
+.signup-phone { font-size: 13px; color: #666; }

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>社区生活</title>
+    <link rel="stylesheet" href="/business-common/static/css/taishan-base.css">
+    <link rel="stylesheet" href="/business-common/static/css/taishan-user.css">
+</head>
+<body>
+    <div class="header-gradient" style="background: linear-gradient(135deg, #1890ff, #096dd9);">
+        <h1>社区生活</h1>
+        <p>品质生活，从社区开始</p>
+    </div>
+
+    <div class="grid">
+        <a class="grid-item" href="taishan_cafeteria.html">
+            <div class="grid-icon" style="background:#fff7e6">🍱</div>
+            <span>社区食堂</span>
+        </a>
+        <a class="grid-item" href="taishan_banquet.html">
+            <div class="grid-icon" style="background:#f6ffed">🍽️</div>
+            <span>私宴包间</span>
+        </a>
+        <a class="grid-item" href="taishan_drink.html">
+            <div class="grid-icon" style="background:#e6f7ff">🧋</div>
+            <span>大堂饮品</span>
+        </a>
+        <a class="grid-item" href="taishan_sports.html">
+            <div class="grid-icon" style="background:#fff1f0">⚽</div>
+            <span>运动场馆</span>
+        </a>
+        <a class="grid-item" href="taishan_carwash.html">
+            <div class="grid-icon" style="background:#f9f0ff">🚗</div>
+            <span>洗车服务</span>
+        </a>
+        <a class="grid-item" href="taishan_laundry.html">
+            <div class="grid-icon" style="background:#e6fffb">👔</div>
+            <span>洗衣服务</span>
+        </a>
+        <a class="grid-item" href="taishan_member.html">
+            <div class="grid-icon" style="background:#fffbe6">💳</div>
+            <span>会员中心</span>
+        </a>
+        <a class="grid-item" href="taishan_community.html">
+            <div class="grid-icon" style="background:#f0f5ff">🏘️</div>
+            <span>社区服务</span>
+        </a>
+    </div>
+
+    <div class="section">
+        <div class="section-title">热门推荐 <a href="taishan_cafeteria.html">查看更多 ›</a></div>
+        <div class="card-list p-16" id="hotList">
+            <div class="loading">加载中...</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">近期活动 <a href="taishan_community.html">查看更多 ›</a></div>
+        <div class="card-list p-16" id="activityList">
+            <div class="loading">加载中...</div>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <a class="nav-item active" href="taishan_index.html"><div class="icon">🏠</div>首页</a>
+        <a class="nav-item" href="taishan_orders.html"><div class="icon">📋</div>订单</a>
+        <a class="nav-item" href="taishan_member.html"><div class="icon">💳</div>会员</a>
+        <a class="nav-item" href="taishan_community.html"><div class="icon">🏘️</div>社区</a>
+        <a class="nav-item" href="profile.html"><div class="icon">👤</div>我的</a>
+    </div>
+
+    <script>
+        const API_BASE = '';
+        function getToken() { return localStorage.getItem('access_token') || ''; }
+        function api(path) {
+            return fetch(API_BASE + path + (path.includes('?') ? '&' : '?') + 'access_token=' + getToken())
+                .then(r => r.json());
+        }
+
+        // 加载热门推荐
+        api('/api/taishan/cafeteria/dishes').then(res => {
+            const list = (res.data || []).slice(0, 4);
+            const el = document.getElementById('hotList');
+            if (!list.length) { el.innerHTML = '<div class="empty-state"><p>暂无推荐</p></div>'; return; }
+            el.innerHTML = list.map(d => `
+                <div class="card" style="display:flex;gap:12px;padding:14px 0;border-bottom:1px solid #f5f5f5">
+                    <img src="${d.image || ''}" style="width:80px;height:80px;border-radius:8px;background:#f0f0f0;object-fit:cover" onerror="this.style.display='none'">
+                    <div style="flex:1">
+                        <h3 style="font-size:14px;font-weight:500">${d.name}</h3>
+                        <p style="font-size:12px;color:#999;margin-top:4px">${d.description || ''}</p>
+                        <div class="price mt-8">¥${Number(d.price || 0).toFixed(2)}<small>/份</small></div>
+                    </div>
+                </div>
+            `).join('');
+        }).catch(() => {});
+
+        // 加载近期活动
+        api('/api/taishan/community/activities?page_size=3').then(res => {
+            const list = (res.data || []).slice(0, 3);
+            const el = document.getElementById('activityList');
+            if (!list.length) { el.innerHTML = '<div class="empty-state"><p>暂无活动</p></div>'; return; }
+            el.innerHTML = list.map(a => `
+                <div class="card" style="display:flex;gap:12px;padding:14px 0;border-bottom:1px solid #f5f5f5">
+                    <div style="flex:1">
+                        <h3 style="font-size:14px;font-weight:500">${a.title}</h3>
+                        <p style="font-size:12px;color:#999;margin-top:4px">📅 ${a.start_date || ''} · 📍 ${a.location || ''}</p>
+                        <p style="font-size:12px;color:#1890ff;margin-top:4px">剩余名额: ${a.max_participants - (a.current_participants || 0)}</p>
+                    </div>
+                </div>
+            `).join('');
+        }).catch(() => {});
+    </script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>社区服务</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f5}
+.header{background:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e8e8e8;position:sticky;top:0;z-index:10}
+.back{font-size:22px;cursor:pointer;background:none;border:none}.header h1{font-size:17px}
+.tabs{display:flex;background:#fff;border-bottom:1px solid #e8e8e8}
+.tab{flex:1;padding:12px;text-align:center;font-size:13px;color:#666;cursor:pointer;border:none;background:none;border-bottom:2px solid transparent}
+.tab.active{color:#1890ff;border-bottom-color:#1890ff}
+.content{padding:12px}
+.act-card{background:#fff;border-radius:12px;margin-bottom:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.act-card img{width:100%;height:140px;object-fit:cover;background:#f0f0f0}
+.act-card .info{padding:14px}
+.act-card .info h3{font-size:15px;margin-bottom:6px}
+.act-card .info .meta{font-size:12px;color:#666;margin-bottom:4px}
+.act-card .info .status{display:inline-block;font-size:11px;padding:2px 8px;border-radius:4px;margin-bottom:8px}
+.status-signup{background:#f6ffed;color:#52c41a}
+.status-ongoing{background:#e6f7ff;color:#1890ff}
+.status-ended{background:#f5f5f5;color:#999}
+.signup-btn{width:100%;padding:10px;background:#1890ff;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer}
+.svc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.svc-card{background:#fff;border-radius:10px;padding:14px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.svc-card .icon{font-size:28px;margin-bottom:8px}
+.svc-card h3{font-size:14px;margin-bottom:4px}
+.svc-card .price{font-size:12px;color:#ff4d4f}
+.post-card{background:#fff;border-radius:10px;padding:14px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.post-card .user{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.post-card .avatar{width:32px;height:32px;border-radius:50%;background:#e6f7ff;display:flex;align-items:center;justify-content:center;font-size:14px}
+.post-card .uname{font-size:13px;font-weight:500}
+.post-card h3{font-size:14px;margin-bottom:6px}
+.post-card .text{font-size:13px;color:#666;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.post-card .price-tag{color:#ff4d4f;font-size:15px;font-weight:600;margin-bottom:8px}
+.post-card .footer{display:flex;gap:16px;font-size:12px;color:#999}
+.fab{position:fixed;bottom:80px;right:16px;width:48px;height:48px;border-radius:50%;background:#1890ff;color:#fff;border:none;font-size:24px;cursor:pointer;box-shadow:0 4px 12px rgba(24,144,255,.4);z-index:10}
+</style>
+</head>
+<body>
+<div class="header"><button class="back" onclick="history.back()">‹</button><h1>社区服务</h1></div>
+<div class="tabs">
+<button class="tab active" onclick="switchTab(this,'activities')">社区活动</button>
+<button class="tab" onclick="switchTab(this,'services')">便民服务</button>
+<button class="tab" onclick="switchTab(this,'posts')">邻里圈</button>
+</div>
+<div class="content" id="content"></div>
+<button class="fab" id="fab" onclick="location.href='taishan_post.html'" style="display:none">+</button>
+
+<script>
+const API_BASE='';let currentTab='activities';
+function getToken(){return localStorage.getItem('access_token')||''}
+function api(p,o={}){return fetch(API_BASE+p+(p.includes('?')?'&':'?')+'access_token='+getToken(),{headers:{'Content-Type':'application/json','Token':getToken'},...o}).then(r=>r.json())}
+
+function switchTab(btn,tab){
+document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');
+currentTab=tab;document.getElementById('fab').style.display=tab==='posts'?'block':'none';loadTab();
+}
+
+function loadTab(){
+if(currentTab==='activities')loadActivities();
+else if(currentTab==='services')loadServices();
+else loadPosts();
+}
+
+function loadActivities(){
+api('/api/taishan/community/activities').then(res=>{
+const list=res.data||[];const el=document.getElementById('content');
+if(!list.length){el.innerHTML='<div style="text-align:center;padding:40px;color:#999">暂无活动</div>';return}
+el.innerHTML=list.map(a=>{
+const st=a.status==1?'报名中':a.status==2?'进行中':'已结束';
+const stCls=a.status==1?'status-signup':a.status==2?'status-ongoing':'status-ended';
+return `<div class="act-card"><img src="${a.cover||''}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 140%22><rect fill=%22%23f0f5ff%22 width=%22400%22 height=%22140%22/><text x=%22200%22 y=%2274%22 text-anchor=%22middle%22 fill=%22%231890ff%22 font-size=%2216%22>社区活动</text></svg>'">
+<div class="info"><h3>${a.title}</h3>
+<div class="meta">📍 ${a.location||'待定'} · 📅 ${a.start_time?new Date(a.start_time).toLocaleString():''}</div>
+<span class="status ${stCls}">${st}</span>
+<div class="meta">已报名 ${a.current_participants||0}/${a.max_participants||'不限'}</div>
+${a.status==1?`<button class="signup-btn" onclick="signUp(${a.id})">立即报名</button>`:''}
+</div></div>`}).join('')})}
+
+function loadServices(){
+Promise.all([api('/api/taishan/community/categories'),api('/api/taishan/community/services')]).then(([catRes,svcRes])=>{
+const cats=catRes.data||[];const svcs=svcRes.data||[];
+const el=document.getElementById('content');
+let html='';
+cats.forEach(c=>{
+const catSvcs=svcs.filter(s=>s.category_id===c.id);
+if(catSvcs.length){html+=`<div style="margin-bottom:16px"><h3 style="font-size:14px;margin-bottom:10px;display:flex;align-items:center;gap:6px">${c.icon||'📌'} ${c.name}</h3>
+<div class="svc-grid">${catSvcs.map(s=>`<div class="svc-card"><div class="icon">${c.icon||'🔧'}</div><h3>${s.name}</h3>
+<div class="price">${s.price>0?'¥'+Number(s.price).toFixed(0)+(s.price_unit?'/'+s.price_unit:''):'面议'}</div>
+<div style="font-size:11px;color:#999;margin-top:4px">${s.contact_phone||''}</div>
+</div>`).join('')}</div></div>`}});
+el.innerHTML=html||'<div style="text-align:center;padding:40px;color:#999">暂无服务</div>';
+})}
+
+function loadPosts(){
+api('/api/taishan/community/posts?type=idle&page_size=50').then(res=>{
+const list=(res.data||{}).items||[];const el=document.getElementById('content');
+if(!list.length){el.innerHTML='<div style="text-align:center;padding:40px;color:#999">暂无帖子</div>';return}
+el.innerHTML=list.map(p=>`<div class="post-card"><div class="user"><div class="avatar">${(p.user_name||'?')[0]}</div><div class="uname">${p.user_name||'匿名'}</div></div>
+<h3>${p.title}</h3><div class="text">${p.content||''}</div>
+${p.price?`<div class="price-tag">¥${Number(p.price).toFixed(2)}</div>`:''}
+<div class="footer"><span>👁 ${p.view_count||0}</span><span>❤ ${p.like_count||0}</span><span>💬 ${p.comment_count||0}</span></div>
+</div>`).join('')})}
+
+function signUp(id){
+api(`/api/taishan/community/activities/${id}/signup`,{method:'POST',body:'{}'}).then(res=>{
+if(res.success)alert('报名成功!');else alert(res.msg||'报名失败');loadActivities()})}
+
+loadTab();
+</script>
+</body>
+</html>

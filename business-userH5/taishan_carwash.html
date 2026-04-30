@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>洗车服务</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f5}
+.header{background:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e8e8e8;position:sticky;top:0;z-index:10}
+.back{font-size:22px;cursor:pointer;background:none;border:none}.header h1{font-size:17px}
+.content{padding:12px}
+.svc-card{background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.svc-card h3{font-size:15px;margin-bottom:4px}
+.svc-card .desc{font-size:12px;color:#999;margin-bottom:8px}
+.svc-card .price{color:#ff4d4f;font-size:18px;font-weight:600;margin-bottom:12px}
+.svc-card .duration{font-size:12px;color:#666;margin-bottom:12px}
+.order-btn{width:100%;padding:10px;background:#1890ff;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:none;align-items:flex-end}.modal.show{display:flex}
+.modal-content{background:#fff;width:100%;border-radius:16px 16px 0 0;padding:20px}
+.modal-content h2{font-size:16px;margin-bottom:16px;display:flex;justify-content:space-between}.close{cursor:pointer;font-size:20px;color:#999}
+.form-group{margin-bottom:14px}.form-group label{display:block;font-size:13px;color:#660;margin-bottom:6px}
+.form-group input{width:100%;padding:10px;border:1px solid #e8e8e8;border-radius:8px;font-size:14px}
+.submit{width:100%;padding:14px;background:#1890ff;color:#fff;border:none;border-radius:10px;font-size:15px;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="header"><button class="back" onclick="history.back()">‹</button><h1>洗车服务</h1></div>
+<div class="content" id="services"><div style="text-align:center;padding:40px;color:#999">加载中...</div></div>
+
+<div class="modal" id="orderModal">
+<div class="modal-content">
+<h2>预约洗车 <span class="close" onclick="closeModal()">✕</span></h2>
+<div id="selectedSvc"></div>
+<div class="form-group"><label>车牌号</label><input type="text" id="carNo" placeholder="请输入车牌号"></div>
+<div class="form-group"><label>预约时间</label><input type="datetime-local" id="bookTime"></div>
+<div class="form-group"><label>备注</label><input type="text" id="remark" placeholder="选填"></div>
+<button class="submit" onclick="submitOrder()">提交订单</button>
+</div></div>
+
+<script>
+const API_BASE='';let selectedSvcId=null,selectedPrice=0;
+function getToken(){return localStorage.getItem('access_token')||''}
+function api(p,o={}){return fetch(API_BASE+p+(p.includes('?')?'&':'?')+'access_token='+getToken(),{headers:{'Content-Type':'application/json','Token':getToken()},...o}).then(r=>r.json())}
+
+api('/api/taishan/carwash/services').then(res=>{
+const list=res.data||[];const el=document.getElementById('services');
+if(!list.length){el.innerHTML='<div style="text-align:center;padding:40px;color:#999">暂无服务</div>';return}
+el.innerHTML=list.map(s=>`<div class="svc-card">
+<h3>${s.name}</h3><div class="desc">${s.description||''}</div>
+<div class="price">¥${Number(s.price).toFixed(2)}</div>
+<div class="duration">⏱ 预计${s.duration_minutes||30}分钟</div>
+<button class="order-btn" onclick="openOrder(${s.id},${s.price},'${s.name}')">立即预约</button>
+</div>`).join('')});
+
+function openOrder(id,price,name){selectedSvcId=id;selectedPrice=price;
+document.getElementById('selectedSvc').innerHTML=`<div style="padding:10px;background:#f0f5ff;border-radius:8px;margin-bottom:14px;font-size:14px">${name} · ¥${Number(price).toFixed(2)}</div>`;
+document.getElementById('orderModal').classList.add('show')}
+function closeModal(){document.getElementById('orderModal').classList.remove('show')}
+
+function submitOrder(){
+const data={service_id:selectedSvcId,car_no:document.getElementById('carNo').value,booking_time:document.getElementById('bookTime').value,remark:document.getElementById('remark').value};
+if(!data.car_no){alert('请输入车牌号');return}
+api('/api/taishan/carwash/orders',{method:'POST',body:JSON.stringify(data)}).then(res=>{
+if(res.success){alert('下单成功!');closeModal()}else alert(res.msg||'下单失败')})}
+</script>
+</body>
+</html>

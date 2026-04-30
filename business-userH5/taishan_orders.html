@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的订单</title>
+    <link rel="stylesheet" href="/business-common/static/css/taishan-base.css">
+    <link rel="stylesheet" href="/business-common/static/css/taishan-user.css">
+</head>
+<body>
+    <div class="page-header">
+        <button class="back" onclick="history.back()">‹</button>
+        <h1>我的订单</h1>
+    </div>
+    
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab(this,'cafeteria')">食堂</button>
+        <button class="tab" onclick="switchTab(this,'drink')">饮品</button>
+        <button class="tab" onclick="switchTab(this,'carwash')">洗车</button>
+        <button class="tab" onclick="switchTab(this,'laundry')">洗衣</button>
+        <button class="tab" onclick="switchTab(this,'banquet')">包间</button>
+        <button class="tab" onclick="switchTab(this,'sports')">场馆</button>
+    </div>
+    
+    <div class="content" id="content">
+        <div class="loading">加载中...</div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+        let currentModule = 'cafeteria';
+        
+        const statusMap = {
+            pending: '待支付', paid: '已支付', cooking: '制作中', making: '制作中',
+            washing: '服务中', completed: '已完成', cancelled: '已取消',
+            confirmed: '已确认', using: '使用中', delivered: '已送回',
+            delivering: '配送中', rejected: '已拒绝'
+        };
+        
+        const statusCls = {
+            pending: 'status-pending', paid: 'status-paid', cooking: 'status-cooking',
+            making: 'status-cooking', washing: 'status-cooking', completed: 'status-completed',
+            cancelled: 'status-cancelled', confirmed: 'status-confirmed', using: 'status-using',
+            delivered: 'status-delivered', delivering: 'status-delivering', rejected: 'status-rejected'
+        };
+        
+        function getToken() { return localStorage.getItem('access_token') || ''; }
+        
+        function api(path, opts = {}) {
+            return fetch(API_BASE + path + (path.includes('?') ? '&' : '?') + 'access_token=' + getToken(), {
+                headers: { 'Content-Type': 'application/json', 'Token': getToken() },
+                ...opts
+            }).then(r => r.json());
+        }
+
+        function switchTab(btn, module) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+            currentModule = module;
+            loadOrders();
+        }
+
+        function loadOrders() {
+            const urlMap = {
+                cafeteria: '/api/taishan/cafeteria/orders',
+                drink: '/api/taishan/drink/orders',
+                carwash: '/api/taishan/carwash/orders',
+                laundry: '/api/taishan/laundry/orders',
+                banquet: '/api/taishan/banquet/bookings',
+                sports: '/api/taishan/sports/bookings'
+            };
+            
+            api(urlMap[currentModule] + '?page_size=50').then(res => {
+                const list = (res.data || {}).items || [];
+                const el = document.getElementById('content');
+                
+                if (!list.length) {
+                    el.innerHTML = '<div class="empty-state"><p>暂无订单</p></div>';
+                    return;
+                }
+                
+                el.innerHTML = list.map(o => {
+                    const items = o.items ? (typeof o.items === 'string' ? JSON.parse(o.items) : o.items) : [];
+                    const itemText = items.map(i => `${i.name || i.clothing_type || ''}x${i.quantity || 1}`).join('、');
+                    const st = statusMap[o.status] || o.status;
+                    const stCls = statusCls[o.status] || 'status-completed';
+                    const orderNo = o.order_no || o.booking_no || '';
+                    const amount = o.total_amount || o.actual_amount || 0;
+                    
+                    return `
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-no">${orderNo}</span>
+                                <span class="status-badge ${stCls}">${st}</span>
+                            </div>
+                            <div style="font-size:13px;color:#333;margin-bottom:8px">${itemText || o.service_name || o.room_name || o.venue_name || '—'}</div>
+                            <div class="flex justify-between items-center">
+                                <span class="price">¥${Number(amount).toFixed(2)}</span>
+                                <span class="font-sm text-muted">${o.created_at ? new Date(o.created_at).toLocaleString() : ''}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            });
+        }
+
+        loadOrders();
+    </script>
+</body>
+</html>

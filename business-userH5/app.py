@@ -20,12 +20,18 @@ from business_common.repositories.booking_repository import BookingRepository
 from business_common.repositories.shop_repository import ShopRepository
 from business_common.repositories.product_repository import ProductRepository
 
+# 泰山城投模块
+from taishan_routes import taishan_user_bp
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
 
 app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
 
 error_handler.register_error_handlers(app)
+
+# 注册泰山城投蓝图
+app.register_blueprint(taishan_user_bp)
 
 
 # ============ 用户认证 ============

@@ -17,12 +17,18 @@ from business_common.services import StaffService
 from business_common.services import ApplicationService, OrderService
 from business_common.models import Application
 
+# 泰山城投模块
+from taishan_routes import taishan_staff_bp
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
 
 app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
 
 error_handler.register_error_handlers(app)
+
+# 注册泰山城投蓝图
+app.register_blueprint(taishan_staff_bp)
 
 
 # ============ 员工认证 ============

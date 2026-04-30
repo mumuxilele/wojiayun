@@ -5031,6 +5031,10 @@ def static_files(filename):
     return send_from_directory('.', filename)
 
 
+# 泰山城投模块
+from taishan_routes import taishan_admin_bp
+app.register_blueprint(taishan_admin_bp)
+
 # ============ 启动 ============
 
 if __name__ == '__main__':

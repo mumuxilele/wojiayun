@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>社区食堂</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f5;padding-bottom:70px}
+.header{background:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e8e8e8;position:sticky;top:0;z-index:10}
+.back{font-size:22px;cursor:pointer;background:none;border:none;color:#333}
+.header h1{font-size:17px;flex:1}
+.tabs{display:flex;background:#fff;overflow-x:auto;padding:0;border-bottom:1px solid #e8e8e8;position:sticky;top:49px;z-index:9}
+.tab{flex-shrink:0;padding:12px 16px;font-size:13px;color:#666;cursor:pointer;border:none;background:none;border-bottom:2px solid transparent}
+.tab.active{color:#1890ff;border-bottom-color:#1890ff;font-weight:500}
+.products{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:12px}
+.product{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.product img{width:100%;height:120px;object-fit:cover;background:#f0f0f0}
+.product-info{padding:10px}
+.product-info h3{font-size:14px;font-weight:500;margin-bottom:4px}
+.product-info .desc{font-size:11px;color:#999;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.product-info .tags{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px}
+.product-info .tag{font-size:10px;padding:2px 6px;background:#f0f5ff;color:#1890ff;border-radius:4px}
+.price-row{display:flex;align-items:center;justify-content:space-between}
+.price{color:#ff4d4f;font-size:16px;font-weight:600}
+.price small{font-size:11px}
+.original{font-size:11px;color:#999;text-decoration:line-through;margin-left:4px}
+.add-btn{width:24px;height:24px;border-radius:50%;background:#1890ff;color:#fff;border:none;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.cart-bar{position:fixed;bottom:50px;left:12px;right:12px;background:#333;border-radius:25px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;color:#fff;z-index:100;display:none}
+.cart-bar.show{display:flex}
+.cart-left{display:flex;align-items:center;gap:10px}
+.cart-icon{font-size:22px;position:relative}
+.cart-count{position:absolute;top:-6px;right:-10px;background:#ff4d4f;font-size:10px;padding:1px 5px;border-radius:10px}
+.cart-total{font-size:16px;font-weight:600}
+.cart-submit{background:#1890ff;border:none;color:#fff;padding:8px 20px;border-radius:20px;font-size:14px;cursor:pointer}
+.order-modal{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:flex-end}
+.order-modal.show{display:flex}
+.order-content{background:#fff;width:100%;border-radius:16px 16px 0 0;padding:20px;max-height:70vh;overflow-y:auto}
+.order-content h2{font-size:16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.order-content .close{cursor:pointer;font-size:20px;color:#999}
+.order-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f5f5f5}
+.order-item .name{font-size:14px}
+.order-item .qty{display:flex;align-items:center;gap:8px}
+.order-item .qty button{width:24px;height:24px;border-radius:50%;border:1px solid #ddd;background:#fff;cursor:pointer;font-size:14px}
+.order-item .qty span{min-width:20px;text-align:center}
+.order-total{text-align:right;padding:16px 0;font-size:16px;font-weight:600;color:#ff4d4f}
+.order-type{display:flex;gap:10px;margin-bottom:16px}
+.order-type button{flex:1;padding:10px;border:1px solid #e8e8e8;border-radius:8px;background:#fff;cursor:pointer;font-size:13px}
+.order-type button.active{border-color:#1890ff;color:#1890ff;background:#f0f5ff}
+.submit-order{width:100%;padding:14px;background:#1890ff;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:500;cursor:pointer;margin-top:12px}
+</style>
+</head>
+<body>
+<div class="header">
+  <button class="back" onclick="history.back()">‹</button>
+  <h1>社区食堂</h1>
+</div>
+<div class="tabs" id="tabs"></div>
+<div class="products" id="products"></div>
+
+<div class="cart-bar" id="cartBar">
+  <div class="cart-left">
+    <div class="cart-icon">🛒<span class="cart-count" id="cartCount">0</span></div>
+    <div class="cart-total" id="cartTotal">¥0.00</div>
+  </div>
+  <button class="cart-submit" onclick="openOrder()">去下单</button>
+</div>
+
+<div class="order-modal" id="orderModal">
+  <div class="order-content">
+    <h2>确认订单 <span class="close" onclick="closeOrder()">✕</span></h2>
+    <div class="order-type">
+      <button class="active" onclick="setOrderType(this,'dine_in')">堂食</button>
+      <button onclick="setOrderType(this,'takeout')">外卖</button>
+      <button onclick="setOrderType(this,'reserve')">预定</button>
+    </div>
+    <div id="orderItems"></div>
+    <div class="order-total">合计: <span id="orderTotal">¥0.00</span></div>
+    <input type="text" id="tableNo" placeholder="桌号(堂食填写)" style="width:100%;padding:10px;border:1px solid #e8e8e8;border-radius:8px;margin-bottom:10px;font-size:14px">
+    <input type="text" id="orderRemark" placeholder="备注(选填)" style="width:100%;padding:10px;border:1px solid #e8e8e8;border-radius:8px;margin-bottom:12px;font-size:14px">
+    <button class="submit-order" onclick="submitOrder()">提交订单</button>
+  </div>
+</div>
+
+<script>
+const API_BASE='';
+let cart={},categories=[],dishes=[],orderType='dine_in';
+function getToken(){return localStorage.getItem('access_token')||''}
+function api(path,opts={}){return fetch(API_BASE+path+(path.includes('?')?'&':'?')+'access_token='+getToken(),{headers:{'Content-Type':'application/json','Token':getToken()},...opts}).then(r=>r.json())}
+function fmt(p){return '¥'+Number(p).toFixed(2)}
+
+// 加载分类
+api('/api/taishan/cafeteria/categories').then(res=>{
+  categories=res.data||[];
+  const el=document.getElementById('tabs');
+  el.innerHTML='<button class="tab active" onclick="filterCat(this,0)">全部</button>'+categories.map(c=>`<button class="tab" onclick="filterCat(this,${c.id})">${c.name}</button>`).join('');
+})
+
+// 加载菜品
+api('/api/taishan/cafeteria/dishes').then(res=>{
+  dishes=res.data||[];
+  renderProducts(dishes);
+})
+
+function filterCat(btn,catId){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  renderProducts(catId?dishes.filter(d=>d.category_id==catId):dishes);
+}
+
+function renderProducts(list){
+  const el=document.getElementById('products');
+  if(!list.length){el.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;color:#999">暂无菜品</div>';return}
+  el.innerHTML=list.map(d=>{
+    const tags=d.nutrition_tags?(typeof d.nutrition_tags==='string'?JSON.parse(d.nutrition_tags):d.nutrition_tags):[];
+    return `<div class="product">
+      <img src="${d.image||''}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 200 120%22><rect fill=%22%23f5f5f5%22 width=%22200%22 height=%22120%22/><text x=%22100%22 y=%2264%22 text-anchor=%22middle%22 fill=%22%23ccc%22 font-size=%2214%22>暂无图片</text></svg>'">
+      <div class="product-info">
+        <h3>${d.name}</h3>
+        <div class="desc">${d.description||''}</div>
+        ${tags.length?`<div class="tags">${tags.slice(0,3).map(t=>`<span class="tag">${t}</span>`).join('')}</div>`:''}
+        <div class="price-row">
+          <div><span class="price"><small>¥</small>${Number(d.price).toFixed(0)}<small>.${(Number(d.price)%1).toFixed(2).slice(2)}</small></span>${d.original_price?`<span class="original">${fmt(d.original_price)}</span>`:''}</div>
+          <button class="add-btn" onclick="addToCart(${d.id},'${d.name}',${d.price},'${d.image||''}')">+</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function addToCart(id,name,price,image){
+  if(!cart[id])cart[id]={id,name,price,image,quantity:0};
+  cart[id].quantity++;
+  updateCart();
+}
+function removeFromCart(id){
+  if(cart[id]){cart[id].quantity--;if(cart[id].quantity<=0)delete cart[id]}
+  updateCart();
+}
+function updateCart(){
+  const items=Object.values(cart);
+  const count=items.reduce((s,i)=>s+i.quantity,0);
+  const total=items.reduce((s,i)=>s+i.price*i.quantity,0);
+  document.getElementById('cartCount').textContent=count;
+  document.getElementById('cartTotal').textContent=fmt(total);
+  document.getElementById('cartBar').classList.toggle('show',count>0);
+}
+
+function openOrder(){
+  const items=Object.values(cart);
+  if(!items.length)return;
+  document.getElementById('orderItems').innerHTML=items.map(i=>`
+    <div class="order-item">
+      <span class="name">${i.name}</span>
+      <div class="qty">
+        <button onclick="removeFromCart(${i.id})">-</button>
+        <span>${i.quantity}</span>
+        <button onclick="addToCart(${i.id},'${i.name}',${i.price},'${i.image}')">+</button>
+      </div>
+      <span>${fmt(i.price*i.quantity)}</span>
+    </div>
+  `).join('');
+  const total=items.reduce((s,i)=>s+i.price*i.quantity,0);
+  document.getElementById('orderTotal').textContent=fmt(total);
+  document.getElementById('orderModal').classList.add('show');
+}
+function closeOrder(){document.getElementById('orderModal').classList.remove('show')}
+function setOrderType(btn,type){
+  orderType=type;
+  document.querySelectorAll('.order-type button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tableNo').style.display=type==='dine_in'?'block':'none';
+}
+
+function submitOrder(){
+  const items=Object.values(cart).map(i=>({dish_id:i.id,name:i.name,price:i.price,quantity:i.quantity,image:i.image}));
+  const data={items,order_type:orderType,table_no:document.getElementById('tableNo').value,remark:document.getElementById('orderRemark').value};
+  api('/api/taishan/cafeteria/orders',{method:'POST',body:JSON.stringify(data)}).then(res=>{
+    if(res.success){alert('下单成功!');cart={};updateCart();closeOrder()}
+    else alert(res.msg||'下单失败')
+  })
+}
+</script>
+</body>
+</html>

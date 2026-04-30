@@ -1,0 +1,269 @@
+/* ============================================
+   泰山城投 - 用户端 H5 专用样式
+   ============================================ */
+
+/* === 商品网格 === */
+.products {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 12px;
+}
+.product {
+    background: var(--ts-bg-white);
+    border-radius: var(--ts-radius);
+    overflow: hidden;
+    box-shadow: var(--ts-shadow);
+}
+.product img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    background: #f0f0f0;
+}
+.product-info { padding: 10px; }
+.product-info h3 { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+.product-info .desc {
+    font-size: 11px;
+    color: var(--ts-text-muted);
+    margin-bottom: 8px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.product-info .tags { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px; }
+.product-info .tag {
+    font-size: 10px;
+    padding: 2px 6px;
+    background: var(--ts-primary-light);
+    color: var(--ts-primary);
+    border-radius: 4px;
+}
+.price-row { display: flex; align-items: center; justify-content: space-between; }
+.add-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--ts-primary);
+    color: #fff;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* === 购物车栏 === */
+.cart-bar {
+    position: fixed;
+    bottom: 50px;
+    left: 12px;
+    right: 12px;
+    background: #333;
+    border-radius: 25px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: #fff;
+    z-index: 100;
+    display: none;
+}
+.cart-bar.show { display: flex; }
+.cart-left { display: flex; align-items: center; gap: 10px; }
+.cart-icon { font-size: 22px; position: relative; }
+.cart-count {
+    position: absolute;
+    top: -6px;
+    right: -10px;
+    background: var(--ts-danger);
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 10px;
+}
+.cart-total { font-size: 16px; font-weight: 600; }
+.cart-submit {
+    background: var(--ts-primary);
+    border: none;
+    color: #fff;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+/* === 订单类型选择 === */
+.order-type { display: flex; gap: 10px; margin-bottom: 16px; }
+.order-type button {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid var(--ts-border);
+    border-radius: 8px;
+    background: var(--ts-bg-white);
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+.order-type button.active {
+    border-color: var(--ts-primary);
+    color: var(--ts-primary);
+    background: var(--ts-primary-light);
+}
+
+/* === 提交按钮 === */
+.submit-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--ts-primary);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 12px;
+}
+.submit-btn:active { background: var(--ts-primary-dark); }
+
+/* === 场馆/包间卡片 === */
+.venue-card {
+    background: var(--ts-bg-white);
+    border-radius: var(--ts-radius-lg);
+    overflow: hidden;
+    margin-bottom: 12px;
+    box-shadow: var(--ts-shadow);
+}
+.venue-card img {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    background: #f0f0f0;
+}
+.venue-info { padding: 14px; }
+.venue-info h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+.venue-info .meta {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--ts-text-muted);
+    margin-bottom: 10px;
+}
+.venue-info .price { color: var(--ts-danger); font-size: 18px; font-weight: 700; }
+.venue-info .price small { font-size: 12px; font-weight: 400; }
+.venue-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+}
+
+/* === 活动卡片 === */
+.activity-card {
+    background: var(--ts-bg-white);
+    border-radius: var(--ts-radius-lg);
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: var(--ts-shadow);
+}
+.activity-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+.activity-card .time { font-size: 12px; color: var(--ts-text-muted); margin-bottom: 4px; }
+.activity-card .location { font-size: 12px; color: var(--ts-text-muted); margin-bottom: 10px; }
+.activity-card .spots {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* === 社区帖子 === */
+.post-card {
+    background: var(--ts-bg-white);
+    border-radius: var(--ts-radius-lg);
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: var(--ts-shadow);
+}
+.post-card .post-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.post-card .avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #e6f7ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+.post-card .user-name { font-size: 14px; font-weight: 500; }
+.post-card .post-time { font-size: 11px; color: var(--ts-text-muted); }
+.post-card .post-content { font-size: 14px; line-height: 1.6; margin-bottom: 10px; }
+.post-card .post-images {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-bottom: 10px;
+}
+.post-card .post-images img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 6px;
+}
+.post-card .post-footer {
+    display: flex;
+    gap: 20px;
+    font-size: 12px;
+    color: var(--ts-text-muted);
+}
+
+/* === 会员卡片 === */
+.member-card {
+    background: rgba(255,255,255,0.15);
+    border-radius: var(--ts-radius-lg);
+    padding: 16px;
+}
+.member-card .name { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+.member-card .level { font-size: 12px; opacity: 0.8; }
+.member-card .stats { display: flex; gap: 20px; margin-top: 14px; }
+.member-card .stat { text-align: center; }
+.member-card .stat .num { font-size: 22px; font-weight: 700; }
+.member-card .stat .label { font-size: 11px; opacity: 0.8; }
+
+/* === 洗衣价格表 === */
+.price-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.price-table th, .price-table td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid #f5f5f5;
+}
+.price-table th {
+    background: #fafafa;
+    font-weight: 500;
+    color: var(--ts-text-secondary);
+}
+.price-table .price-cell { color: var(--ts-danger); font-weight: 600; }
+
+/* === 服务卡片 === */
+.service-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 8px;
+    background: var(--ts-bg-white);
+    border-radius: var(--ts-radius);
+    cursor: pointer;
+    box-shadow: var(--ts-shadow);
+}
+.service-card .icon { font-size: 28px; }
+.service-card .name { font-size: 12px; color: var(--ts-text-secondary); text-align: center; }

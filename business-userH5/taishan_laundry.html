@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>洗衣服务</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f5f5f5}
+.header{background:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e8e8e8;position:sticky;top:0;z-index:10}
+.back{font-size:22px;cursor:pointer;background:none;border:none}.header h1{font-size:17px}
+.content{padding:12px}
+.svc-card{background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.svc-card h3{font-size:15px;margin-bottom:4px}
+.svc-card .desc{font-size:12px;color:#999;margin-bottom:8px}
+.svc-card .price{color:#ff4d4f;font-size:18px;font-weight:600;margin-bottom:12px}
+.order-btn{width:100%;padding:10px;background:#1890ff;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer}
+.price-table{margin:12px 0}
+.price-table table{width:100%;border-collapse:collapse;font-size:13px}
+.price-table th,.price-table td{padding:8px;text-align:center;border-bottom:1px solid #f0f0f0}
+.price-table th{background:#fafafa;font-weight:500}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:none;align-items:flex-end}.modal.show{display:flex}
+.modal-content{background:#fff;width:100%;border-radius:16px 16px 0 0;padding:20px;max-height:80vh;overflow-y:auto}
+.modal-content h2{font-size:16px;margin-bottom:16px;display:flex;justify-content:space-between}.close{cursor:pointer;font-size:20px;color:#999}
+.form-group{margin-bottom:14px}.form-group label{display:block;font-size:13px;color:#666;margin-bottom:6px}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:10px;border:1px solid #e8e8e8;border-radius:8px;font-size:14px}
+.cloth-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f5f5f5}
+.cloth-item .qty{display:flex;align-items:center;gap:8px}
+.cloth-item .qty button{width:24px;height:24px;border-radius:50%;border:1px solid #ddd;background:#fff;cursor:pointer}
+.submit{width:100%;padding:14px;background:#1890ff;color:#fff;border:none;border-radius:10px;font-size:15px;cursor:pointer;margin-top:12px}
+</style>
+</head>
+<body>
+<div class="header"><button class="back" onclick="history.back()">‹</button><h1>洗衣服务</h1></div>
+<div class="content" id="content"><div style="text-align:center;padding:40px;color:#999">加载中...</div></div>
+
+<div class="modal" id="orderModal">
+<div class="modal-content">
+<h2>洗衣下单 <span class="close" onclick="closeModal()">✕</span></h2>
+<div class="form-group"><label>取件方式</label>
+<select id="pickupType"><option value="self">自行送洗</option><option value="pickup">上门取件</option></select></div>
+<div class="form-group" id="addrGroup" style="display:none"><label>取件地址</label><input type="text" id="pickupAddr" placeholder="请输入取件地址"></div>
+<div id="clothList"></div>
+<div style="text-align:right;padding:12px 0;font-size:15px;font-weight:600;color:#ff4d4f">合计: <span id="orderTotal">¥0.00</span></div>
+<div class="form-group"><label>备注</label><textarea id="remark" rows="2" placeholder="选填"></textarea></div>
+<button class="submit" onclick="submitOrder()">提交订单</button>
+</div></div>
+
+<script>
+const API_BASE='';let prices=[],clothQtys={};
+function getToken(){return localStorage.getItem('access_token')||''}
+function api(p,o={}){return fetch(API_BASE+p+(p.includes('?')?'&':'?')+'access_token='+getToken(),{headers:{'Content-Type':'application/json','Token':getToken'},...o}).then(r=>r.json())}
+
+Promise.all([api('/api/taishan/laundry/services'),api('/api/taishan/laundry/prices')]).then(([svcRes,priceRes])=>{
+const svcs=svcRes.data||[];prices=priceRes.data||[];
+const el=document.getElementById('content');
+let html='';
+svcs.forEach(s=>{html+=`<div class="svc-card"><h3>${s.name}</h3><div class="desc">${s.description||''}</div>
+<div class="price">¥${Number(s.price).toFixed(2)}<small style="font-size:12px;font-weight:400">/件起</small></div>
+<button class="order-btn" onclick="openOrder()">立即下单</button></div>`});
+if(prices.length){html+=`<div class="price-table"><table><tr><th>衣物类型</th><th>价格</th></tr>${prices.map(p=>`<tr><td>${p.clothing_type}</td><td>¥${Number(p.price).toFixed(2)}</td></tr>`).join('')}</table></div>`}
+el.innerHTML=html||'<div style="text-align:center;padding:40px;color:#999">暂无服务</div>';
+});
+
+document.getElementById('pickupType').onchange=function(){document.getElementById('addrGroup').style.display=this.value==='pickup'?'block':'none'};
+
+function openOrder(){
+clothQtys={};prices.forEach(p=>{clothQtys[p.id]={clothing_type:p.clothing_type,price:p.price,quantity:0}});
+renderClothList();document.getElementById('orderModal').classList.add('show');
+}
+function closeModal(){document.getElementById('orderModal').classList.remove('show')}
+
+function renderClothList(){
+document.getElementById('clothList').innerHTML=Object.entries(clothQtys).map(([id,item])=>`
+<div class="cloth-item"><span>${item.clothing_type} <small style="color:#999">¥${Number(item.price).toFixed(2)}/件</small></span>
+<div class="qty"><button onclick="changeQty(${id},-1)">-</button><span id="qty_${id}">${item.quantity}</span><button onclick="changeQty(${id},1)">+</button></div></div>`).join('');
+updateTotal();
+}
+function changeQty(id,delta){clothQtys[id].quantity=Math.max(0,clothQtys[id].quantity+delta);document.getElementById('qty_'+id).textContent=clothQtys[id].quantity;updateTotal()}
+function updateTotal(){const total=Object.values(clothQtys).reduce((s,i)=>s+i.price*i.quantity,0);document.getElementById('orderTotal').textContent='¥'+total.toFixed(2)}
+
+function submitOrder(){
+const items=Object.values(clothQtys).filter(i=>i.quantity>0).map(i=>({clothing_type:i.clothing_type,price:i.price,quantity:i.quantity}));
+if(!items.length){alert('请选择衣物');return}
+const data={items,pickup_type:document.getElementById('pickupType').value,pickup_address:document.getElementById('pickupAddr').value,remark:document.getElementById('remark').value};
+api('/api/taishan/laundry/orders',{method:'POST',body:JSON.stringify(data)}).then(res=>{
+if(res.success){alert('下单成功!');closeModal()}else alert(res.msg||'下单失败')})}
+</script>
+</body>
+</html>
