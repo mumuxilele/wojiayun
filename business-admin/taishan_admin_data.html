@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>泰山城投 - 基础数据管理</title>
+<link rel="stylesheet" href="/business-common/static/css/taishan-base.css">
+<link rel="stylesheet" href="/business-common/static/css/taishan-admin.css">
+<style>
+/* 页面专用样式 */
+.module-tabs { display:flex; gap:0; background:#fff; border-radius:8px; overflow:hidden; margin-bottom:20px; box-shadow:0 1px 2px rgba(0,0,0,.06); }
+.module-tab { flex:1; padding:14px 12px; text-align:center; cursor:pointer; font-size:14px; color:#666; border:none; background:none; border-bottom:2px solid transparent; transition:all .2s; }
+.module-tab:hover { color:#1890ff; background:#f0f5ff; }
+.module-tab.active { color:#1890ff; border-bottom-color:#1890ff; font-weight:600; background:#f0f5ff; }
+.module-tab .tab-icon { font-size:20px; display:block; margin-bottom:4px; }
+.sub-tabs { display:flex; gap:8px; margin-bottom:16px; }
+.sub-tab { padding:6px 16px; border:1px solid #d9d9d9; border-radius:4px; cursor:pointer; font-size:13px; background:#fff; transition:all .2s; }
+.sub-tab.active { background:#1890ff; color:#fff; border-color:#1890ff; }
+.empty-state { text-align:center; padding:60px 20px; color:#999; }
+.empty-state .icon { font-size:48px; margin-bottom:12px; }
+.data-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
+.data-card { background:#fff; border-radius:8px; padding:16px; box-shadow:0 1px 2px rgba(0,0,0,.06); position:relative; transition:box-shadow .2s; }
+.data-card:hover { box-shadow:0 2px 8px rgba(0,0,0,.12); }
+.data-card h4 { font-size:15px; margin-bottom:6px; color:#333; }
+.data-card .meta { font-size:12px; color:#999; margin-bottom:4px; }
+.data-card .price { color:#ff4d4f; font-size:18px; font-weight:600; margin:8px 0; }
+.data-card .desc { font-size:13px; color:#666; margin-bottom:12px; line-height:1.5; }
+.data-card .card-actions { display:flex; gap:8px; border-top:1px solid #f0f0f0; padding-top:12px; }
+.data-card .card-actions button { flex:1; }
+.tag { display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; margin-right:4px; }
+.tag-blue { background:#e6f7ff; color:#1890ff; }
+.tag-green { background:#f6ffed; color:#52c41a; }
+.tag-orange { background:#fff7e6; color:#faad14; }
+.tag-red { background:#fff1f0; color:#ff4d4f; }
+</style>
+</head>
+<body>
+<div class="admin-layout">
+  <!-- 侧边栏 -->
+  <div class="sidebar">
+    <div class="sidebar-logo"><span class="icon">🏔️</span> 泰山城投</div>
+    <div class="sidebar-menu">
+      <div class="menu-group-title">数据管理</div>
+      <div class="menu-item active" onclick="location.href='taishan_admin_data.html'">
+        <span class="icon">📦</span> 基础数据
+      </div>
+      <div class="menu-group-title">业务管理</div>
+      <div class="menu-item" onclick="switchModule('orders')">
+        <span class="icon">📋</span> 订单管理
+      </div>
+      <div class="menu-item" onclick="switchModule('members')">
+        <span class="icon">👥</span> 会员管理
+      </div>
+      <div class="menu-item" onclick="switchModule('coupons')">
+        <span class="icon">🎫</span> 优惠券
+      </div>
+      <div class="menu-item" onclick="switchModule('community')">
+        <span class="icon">🏘️</span> 社区管理
+      </div>
+    </div>
+  </div>
+
+  <!-- 主内容区 -->
+  <div class="admin-main">
+    <div class="admin-topbar">
+      <div class="title">基础数据管理</div>
+      <div class="user-info"><span id="adminName">管理员</span></div>
+    </div>
+
+    <div class="admin-content">
+      <!-- 模块切换 -->
+      <div class="module-tabs">
+        <button class="module-tab active" onclick="switchTab('cafeteria',this)"><span class="tab-icon">🍽️</span>食堂</button>
+        <button class="module-tab" onclick="switchTab('banquet',this)"><span class="tab-icon">🏠</span>包间</button>
+        <button class="module-tab" onclick="switchTab('drink',this)"><span class="tab-icon">🥤</span>饮品</button>
+        <button class="module-tab" onclick="switchTab('sports',this)"><span class="tab-icon">⚽</span>场馆</button>
+        <button class="module-tab" onclick="switchTab('carwash',this)"><span class="tab-icon">🚗</span>洗车</button>
+        <button class="module-tab" onclick="switchTab('laundry',this)"><span class="tab-icon">👔</span>洗衣</button>
+      </div>
+
+      <!-- 食堂模块 -->
+      <div id="mod-cafeteria" class="module-panel">
+        <div class="sub-tabs">
+          <button class="sub-tab active" onclick="showSubTab('cafeteria','categories',this)">分类管理</button>
+          <button class="sub-tab" onclick="showSubTab('cafeteria','dishes',this)">菜品管理</button>
+        </div>
+        <div class="table-toolbar">
+          <div class="left"><span id="cafeteria-title" style="font-size:16px;font-weight:600">食堂分类</span></div>
+          <div class="right"><button class="admin-btn admin-btn-primary" onclick="openForm('cafeteria')">+ 新增</button></div>
+        </div>
+        <div id="cafeteria-content"></div>
+      </div>
+
+      <!-- 包间模块 -->
+      <div id="mod-banquet" class="module-panel" style="display:none">
+        <div class="table-toolbar">
+          <div class="left"><span style="font-size:16px;font-weight:600">包间管理</span></div>
+          <div class="right"><button class="admin-btn admin-btn-primary" onclick="openForm('banquet')">+ 新增包间</button></div>
+        </div>
+        <div id="banquet-content"></div>
+      </div>
+
+      <!-- 饮品模块 -->
+      <div id="mod-drink" class="module-panel" style="display:none">
+        <div class="sub-tabs">
+          <button class="sub-tab active" onclick="showSubTab('drink','categories',this)">饮品分类</button>
+          <button class="sub-tab" onclick="showSubTab('drink','items',this)">饮品项目</button>
+        </div>
+        <div class="table-toolbar">
+          <div class="left"><span id="drink-title" style="font-size:16px;font-weight:600">饮品分类</span></div>
+          <div class="right"><button class="admin-btn admin-btn-primary" onclick="openForm('drink')">+ 新增</button></div>
+        </div>
+        <div id="drink-content"></div>
+      </div>
+
+      <!-- 场馆模块 -->
+      <div id="mod-sports" class="module-panel" style="display:none">
+        <div class="table-toolbar">
+          <div class="left"><span style="font-size:16px;font-weight:600">运动场馆</span></div>
+          <div class="right"><button class="admin-btn admin-btn-primary" onclick="openForm('sports')">+ 新增场馆</button></div>
+        </div>
+        <div id="sports-content"></div>
+      </div>
+
+      <!-- 洗车模块 -->
+      <div id="mod-carwash" class="module-panel" style="display:none">
+        <div class="sub-tabs">
+          <button class="sub-tab active" onclick="showSubTab('carwash','services',this)">洗车服务</button>
+          <button class="sub-tab" onclick="showSubTab('carwash','stations',this)">洗车站点</button>
+        </div>
+        <div class="table-toolbar">
+          <div class="left"><span id="carwash-title" style="font-size:16px;font-weight:600">洗车服务</span></div>
+          <div class="right"><button class="admin-btn admin-btn-primary" onclick="openForm('carwash')">+ 新增</button></div>
+        </div>
+        <div id="carwash-content"></div>
+      </div>
+
+      <!-- 洗衣模块 -->
+      <div id="mod-laundry" class="module-panel" style="display:none">
+        <div class="sub-tabs">
+          <button class="sub-tab active" onclick="showSubTab('laundry','services',this)">洗衣服务</button>
+          <button class="sub-tab" onclick="showSubTab('laundry','prices',this)">衣物价格</button>
+        </div>
+        <div class="table-toolbar">
+          <div class="left"><span id="laundry-title" style="font-size:16px;font-weight:600">洗衣服务</span></div>
+          <div class="right"><button class="admin-btn admin-btn-primary" onclick="openForm('laundry')">+ 新增</button></div>
+        </div>
+        <div id="laundry-content"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 通用弹窗 -->
+<div class="admin-modal" id="formModal">
+  <div class="admin-modal-content" style="width:560px">
+    <div class="admin-modal-header">
+      <h3 id="modalTitle">新增</h3>
+      <button class="close" onclick="closeForm()">✕</button>
+    </div>
+    <div class="admin-modal-body admin-form" id="modalBody"></div>
+    <div class="admin-modal-footer">
+      <button class="admin-btn" onclick="closeForm()">取消</button>
+      <button class="admin-btn admin-btn-primary" onclick="submitForm()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '/api/admin/taishan';
+let currentModule = 'cafeteria';
+let currentSubTab = {};
+let editingId = null;
+let formData = {};
+
+// 模块配置
+const MODULES = {
+  cafeteria: {
+    categories: {
+      title: '食堂分类',
+      api: '/cafeteria/categories',
+      fields: [
+        { key: 'name', label: '分类名称', required: true },
+        { key: 'sort_order', label: '排序', type: 'number', default: 0 },
+        { key: 'icon', label: '图标', placeholder: 'emoji或图标class' }
+      ],
+      columns: [
+        { title: 'ID', key: 'id', width: '60px' },
+        { title: '分类名称', key: 'name' },
+        { title: '图标', key: 'icon', render: v => v || '-' },
+        { title: '排序', key: 'sort_order' },
+        { title: '状态', key: 'status', render: v => v == 1 ? '<span class="tag tag-green">启用</span>' : '<span class="tag tag-red">禁用</span>' }
+      ]
+    },
+    dishes: {
+      title: '菜品管理',
+      api: '/cafeteria/dishes',
+      fields: [
+        { key: 'name', label: '菜品名称', required: true },
+        { key: 'category_id', label: '所属分类', type: 'select', source: 'cafeteria/categories', required: true },
+        { key: 'price', label: '价格(元)', type: 'number', required: true },
+        { key: 'image', label: '图片URL' },
+        { key: 'description', label: '描述', type: 'textarea' },
+        { key: 'sort_order', label: '排序', type: 'number', default: 0 }
+      ],
+      columns: [
+        { title: 'ID', key: 'id', width: '60px' },
+        { title: '菜品名称', key: 'name' },
+        { title: '分类', key: 'category_name', render: (v, row) => v || row.category_id || '-' },
+        { title: '价格', key: 'price', render: v => '¥' + Number(v || 0).toFixed(2) },
+        { title: '状态', key: 'status', render: v => v == 1 ? '<span class="tag tag-green">在售</span>' : '<span class="tag tag-red">下架</span>' }
+      ]
+    }
+  },
+  banquet: {
+    rooms: {
+      title: '包间管理',
+      api: '/banquet/rooms',
+      fields: [
+        { key: 'name', label: '包间名称', required: true },
+        { key: 'capacity', label: '容纳人数', type: 'number', required: true },
+        { key: 'price', label: '最低消费(元)', type: 'number' },
+        { key: 'image', label: '图片URL' },
+        { key: 'description', label: '描述', type: 'textarea' },
+        { key: 'sort_order', label: '排序', type: 'number', default: 0 }
+      ],
+      columns: [
+        { title: 'ID', key: 'id', width: '60px' },
+        { title: '包间名称', key: 'name' },
+        { title: '容纳人数', key: 'capacity', render: v => v + '人' },
+        { title: '最低消费', key: 'price', render: v => v ? '¥' + Number(v).toFixed(2) : '-' },
+        { title: '状态', key: 'status', render: v => v == 1 ? '<span class="tag tag-green">可用</span>' : '<span class="tag tag-red">停用</span>' }
+      ]
+    }
+  },
+  drink: {
+    categories: {
+      title: '饮品分类',
+      api: '/drink/categories',
+      fields: [
+        { key: 'name', label: '分类名称', required: true },
+        { key: 'sort_order', label: '排序', type: 'number', default: 0 }
+      ],
+      columns: [
+        { title: 'ID', key: 'id', width: '60px' },
+        { title: '分类名称', key: 'name' },
+        { title: '排序', key: 'sort_order' },
+        { title: '状态', key: 'status', render: v => v == 1 ? '<span class="tag tag-green">启用</span>' : '<span class="tag tag-red">禁用</span>' }
+      ]
+    },
+    items: {
+      title: '饮品项目',
+      api: '/drink/items',
+      fields: [
+        { key: 'name', label: '饮品名称', required: true },
+        { key: 'category_id', label: '所属分类', type: 'select', source: 'drink/categories', required: true },
+        { key: 'price', label: '价格(元)', type: 'number', required: true },
+        { key: 'image', label: '图片URL' },
+        { key: 'description', label: '描述', type: 'textarea' },
+        { key: 'sort_order', label: '排序', type: 'number', default: 0 }
+      ],
+      columns: [
+        { title: 'ID', key: 'id', width: '60px' },
+        { title: '饮品名称', key: 'name' },
+        { title: '分类', key: 'category_name', render: (v, row) => v || row.category_id || '-' },
+        { title: '价格', key: 'price', render: v => '¥' + Number(v || 0).toFixed(2) },
+        { title: '状态', key: 'status', render: v => v == 1 ? '<span class="tag tag-green">在售</span>' : '<span class="tag tag-red">下架</span>' }
+      ]
+    }
+  },
+  sports: {
+    venues: {
+      title: '运动场馆',
+      api: '/sports/venues',
+      fields: [
+        { key: 'name', label: '场馆名称', required: true },
+        { key: 'type', label: '场馆类型', type: 'select', options: [
+          { value: 'badminton', label: '羽毛球' }, { value: 'basketball', label: '篮球' },
+          { value: 'tennis', label: '网球' }, { value: 'gym', label: '健身' },
+          { value: 'swimming', label: '游泳' }, { value: 'yoga', label: '瑜伽' }
+        ], required: true },
+        { key: 'price_per_hour', label: '每小时价格(元)', type: 'number', required: true },
+        { key: 'capacity', label: '容纳人数', type: 'number' },
+        { key: 'open_time', label: '开放时间', placeholder: '如 09:00' },
+        { key: 'close_time', label: '关闭时间', placeholder: '如 21:00' },
+        { key: 'image', label: '图片URL' },
+        { key: 'description', label: '描述', type: 'textarea' }
+      ],
+      columns: [
+        { title: 'ID', key: 'id', width: '60px' },
+        { title: '场馆名称', key: 'name' },
+        { title: '类型', key: 'type', render: v => ({badminton:'羽毛球',basketball:'篮球',tennis:'网球',gym:'健身',swimming:'游泳',yoga:'瑜伽'}[v] || v) },
+        { title: '价格', key: 'price_per_hour', render: v => '¥' + Number(v || 0).toFixed(0) + '/时' },
+        { title: '时间', key: 'open_time', render: (v, row) => (v||'') + '-' + (row.close_time||'') },
+        { title: '状态', key: 'status', render: v => v == 1 ? '<span class="tag tag-green">开放</span>' : v == 2 ? '<span class="tag tag-orange">维护</span>' : '<span class="tag tag-red">关闭</span>' }
+      ]
+    }
+  },
+  carwash: {
+    services: {
+      title: '洗车服务',
+      api: '/carwash/services',
+      fields: [
+        { key: 'name', label: '服务名称', required: true },
+        { key: 'price', label: '价格(元)', type: 'number', required: true },
+        { key: 'duration_minutes', label: '预计时长(分钟)', type: 'number', default: 30 },
+        { key: 'description', label: '描述', type: 'textarea' }
+      ],
+      columns: [
+        { title: 'ID', key: 'id', width: '60px' },
+        { title: '服务名称', key: 'name' },
+        { title: '价格', key: 'price', render: v => '¥' + Number(v || 0).toFixed(2) },
+        { title: '时长', key: 'duration_minutes', render: v => (v || 30) + '分钟' },
+        { title: '状态', key: 'status', render: v => v == 1 ? '<span class="tag tag-green">启用</span>' : '<span class="tag tag-red">停用</span>' }
+      ]
+    },
+    stations: {
+      title: '洗车站点',
+      api: '/carwash/stations',
+      fields: [
+        { key: 'name', label: '站点名称', required: true },
+        { key: 'address', label: '地址', required: true },
+        { key: 'phone', label: '联系电话' },
+        { key: 'description', label: '描述', type: 'textarea' }
+      ],
+      columns: [
+        { title: 'ID', key: 'id', width: '60px' },
+        { title: '站点名称', key: 'name' },
+        { title: '地址', key: 'address' },
+        { title: '电话', key: 'phone', render: v => v || '-' },
+        { title: '状态', key: 'status', render: v => v == 1 ? '<span class="tag tag-green">营业</span>' : '<span class="tag tag-red">关闭</span>' }
+      ]
+    }
+  },
+  laundry: {
+    services: {
+      title: '洗衣服务',
+      api: '/laundry/services',
+      fields: [
+        { key: 'name', label: '服务名称', required: true },
+        { key: 'price', label: '起步价(元)', type: 'number', required: true },
+        { key: 'description', label: '描述', type: 'textarea' }
+      ],
+      columns: [
+        { title: 'ID', key: 'id', width: '60px' },
+        { title: '服务名称', key: 'name' },
+        { title: '起步价', key: 'price', render: v => '¥' + Number(v || 0).toFixed(2) },
+        { title: '状态', key: 'status', render: v => v == 1 ? '<span class="tag tag-green">启用</span>' : '<span class="tag tag-red">停用</span>' }
+      ]
+    },
+    prices: {
+      title: '衣物价格',
+      api: '/laundry/prices',
+      fields: [
+        { key: 'clothing_type', label: '衣物类型', required: true },
+        { key: 'price', label: '价格(元)', type: 'number', required: true },
+        { key: 'service_id', label: '所属服务', type: 'select', source: 'laundry/services' }
+      ],
+      columns: [
+        { title: 'ID', key: 'id', width: '60px' },
+        { title: '衣物类型', key: 'clothing_type' },
+        { title: '价格', key: 'price', render: v => '¥' + Number(v || 0).toFixed(2) },
+        { title: '状态', key: 'status', render: v => v == 1 ? '<span class="tag tag-green">启用</span>' : '<span class="tag tag-red">停用</span>' }
+      ]
+    }
+  }
+};
+
+// 初始化
+document.addEventListener('DOMContentLoaded', () => {
+  Object.keys(MODULES).forEach(m => {
+    const first = Object.keys(MODULES[m])[0];
+    currentSubTab[m] = first;
+  });
+  loadCurrentData();
+});
+
+// Token
+function getToken() { return localStorage.getItem('access_token') || ''; }
+
+// API请求
+async function apiCall(path, options = {}) {
+  const sep = path.includes('?') ? '&' : '?';
+  const res = await fetch(API + path + sep + 'access_token=' + getToken(), {
+    headers: { 'Content-Type': 'application/json', 'Token': getToken() },
+    ...options
+  });
+  return res.json();
+}
+
+// 切换主模块
+function switchTab(mod, btn) {
+  currentModule = mod;
+  document.querySelectorAll('.module-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.module-panel').forEach(p => p.style.display = 'none');
+  document.getElementById('mod-' + mod).style.display = 'block';
+  loadCurrentData();
+}
+
+// 切换子标签
+function showSubTab(mod, sub, btn) {
+  currentSubTab[mod] = sub;
+  btn.parentElement.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  const titleEl = document.getElementById(mod + '-title');
+  if (titleEl) titleEl.textContent = MODULES[mod][sub].title;
+  loadCurrentData();
+}
+
+// 加载数据
+async function loadCurrentData() {
+  const mod = currentModule;
+  const sub = currentSubTab[mod];
+  const config = MODULES[mod][sub];
+  const container = document.getElementById(mod + '-content');
+  container.innerHTML = '<div style="text-align:center;padding:40px;color:#999">加载中...</div>';
+
+  try {
+    const res = await apiCall(config.api + '?_t=' + Date.now());
+    const list = res.data || [];
+    if (!list.length) {
+      container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><div>暂无数据，点击右上角"新增"添加</div></div>';
+      return;
+    }
+    renderTable(container, list, config, mod, sub);
+  } catch (e) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">❌</div><div>加载失败: ' + e.message + '</div></div>';
+  }
+}
+
+// 渲染表格
+function renderTable(container, list, config, mod, sub) {
+  let html = '<div class="admin-table"><table><thead><tr>';
+  config.columns.forEach(col => { html += '<th' + (col.width ? ' style="width:' + col.width + '"' : '') + '>' + col.title + '</th>'; });
+  html += '<th style="width:160px">操作</th></tr></thead><tbody>';
+
+  list.forEach(row => {
+    html += '<tr>';
+    config.columns.forEach(col => {
+      const val = row[col.key];
+      html += '<td>' + (col.render ? col.render(val, row) : (val ?? '-')) + '</td>';
+    });
+    html += '<td><div class="actions">';
+    html += '<button class="admin-btn" onclick="editItem(\'' + mod + '\',\'' + sub + '\',' + row.id + ')">编辑</button>';
+    html += '<button class="admin-btn admin-btn-danger" onclick="deleteItem(\'' + mod + '\',\'' + sub + '\',' + row.id + ')">删除</button>';
+    html += '</div></td></tr>';
+  });
+
+  html += '</tbody></table></div>';
+  container.innerHTML = html;
+}
+
+// 打开新增表单
+function openForm(mod) {
+  const sub = currentSubTab[mod];
+  const config = MODULES[mod][sub];
+  editingId = null;
+  formData = {};
+  document.getElementById('modalTitle').textContent = '新增' + config.title;
+  renderFormFields(config.fields);
+  document.getElementById('formModal').classList.add('show');
+}
+
+// 编辑
+async function editItem(mod, sub, id) {
+  const config = MODULES[mod][sub];
+  editingId = id;
+  try {
+    const res = await apiCall(config.api);
+    const item = (res.data || []).find(r => r.id === id);
+    if (!item) { alert('未找到数据'); return; }
+    formData = { ...item };
+    document.getElementById('modalTitle').textContent = '编辑' + config.title;
+    renderFormFields(config.fields, item);
+    document.getElementById('formModal').classList.add('show');
+  } catch (e) { alert('加载失败'); }
+}
+
+// 渲染表单字段
+async function renderFormFields(fields, values = {}) {
+  const body = document.getElementById('modalBody');
+  let html = '';
+  for (const f of fields) {
+    const val = values[f.key] ?? f.default ?? '';
+    html += '<div class="form-row"><div class="form-group">';
+    html += '<label' + (f.required ? ' class="required"' : '') + '>' + f.label + '</label>';
+
+    if (f.type === 'select') {
+      let options = f.options || [];
+      if (f.source) {
+        try {
+          const res = await apiCall(f.source + '?_t=' + Date.now());
+          options = (res.data || []).map(o => ({ value: o.id, label: o.name || o.clothing_type || o.id }));
+        } catch (e) {}
+      }
+      html += '<select data-key="' + f.key + '"><option value="">请选择</option>';
+      options.forEach(o => { html += '<option value="' + o.value + '"' + (val == o.value ? ' selected' : '') + '>' + o.label + '</option>'; });
+      html += '</select>';
+    } else if (f.type === 'textarea') {
+      html += '<textarea data-key="' + f.key + '" placeholder="' + (f.placeholder || '') + '">' + val + '</textarea>';
+    } else {
+      html += '<input type="' + (f.type || 'text') + '" data-key="' + f.key + '" value="' + val + '" placeholder="' + (f.placeholder || '') + '">';
+    }
+    html += '</div></div>';
+  }
+  // 状态字段（编辑时显示）
+  if (values.id !== undefined) {
+    html += '<div class="form-row"><div class="form-group">';
+    html += '<label>状态</label>';
+    html += '<select data-key="status">';
+    html += '<option value="1"' + (values.status == 1 ? ' selected' : '') + '>启用</option>';
+    html += '<option value="0"' + (values.status == 0 ? ' selected' : '') + '>禁用</option>';
+    html += '</select></div></div>';
+  }
+  body.innerHTML = html;
+}
+
+// 提交表单
+async function submitForm() {
+  const mod = currentModule;
+  const sub = currentSubTab[mod];
+  const config = MODULES[mod][sub];
+
+  // 收集表单数据
+  const body = document.getElementById('modalBody');
+  const inputs = body.querySelectorAll('[data-key]');
+  const data = {};
+  inputs.forEach(el => {
+    const key = el.dataset.key;
+    let val = el.value;
+    if (el.type === 'number' && val !== '') val = Number(val);
+    data[key] = val;
+  });
+
+  // 验证必填
+  for (const f of config.fields) {
+    if (f.required && !data[f.key]) {
+      alert('请填写' + f.label);
+      return;
+    }
+  }
+
+  try {
+    let res;
+    if (editingId) {
+      res = await apiCall(config.api + '/' + editingId, { method: 'PUT', body: JSON.stringify(data) });
+    } else {
+      res = await apiCall(config.api, { method: 'POST', body: JSON.stringify(data) });
+    }
+    if (res.success) {
+      closeForm();
+      loadCurrentData();
+    } else {
+      alert(res.msg || '操作失败');
+    }
+  } catch (e) {
+    alert('请求失败: ' + e.message);
+  }
+}
+
+// 删除
+async function deleteItem(mod, sub, id) {
+  if (!confirm('确定要删除这条数据吗？')) return;
+  const config = MODULES[mod][sub];
+  try {
+    const res = await apiCall(config.api + '/' + id, { method: 'DELETE' });
+    if (res.success) {
+      loadCurrentData();
+    } else {
+      alert(res.msg || '删除失败');
+    }
+  } catch (e) {
+    alert('删除失败: ' + e.message);
+  }
+}
+
+// 关闭弹窗
+function closeForm() {
+  document.getElementById('formModal').classList.remove('show');
+  editingId = null;
+}
+
+// 切换模块（预留）
+function switchModule(mod) {
+  alert('"' + mod + '" 模块开发中...');
+}
+</script>
+</body>
+</html>
