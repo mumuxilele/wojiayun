@@ -72,6 +72,15 @@ def update_cafeteria_category(admin, cat_id):
     return jsonify({'success': True, 'msg': '更新成功'})
 
 
+@taishan_admin_bp.route('/api/admin/taishan/cafeteria/categories/<int:cat_id>', methods=['DELETE'])
+@require_admin
+def delete_cafeteria_category(admin, cat_id):
+    from business_common.repositories.cafeteria_repository import CafeteriaCategoryRepository
+    repo = CafeteriaCategoryRepository()
+    repo.soft_delete(cat_id)
+    return jsonify({'success': True, 'msg': '已删除'})
+
+
 @taishan_admin_bp.route('/api/admin/taishan/cafeteria/dishes', methods=['GET'])
 @require_admin
 def list_cafeteria_dishes(admin):
@@ -157,6 +166,15 @@ def update_banquet_room(admin, room_id):
     return jsonify({'success': True, 'msg': '更新成功'})
 
 
+@taishan_admin_bp.route('/api/admin/taishan/banquet/rooms/<int:room_id>', methods=['DELETE'])
+@require_admin
+def delete_banquet_room(admin, room_id):
+    from business_common.repositories.banquet_repository import BanquetRoomRepository
+    repo = BanquetRoomRepository()
+    repo.soft_delete(room_id)
+    return jsonify({'success': True, 'msg': '已删除'})
+
+
 @taishan_admin_bp.route('/api/admin/taishan/banquet/bookings', methods=['GET'])
 @require_admin
 def list_banquet_bookings(admin):
@@ -194,6 +212,25 @@ def create_drink_category(admin):
     return jsonify({'success': True, 'data': {'id': cid}, 'msg': '创建成功'})
 
 
+@taishan_admin_bp.route('/api/admin/taishan/drink/categories/<int:cat_id>', methods=['PUT'])
+@require_admin
+def update_drink_category(admin, cat_id):
+    data = request.get_json() or {}
+    from business_common.repositories.drink_repository import DrinkCategoryRepository
+    repo = DrinkCategoryRepository()
+    repo.update(cat_id, data)
+    return jsonify({'success': True, 'msg': '更新成功'})
+
+
+@taishan_admin_bp.route('/api/admin/taishan/drink/categories/<int:cat_id>', methods=['DELETE'])
+@require_admin
+def delete_drink_category(admin, cat_id):
+    from business_common.repositories.drink_repository import DrinkCategoryRepository
+    repo = DrinkCategoryRepository()
+    repo.soft_delete(cat_id)
+    return jsonify({'success': True, 'msg': '已删除'})
+
+
 @taishan_admin_bp.route('/api/admin/taishan/drink/items', methods=['GET'])
 @require_admin
 def list_drink_items(admin):
@@ -221,6 +258,15 @@ def update_drink_item(admin, item_id):
     repo = DrinkItemRepository()
     repo.update(item_id, data)
     return jsonify({'success': True, 'msg': '更新成功'})
+
+
+@taishan_admin_bp.route('/api/admin/taishan/drink/items/<int:item_id>', methods=['DELETE'])
+@require_admin
+def delete_drink_item(admin, item_id):
+    from business_common.repositories.drink_repository import DrinkItemRepository
+    repo = DrinkItemRepository()
+    repo.soft_delete(item_id)
+    return jsonify({'success': True, 'msg': '已删除'})
 
 
 @taishan_admin_bp.route('/api/admin/taishan/drink/orders', methods=['GET'])
@@ -270,6 +316,15 @@ def update_sports_venue(admin, venue_id):
     return jsonify({'success': True, 'msg': '更新成功'})
 
 
+@taishan_admin_bp.route('/api/admin/taishan/sports/venues/<int:venue_id>', methods=['DELETE'])
+@require_admin
+def delete_sports_venue(admin, venue_id):
+    from business_common.repositories.sports_repository import SportsVenueRepository
+    repo = SportsVenueRepository()
+    repo.soft_delete(venue_id)
+    return jsonify({'success': True, 'msg': '已删除'})
+
+
 @taishan_admin_bp.route('/api/admin/taishan/sports/bookings', methods=['GET'])
 @require_admin
 def list_sports_bookings(admin):
@@ -307,6 +362,25 @@ def create_carwash_service(admin):
     return jsonify({'success': True, 'data': {'id': sid}, 'msg': '创建成功'})
 
 
+@taishan_admin_bp.route('/api/admin/taishan/carwash/services/<int:svc_id>', methods=['PUT'])
+@require_admin
+def update_carwash_service(admin, svc_id):
+    data = request.get_json() or {}
+    from business_common.repositories.carwash_laundry_repository import CarwashServiceRepository
+    repo = CarwashServiceRepository()
+    repo.update(svc_id, data)
+    return jsonify({'success': True, 'msg': '更新成功'})
+
+
+@taishan_admin_bp.route('/api/admin/taishan/carwash/services/<int:svc_id>', methods=['DELETE'])
+@require_admin
+def delete_carwash_service(admin, svc_id):
+    from business_common.repositories.carwash_laundry_repository import CarwashServiceRepository
+    repo = CarwashServiceRepository()
+    repo.soft_delete(svc_id)
+    return jsonify({'success': True, 'msg': '已删除'})
+
+
 @taishan_admin_bp.route('/api/admin/taishan/carwash/stations', methods=['GET'])
 @require_admin
 def list_carwash_stations(admin):
@@ -324,6 +398,25 @@ def create_carwash_station(admin):
     repo = CarwashStationRepository()
     sid = repo.insert(data)
     return jsonify({'success': True, 'data': {'id': sid}, 'msg': '创建成功'})
+
+
+@taishan_admin_bp.route('/api/admin/taishan/carwash/stations/<int:station_id>', methods=['PUT'])
+@require_admin
+def update_carwash_station(admin, station_id):
+    data = request.get_json() or {}
+    from business_common.repositories.carwash_laundry_repository import CarwashStationRepository
+    repo = CarwashStationRepository()
+    repo.update(station_id, data)
+    return jsonify({'success': True, 'msg': '更新成功'})
+
+
+@taishan_admin_bp.route('/api/admin/taishan/carwash/stations/<int:station_id>', methods=['DELETE'])
+@require_admin
+def delete_carwash_station(admin, station_id):
+    from business_common.repositories.carwash_laundry_repository import CarwashStationRepository
+    repo = CarwashStationRepository()
+    repo.soft_delete(station_id)
+    return jsonify({'success': True, 'msg': '已删除'})
 
 
 @taishan_admin_bp.route('/api/admin/taishan/carwash/orders', methods=['GET'])
@@ -363,6 +456,25 @@ def create_laundry_service(admin):
     return jsonify({'success': True, 'data': {'id': sid}, 'msg': '创建成功'})
 
 
+@taishan_admin_bp.route('/api/admin/taishan/laundry/services/<int:svc_id>', methods=['PUT'])
+@require_admin
+def update_laundry_service(admin, svc_id):
+    data = request.get_json() or {}
+    from business_common.repositories.carwash_laundry_repository import LaundryServiceRepository
+    repo = LaundryServiceRepository()
+    repo.update(svc_id, data)
+    return jsonify({'success': True, 'msg': '更新成功'})
+
+
+@taishan_admin_bp.route('/api/admin/taishan/laundry/services/<int:svc_id>', methods=['DELETE'])
+@require_admin
+def delete_laundry_service(admin, svc_id):
+    from business_common.repositories.carwash_laundry_repository import LaundryServiceRepository
+    repo = LaundryServiceRepository()
+    repo.soft_delete(svc_id)
+    return jsonify({'success': True, 'msg': '已删除'})
+
+
 @taishan_admin_bp.route('/api/admin/taishan/laundry/prices', methods=['GET'])
 @require_admin
 def list_laundry_prices(admin):
@@ -380,6 +492,25 @@ def create_laundry_price(admin):
     repo = LaundryPriceRepository()
     pid = repo.insert(data)
     return jsonify({'success': True, 'data': {'id': pid}, 'msg': '创建成功'})
+
+
+@taishan_admin_bp.route('/api/admin/taishan/laundry/prices/<int:price_id>', methods=['PUT'])
+@require_admin
+def update_laundry_price(admin, price_id):
+    data = request.get_json() or {}
+    from business_common.repositories.carwash_laundry_repository import LaundryPriceRepository
+    repo = LaundryPriceRepository()
+    repo.update(price_id, data)
+    return jsonify({'success': True, 'msg': '更新成功'})
+
+
+@taishan_admin_bp.route('/api/admin/taishan/laundry/prices/<int:price_id>', methods=['DELETE'])
+@require_admin
+def delete_laundry_price(admin, price_id):
+    from business_common.repositories.carwash_laundry_repository import LaundryPriceRepository
+    repo = LaundryPriceRepository()
+    repo.soft_delete(price_id)
+    return jsonify({'success': True, 'msg': '已删除'})
 
 
 @taishan_admin_bp.route('/api/admin/taishan/laundry/orders', methods=['GET'])
