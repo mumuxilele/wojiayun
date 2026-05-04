@@ -19,7 +19,7 @@
 .modal-close:hover{color:#333}
 .form-row{margin-bottom:16px}
 .form-row label{display:block;font-size:14px;font-weight:500;color:#333;margin-bottom:6px}
-.form-row input,.form-row select,.form-row textarea{width:100%;padding:8px 12px;border:1px solid #d9d9d9;border-radius:6px;font-size:14px;outline:none;font-family:inherit}
+.form-row input,.form-row select,.form-row textarea{width:100%;padding:8px 12px;border:1px solid var(--el-border-color);border-radius:6px;font-size:14px;outline:none;font-family:inherit}
 .form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-color:var(--el-color-primary);box-shadow:0 0 0 2px rgba(0,209,160,.2)}
 .form-row textarea{min-height:120px;resize:vertical}
 .form-row-inline{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -29,6 +29,16 @@
 .stat-mini{background:white;border-radius:8px;padding:16px;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,.06)}
 .stat-mini .num{font-size:24px;font-weight:700;color:var(--el-color-primary)}
 .stat-mini .label{font-size:12px;color:#999;margin-top:4px}
+.el-button--text{background:none;border:none;color:var(--el-color-primary);padding:0 4px;cursor:pointer;font-size:13px}
+.el-button--text:hover{color:var(--el-color-primary-light)}
+.el-button--text.el-button--danger{color:var(--el-color-danger)}
+.el-button--text.el-button--danger:hover{color:#f78989}
+.el-button--text.el-button--success{color:var(--el-color-success)}
+.el-button--text.el-button--success:hover{color:#85ce61}
+.wy-design-list_empty{text-align:center;padding:60px 20px;color:var(--el-text-secondary)}
+.wy-design-list_empty-icon{font-size:40px;margin-bottom:12px}
+.wy-design-list_pagination{padding:16px 24px;text-align:center;display:flex;justify-content:center;align-items:center;gap:8px}
+.wy-design-list_pagination_info{font-size:13px;color:var(--el-text-secondary);margin-right:8px}
 </style>
 </head>
 <body class="wy-design-list">
@@ -36,16 +46,16 @@
 <!-- 顶部区域 -->
 <div class="wy-design-list_top">
     <div class="wy-design-list_top_title">
-        <h1 class="wy-design-list_title">公告管理</h1>
+        <h1 class="wy-design-list_title">📢 公告管理</h1>
         <div class="wy-design-list_space"></div>
         <div class="wy-design-list_btn-group">
             <div class="wy-design-list_btn">
-                <button type="button" class="el-button el-button--primary el-button--small" onclick="loadNotices()">
+                <button type="button" class="el-button el-button--small" onclick="loadNotices()">
                     <span>刷新</span>
                 </button>
             </div>
             <div class="wy-design-list_btn">
-                <button type="button" class="el-button el-button--success el-button--small" onclick="openCreate()">
+                <button type="button" class="el-button el-button--primary el-button--small" onclick="openCreate()">
                     <span>+ 新建公告</span>
                 </button>
             </div>
@@ -63,58 +73,63 @@
     </div>
 </div>
 
-<!-- 搜索区域 -->
-<div class="wy-design-list_search">
-    <div class="wy-design-list_search_row">
-        <div class="wy-design-list_search_item">
-            <input type="text" id="searchInput" placeholder="搜索标题..." oninput="debounceSearch()">
+<!-- 筛选区域 -->
+<div class="wy-design-list_filter">
+    <div class="wy-design-list_other">
+        <div class="el-input el-input--small" style="width: 200px;">
+            <input type="text" id="searchInput" placeholder="搜索标题..." class="el-input__inner" oninput="debounceSearch()">
         </div>
-        <div class="wy-design-list_search_item">
-            <select id="filterStatus" onchange="loadNotices()">
-                <option value="">全部状态</option>
-                <option value="published">已发布</option>
-                <option value="draft">草稿</option>
-            </select>
-        </div>
-        <div class="wy-design-list_search_item">
-            <select id="filterType" onchange="loadNotices()">
-                <option value="">全部类型</option>
-                <option value="general">普通</option>
-                <option value="activity">活动</option>
-                <option value="urgent">紧急</option>
-            </select>
-        </div>
-        <div class="wy-design-list_search_item">
-            <button type="button" class="el-button el-button--primary el-button--small" onclick="loadNotices()">
-                <span>搜索</span>
-            </button>
-        </div>
+    </div>
+    <div class="wy-design-list_other">
+        <select id="filterStatus" class="el-input__inner" style="width: 130px;" onchange="loadNotices()">
+            <option value="">全部状态</option>
+            <option value="published">已发布</option>
+            <option value="draft">草稿</option>
+        </select>
+    </div>
+    <div class="wy-design-list_other">
+        <select id="filterType" class="el-input__inner" style="width: 130px;" onchange="loadNotices()">
+            <option value="">全部类型</option>
+            <option value="general">普通</option>
+            <option value="activity">活动</option>
+            <option value="urgent">紧急</option>
+        </select>
+    </div>
+    <div class="wy-design-list_other">
+        <button type="button" class="el-button el-button--primary el-button--small" onclick="loadNotices()">
+            <span>搜索</span>
+        </button>
     </div>
 </div>
 
 <!-- 表格区域 -->
-<div class="wy-design-list_table">
-    <table class="wy-design-table">
-        <thead>
+<div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
+    <div class="wy-design-table_bar">
+        <span class="wy-design-table_total">共 <em id="totalCount">0</em> 条</span>
+        <div class="wy-pages">
+            <div class="wy-pages_total">第<em id="currentPage">1</em>/<em id="totalPages">1</em>页</div>
+            <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
+            <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
+        </div>
+    </div>
+    <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
+        <thead class="el-table__header">
             <tr>
-                <th>标题</th>
-                <th>类型</th>
-                <th>重要程度</th>
-                <th>状态</th>
-                <th>生效期</th>
-                <th>创建人</th>
-                <th>创建时间</th>
-                <th>操作</th>
+                <th><div class="cell">标题</div></th>
+                <th><div class="cell">类型</div></th>
+                <th><div class="cell">重要程度</div></th>
+                <th><div class="cell">状态</div></th>
+                <th><div class="cell">生效期</div></th>
+                <th><div class="cell">创建人</div></th>
+                <th><div class="cell">创建时间</div></th>
+                <th><div class="cell">操作</div></th>
             </tr>
         </thead>
-        <tbody id="listBody">
-            <tr><td colspan="8" style="text-align:center;padding:40px;color:#bbb">加载中...</td></tr>
+        <tbody class="el-table__body" id="listBody">
+            <tr><td colspan="8" style="text-align:center;padding:60px;color:var(--el-text-secondary);">加载中...</td></tr>
         </tbody>
     </table>
 </div>
-
-<!-- 分页 -->
-<div class="wy-design-list_pagination" id="pagination"></div>
 
 <!-- 新建/编辑弹窗 -->
 <div class="modal-overlay" id="editModal">
@@ -173,7 +188,7 @@
         </div>
 
         <div class="modal-footer">
-            <button class="el-button el-button--default el-button--small" onclick="closeModal()">取消</button>
+            <button class="el-button el-button--small" onclick="closeModal()">取消</button>
             <button class="el-button el-button--primary el-button--small" onclick="submitNotice()">保存</button>
         </div>
     </div>
@@ -183,7 +198,7 @@
 const token = localStorage.getItem('admin_token') || new URLSearchParams(location.search).get('access_token') || parent?.token || '';
 const isdev = new URLSearchParams(location.search).get('isdev') || '0';
 
-let currentPage = 1;
+let currentPageNum = 1;
 let editingId = null;
 let searchTimer = null;
 
@@ -198,7 +213,7 @@ async function api(method, path, data) {
 
 function debounceSearch() {
     if (searchTimer) clearTimeout(searchTimer);
-    searchTimer = setTimeout(() => { currentPage = 1; loadNotices(); }, 400);
+    searchTimer = setTimeout(() => { currentPageNum = 1; loadNotices(); }, 400);
 }
 
 async function loadNotices() {
@@ -206,7 +221,7 @@ async function loadNotices() {
     const status = document.getElementById('filterStatus').value;
     const notice_type = document.getElementById('filterType').value;
 
-    let q = `?page=${currentPage}&page_size=10`;
+    let q = `?page=${currentPageNum}&page_size=10`;
     if (keyword) q += `&keyword=${encodeURIComponent(keyword)}`;
     if (status) q += `&status=${status}`;
     if (notice_type) q += `&notice_type=${notice_type}`;
@@ -214,12 +229,13 @@ async function loadNotices() {
     const r = await api('GET', `/notices${q}`);
     if (!r.success) {
         document.getElementById('listBody').innerHTML = 
-            `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--el-color-danger)">加载失败: ${r.msg || '未知错误'}</td></tr>`;
+            `<tr><td colspan="8" style="text-align:center;padding:60px;color:var(--el-color-danger)">加载失败: ${r.msg || '未知错误'}</td></tr>`;
         return;
     }
 
     const items = r.data.items || [];
     const total = r.data.total || 0;
+    const totalPages = Math.ceil(total / 10) || 1;
 
     // 更新统计
     document.getElementById('statTotal').textContent = total;
@@ -227,10 +243,16 @@ async function loadNotices() {
     document.getElementById('statDraft').textContent = items.filter(i => i.status === 'draft').length;
     document.getElementById('statUrgent').textContent = items.filter(i => i.notice_type === 'urgent').length;
 
+    // 更新分页信息
+    document.getElementById('totalCount').textContent = total;
+    document.getElementById('currentPage').textContent = currentPageNum;
+    document.getElementById('totalPages').textContent = totalPages;
+    document.getElementById('prevBtn').classList.toggle('disabled', currentPageNum <= 1);
+    document.getElementById('nextBtn').classList.toggle('disabled', currentPageNum >= totalPages);
+
     const tbody = document.getElementById('listBody');
     if (!items.length) {
         tbody.innerHTML = `<tr><td colspan="8"><div class="wy-design-list_empty"><div class="wy-design-list_empty-icon">📢</div>暂无公告</div></td></tr>`;
-        document.getElementById('pagination').innerHTML = '';
         return;
     }
 
@@ -241,46 +263,24 @@ async function loadNotices() {
 
     tbody.innerHTML = items.map(n => `
         <tr>
-            <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${n.title}">${n.title}</td>
-            <td><span class="el-tag el-tag--small ${typeCls[n.notice_type] || 'el-tag--info'}">${typeMap[n.notice_type] || n.notice_type}</span></td>
-            <td><span class="el-tag el-tag--small ${impCls[String(n.importance)] || 'el-tag--info'}">${impMap[String(n.importance)] || '普通'}</span></td>
-            <td><span class="el-tag el-tag--small ${n.status === 'published' ? 'el-tag--success' : 'el-tag--warning'}">${n.status === 'published' ? '已发布' : '草稿'}</span></td>
-            <td style="font-size:12px;color:#999">${n.start_date ? n.start_date : '-'} ${n.end_date ? '~ ' + n.end_date : ''}</td>
-            <td>${n.created_by_name || '-'}</td>
-            <td style="font-size:12px;color:#999">${(n.created_at || '').substring(0,16)}</td>
-            <td>
-                <div class="wy-design-list_table_action">
-                    <button class="el-button el-button--text el-button--small" onclick="openEdit(${n.id})">编辑</button>
-                    ${n.status === 'draft' ? `<button class="el-button el-button--text el-button--small el-button--success" onclick="publishNotice(${n.id})">发布</button>` : ''}
-                    <button class="el-button el-button--text el-button--small el-button--danger" onclick="deleteNotice(${n.id})">删除</button>
-                </div>
-            </td>
+            <td><div class="cell" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${n.title}">${n.title}</div></td>
+            <td><div class="cell"><span class="el-tag el-tag--small ${typeCls[n.notice_type] || 'el-tag--info'}">${typeMap[n.notice_type] || n.notice_type}</span></div></td>
+            <td><div class="cell"><span class="el-tag el-tag--small ${impCls[String(n.importance)] || 'el-tag--info'}">${impMap[String(n.importance)] || '普通'}</span></div></td>
+            <td><div class="cell"><span class="el-tag el-tag--small ${n.status === 'published' ? 'el-tag--success' : 'el-tag--warning'}">${n.status === 'published' ? '已发布' : '草稿'}</span></div></td>
+            <td><div class="cell" style="font-size:12px;color:var(--el-text-secondary)">${n.start_date ? n.start_date : '-'} ${n.end_date ? '~ ' + n.end_date : ''}</div></td>
+            <td><div class="cell">${n.created_by_name || '-'}</div></td>
+            <td><div class="cell" style="font-size:12px;color:var(--el-text-secondary)">${(n.created_at || '').substring(0,16)}</div></td>
+            <td><div class="cell actions">
+                <button class="el-button el-button--text el-button--small" onclick="openEdit(${n.id})">编辑</button>
+                ${n.status === 'draft' ? `<button class="el-button el-button--text el-button--small el-button--success" onclick="publishNotice(${n.id})">发布</button>` : ''}
+                <button class="el-button el-button--text el-button--small el-button--danger" onclick="deleteNotice(${n.id})">删除</button>
+            </div></td>
         </tr>
     `).join('');
-
-    // 分页
-    const totalPages = Math.ceil(total / 10);
-    renderPagination(currentPage, totalPages, total);
 }
 
-function renderPagination(page, totalPages, total) {
-    const p = document.getElementById('pagination');
-    if (totalPages <= 1) { p.innerHTML = `<span class="wy-design-list_pagination_info">共 ${total} 条</span>`; return; }
-    let html = `<span class="wy-design-list_pagination_info">共 ${total} 条</span>`;
-    if (page > 1) html += `<button class="el-button el-button--small el-button--default" onclick="changePage(${page-1})">上一页</button>`;
-    const start = Math.max(1, page - 2);
-    const end = Math.min(totalPages, page + 2);
-    if (start > 1) html += `<button class="el-button el-button--small el-button--default" onclick="changePage(1)">1</button>${start > 2 ? '<span>...</span>' : ''}`;
-    for (let i = start; i <= end; i++) {
-        html += `<button class="el-button el-button--small ${i === page ? 'el-button--primary' : 'el-button--default'}" onclick="changePage(${i})">${i}</button>`;
-    }
-    if (end < totalPages) html += `${end < totalPages - 1 ? '<span>...</span>' : ''}<button class="el-button el-button--small el-button--default" onclick="changePage(${totalPages})">${totalPages}</button>`;
-    if (page < totalPages) html += `<button class="el-button el-button--small el-button--default" onclick="changePage(${page+1})">下一页</button>`;
-    p.innerHTML = html;
-}
-
-function changePage(page) {
-    currentPage = page;
+function changePage(delta) {
+    currentPageNum += delta;
     loadNotices();
 }
 
