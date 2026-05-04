@@ -540,6 +540,14 @@ def list_members(admin):
     return jsonify({'success': True, 'data': repo.find_page(page, size, {'deleted': 0})})
 
 
+@taishan_admin_bp.route('/api/admin/taishan/member/levels', methods=['GET'])
+@require_admin
+def list_member_levels(admin):
+    """会员等级列表"""
+    svc = TaishanService()
+    return jsonify(svc.list_member_levels())
+
+
 @taishan_admin_bp.route('/api/admin/taishan/members/<int:member_id>/grant-points', methods=['POST'])
 @require_admin
 def admin_grant_points(admin, member_id):
@@ -550,6 +558,14 @@ def admin_grant_points(admin, member_id):
 
 
 # ==================== 优惠券管理 ====================
+
+@taishan_admin_bp.route('/api/admin/taishan/coupons', methods=['GET'])
+@require_admin
+def list_coupons(admin):
+    """优惠券列表（兼容前端调用）"""
+    svc = TaishanService()
+    return jsonify(svc.list_coupon_templates(request.args.get('ec_id')))
+
 
 @taishan_admin_bp.route('/api/admin/taishan/coupons/templates', methods=['GET'])
 @require_admin

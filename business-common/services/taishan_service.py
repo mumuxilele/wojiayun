@@ -421,6 +421,17 @@ class TaishanService(BaseService):
 
     # ==================== 会员 ====================
 
+    def list_member_levels(self, ec_id=None):
+        """获取会员等级列表"""
+        try:
+            conditions = {'deleted': 0}
+            if ec_id:
+                conditions['ec_id'] = ec_id
+            levels = self.member_level_repo.find_all(conditions, order_by='level ASC')
+            return self.success(levels or [])
+        except Exception as e:
+            return self.error(str(e))
+
     def get_or_create_member(self, user_id, user_name=None, user_phone=None, ec_id=None, project_id=None):
         try:
             member = self.member_repo.find_by_user(user_id, ec_id)
