@@ -214,6 +214,146 @@ def static_files(filename):
     return send_from_directory('.', filename)
 
 
+# ============ 公告管理 ============
+
+@app.route('/api/admin/notices', methods=['GET'])
+@require_admin
+def list_notices(user):
+    """公告列表"""
+    from business_common import db
+    page = int(request.args.get('page', 1))
+    page_size = int(request.args.get('page_size', 10))
+    keyword = request.args.get('keyword', '')
+    status = request.args.get('status', '')
+    notice_type = request.args.get('notice_type', '')
+    
+    conditions = ["deleted=0"]
+    params = []
+    
+    if keyword:
+        conditions.append("title LIKE %s")
+        params.append(f"%{keyword}%")
+    if status:
+        conditions.append("status=%s")
+        params.append(status)
+    if notice_type:
+        conditions.append("notice_type=%s")
+        params.append(notice_type)
+    
+    where = " AND ".join(conditions)
+    
+    try:
+        count_result = db.get_one(f"SELECT COUNT(*) as cnt FROM business_notices WHERE {where}", params)
+        total = count_result['cnt'] if count_result else 0
+        
+        offset = (page - 1) * page_size
+        items = db.get_all(
+            f"SELECT * FROM business_notices WHERE {where} ORDER BY created_at DESC LIMIT %s OFFSET %s",
+            params + [page_size, offset]
+        ) or []
+        
+        return jsonify({'success': True, 'data': {'items': items, 'total': total}})
+    except Exception as e:
+        return jsonify({'success': False, 'msg': str(e)})
+
+
+@app.route('/api/admin/notices/<int:notice_id>', methods=['GET'])
+@require_admin
+def get_notice(user, notice_id):
+    """公告详情"""
+    from business_common import db
+    try:
+        notice = db.get_one("SELECT * FROM business_notices WHERE id=%s AND deleted=0", [notice_id])
+        if not notice:
+            return jsonify({'success': False, 'msg': '公告不存在'})
+        return jsonify({'success': True, 'data': notice})
+    except Exception as e:
+        return jsonify({'success': False, 'msg': str(e)})
+
+
+@app.route('/api/admin/notices', methods=['POST'])
+@require_admin
+def create_notice(user):
+    """创建公告"""
+    from business_common import db
+    data = request.get_json() or {}
+    
+    if not data.get('title'):
+        return jsonify({'success': False, 'msg': '请填写公告标题'})
+    if not data.get('content'):
+        return jsonify({'success': False, 'msg': '请填写公告内容'})
+    
+    try:
+        db.execute("""
+            INSERT INTO business_notices (title, content, notice_type, importance, status, start_date, end_date, created_by, created_by_name, ec_id, project_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, [
+            data.get('title'),
+            data.get('content'),
+            data.get('notice_type', 'general'),
+            data.get('importance', 0),
+            data.get('status', 'draft'),
+            data.get('start_date'),
+            data.get('end_date'),
+            user.get('id'),
+            user.get('name', ''),
+            user.get('ec_id'),
+            user.get('project_id')
+        ])
+        return jsonify({'success': True, 'msg': '创建成功'})
+    except Exception as e:
+        return jsonify({'success': False, 'msg': str(e)})
+
+
+@app.route('/api/admin/notices/<int:notice_id>', methods=['PUT'])
+@require_admin
+def update_notice(user, notice_id):
+    """更新公告"""
+    from business_common import db
+    data = request.get_json() or {}
+    
+    try:
+        # 检查公告是否存在
+        notice = db.get_one("SELECT id FROM business_notices WHERE id=%s AND deleted=0", [notice_id])
+        if not notice:
+            return jsonify({'success': False, 'msg': '公告不存在'})
+        
+        # 构建更新语句
+        updates = []
+        params = []
+        
+        for field in ['title', 'content', 'notice_type', 'importance', 'status', 'start_date', 'end_date']:
+            if field in data:
+                updates.append(f"{field}=%s")
+                params.append(data[field])
+        
+        if not updates:
+            return jsonify({'success': False, 'msg': '没有要更新的内容'})
+        
+        params.append(notice_id)
+        db.execute(f"UPDATE business_notices SET {', '.join(updates)} WHERE id=%s", params)
+        
+        return jsonify({'success': True, 'msg': '更新成功'})
+    except Exception as e:
+        return jsonify({'success': False, 'msg': str(e)})
+
+
+@app.route('/api/admin/notices/<int:notice_id>', methods=['DELETE'])
+@require_admin
+def delete_notice(user, notice_id):
+    """删除公告（软删除）"""
+    from business_common import db
+    try:
+        notice = db.get_one("SELECT id FROM business_notices WHERE id=%s AND deleted=0", [notice_id])
+        if not notice:
+            return jsonify({'success': False, 'msg': '公告不存在'})
+        
+        db.execute("UPDATE business_notices SET deleted=1 WHERE id=%s", [notice_id])
+        return jsonify({'success': True, 'msg': '删除成功'})
+    except Exception as e:
+        return jsonify({'success': False, 'msg': str(e)})
+
+
 # ============ 泰山城投模块 ============
 from taishan_routes import taishan_admin_bp
 app.register_blueprint(taishan_admin_bp)

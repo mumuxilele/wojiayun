@@ -1,176 +1,186 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>鍏憡绠＄悊</title>
-    <link rel="stylesheet" href="/business-common/list-style.css">
-    <style>
-        /* 椤甸潰鐗规湁鏍峰紡 */
-        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
-        .actions .link:hover { text-decoration: underline; }
-        .actions .link.danger { color: var(--el-color-danger); }
-        /* 寮圭獥鏍峰紡淇濈暀 */
-        /* 寮圭獥 */
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>公告管理</title>
+<link rel="stylesheet" href="/business-common/list-style.css">
+<style>
+/* 页面特有样式 */
+.actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
+.actions .link:hover { text-decoration: underline; }
+.actions .link.danger { color: var(--el-color-danger); }
+/* 弹窗 */
 .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:1000;display:none;align-items:center;justify-content:center}
-    </style>
+.modal-overlay.show{display:flex}
+.modal{background:white;border-radius:8px;padding:24px;width:600px;max-width:95vw;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:18px;font-weight:600;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center}
+.modal-close{cursor:pointer;color:#999;font-size:20px;line-height:1}
+.modal-close:hover{color:#333}
+.form-row{margin-bottom:16px}
+.form-row label{display:block;font-size:14px;font-weight:500;color:#333;margin-bottom:6px}
+.form-row input,.form-row select,.form-row textarea{width:100%;padding:8px 12px;border:1px solid #d9d9d9;border-radius:6px;font-size:14px;outline:none;font-family:inherit}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-color:var(--el-color-primary);box-shadow:0 0 0 2px rgba(0,209,160,.2)}
+.form-row textarea{min-height:120px;resize:vertical}
+.form-row-inline{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid #f0f0f0}
+.required{color:var(--el-color-danger);margin-left:2px}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.stat-mini{background:white;border-radius:8px;padding:16px;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.stat-mini .num{font-size:24px;font-weight:700;color:var(--el-color-primary)}
+.stat-mini .label{font-size:12px;color:#999;margin-top:4px}
+</style>
 </head>
 <body class="wy-design-list">
-    <!-- 椤堕儴鍖哄煙 -->
-    <div class="wy-design-list_top">
-        <div class="wy-design-list_top_title">
-            <h1 class="wy-design-list_title">鍏憡绠＄悊</h1>
-            <div class="wy-design-list_space"></div>
-            <div class="wy-design-list_btn-group">
-                <div class="wy-design-list_btn">
-                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList(1)">
-                        <span>鎼滅储</span>
-                    </button>
-                </div>
-                <div class="wy-design-list_btn">
-                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
-                        <span>閲嶇疆</span>
-                    </button>
-                </div>
+
+<!-- 顶部区域 -->
+<div class="wy-design-list_top">
+    <div class="wy-design-list_top_title">
+        <h1 class="wy-design-list_title">公告管理</h1>
+        <div class="wy-design-list_space"></div>
+        <div class="wy-design-list_btn-group">
+            <div class="wy-design-list_btn">
+                <button type="button" class="el-button el-button--primary el-button--small" onclick="loadNotices()">
+                    <span>刷新</span>
+                </button>
+            </div>
+            <div class="wy-design-list_btn">
+                <button type="button" class="el-button el-button--success el-button--small" onclick="openCreate()">
+                    <span>+ 新建公告</span>
+                </button>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- 绛涢€夊尯鍩?-->
-    <div class="wy-design-list_filter">
-        <div class="wy-design-list_other">
-            <div class="el-input el-input--small" style="width: 200px;">
-                <input type="text" id="searchInput" placeholder="鎼滅储鏍囬..." class="el-input__inner">
-            </div>
+<!-- 统计卡片 -->
+<div style="padding: 16px 24px 0;">
+    <div class="stats-row">
+        <div class="stat-mini"><div class="num" id="statTotal">0</div><div class="label">公告总数</div></div>
+        <div class="stat-mini"><div class="num" id="statPublished">0</div><div class="label">已发布</div></div>
+        <div class="stat-mini"><div class="num" id="statDraft">0</div><div class="label">草稿</div></div>
+        <div class="stat-mini"><div class="num" id="statUrgent">0</div><div class="label">紧急公告</div></div>
+    </div>
+</div>
+
+<!-- 搜索区域 -->
+<div class="wy-design-list_search">
+    <div class="wy-design-list_search_row">
+        <div class="wy-design-list_search_item">
+            <input type="text" id="searchInput" placeholder="搜索标题..." oninput="debounceSearch()">
         </div>
-        <div class="wy-design-list_other">
-            <select id="filter1" class="el-input__inner" style="width: 130px;">
-                
-                <option value="">鍏ㄩ儴鐘舵€?/option>
-                <option value="published">宸插彂甯?/option>
-                <option value="draft">鑽夌</option>
-            
+        <div class="wy-design-list_search_item">
+            <select id="filterStatus" onchange="loadNotices()">
+                <option value="">全部状态</option>
+                <option value="published">已发布</option>
+                <option value="draft">草稿</option>
             </select>
         </div>
-        <div class="wy-design-list_other">
-            <select id="filter2" class="el-input__inner" style="width: 130px;">
-                
-                <option value="">鍏ㄩ儴绫诲瀷</option>
-                <option value="general">鏅€?/option>
-                <option value="activity">娲诲姩</option>
-                <option value="urgent">绱ф€?/option>
-            
+        <div class="wy-design-list_search_item">
+            <select id="filterType" onchange="loadNotices()">
+                <option value="">全部类型</option>
+                <option value="general">普通</option>
+                <option value="activity">活动</option>
+                <option value="urgent">紧急</option>
             </select>
         </div>
-        <div class="wy-design-list_other">
-            <select id="filter3" class="el-input__inner" style="width: 130px;">
-                
-                    <option value="general">鏅€?/option>
-                    <option value="activity">娲诲姩</option>
-                    <option value="urgent">绱ф€?/option>
-                
-            </select>
+        <div class="wy-design-list_search_item">
+            <button type="button" class="el-button el-button--primary el-button--small" onclick="loadNotices()">
+                <span>搜索</span>
+            </button>
         </div>
     </div>
+</div>
 
-    <!-- 琛ㄦ牸鍖哄煙 -->
-    <div class="wy-design-table wy-design-table_main wy-design-table_has-bar">
-        <div class="wy-design-table_bar">
-            <i class="wy-design-table_set el-icon-setting" title="鍒楄缃?></i>
-            <span class="wy-design-table_total">鍏?<em id="totalCount">0</em> 鏉?/span>
-            <div class="wy-pages">
-                <div class="wy-pages_total">绗?em id="currentPage">1</em>/<em id="totalPages">1</em>椤?/div>
-                <div class="wy-pages_prev el-icon-arrow-left" id="prevBtn" onclick="changePage(-1)"></div>
-                <div class="wy-pages_next el-icon-arrow-right" id="nextBtn" onclick="changePage(1)"></div>
-            </div>
-        </div>
-        <table class="el-table el-table--fit el-table--border el-table--enable-row-hover">
-            <thead class="el-table__header">
-                <tr>
-                    <th><div class="cell">鏍囬</div></th>
-                    <th><div class="cell">绫诲瀷</div></th>
-                    <th><div class="cell">閲嶈绋嬪害</div></th>
-                    <th><div class="cell">鐘舵€?/div></th>
-                    <th><div class="cell">鐢熸晥鏈?/div></th>
-                    <th><div class="cell">鍒涘缓浜?/div></th>
-                    <th><div class="cell">鍒涘缓鏃堕棿</div></th>
-                    <th><div class="cell">鎿嶄綔</div></th>
-                </tr>
-            </thead>
-            <tbody class="el-table__body" id="listBody">
-                <tr><td colspan="10" style="text-align: center; padding: 60px; color: var(--el-text-secondary);">鍔犺浇涓?..</td></tr>
-            </tbody>
-        </table>
-    </div>
+<!-- 表格区域 -->
+<div class="wy-design-list_table">
+    <table class="wy-design-table">
+        <thead>
+            <tr>
+                <th>标题</th>
+                <th>类型</th>
+                <th>重要程度</th>
+                <th>状态</th>
+                <th>生效期</th>
+                <th>创建人</th>
+                <th>创建时间</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody id="listBody">
+            <tr><td colspan="8" style="text-align:center;padding:40px;color:#bbb">加载中...</td></tr>
+        </tbody>
+    </table>
+</div>
 
-    
+<!-- 分页 -->
+<div class="wy-design-list_pagination" id="pagination"></div>
+
+<!-- 新建/编辑弹窗 -->
 <div class="modal-overlay" id="editModal">
     <div class="modal">
         <div class="modal-title">
-            <span id="modalTitle">鏂板缓鍏憡</span>
-            <span class="modal-close" onclick="closeModal()">鉁?/span>
+            <span id="modalTitle">新建公告</span>
+            <span class="modal-close" onclick="closeModal()">✕</span>
         </div>
 
         <div class="form-row">
-            <label>鍏憡鏍囬<span class="required">*</span></label>
-            <input type="text" id="fTitle" placeholder="璇疯緭鍏ュ叕鍛婃爣棰? maxlength="255">
+            <label>公告标题<span class="required">*</span></label>
+            <input type="text" id="fTitle" placeholder="请输入公告标题" maxlength="255">
         </div>
 
         <div class="form-row-inline form-row">
             <div>
-                <label>鍏憡绫诲瀷</label>
+                <label>公告类型</label>
                 <select id="fType">
-                    <option value="general">鏅€?/option>
-                    <option value="activity">娲诲姩</option>
-                    <option value="urgent">绱ф€?/option>
+                    <option value="general">普通</option>
+                    <option value="activity">活动</option>
+                    <option value="urgent">紧急</option>
                 </select>
             </div>
             <div>
-                <label>閲嶈绋嬪害</label>
+                <label>重要程度</label>
                 <select id="fImportance">
-                    <option value="0">鏅€?/option>
-                    <option value="1">閲嶈</option>
-                    <option value="2">绱ф€ョ疆椤?/option>
+                    <option value="0">普通</option>
+                    <option value="1">重要</option>
+                    <option value="2">紧急置顶</option>
                 </select>
             </div>
         </div>
 
         <div class="form-row-inline form-row">
             <div>
-                <label>鐢熸晥鏃ユ湡</label>
+                <label>生效日期</label>
                 <input type="date" id="fStartDate">
             </div>
             <div>
-                <label>澶辨晥鏃ユ湡</label>
+                <label>失效日期</label>
                 <input type="date" id="fEndDate">
             </div>
         </div>
 
         <div class="form-row">
-            <label>鍙戝竷鐘舵€?/label>
+            <label>发布状态</label>
             <select id="fStatus">
-                <option value="published">绔嬪嵆鍙戝竷</option>
-                <option value="draft">淇濆瓨鑽夌</option>
+                <option value="published">立即发布</option>
+                <option value="draft">保存草稿</option>
             </select>
         </div>
 
         <div class="form-row">
-            <label>鍏憡鍐呭<span class="required">*</span></label>
-            <textarea id="fContent" placeholder="璇疯緭鍏ュ叕鍛婂唴瀹?.."></textarea>
+            <label>公告内容<span class="required">*</span></label>
+            <textarea id="fContent" placeholder="请输入公告内容..."></textarea>
         </div>
 
         <div class="modal-footer">
-            <button class="btn btn-default" onclick="closeModal()">鍙栨秷</button>
-            <button class="btn btn-primary" onclick="submitNotice()">淇濆瓨</button>
+            <button class="el-button el-button--default el-button--small" onclick="closeModal()">取消</button>
+            <button class="el-button el-button--primary el-button--small" onclick="submitNotice()">保存</button>
         </div>
     </div>
 </div>
 
-
-
-    <script>
-    // 鍙粠URL鍙傛暟鑾峰彇token
-const token = new URLSearchParams(location.search).get('access_token') || '';
+<script>
+const token = localStorage.getItem('admin_token') || new URLSearchParams(location.search).get('access_token') || parent?.token || '';
 const isdev = new URLSearchParams(location.search).get('isdev') || '0';
 
 let currentPage = 1;
@@ -192,9 +202,9 @@ function debounceSearch() {
 }
 
 async function loadNotices() {
-    const keyword = document.getElementById('searchInput') ? document.getElementById('searchInput').value.trim() : '';
-    const status = document.getElementById('filterStatus') ? document.getElementById('filterStatus').value : '';
-    const notice_type = document.getElementById('filterType') ? document.getElementById('filterType').value : '';
+    const keyword = document.getElementById('searchInput').value.trim();
+    const status = document.getElementById('filterStatus').value;
+    const notice_type = document.getElementById('filterType').value;
 
     let q = `?page=${currentPage}&page_size=10`;
     if (keyword) q += `&keyword=${encodeURIComponent(keyword)}`;
@@ -204,14 +214,14 @@ async function loadNotices() {
     const r = await api('GET', `/notices${q}`);
     if (!r.success) {
         document.getElementById('listBody').innerHTML = 
-            `<tr><td colspan="8" style="text-align:center;padding:40px;color:#ff4d4f">鍔犺浇澶辫触: ${r.msg || '鏈煡閿欒'}</td></tr>`;
+            `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--el-color-danger)">加载失败: ${r.msg || '未知错误'}</td></tr>`;
         return;
     }
 
     const items = r.data.items || [];
     const total = r.data.total || 0;
 
-    // 鏇存柊缁熻
+    // 更新统计
     document.getElementById('statTotal').textContent = total;
     document.getElementById('statPublished').textContent = items.filter(i => i.status === 'published').length;
     document.getElementById('statDraft').textContent = items.filter(i => i.status === 'draft').length;
@@ -219,53 +229,53 @@ async function loadNotices() {
 
     const tbody = document.getElementById('listBody');
     if (!items.length) {
-        tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="empty-icon">馃摙</div>鏆傛棤鍏憡</div></td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8"><div class="wy-design-list_empty"><div class="wy-design-list_empty-icon">📢</div>暂无公告</div></td></tr>`;
         document.getElementById('pagination').innerHTML = '';
         return;
     }
 
-    const typeMap = {general:'鏅€?, activity:'娲诲姩', urgent:'绱ф€?};
-    const typeCls = {general:'tag-general', activity:'tag-activity', urgent:'tag-urgent'};
-    const impMap = {0:'鏅€?, 1:'閲嶈', 2:'绱ф€ョ疆椤?};
-    const impCls = {0:'importance-0', 1:'importance-1', 2:'importance-2'};
+    const typeMap = {general:'普通', activity:'活动', urgent:'紧急'};
+    const typeCls = {general:'el-tag--info', activity:'el-tag--primary', urgent:'el-tag--danger'};
+    const impMap = {0:'普通', 1:'重要', 2:'紧急置顶'};
+    const impCls = {0:'el-tag--info', 1:'el-tag--warning', 2:'el-tag--danger'};
 
     tbody.innerHTML = items.map(n => `
         <tr>
             <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${n.title}">${n.title}</td>
-            <td><span class="tag ${typeCls[n.notice_type] || 'tag-general'}">${typeMap[n.notice_type] || n.notice_type}</span></td>
-            <td><span class="${impCls[String(n.importance)] || 'importance-0'}">${impMap[String(n.importance)] || '鏅€?}</span></td>
-            <td><span class="tag ${n.status === 'published' ? 'tag-published' : 'tag-draft'}">${n.status === 'published' ? '宸插彂甯? : '鑽夌'}</span></td>
+            <td><span class="el-tag el-tag--small ${typeCls[n.notice_type] || 'el-tag--info'}">${typeMap[n.notice_type] || n.notice_type}</span></td>
+            <td><span class="el-tag el-tag--small ${impCls[String(n.importance)] || 'el-tag--info'}">${impMap[String(n.importance)] || '普通'}</span></td>
+            <td><span class="el-tag el-tag--small ${n.status === 'published' ? 'el-tag--success' : 'el-tag--warning'}">${n.status === 'published' ? '已发布' : '草稿'}</span></td>
             <td style="font-size:12px;color:#999">${n.start_date ? n.start_date : '-'} ${n.end_date ? '~ ' + n.end_date : ''}</td>
             <td>${n.created_by_name || '-'}</td>
             <td style="font-size:12px;color:#999">${(n.created_at || '').substring(0,16)}</td>
             <td>
-                <div class="actions">
-                    <button class="btn btn-default" onclick="openEdit(${n.id})">缂栬緫</button>
-                    ${n.status === 'draft' ? `<button class="btn btn-success" style="padding:4px 10px;font-size:12px" onclick="publishNotice(${n.id})">鍙戝竷</button>` : ''}
-                    <button class="btn btn-danger" onclick="deleteNotice(${n.id})">鍒犻櫎</button>
+                <div class="wy-design-list_table_action">
+                    <button class="el-button el-button--text el-button--small" onclick="openEdit(${n.id})">编辑</button>
+                    ${n.status === 'draft' ? `<button class="el-button el-button--text el-button--small el-button--success" onclick="publishNotice(${n.id})">发布</button>` : ''}
+                    <button class="el-button el-button--text el-button--small el-button--danger" onclick="deleteNotice(${n.id})">删除</button>
                 </div>
             </td>
         </tr>
     `).join('');
 
-    // 鍒嗛〉
+    // 分页
     const totalPages = Math.ceil(total / 10);
     renderPagination(currentPage, totalPages, total);
 }
 
 function renderPagination(page, totalPages, total) {
     const p = document.getElementById('pagination');
-    if (totalPages <= 1) { p.innerHTML = `<span class="page-info">鍏?${total} 鏉?/span>`; return; }
-    let html = `<span class="page-info">鍏?${total} 鏉?/span>`;
-    if (page > 1) html += `<button class="page-btn" onclick="changePage(${page-1})">涓婁竴椤?/button>`;
+    if (totalPages <= 1) { p.innerHTML = `<span class="wy-design-list_pagination_info">共 ${total} 条</span>`; return; }
+    let html = `<span class="wy-design-list_pagination_info">共 ${total} 条</span>`;
+    if (page > 1) html += `<button class="el-button el-button--small el-button--default" onclick="changePage(${page-1})">上一页</button>`;
     const start = Math.max(1, page - 2);
     const end = Math.min(totalPages, page + 2);
-    if (start > 1) html += `<button class="page-btn" onclick="changePage(1)">1</button>${start > 2 ? '<span>...</span>' : ''}`;
+    if (start > 1) html += `<button class="el-button el-button--small el-button--default" onclick="changePage(1)">1</button>${start > 2 ? '<span>...</span>' : ''}`;
     for (let i = start; i <= end; i++) {
-        html += `<button class="page-btn ${i === page ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+        html += `<button class="el-button el-button--small ${i === page ? 'el-button--primary' : 'el-button--default'}" onclick="changePage(${i})">${i}</button>`;
     }
-    if (end < totalPages) html += `${end < totalPages - 1 ? '<span>...</span>' : ''}<button class="page-btn" onclick="changePage(${totalPages})">${totalPages}</button>`;
-    if (page < totalPages) html += `<button class="page-btn" onclick="changePage(${page+1})">涓嬩竴椤?/button>`;
+    if (end < totalPages) html += `${end < totalPages - 1 ? '<span>...</span>' : ''}<button class="el-button el-button--small el-button--default" onclick="changePage(${totalPages})">${totalPages}</button>`;
+    if (page < totalPages) html += `<button class="el-button el-button--small el-button--default" onclick="changePage(${page+1})">下一页</button>`;
     p.innerHTML = html;
 }
 
@@ -276,7 +286,7 @@ function changePage(page) {
 
 function openCreate() {
     editingId = null;
-    document.getElementById('modalTitle').textContent = '鏂板缓鍏憡';
+    document.getElementById('modalTitle').textContent = '新建公告';
     document.getElementById('fTitle').value = '';
     document.getElementById('fType').value = 'general';
     document.getElementById('fImportance').value = '0';
@@ -290,10 +300,10 @@ function openCreate() {
 
 async function openEdit(id) {
     const r = await api('GET', `/notices/${id}`);
-    if (!r.success) { alert('鑾峰彇鍏憡澶辫触'); return; }
+    if (!r.success) { alert('获取公告失败'); return; }
     const n = r.data;
     editingId = id;
-    document.getElementById('modalTitle').textContent = '缂栬緫鍏憡';
+    document.getElementById('modalTitle').textContent = '编辑公告';
     document.getElementById('fTitle').value = n.title || '';
     document.getElementById('fType').value = n.notice_type || 'general';
     document.getElementById('fImportance').value = String(n.importance || 0);
@@ -312,8 +322,8 @@ function closeModal() {
 async function submitNotice() {
     const title = document.getElementById('fTitle').value.trim();
     const content = document.getElementById('fContent').value.trim();
-    if (!title) { alert('璇峰～鍐欏叕鍛婃爣棰?); return; }
-    if (!content) { alert('璇峰～鍐欏叕鍛婂唴瀹?); return; }
+    if (!title) { alert('请填写公告标题'); return; }
+    if (!content) { alert('请填写公告内容'); return; }
 
     const payload = {
         title, content,
@@ -332,40 +342,39 @@ async function submitNotice() {
     }
 
     if (r.success) {
-        alert(r.msg || '鎿嶄綔鎴愬姛');
+        alert(r.msg || '操作成功');
         closeModal();
         loadNotices();
     } else {
-        alert(r.msg || '鎿嶄綔澶辫触');
+        alert(r.msg || '操作失败');
     }
 }
 
 async function publishNotice(id) {
-    if (!confirm('纭畾瑕佸彂甯冭鍏憡鍚楋紵')) return;
+    if (!confirm('确定要发布该公告吗？')) return;
     const r = await api('PUT', `/notices/${id}`, {status: 'published'});
     if (r.success) { loadNotices(); }
-    else { alert(r.msg || '鍙戝竷澶辫触'); }
+    else { alert(r.msg || '发布失败'); }
 }
 
 async function deleteNotice(id) {
-    if (!confirm('纭畾瑕佸垹闄よ鍏憡鍚楋紵')) return;
+    if (!confirm('确定要删除该公告吗？')) return;
     const r = await api('DELETE', `/notices/${id}`);
     if (r.success) {
-        alert('宸插垹闄?);
+        alert('已删除');
         loadNotices();
     } else {
-        alert(r.msg || '鍒犻櫎澶辫触');
+        alert(r.msg || '删除失败');
     }
 }
 
-// 鍒濆鍖?
+// 初始化
 loadNotices();
 
-// 鐐瑰嚮閬僵鍏抽棴寮圭獥
-const editModal = document.getElementById('editModal');
-if (editModal) editModal.addEventListener('click', function(e) {
+// 点击遮罩关闭弹窗
+document.getElementById('editModal').addEventListener('click', function(e) {
     if (e.target === this) closeModal();
 });
-    </script>
+</script>
 </body>
 </html>
