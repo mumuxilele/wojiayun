@@ -332,6 +332,208 @@ def get_statistics(user):
     return jsonify(svc.get_statistics())
 
 
+@app.route('/api/admin/statistics/refund-analysis', methods=['GET'])
+@require_admin
+def get_refund_analysis(user):
+    """退款分析统计"""
+    from business_common import db
+    from datetime import datetime, timedelta
+    
+    # 获取最近30天的退款数据
+    thirty_days_ago = datetime.now() - timedelta(days=30)
+    
+    cursor = db.get_cursor()
+    
+    # 退款统计
+    sql = """
+        SELECT 
+            COUNT(*) as total_refunds,
+            SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_refunds,
+            SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_refunds,
+            SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected_refunds
+        FROM business_refunds 
+        WHERE deleted = 0 AND created_at >= %s
+    """
+    cursor.execute(sql, (thirty_days_ago,))
+    result = cursor.fetchone()
+    cursor.close()
+    
+    return jsonify({
+        'success': True,
+        'data': {
+            'total_refunds': result['total_refunds'] if result else 0,
+            'completed_refunds': result['completed_refunds'] if result else 0,
+            'pending_refunds': result['pending_refunds'] if result else 0,
+            'rejected_refunds': result['rejected_refunds'] if result else 0,
+            'refund_rate': round(result['completed_refunds'] / result['total_refunds'] * 100, 2) if result and result['total_refunds'] > 0 else 0
+        }
+    })
+
+
+# ============ 场地管理 ============
+
+@app.route('/api/admin/venues', methods=['GET'])
+@require_admin
+def list_venues(user):
+    """场地列表"""
+    from business_common import db
+    from math import ceil
+    
+    page = int(request.args.get('page', 1))
+    page_size = int(request.args.get('page_size', 10))
+    keyword = request.args.get('keyword', '')
+    venue_type = request.args.get('type', '')
+    status = request.args.get('status', '')
+    
+    conditions = ["deleted=0"]
+    params = []
+    
+    if keyword:
+        conditions.append("(name LIKE %s OR address LIKE %s)")
+        params.extend([f"%{keyword}%", f"%{keyword}%"])
+    if venue_type:
+        conditions.append("type=%s")
+        params.append(venue_type)
+    if status:
+        conditions.append("status=%s")
+        params.append(status)
+    
+    where_clause = " AND ".join(conditions)
+    
+    # 查询总数
+    count_sql = f"SELECT COUNT(*) as total FROM business_venues WHERE {where_clause}"
+    cursor = db.get_cursor()
+    cursor.execute(count_sql, params)
+    total = cursor.fetchone()['total']
+    
+    # 查询列表
+    offset = (page - 1) * page_size
+    list_sql = f"""
+        SELECT id, name, type, address, capacity, status, price, images, 
+               opening_hours, contact_phone, created_at
+        FROM business_venues 
+        WHERE {where_clause}
+        ORDER BY id DESC
+        LIMIT %s OFFSET %s
+    """
+    params.extend([page_size, offset])
+    cursor.execute(list_sql, params)
+    rows = cursor.fetchall()
+    cursor.close()
+    
+    return jsonify({
+        'success': True,
+        'data': {
+            'list': rows,
+            'total': total,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': ceil(total / page_size) if total > 0 else 0
+        }
+    })
+
+
+@app.route('/api/admin/venues/<int:venue_id>', methods=['GET'])
+@require_admin
+def get_venue(user, venue_id):
+    """获取场地详情"""
+    from business_common import db
+    
+    cursor = db.get_cursor()
+    cursor.execute("SELECT * FROM business_venues WHERE id=%s AND deleted=0", (venue_id,))
+    venue = cursor.fetchone()
+    cursor.close()
+    
+    if not venue:
+        return jsonify({'success': False, 'message': '场地不存在'}), 404
+    
+    return jsonify({'success': True, 'data': venue})
+
+
+@app.route('/api/admin/venues', methods=['POST'])
+@require_admin
+def create_venue(user):
+    """创建场地"""
+    from business_common import db
+    
+    data = request.get_json() or {}
+    name = data.get('name')
+    if not name:
+        return jsonify({'success': False, 'message': '场地名称不能为空'}), 400
+    
+    cursor = db.get_cursor()
+    cursor.execute("""
+        INSERT INTO business_venues (name, type, address, capacity, status, price, images, opening_hours, contact_phone, created_at)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+    """, (
+        name,
+        data.get('type', ''),
+        data.get('address', ''),
+        data.get('capacity', 0),
+        data.get('status', 1),
+        data.get('price', 0),
+        data.get('images', ''),
+        data.get('opening_hours', ''),
+        data.get('contact_phone', '')
+    ))
+    venue_id = cursor.lastrowid
+    cursor.commit()
+    cursor.close()
+    
+    return jsonify({'success': True, 'data': {'id': venue_id}})
+
+
+@app.route('/api/admin/venues/<int:venue_id>', methods=['PUT'])
+@require_admin
+def update_venue(user, venue_id):
+    """更新场地"""
+    from business_common import db
+    
+    data = request.get_json() or {}
+    
+    cursor = db.get_cursor()
+    cursor.execute("SELECT id FROM business_venues WHERE id=%s AND deleted=0", (venue_id,))
+    if not cursor.fetchone():
+        cursor.close()
+        return jsonify({'success': False, 'message': '场地不存在'}), 404
+    
+    cursor.execute("""
+        UPDATE business_venues 
+        SET name=%s, type=%s, address=%s, capacity=%s, status=%s, price=%s, 
+            images=%s, opening_hours=%s, contact_phone=%s, updated_at=NOW()
+        WHERE id=%s
+    """, (
+        data.get('name'),
+        data.get('type'),
+        data.get('address'),
+        data.get('capacity'),
+        data.get('status'),
+        data.get('price'),
+        data.get('images'),
+        data.get('opening_hours'),
+        data.get('contact_phone'),
+        venue_id
+    ))
+    cursor.commit()
+    cursor.close()
+    
+    return jsonify({'success': True})
+
+
+@app.route('/api/admin/venues/<int:venue_id>', methods=['DELETE'])
+@require_admin
+def delete_venue(user, venue_id):
+    """删除场地"""
+    from business_common import db
+    
+    cursor = db.get_cursor()
+    cursor.execute("UPDATE business_venues SET deleted=1 WHERE id=%s", (venue_id,))
+    cursor.commit()
+    cursor.close()
+    
+    return jsonify({'success': True})
+
+
 # ============ 用户管理 ============
 
 @app.route('/api/admin/users', methods=['GET'])
