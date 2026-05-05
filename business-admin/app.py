@@ -127,6 +127,157 @@ def delete_order(user, order_id):
     return jsonify(svc.delete_order(order_id))
 
 
+# ============ 商品管理 ============
+
+@app.route('/api/admin/products', methods=['GET'])
+@require_admin
+def list_products(user):
+    """商品列表"""
+    from business_common.services.product_service import ProductService
+    svc = ProductService()
+    return jsonify(svc.get_all_products(
+        status=request.args.get('status'),
+        keyword=request.args.get('keyword', ''),
+        shop_id=request.args.get('shop_id'),
+        category_name=request.args.get('category'),
+        page=int(request.args.get('page', 1)),
+        page_size=int(request.args.get('page_size', 20))
+    ))
+
+
+@app.route('/api/admin/products/<int:product_id>', methods=['GET'])
+@require_admin
+def get_product(user, product_id):
+    """商品详情"""
+    from business_common.services.product_service import ProductService
+    svc = ProductService()
+    return jsonify(svc.get_product_by_id(product_id))
+
+
+@app.route('/api/admin/products', methods=['POST'])
+@require_admin
+def create_product(user):
+    """新增商品"""
+    data = request.get_json() or {}
+    from business_common.services.product_service import ProductService
+    svc = ProductService()
+    return jsonify(svc.create_product(data))
+
+
+@app.route('/api/admin/products/<int:product_id>', methods=['PUT'])
+@require_admin
+def update_product(user, product_id):
+    """更新商品"""
+    data = request.get_json() or {}
+    from business_common.services.product_service import ProductService
+    svc = ProductService()
+    return jsonify(svc.update_product(product_id, data))
+
+
+@app.route('/api/admin/products/<int:product_id>', methods=['DELETE'])
+@require_admin
+def delete_product(user, product_id):
+    """删除商品"""
+    from business_common.services.product_service import ProductService
+    svc = ProductService()
+    return jsonify(svc.delete_product(product_id))
+
+
+@app.route('/api/admin/products/import', methods=['POST'])
+@require_admin
+def import_products(user):
+    """导入商品（支持 JSON 批量）"""
+    data = request.get_json() or {}
+    products = data.get('products', [])
+    if not products:
+        return jsonify({'success': False, 'msg': '没有可导入的数据'})
+    from business_common.services.product_service import ProductService
+    svc = ProductService()
+    return jsonify(svc.import_products(products))
+
+
+@app.route('/api/admin/product-categories', methods=['GET'])
+@require_admin
+def get_product_categories(user):
+    """获取商品分类列表"""
+    from business_common.services.product_category_service import ProductCategoryService
+    svc = ProductCategoryService()
+    level = request.args.get('level')
+    parent_id = request.args.get('parent_id')
+    if level:
+        return jsonify(svc.get_category_list(level=int(level)))
+    elif parent_id is not None:
+        return jsonify(svc.get_category_list(parent_id=int(parent_id)))
+    return jsonify(svc.get_all_categories())
+
+
+@app.route('/api/admin/product-categories/tree', methods=['GET'])
+@require_admin
+def get_product_category_tree(user):
+    """获取商品分类树（带层级）"""
+    from business_common.services.product_category_service import ProductCategoryService
+    svc = ProductCategoryService()
+    return jsonify(svc.get_category_tree())
+
+
+@app.route('/api/admin/product-categories/<int:category_id>', methods=['GET'])
+@require_admin
+def get_product_category(user, category_id):
+    """获取商品分类详情"""
+    from business_common.services.product_category_service import ProductCategoryService
+    svc = ProductCategoryService()
+    return jsonify(svc.get_category_by_id(category_id))
+
+
+@app.route('/api/admin/product-categories', methods=['POST'])
+@require_admin
+def create_product_category(user):
+    """新增商品分类"""
+    data = request.get_json() or {}
+    from business_common.services.product_category_service import ProductCategoryService
+    svc = ProductCategoryService()
+    return jsonify(svc.create_category(data))
+
+
+@app.route('/api/admin/product-categories/<int:category_id>', methods=['PUT'])
+@require_admin
+def update_product_category(user, category_id):
+    """更新商品分类"""
+    data = request.get_json() or {}
+    from business_common.services.product_category_service import ProductCategoryService
+    svc = ProductCategoryService()
+    return jsonify(svc.update_category(category_id, data))
+
+
+@app.route('/api/admin/product-categories/<int:category_id>', methods=['DELETE'])
+@require_admin
+def delete_product_category(user, category_id):
+    """删除商品分类"""
+    from business_common.services.product_category_service import ProductCategoryService
+    svc = ProductCategoryService()
+    return jsonify(svc.delete_category(category_id))
+
+
+@app.route('/api/admin/product-categories/<int:category_id>/status', methods=['POST'])
+@require_admin
+def toggle_category_status(user, category_id):
+    """切换分类状态"""
+    data = request.get_json() or {}
+    from business_common.services.product_category_service import ProductCategoryService
+    svc = ProductCategoryService()
+    return jsonify(svc.toggle_status(category_id, data.get('status')))
+
+
+@app.route('/api/admin/products/<int:product_id>/status', methods=['POST'])
+@require_admin
+def toggle_product_status(user, product_id):
+    """切换商品状态（上架/下架）"""
+    data = request.get_json() or {}
+    from business_common.services.product_service import ProductService
+    svc = ProductService()
+    return jsonify(svc.toggle_product_status(product_id, data.get('status')))
+
+
 # ============ 门店管理 ============
 
 @app.route('/api/admin/shops', methods=['GET'])

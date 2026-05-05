@@ -142,6 +142,8 @@ class ProductRepository(BaseRepository):
                               project_id: str = None,
                               status: str = None,
                               category_id: int = None,
+                              category_name: str = None,
+                              shop_id: int = None,
                               keyword: str = None,
                               page: int = 1,
                               page_size: int = 20) -> Dict[str, Any]:
@@ -166,6 +168,14 @@ class ProductRepository(BaseRepository):
         if category_id:
             conditions.append("category_id = %s")
             params.append(category_id)
+        
+        if category_name:
+            conditions.append("category_name = %s")
+            params.append(category_name)
+        
+        if shop_id:
+            conditions.append("shop_id = %s")
+            params.append(shop_id)
         
         if keyword:
             conditions.append("(product_name LIKE %s OR product_code LIKE %s)")
@@ -216,3 +226,70 @@ class ProductRepository(BaseRepository):
             LIMIT 100
         """
         return self.db.get_all(sql, params) or []
+    
+    # ============ 管理后台 CRUD ============
+    
+    def insert(self, data: Dict[str, Any]) -> int:
+        """新增商品，返回新记录ID"""
+        import uuid
+        fid = data.get('fid') or str(uuid.uuid4())
+        sql = f"""
+            INSERT INTO {self.TABLE_NAME}
+            (fid, product_name, product_code, price, original_price, stock,
+             status, images, shop_id, category_id, category_name, description,
+             ec_id, project_id, created_at, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+        """
+        params = [
+            fid,
+            data.get('product_name', ''),
+            data.get('product_code', ''),
+            data.get('price', 0),
+            data.get('original_price', 0),
+            data.get('stock', 0),
+            data.get('status', 'active'),
+            data.get('images', ''),
+            data.get('shop_id'),
+            data.get('category_id'),
+            data.get('category_name', ''),
+            data.get('description', ''),
+            data.get('ec_id'),
+            data.get('project_id')
+        ]
+        self.db.execute(sql, params)
+        # 获取最后插入的ID
+        result = self.db.get_one("SELECT LAST_INSERT_ID() as id")
+        return result['id'] if result else 0
+    
+    def update(self, product_id: int, data: Dict[str, Any]) -> int:
+        """更新商品，返回影响行数"""
+        fields = []
+        params = []
+        for field in ['product_name', 'product_code', 'price', 'original_price',
+                     'stock', 'status', 'images', 'shop_id', 'category_id',
+                     'category_name', 'description']:
+            if field in data:
+                fields.append(f"{field} = %s")
+                params.append(data[field])
+        if not fields:
+            return 0
+        fields.append("updated_at = NOW()")
+        params.append(product_id)
+        sql = f"UPDATE {self.TABLE_NAME} SET {', '.join(fields)} WHERE id = %s AND deleted = 0"
+        return self.db.execute(sql, params)
+    
+    def soft_delete(self, product_id: int) -> int:
+        """软删除商品"""
+        sql = f"UPDATE {self.TABLE_NAME} SET deleted = 1, updated_at = NOW() WHERE id = %s AND deleted = 0"
+        return self.db.execute(sql, [product_id])
+    
+    def find_by_id(self, product_id: int) -> Optional[Dict[str, Any]]:
+        """根据ID查询商品（管理后台用）"""
+        sql = f"SELECT * FROM {self.TABLE_NAME} WHERE id = %s AND deleted = 0 LIMIT 1"
+        return self.db.get_one(sql, [product_id])
+    
+    def get_distinct_categories(self) -> List[str]:
+        """获取所有不重复的商品分类"""
+        sql = f"SELECT DISTINCT category_name FROM {self.TABLE_NAME} WHERE deleted = 0 AND category_name IS NOT NULL AND category_name != '' ORDER BY category_name"
+        rows = self.db.get_all(sql) or []
+        return [row['category_name'] for row in rows if row.get('category_name')]

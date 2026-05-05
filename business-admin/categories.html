@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品分类管理 - 管理后台</title>
+    <link rel="stylesheet" href="/business-common/list-style.css">
+    <style>
+        .actions .link { color: var(--el-color-primary); cursor: pointer; margin-right: 10px; }
+        .actions .link:hover { text-decoration: underline; }
+        .actions .link.danger { color: var(--el-color-danger); }
+        .actions .link.success { color: var(--el-color-success); }
+        .level-tag { padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+        .level-1 { background: #ecf5ff; color: #409eff; }
+        .level-2 { background: #fef0e6; color: #e6a23c; }
+        .level-3 { background: #f0f9eb; color: #67c23a; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.5); z-index: 300; align-items: center; justify-content: center; }
+        .modal { background: #fff; border-radius: 8px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
+        .modal-title { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #eee; font-size: 16px; font-weight: 500; }
+        .modal-body { padding: 20px; }
+        .form-row { display: flex; gap: 16px; margin-bottom: 16px; }
+        .form-row.full { flex-direction: column; }
+        .form-group { flex: 1; }
+        .form-group label { display: block; margin-bottom: 8px; color: #606266; font-size: 14px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px 12px; border: 1px solid #dcdfe6; border-radius: 4px; font-size: 14px; box-sizing: border-box; }
+        .form-group input:focus, .form-group select:focus { border-color: var(--el-color-primary); outline: none; }
+        .modal-footer { padding: 16px 20px; border-top: 1px solid #eee; text-align: right; }
+        .modal-footer .el-button { margin-left: 8px; }
+    </style>
+</head>
+<body class="wy-design-list">
+    <!-- 顶部区域 -->
+    <div class="wy-design-list_top">
+        <div class="wy-design-list_top_title">
+            <h1 class="wy-design-list_title">商品分类管理</h1>
+            <div class="wy-design-list_space"></div>
+            <div class="wy-design-list_btn-group">
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--primary el-button--small" onclick="loadList()">
+                        <span>搜索</span>
+                    </button>
+                </div>
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--small" onclick="resetSearch()">
+                        <span>重置</span>
+                    </button>
+                </div>
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--success el-button--small" onclick="openAddModal(0, 1)">
+                        <span>新增一级分类</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 筛选区域 -->
+    <div class="wy-design-list_filter">
+        <div class="wy-design-list_filter_item">
+            <label>分类名称</label>
+            <input type="text" id="searchKw" placeholder="请输入分类名称">
+        </div>
+        <div class="wy-design-list_filter_item">
+            <label>层级</label>
+            <select id="filterLevel">
+                <option value="">全部</option>
+                <option value="1">一级分类</option>
+                <option value="2">二级分类</option>
+                <option value="3">三级分类</option>
+            </select>
+        </div>
+        <div class="wy-design-list_filter_item">
+            <label>状态</label>
+            <select id="filterStatus">
+                <option value="">全部</option>
+                <option value="1">启用</option>
+                <option value="0">禁用</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- 表格区域 -->
+    <div class="wy-design-table">
+        <div class="wy-design-table_header">
+            <span>分类列表</span>
+            <span>共 <span id="totalCount">0</span> 条</span>
+        </div>
+        <div id="tableContent">
+            <table class="el-table">
+                <thead>
+                    <tr>
+                        <th><div class="cell">ID</div></th>
+                        <th><div class="cell">分类名称</div></th>
+                        <th><div class="cell">层级</div></th>
+                        <th><div class="cell">父级分类</div></th>
+                        <th><div class="cell">排序</div></th>
+                        <th><div class="cell">状态</div></th>
+                        <th><div class="cell">操作</div></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+<!-- 弹窗 -->
+<div class="modal-overlay" id="formModal" onclick="handleOverlayClick(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-title">
+            <span id="modalTitle">新增分类</span>
+            <span style="cursor:pointer;color:#999" onclick="closeModal()">✕</span>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="editId">
+            <input type="hidden" id="parentLevel">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>分类名称 <span style="color:#f56c6c">*</span></label>
+                    <input type="text" id="categoryName" placeholder="请输入分类名称">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>父级分类</label>
+                    <select id="parentCategory">
+                        <option value="0">无（作为一级分类）</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>排序</label>
+                    <input type="number" id="sortOrder" placeholder="0" min="0" value="0">
+                </div>
+                <div class="form-group">
+                    <label>状态</label>
+                    <select id="categoryStatus">
+                        <option value="1">启用</option>
+                        <option value="0">禁用</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="el-button el-button--small" onclick="closeModal()">取消</button>
+            <button type="button" class="el-button el-button--primary el-button--small" onclick="submitForm()">保存</button>
+        </div>
+    </div>
+</div>
+
+    <script>
+const token = new URLSearchParams(location.search).get('access_token') || '';
+const isdev = new URLSearchParams(location.search).get('isdev') || '0';
+
+function authUrl(url) {
+    const sep = url.includes('?') ? '&' : '?';
+    return url + sep + 'access_token=' + encodeURIComponent(token) + '&isdev=' + isdev;
+}
+
+async function loadList() {
+    const kw = document.getElementById('searchKw').value.trim();
+    const level = document.getElementById('filterLevel').value;
+    const status = document.getElementById('filterStatus').value;
+    
+    let url = '/api/admin/product-categories';
+    if (level) url += '?level=' + level;
+    
+    try {
+        const res = await fetch(authUrl(url));
+        const data = await res.json();
+        if (data.success && data.data) {
+            let items = data.data.items || [];
+            
+            // 前端筛选
+            if (kw) items = items.filter(i => i.name.includes(kw));
+            if (status !== '') items = items.filter(i => i.status == status);
+            
+            document.getElementById('totalCount').textContent = items.length;
+            renderTable(items);
+        }
+    } catch (e) {
+        document.getElementById('tableContent').innerHTML = '<div style="text-align: center; padding: 60px; color: #999;">加载失败</div>';
+    }
+}
+
+function renderTable(items) {
+    const levelClass = {1: 'level-1', 2: 'level-2', 3: 'level-3'};
+    const levelText = {1: '一级', 2: '二级', 3: '三级'};
+    
+    let html = `<table class="el-table">
+        <thead><tr>
+            <th><div class="cell">ID</div></th>
+            <th><div class="cell">分类名称</div></th>
+            <th><div class="cell">层级</div></th>
+            <th><div class="cell">父级分类</div></th>
+            <th><div class="cell">排序</div></th>
+            <th><div class="cell">状态</div></th>
+            <th><div class="cell">操作</div></th>
+        </tr></thead><tbody>`;
+    
+    items.forEach(item => {
+        const statusTag = item.status === 1
+            ? '<span class="el-tag el-tag--success el-tag--small">启用</span>'
+            : '<span class="el-tag el-tag--info el-tag--small">禁用</span>';
+        
+        const levelTag = `<span class="level-tag ${levelClass[item.level]}">${levelText[item.level]}</span>`;
+        const indent = '&nbsp;'.repeat((item.level - 1) * 4);
+        const addBtn = item.level < 3 ? `<a class="link success" onclick="openAddModal(${item.id}, ${item.level + 1})">添加子分类</a>` : '';
+        
+        html += `<tr>
+            <td><div class="cell">${item.id}</div></td>
+            <td><div class="cell">${indent}${item.name}</div></td>
+            <td><div class="cell">${levelTag}</div></td>
+            <td><div class="cell">${item.parent_name || '-'}</div></td>
+            <td><div class="cell">${item.sort_order || 0}</div></td>
+            <td><div class="cell">${statusTag}</div></td>
+            <td><div class="cell actions">
+                ${addBtn}
+                <a class="link" onclick="openEditModal(${item.id})">编辑</a>
+                <a class="link ${item.status === 1 ? 'warning' : 'success'}" onclick="toggleStatus(${item.id}, ${item.status === 1 ? 0 : 1})">${item.status === 1 ? '禁用' : '启用'}</a>
+                <a class="link danger" onclick="deleteCategory(${item.id})">删除</a>
+            </div></td>
+        </tr>`;
+    });
+    
+    html += '</tbody></table>';
+    document.getElementById('tableContent').innerHTML = html;
+}
+
+function resetSearch() {
+    document.getElementById('searchKw').value = '';
+    document.getElementById('filterLevel').value = '';
+    document.getElementById('filterStatus').value = '';
+    loadList();
+}
+
+// 弹窗操作
+async function openAddModal(parentId, level) {
+    document.getElementById('editId').value = '';
+    document.getElementById('parentLevel').value = level;
+    document.getElementById('modalTitle').textContent = level === 1 ? '新增一级分类' : `新增${level === 2 ? '二级' : '三级'}分类`;
+    document.getElementById('categoryName').value = '';
+    document.getElementById('sortOrder').value = '0';
+    document.getElementById('categoryStatus').value = '1';
+    
+    // 加载父级分类选项
+    await loadParentOptions(parentId, level);
+    document.getElementById('formModal').classList.add('show');
+}
+
+async function openEditModal(id) {
+    document.getElementById('editId').value = id;
+    document.getElementById('modalTitle').textContent = '编辑分类';
+    
+    try {
+        const res = await fetch(authUrl('/api/admin/product-categories/' + id));
+        const data = await res.json();
+        if (data.success && data.data) {
+            const c = data.data;
+            document.getElementById('categoryName').value = c.name || '';
+            document.getElementById('sortOrder').value = c.sort_order || 0;
+            document.getElementById('categoryStatus').value = c.status;
+            document.getElementById('parentLevel').value = c.level;
+            
+            await loadParentOptions(c.parent_id, c.level);
+            document.getElementById('formModal').classList.add('show');
+        }
+    } catch (e) {
+        alert('加载分类信息失败');
+    }
+}
+
+async function loadParentOptions(selectedId, level) {
+    const select = document.getElementById('parentCategory');
+    select.innerHTML = '<option value="0">无（作为一级分类）</option>';
+    
+    if (level > 1) {
+        try {
+            const res = await fetch(authUrl('/api/admin/product-categories?level=' + (level - 1)));
+            const data = await res.json();
+            if (data.success && data.data.items) {
+                data.data.items.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item.id;
+                    opt.textContent = item.name;
+                    if (item.id == selectedId) opt.selected = true;
+                    select.appendChild(opt);
+                });
+            }
+        } catch (e) {}
+    }
+}
+
+function closeModal() {
+    document.getElementById('formModal').classList.remove('show');
+}
+
+function handleOverlayClick(e) {
+    if (e.target === document.getElementById('formModal')) closeModal();
+}
+
+async function submitForm() {
+    const id = document.getElementById('editId').value;
+    const body = {
+        name: document.getElementById('categoryName').value.trim(),
+        parent_id: parseInt(document.getElementById('parentCategory').value) || 0,
+        sort_order: parseInt(document.getElementById('sortOrder').value) || 0,
+        status: parseInt(document.getElementById('categoryStatus').value) || 1
+    };
+    
+    if (!body.name) { alert('请输入分类名称'); return; }
+    
+    const url = id ? '/api/admin/product-categories/' + id : '/api/admin/product-categories';
+    const method = id ? 'PUT' : 'POST';
+    
+    try {
+        const res = await fetch(authUrl(url), {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (data.success) { closeModal(); loadList(); }
+        else { alert(data.msg || '保存失败'); }
+    } catch (e) { alert('保存失败'); }
+}
+
+async function deleteCategory(id) {
+    if (!confirm('确定要删除该分类吗？\n注意：有子分类或商品的分类无法删除')) return;
+    
+    try {
+        const res = await fetch(authUrl('/api/admin/product-categories/' + id), { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) { loadList(); }
+        else { alert(data.msg || '删除失败'); }
+    } catch (e) { alert('删除失败'); }
+}
+
+async function toggleStatus(id, newStatus) {
+    try {
+        const res = await fetch(authUrl('/api/admin/product-categories/' + id + '/status'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus })
+        });
+        const data = await res.json();
+        if (data.success) { loadList(); }
+        else { alert(data.msg || '操作失败'); }
+    } catch (e) { alert('操作失败'); }
+}
+
+// 初始加载
+loadList();
+    </script>
+</body>
+</html>

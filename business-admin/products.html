@@ -32,6 +32,16 @@
                         <span>重置</span>
                     </button>
                 </div>
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--success el-button--small" onclick="openAddModal()">
+                        <span>新增商品</span>
+                    </button>
+                </div>
+                <div class="wy-design-list_btn">
+                    <button type="button" class="el-button el-button--warning el-button--small" onclick="openImportModal()">
+                        <span>导入商品</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -111,7 +121,16 @@
         <div class="form-row">
             <div class="form-group">
                 <label>商品分类</label>
-                <input type="text" id="productCategory" placeholder="如：生鲜/日用品/服装">
+                <select id="category1" onchange="loadCategory2()">
+                    <option value="">一级分类</option>
+                </select>
+                <select id="category2" onchange="loadCategory3()" style="margin-top:8px">
+                    <option value="">二级分类</option>
+                </select>
+                <select id="category3" style="margin-top:8px">
+                    <option value="">三级分类</option>
+                </select>
+                <input type="hidden" id="productCategory">
             </div>
             <div class="form-group">
                 <label>库存数量</label>
@@ -127,6 +146,35 @@
         <div class="modal-footer">
             <button type="button" class="el-button el-button--small" onclick="closeModal()">取消</button>
             <button type="button" class="el-button el-button--primary el-button--small" onclick="submitForm()">保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- 导入弹窗 -->
+<div class="modal-overlay" id="importModal" onclick="handleImportOverlayClick(event)">
+    <div class="modal" style="max-width: 500px;" onclick="event.stopPropagation()">
+        <div class="modal-title"><span>导入商品</span><span style="cursor:pointer;color:#999" onclick="closeImportModal()">✕</span></div>
+        <div class="form-row full">
+            <div class="form-group">
+                <label>导入说明</label>
+                <div style="padding: 10px; background: #f5f5f5; border-radius: 4px; font-size: 12px; line-height: 1.8;">
+                    <p>支持 JSON 格式批量导入，数据格式：</p>
+                    <pre style="background: #fff; padding: 8px; border-radius: 4px; overflow: auto; max-height: 150px;">[
+  {"product_name": "商品名", "price": 99.9, "stock": 100, "shop_id": 1, "category_name": "分类"}
+]</pre>
+                </div>
+            </div>
+        </div>
+        <div class="form-row full">
+            <div class="form-group">
+                <label>导入数据（JSON格式）</label>
+                <textarea id="importData" rows="8" placeholder='粘贴JSON数组，如：[{"product_name": "商品1", "price": 99.9, "stock": 100, "shop_id": 1}]'></textarea>
+            </div>
+        </div>
+        <div id="importResult" style="display: none; padding: 10px; margin: 10px 0; border-radius: 4px;"></div>
+        <div class="modal-footer">
+            <button type="button" class="el-button el-button--small" onclick="closeImportModal()">取消</button>
+            <button type="button" class="el-button el-button--primary el-button--small" onclick="submitImport()">导入</button>
         </div>
     </div>
 </div>
@@ -200,6 +248,7 @@ async function loadList(page) {
                     <td><div class="cell">${statusTag}</div></td>
                     <td><div class="cell actions">
                         <a class="link" onclick="openEditModal(${item.id})">编辑</a>
+                        <a class="link ${item.status === 'active' ? 'danger' : 'success'}" onclick="toggleStatus(${item.id}, '${item.status === 'active' ? 'inactive' : 'active'}')">${item.status === 'active' ? '下架' : '上架'}</a>
                         <a class="link danger" onclick="deleteProduct(${item.id})">删除</a>
                     </div></td>
                 </tr>`;
@@ -224,21 +273,99 @@ function clearFilters() {
 // 加载门店和分类下拉框
 async function loadFilters() {
     try {
-        const [shopRes, catRes] = await Promise.all([
-            fetch(authUrl('/api/admin/shops?page=1&page_size=100')),
-            fetch(authUrl('/api/admin/product-categories'))
-        ]);
+        const shopRes = await fetch(authUrl('/api/admin/shops?page=1&page_size=100'));
         const shopData = await shopRes.json();
-        const catData = await catRes.json();
 
         if (shopData.success && shopData.data) {
             const shopSelects = [document.getElementById('filterShop'), document.getElementById('productShop')];
             const options = shopData.data.items?.map(s => `<option value="${s.id}">${s.shop_name}</option>`).join('') || '';
             shopSelects.forEach(s => { if(s) s.innerHTML += options; });
         }
-        if (catData.success && catData.data) {
-            const catSelect = document.getElementById('filterCategory');
-            if (catSelect) catSelect.innerHTML += catData.data.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+        
+        // 加载筛选区分类（只显示一级）
+        await loadFilterCategories();
+        // 加载表单一级分类
+        await loadCategory1Options();
+    } catch (e) {}
+}
+
+async function loadFilterCategories() {
+    try {
+        const res = await fetch(authUrl('/api/admin/product-categories?level=1'));
+        const data = await res.json();
+        if (data.success && data.data.items) {
+            const select = document.getElementById('filterCategory');
+            data.data.items.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.name;
+                select.appendChild(opt);
+            });
+        }
+    } catch (e) {}
+}
+
+async function loadCategory1Options() {
+    try {
+        const res = await fetch(authUrl('/api/admin/product-categories?level=1&status=1'));
+        const data = await res.json();
+        if (data.success && data.data.items) {
+            const select = document.getElementById('category1');
+            select.innerHTML = '<option value="">一级分类</option>';
+            data.data.items.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.name;
+                select.appendChild(opt);
+            });
+        }
+    } catch (e) {}
+}
+
+async function loadCategory2() {
+    const parentId = document.getElementById('category1').value;
+    const select2 = document.getElementById('category2');
+    const select3 = document.getElementById('category3');
+    
+    select2.innerHTML = '<option value="">二级分类</option>';
+    select3.innerHTML = '<option value="">三级分类</option>';
+    document.getElementById('productCategory').value = '';
+    
+    if (!parentId) return;
+    
+    try {
+        const res = await fetch(authUrl('/api/admin/product-categories?parent_id=' + parentId));
+        const data = await res.json();
+        if (data.success && data.data.items) {
+            data.data.items.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.name;
+                select2.appendChild(opt);
+            });
+        }
+    } catch (e) {}
+}
+
+async function loadCategory3() {
+    const parentId = document.getElementById('category2').value;
+    const select3 = document.getElementById('category3');
+    
+    select3.innerHTML = '<option value="">三级分类</option>';
+    document.getElementById('productCategory').value = '';
+    
+    if (!parentId) return;
+    
+    try {
+        const res = await fetch(authUrl('/api/admin/product-categories?parent_id=' + parentId));
+        const data = await res.json();
+        if (data.success && data.data.items) {
+            data.data.items.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.name;
+                select3.appendChild(opt);
+            });
         }
     } catch (e) {}
 }
@@ -269,7 +396,8 @@ function openEditModal(id) {
                 document.getElementById('productPrice').value = p.price || '';
                 document.getElementById('productOriginalPrice').value = p.original_price || '';
                 document.getElementById('productStock').value = p.stock || '';
-                document.getElementById('productCategory').value = p.category_name || '';
+                // TODO: 根据category_id回显分类级联（需要后端返回完整路径）
+        document.getElementById('productCategory').value = p.category_id || '';
                 document.getElementById('productDesc').value = p.description || '';
                 document.getElementById('productShop').value = p.shop_id || '';
                 document.getElementById('formModal').classList.add('show');
@@ -285,14 +413,67 @@ function handleOverlayClick(e) {
     if (e.target === document.getElementById('formModal')) closeModal();
 }
 
+// 导入弹窗操作
+function openImportModal() {
+    document.getElementById('importData').value = '';
+    document.getElementById('importResult').style.display = 'none';
+    document.getElementById('importModal').classList.add('show');
+}
+
+function closeImportModal() {
+    document.getElementById('importModal').classList.remove('show');
+}
+
+function handleImportOverlayClick(e) {
+    if (e.target === document.getElementById('importModal')) closeImportModal();
+}
+
+async function submitImport() {
+    const raw = document.getElementById('importData').value.trim();
+    if (!raw) { alert('请输入要导入的数据'); return; }
+    
+    let products;
+    try {
+        products = JSON.parse(raw);
+        if (!Array.isArray(products)) throw new Error('数据必须是数组');
+    } catch (e) {
+        alert('JSON 格式错误：' + e.message);
+        return;
+    }
+    
+    try {
+        const res = await fetch(authUrl('/api/admin/products/import'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ products })
+        });
+        const data = await res.json();
+        const resultDiv = document.getElementById('importResult');
+        resultDiv.style.display = 'block';
+        if (data.success) {
+            resultDiv.style.background = '#f0f9eb';
+            resultDiv.style.color = '#67c23a';
+            resultDiv.innerHTML = data.msg + (data.data.errors.length ? '<br>错误：' + data.data.errors.join('<br>') : '');
+            setTimeout(() => { closeImportModal(); loadList(currentPage); }, 1500);
+        } else {
+            resultDiv.style.background = '#fef0f0';
+            resultDiv.style.color = '#f56c6c';
+            resultDiv.innerHTML = data.msg || '导入失败';
+        }
+    } catch (e) {
+        alert('导入失败：' + e.message);
+    }
+}
+
 async function submitForm() {
     const id = document.getElementById('editId').value;
+    const categoryId = document.getElementById('category3').value || document.getElementById('category2').value || document.getElementById('category1').value || null;
     const body = {
         product_name: document.getElementById('productName').value.trim(),
         price: parseFloat(document.getElementById('productPrice').value) || 0,
         original_price: parseFloat(document.getElementById('productOriginalPrice').value) || 0,
         stock: parseInt(document.getElementById('productStock').value) || 0,
-        category_name: document.getElementById('productCategory').value.trim(),
+        category_id: categoryId,
         description: document.getElementById('productDesc').value.trim(),
         shop_id: document.getElementById('productShop').value
     };
@@ -321,6 +502,21 @@ async function deleteProduct(id) {
         if (data.success) { loadList(currentPage); }
         else { alert(data.msg || '删除失败'); }
     } catch (e) { alert('删除失败'); }
+}
+
+async function toggleStatus(id, newStatus) {
+    const action = newStatus === 'active' ? '上架' : '下架';
+    if (!confirm(`确定要${action}该商品吗？`)) return;
+    try {
+        const res = await fetch(authUrl(`/api/admin/products/${id}/status`), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus })
+        });
+        const data = await res.json();
+        if (data.success) { loadList(currentPage); }
+        else { alert(data.msg || '操作失败'); }
+    } catch (e) { alert('操作失败'); }
 }
 
 loadFilters();
