@@ -353,6 +353,80 @@ def health():
     return jsonify({'success': True, 'module': 'admin-web', 'status': 'ok'})
 
 
+# ============ 用户信息 ============
+
+@app.route('/api/admin/userinfo', methods=['GET'])
+def get_user_info():
+    """获取当前登录用户信息"""
+    from business_common.auth import verify_staff
+    token = request.args.get('access_token') or request.headers.get('Token')
+    isdev = request.args.get('isdev', '0')
+    
+    if not token:
+        return jsonify({'success': False, 'message': '未登录'}), 401
+    
+    user = verify_staff(token, isdev)
+    if not user:
+        return jsonify({'success': False, 'message': '登录已过期'}), 401
+    
+    # 返回用户信息，包含 user_name 字段
+    return jsonify({
+        'success': True,
+        'data': {
+            'user_id': user.get('user_id') or user.get('id'),
+            'user_name': user.get('user_name') or user.get('name') or user.get('raw_data', {}).get('empName') or '管理员',
+            'phone': user.get('phone') or user.get('mobile'),
+            'is_staff': user.get('is_staff', True),
+            'avatar': user.get('avatar') or user.get('avatar_url')
+        }
+    })
+
+
+# ============ 逾期申请 ============
+
+@app.route('/api/staff/applications/overdue', methods=['GET'])
+def get_overdue_applications():
+    """获取逾期未处理的申请单"""
+    from business_common.auth import verify_staff
+    from business_common import db
+    from datetime import datetime, timedelta
+    
+    token = request.args.get('access_token') or request.headers.get('Token')
+    isdev = request.args.get('isdev', '0')
+    
+    if not token:
+        return jsonify({'success': False, 'message': '未登录'}), 401
+    
+    user = verify_staff(token, isdev)
+    if not user:
+        return jsonify({'success': False, 'message': '登录已过期'}), 401
+    
+    # 查询逾期申请（超过3天未处理的待处理申请）
+    overdue_threshold = datetime.now() - timedelta(days=3)
+    
+    sql = """
+        SELECT COUNT(*) as count 
+        FROM business_applications 
+        WHERE status = 'pending' 
+          AND deleted = 0 
+          AND created_at < %s
+    """
+    cursor = db.get_cursor()
+    cursor.execute(sql, (overdue_threshold,))
+    result = cursor.fetchone()
+    cursor.close()
+    
+    overdue_count = result['count'] if result else 0
+    
+    return jsonify({
+        'success': True,
+        'data': {
+            'total_overdue': overdue_count,
+            'overdue_list': []
+        }
+    })
+
+
 # ============ 静态文件 ============
 
 @app.route('/')
