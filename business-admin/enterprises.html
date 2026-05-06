@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="commercial">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>粤海物业 · 园区管理</title>
+<script src="../api.js"></script>
+<style>
+  :root {
+    --primary: #00dea0; --primary-dark: #00c78e; --deep: #2c3e50;
+    --bg: #f5f7fa; --card: #ffffff; --text: #2c3e50;
+    --text-secondary: #7f8c8d; --border: #e8ecf1;
+    --radius: 10px; --radius-sm: 6px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --danger: #e74c3c; --warning: #f39c12; --success: #27ae60;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 72px;
+  }
+  .header {
+    background: linear-gradient(90deg, var(--primary), var(--deep));
+    padding: 16px 20px; color: #fff;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .header h1 { font-size: 18px; font-weight: 600; }
+  .header .add-btn {
+    background: rgba(255,255,255,0.2); border: none; color: #fff;
+    padding: 6px 14px; border-radius: 20px; font-size: 13px;
+    cursor: pointer;
+  }
+  .content { padding: 16px; }
+  .search-bar {
+    display: flex; background: var(--card); border-radius: var(--radius);
+    padding: 10px 14px; margin-bottom: 16px; box-shadow: var(--shadow);
+    align-items: center; gap: 8px;
+  }
+  .search-bar input {
+    flex: 1; border: none; outline: none; font-size: 14px; color: var(--text);
+  }
+  .search-bar .search-icon { font-size: 18px; color: var(--text-secondary); }
+  .stats-row {
+    display: flex; gap: 12px; margin-bottom: 16px;
+  }
+  .stat-chip {
+    flex: 1; background: var(--card); border-radius: var(--radius-sm);
+    padding: 12px; text-align: center; box-shadow: var(--shadow);
+  }
+  .stat-chip .num { font-size: 20px; font-weight: 700; color: var(--primary); }
+  .stat-chip .lbl { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+  .section-title {
+    font-size: 15px; font-weight: 600; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-title::before {
+    content: ''; width: 3px; height: 16px;
+    background: var(--primary); border-radius: 2px;
+  }
+  .enterprise-list { display: flex; flex-direction: column; gap: 10px; }
+  .enterprise-card {
+    background: var(--card); border-radius: var(--radius);
+    padding: 16px; box-shadow: var(--shadow);
+    display: flex; gap: 14px; align-items: flex-start;
+    cursor: pointer; transition: transform 0.2s;
+  }
+  .enterprise-card:active { transform: scale(0.98); }
+  .enterprise-card .thumb {
+    width: 56px; height: 56px; border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, var(--primary), var(--deep));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; flex-shrink: 0;
+  }
+  .enterprise-card .info { flex: 1; }
+  .enterprise-card .name { font-size: 15px; font-weight: 600; }
+  .enterprise-card .addr {
+    font-size: 12px; color: var(--text-secondary); margin: 4px 0;
+  }
+  .enterprise-card .meta {
+    display: flex; gap: 12px; font-size: 11px; color: var(--text-secondary); margin-top: 4px;
+  }
+  .enterprise-card .arrow { font-size: 18px; color: var(--text-secondary); align-self: center; }
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--card); display: flex; border-top: 1px solid var(--border);
+    padding: 6px 0 env(safe-area-inset-bottom, 6px);
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+  }
+  .nav-item {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; padding: 6px 0; text-decoration: none;
+    color: var(--text-secondary); font-size: 10px; gap: 3px;
+    cursor: pointer;
+  }
+  .nav-item .nav-icon { font-size: 20px; }
+  .nav-item.active { color: var(--primary); }
+  .loading { text-align: center; color: var(--text-secondary); padding: 20px; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div style="font-size:12px;opacity:0.8">管理端</div>
+      <h1>园区管理</h1>
+    </div>
+    <button class="add-btn" onclick="showAddDialog()">+ 新增园区</button>
+  </div>
+
+  <div class="content">
+    <div class="search-bar">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="搜索园区名称或地址..." oninput="searchEnterprises()">
+    </div>
+
+    <div class="stats-row" id="statsRow">
+      <div class="stat-chip"><div class="num" id="statActive">--</div><div class="lbl">运营中</div></div>
+      <div class="stat-chip"><div class="num" id="statPreparing">--</div><div class="lbl">筹备中</div></div>
+      <div class="stat-chip"><div class="num" id="statBuildings">--</div><div class="lbl">总楼栋</div></div>
+      <div class="stat-chip"><div class="num" id="statResidents">--</div><div class="lbl">住户/企业</div></div>
+    </div>
+
+    <div class="section-title">园区列表</div>
+    <div class="enterprise-list" id="enterpriseList">
+      <div class="loading">加载中...</div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="location.href='index.html'">
+      <span class="nav-icon">📊</span>仪表盘
+    </div>
+    <div class="nav-item active" onclick="location.href='enterprises.html'">
+      <span class="nav-icon">🏢</span>园区
+    </div>
+    <div class="nav-item" onclick="location.href='workorders.html'">
+      <span class="nav-icon">📋</span>工单
+    </div>
+    <div class="nav-item" onclick="location.href='settings.html'">
+      <span class="nav-icon">⚙️</span>设置
+    </div>
+  </div>
+
+<!-- 新增/编辑园区对话框 -->
+<div id="addDialog" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:10px;width:90%;max-width:400px;padding:20px;">
+    <h3 id="dialogTitle" style="margin-bottom:16px;">新增园区</h3>
+    <input id="inpName" placeholder="园区名称" style="width:100%;padding:10px;border:1px solid #e8ecf1;border-radius:6px;margin-bottom:10px;font-size:14px;">
+    <input id="inpAddr" placeholder="园区地址" style="width:100%;padding:10px;border:1px solid #e8ecf1;border-radius:6px;margin-bottom:10px;font-size:14px;">
+    <input id="inpType" placeholder="园区类型（写字楼/产业园/住宅等）" style="width:100%;padding:10px;border:1px solid #e8ecf1;border-radius:6px;margin-bottom:16px;font-size:14px;">
+    <div style="display:flex;gap:10px;">
+      <button onclick="closeDialog()" style="flex:1;padding:10px;border:1px solid #e8ecf1;background:#fff;border-radius:6px;cursor:pointer;">取消</button>
+      <button onclick="saveEnterprise()" style="flex:1;padding:10px;border:none;background:var(--primary);color:#fff;border-radius:6px;cursor:pointer;">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let enterpriseList = [];
+let currentEditId = null;
+
+// 检查登录
+if (!API.auth.isLoggedIn()) {
+  alert('请先登录');
+}
+
+// 加载园区数据
+async function loadEnterprises(keyword = '') {
+  try {
+    const res = await API.enterprises.list(keyword);
+    if (res.code === 0 && res.data) {
+      enterpriseList = res.data.items || [];
+      renderEnterprises(enterpriseList);
+      updateStats(res.data);
+    }
+  } catch (err) {
+    console.error('加载园区失败:', err);
+    document.getElementById('enterpriseList').innerHTML = '<div class="loading">加载失败，请刷新重试</div>';
+  }
+}
+
+// 渲染园区列表
+function renderEnterprises(list) {
+  const container = document.getElementById('enterpriseList');
+  if (list.length === 0) {
+    container.innerHTML = '<div class="loading">暂无园区数据</div>';
+    return;
+  }
+  container.innerHTML = list.map(e => `
+    <div class="enterprise-card" onclick="viewEnterprise('${e.fid}')">
+      <div class="thumb">🏢</div>
+      <div class="info">
+        <div class="name">${e.name || '未命名'}</div>
+        <div class="addr">${e.address || '暂无地址'}</div>
+        <div class="meta">
+          <span>📐 ${e.building_count || 0}栋</span>
+          <span>👥 ${e.resident_count || 0}户</span>
+          <span>🏷️ ${e.type || '未分类'}</span>
+        </div>
+      </div>
+      <span class="arrow">›</span>
+    </div>
+  `).join('');
+}
+
+// 更新统计
+function updateStats(data) {
+  // 简单统计（实际应由后端dashboard提供）
+  document.getElementById('statActive').textContent = enterpriseList.filter(e => e.status === '运营中').length || enterpriseList.length;
+  document.getElementById('statBuildings').textContent = enterpriseList.reduce((sum, e) => sum + (e.building_count || 0), 0);
+  document.getElementById('statResidents').textContent = enterpriseList.reduce((sum, e) => sum + (e.resident_count || 0), 0);
+}
+
+// 搜索
+function searchEnterprises() {
+  const keyword = document.getElementById('searchInput').value.trim();
+  loadEnterprises(keyword);
+}
+
+// 查看/编辑园区
+function viewEnterprise(fid) {
+  const item = enterpriseList.find(e => e.fid === fid);
+  if (!item) return;
+  currentEditId = fid;
+  document.getElementById('dialogTitle').textContent = '编辑园区';
+  document.getElementById('inpName').value = item.name || '';
+  document.getElementById('inpAddr').value = item.address || '';
+  document.getElementById('inpType').value = item.type || '';
+  document.getElementById('addDialog').style.display = 'flex';
+}
+
+// 新增对话框
+function showAddDialog() {
+  currentEditId = null;
+  document.getElementById('dialogTitle').textContent = '新增园区';
+  document.getElementById('inpName').value = '';
+  document.getElementById('inpAddr').value = '';
+  document.getElementById('inpType').value = '';
+  document.getElementById('addDialog').style.display = 'flex';
+}
+
+function closeDialog() {
+  document.getElementById('addDialog').style.display = 'none';
+}
+
+// 保存园区
+async function saveEnterprise() {
+  const name = document.getElementById('inpName').value.trim();
+  const address = document.getElementById('inpAddr').value.trim();
+  const type = document.getElementById('inpType').value.trim();
+  if (!name) { alert('请输入园区名称'); return; }
+
+  try {
+    let res;
+    if (currentEditId) {
+      res = await API.enterprises.update(currentEditId, { name, address, type });
+    } else {
+      res = await API.enterprises.create({ name, address, type, status: '运营中' });
+    }
+    if (res.code === 0) {
+      closeDialog();
+      loadEnterprises();
+    } else {
+      alert(res.message || '保存失败');
+    }
+  } catch (err) {
+    alert('保存失败: ' + err.message);
+  }
+}
+
+// 页面加载
+document.addEventListener('DOMContentLoaded', () => loadEnterprises());
+</script>
+</body>
+</html>

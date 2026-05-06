@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="commercial">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>粤海物业 · 楼栋管理</title>
+<script src="../api.js"></script>
+<style>
+  :root {
+    --primary: #00dea0; --primary-dark: #00c78e; --deep: #2c3e50;
+    --bg: #f5f7fa; --card: #ffffff; --text: #2c3e50;
+    --text-secondary: #7f8c8d; --border: #e8ecf1;
+    --radius: 10px; --radius-sm: 6px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --danger: #e74c3c; --warning: #f39c12; --success: #27ae60; --info: #3498db;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 72px;
+  }
+  .header {
+    background: linear-gradient(90deg, var(--primary), var(--deep));
+    padding: 16px 20px; color: #fff;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .header .back { font-size: 20px; color: #fff; text-decoration: none; }
+  .header h1 { font-size: 18px; font-weight: 600; flex: 1; }
+  .header .add-btn {
+    background: rgba(255,255,255,0.2); border: none; color: #fff;
+    padding: 6px 14px; border-radius: 20px; font-size: 13px; cursor: pointer;
+  }
+  .content { padding: 16px; }
+  .search-bar {
+    display: flex; background: var(--card); border-radius: var(--radius);
+    padding: 10px 14px; margin-bottom: 14px; box-shadow: var(--shadow);
+    align-items: center; gap: 8px;
+  }
+  .search-bar input { flex: 1; border: none; outline: none; font-size: 14px; color: var(--text); }
+  .search-bar .icon { font-size: 18px; color: var(--text-secondary); }
+  .filter-tabs {
+    display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto;
+  }
+  .filter-tab {
+    padding: 6px 16px; border-radius: 20px; font-size: 12px;
+    background: var(--card); color: var(--text-secondary);
+    border: 1px solid var(--border); cursor: pointer; white-space: nowrap;
+  }
+  .filter-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .section-title {
+    font-size: 15px; font-weight: 600; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-title::before { content: ''; width: 3px; height: 16px; background: var(--primary); border-radius: 2px; }
+  .building-list { display: flex; flex-direction: column; gap: 10px; }
+  .building-card {
+    background: var(--card); border-radius: var(--radius);
+    padding: 16px; box-shadow: var(--shadow);
+    cursor: pointer; transition: transform 0.2s;
+  }
+  .building-card:active { transform: scale(0.98); }
+  .building-card .row1 {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
+  }
+  .building-card .bname { font-size: 15px; font-weight: 600; }
+  .building-card .btype {
+    font-size: 11px; padding: 3px 10px; border-radius: 12px;
+    background: #e8f8f3; color: var(--primary-dark);
+  }
+  .building-card .row2 {
+    display: flex; gap: 16px; font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;
+  }
+  .building-card .row3 {
+    display: flex; gap: 16px; font-size: 12px; flex-wrap: wrap;
+  }
+  .building-card .tag {
+    padding: 2px 8px; border-radius: 4px; font-size: 11px;
+  }
+  .building-card .tag.normal { background: #e8f4fd; color: var(--info); }
+  .building-card .tag.warn { background: #fef3e2; color: var(--warning); }
+  .building-card .tag.danger { background: #fde8e8; color: var(--danger); }
+  .progress-bar {
+    height: 4px; background: var(--border); border-radius: 2px;
+    margin-top: 10px; overflow: hidden;
+  }
+  .progress-fill { height: 100%; border-radius: 2px; }
+  .progress-fill.green { background: var(--primary); }
+  .progress-fill.warn { background: var(--warning); }
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--card); display: flex; border-top: 1px solid var(--border);
+    padding: 6px 0 env(safe-area-inset-bottom, 6px);
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+  }
+  .nav-item {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; padding: 6px 0; text-decoration: none;
+    color: var(--text-secondary); font-size: 10px; gap: 3px;
+  }
+  .nav-item .nav-icon { font-size: 20px; }
+  .nav-item.active { color: var(--primary); }
+  .loading { text-align: center; color: var(--text-secondary); padding: 20px; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <a href="enterprises.html" class="back">‹</a>
+    <h1>楼栋管理</h1>
+    <button class="add-btn" onclick="showAddDialog()">+ 新增</button>
+  </div>
+
+  <div class="content">
+    <div class="search-bar">
+      <span class="icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="搜索楼栋编号或名称..." oninput="searchBuildings()">
+    </div>
+
+    <div class="filter-tabs" id="filterTabs">
+      <div class="filter-tab active" data-type="" onclick="switchType('')">全部</div>
+      <div class="filter-tab" data-type="写字楼" onclick="switchType('写字楼')">写字楼</div>
+      <div class="filter-tab" data-type="商业楼" onclick="switchType('商业楼')">商业楼</div>
+      <div class="filter-tab" data-type="住宅楼" onclick="switchType('住宅楼')">住宅楼</div>
+      <div class="filter-tab" data-type="配套设施" onclick="switchType('配套设施')">配套设施</div>
+    </div>
+
+    <div class="section-title" id="sectionTitle">全部楼栋</div>
+    <div class="building-list" id="buildingList">
+      <div class="loading">加载中...</div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <a href="index.html" class="nav-item">
+      <span class="nav-icon">📊</span>仪表盘
+    </a>
+    <a href="enterprises.html" class="nav-item active">
+      <span class="nav-icon">🏢</span>园区
+    </a>
+    <a href="workorders.html" class="nav-item">
+      <span class="nav-icon">📋</span>工单
+    </a>
+    <a href="settings.html" class="nav-item">
+      <span class="nav-icon">⚙️</span>设置
+    </a>
+  </div>
+
+<!-- 新增/编辑楼栋对话框 -->
+<div id="addDialog" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:10px;width:90%;max-width:400px;padding:20px;">
+    <h3 id="dialogTitle" style="margin-bottom:16px;">新增楼栋</h3>
+    <input id="inpName" placeholder="楼栋名称（如：A座）" style="width:100%;padding:10px;border:1px solid #e8ecf1;border-radius:6px;margin-bottom:8px;font-size:14px;">
+    <input id="inpFullName" placeholder="全称（如：国际金融大厦）" style="width:100%;padding:10px;border:1px solid #e8ecf1;border-radius:6px;margin-bottom:8px;font-size:14px;">
+    <input id="inpType" placeholder="类型（写字楼/商业楼/住宅楼等）" style="width:100%;padding:10px;border:1px solid #e8ecf1;border-radius:6px;margin-bottom:8px;font-size:14px;">
+    <input id="inpFloors" placeholder="总层数" type="number" style="width:100%;padding:10px;border:1px solid #e8ecf1;border-radius:6px;margin-bottom:8px;font-size:14px;">
+    <input id="inpUnits" placeholder="总单元数" type="number" style="width:100%;padding:10px;border:1px solid #e8ecf1;border-radius:6px;margin-bottom:16px;font-size:14px;">
+    <div style="display:flex;gap:10px;">
+      <button onclick="closeDialog()" style="flex:1;padding:10px;border:1px solid #e8ecf1;background:#fff;border-radius:6px;cursor:pointer;">取消</button>
+      <button onclick="saveBuilding()" style="flex:1;padding:10px;border:none;background:var(--primary);color:#fff;border-radius:6px;cursor:pointer;">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let buildings = [];
+let currentType = '';
+let currentEnterpriseId = ''; // 实际应从园区页面传入
+let currentEditId = null;
+
+// 检查登录
+if (!API.auth.isLoggedIn()) {
+  alert('请先登录');
+}
+
+// 从URL获取园区ID（如果从园区页面跳转过来）
+const urlParams = new URLSearchParams(window.location.search);
+currentEnterpriseId = urlParams.get('enterprise_id') || '';
+
+// 加载楼栋数据
+async function loadBuildings(type = '', keyword = '') {
+  try {
+    const res = await API.buildings.list(currentEnterpriseId, keyword);
+    if (res.code === 0 && res.data) {
+      buildings = res.data.items || [];
+      // 前端过滤类型
+      const filtered = type ? buildings.filter(b => b.type === type) : buildings;
+      renderBuildings(filtered);
+      updateTypeCounts();
+      document.getElementById('sectionTitle').textContent = type ? `${type}列表` : '全部楼栋';
+    }
+  } catch (err) {
+    console.error('加载楼栋失败:', err);
+    document.getElementById('buildingList').innerHTML = '<div class="loading">加载失败，请刷新重试</div>';
+  }
+}
+
+// 渲染楼栋列表
+function renderBuildings(list) {
+  const container = document.getElementById('buildingList');
+  if (list.length === 0) {
+    container.innerHTML = '<div class="loading">暂无楼栋数据</div>';
+    return;
+  }
+  container.innerHTML = list.map(b => {
+    const occupancyRate = b.total_units ? Math.round((b.occupied_units || 0) / b.total_units * 100) : 0;
+    const progressClass = occupancyRate > 80 ? 'green' : (occupancyRate > 60 ? 'warn' : 'danger');
+    return `
+      <div class="building-card" onclick="viewBuilding('${b.fid}')">
+        <div class="row1">
+          <span class="bname">${b.name || '未命名'} · ${b.full_name || ''}</span>
+          <span class="btype">${b.type || '未分类'}</span>
+        </div>
+        <div class="row2">
+          <span>🏠 ${b.floors || 0}层</span>
+          <span>🏢 ${b.total_units || 0}单元</span>
+          <span>📅 ${b.build_year || '未知'}年竣工</span>
+        </div>
+        <div class="row3">
+          <span>👥 ${b.occupied_units || 0}户入驻</span>
+          <span class="tag normal">入驻率 ${occupancyRate}%</span>
+          <span>🛗 ${b.elevators || 0}部电梯</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill ${progressClass}" style="width:${occupancyRate}%"></div></div>
+      </div>
+    `;
+  }).join('');
+}
+
+// 更新类型Tab计数
+function updateTypeCounts() {
+  const tabs = document.querySelectorAll('.filter-tab');
+  tabs.forEach(tab => {
+    const type = tab.dataset.type;
+    const count = type ? buildings.filter(b => b.type === type).length : buildings.length;
+    tab.textContent = type ? `${type} (${count})` : `全部 (${count})`;
+  });
+}
+
+// 切换类型筛选
+function switchType(type) {
+  currentType = type;
+  document.querySelectorAll('.filter-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.type === type);
+  });
+  const keyword = document.getElementById('searchInput').value.trim();
+  loadBuildings(type, keyword);
+}
+
+// 搜索
+function searchBuildings() {
+  const keyword = document.getElementById('searchInput').value.trim();
+  loadBuildings(currentType, keyword);
+}
+
+// 查看/编辑楼栋
+function viewBuilding(fid) {
+  const item = buildings.find(b => b.fid === fid);
+  if (!item) return;
+  currentEditId = fid;
+  document.getElementById('dialogTitle').textContent = '编辑楼栋';
+  document.getElementById('inpName').value = item.name || '';
+  document.getElementById('inpFullName').value = item.full_name || '';
+  document.getElementById('inpType').value = item.type || '';
+  document.getElementById('inpFloors').value = item.floors || '';
+  document.getElementById('inpUnits').value = item.total_units || '';
+  document.getElementById('addDialog').style.display = 'flex';
+}
+
+// 新增对话框
+function showAddDialog() {
+  currentEditId = null;
+  document.getElementById('dialogTitle').textContent = '新增楼栋';
+  document.getElementById('inpName').value = '';
+  document.getElementById('inpFullName').value = '';
+  document.getElementById('inpType').value = '';
+  document.getElementById('inpFloors').value = '';
+  document.getElementById('inpUnits').value = '';
+  document.getElementById('addDialog').style.display = 'flex';
+}
+
+function closeDialog() {
+  document.getElementById('addDialog').style.display = 'none';
+}
+
+// 保存楼栋
+async function saveBuilding() {
+  const name = document.getElementById('inpName').value.trim();
+  const full_name = document.getElementById('inpFullName').value.trim();
+  const type = document.getElementById('inpType').value.trim();
+  const floors = parseInt(document.getElementById('inpFloors').value) || 0;
+  const total_units = parseInt(document.getElementById('inpUnits').value) || 0;
+  
+  if (!name) { alert('请输入楼栋名称'); return; }
+  
+  try {
+    let res;
+    const data = { name, full_name, type, floors, total_units, enterprise_id: currentEnterpriseId };
+    if (currentEditId) {
+      res = await API.buildings.update(currentEditId, data);
+    } else {
+      res = await API.buildings.create(data);
+    }
+    if (res.code === 0) {
+      closeDialog();
+      loadBuildings(currentType);
+    } else {
+      alert(res.message || '保存失败');
+    }
+  } catch (err) {
+    alert('保存失败: ' + err.message);
+  }
+}
+
+// 页面加载
+document.addEventListener('DOMContentLoaded', () => loadBuildings());
+</script>
+</body>
+</html>

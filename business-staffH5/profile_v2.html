@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="commercial">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>个人中心 - 粤海物业员工端</title>
+<script src="../api.js"></script>
+<style>
+:root {
+  --primary: #00dea0; --primary-light: #33e5b5; --primary-dark: #00b383; --primary-bg: #e8f5e9;
+  --accent: #2c3e50; --accent-light: #34495e; --accent-bg: #f0f2f5;
+  --gray-50: #fafafa; --gray-100: #f5f5f5; --gray-200: #eeeeee;
+  --gray-300: #e0e0e0; --gray-400: #bdbdbd; --gray-500: #9e9e9e; --gray-600: #757575;
+  --gray-700: #616161; --gray-800: #424242; --gray-900: #212121; --white: #ffffff;
+  --radius-sm: 6px; --radius-md: 8px; --radius-lg: 10px;
+  --shadow-card: 0 2px 8px rgba(0,0,0,0.08);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--gray-100); color: var(--gray-900); font-size: 15px; padding-bottom: 80px; }
+.profile-header { background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); color: #fff; text-align: center; padding: 32px 16px 24px; }
+.profile-header__avatar { width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700; margin: 0 auto 12px; }
+.profile-header__name { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+.profile-header__role { font-size: 13px; opacity: 0.9; }
+.profile-header__dept { font-size: 12px; opacity: 0.7; margin-top: 4px; }
+.container { padding: 12px 16px; margin-top: -8px; position: relative; z-index: 1; }
+.stats { display: flex; background: var(--white); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); overflow: hidden; margin-bottom: 12px; }
+.stat-item { flex: 1; text-align: center; padding: 16px 8px; }
+.stat-item__num { font-size: 20px; font-weight: 700; color: var(--primary); }
+.stat-item__label { font-size: 11px; color: var(--gray-600); margin-top: 4px; }
+.menu-section { background: var(--white); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); overflow: hidden; margin-bottom: 12px; }
+.menu-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--gray-100); cursor: pointer; transition: background 0.2s; }
+.menu-item:last-child { border-bottom: none; }
+.menu-item:active { background: var(--gray-50); }
+.menu-item__icon { font-size: 20px; width: 24px; text-align: center; }
+.menu-item__label { flex: 1; font-size: 14px; color: var(--gray-900); }
+.menu-item__arrow { font-size: 14px; color: var(--gray-400); }
+.menu-item__extra { font-size: 13px; color: var(--gray-500); }
+.btn-logout { display: block; width: 100%; padding: 14px; background: var(--white); border: 1px solid #ffcdd2; border-radius: var(--radius-lg); color: var(--red); font-size: 15px; cursor: pointer; margin-top: 16px; }
+.tabbar { position: fixed; bottom: 0; left: 0; right: 0; height: 64px; background: var(--white); border-top: 1px solid var(--gray-200); display: flex; z-index: 100; box-shadow: 0 -2px 8px rgba(0,0,0,0.08); }
+.tabbar__item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--gray-500); font-size: 11px; cursor: pointer; }
+.tabbar__item--active { color: var(--primary); }
+.tabbar__icon { font-size: 22px; }
+.loading { text-align: center; color: var(--gray-500); padding: 20px; }
+</style>
+</head>
+<body>
+<div class="profile-header">
+  <div class="profile-header__avatar" id="avatar">👨‍💼</div>
+  <div class="profile-header__name" id="userName">加载中...</div>
+  <div class="profile-header__role" id="userRole">--</div>
+  <div class="profile-header__dept" id="userDept">--</div>
+</div>
+<div class="container">
+  <div class="stats">
+    <div class="stat-item"><div class="stat-item__num" id="statOrders">--</div><div class="stat-item__label">处理工单</div></div>
+    <div class="stat-item"><div class="stat-item__num" id="statRate">--</div><div class="stat-item__label">好评率</div></div>
+    <div class="stat-item"><div class="stat-item__num" id="statAvgTime">--</div><div class="stat-item__label">平均时效</div></div>
+    <div class="stat-item"><div class="stat-item__num" id="statRank">--</div><div class="stat-item__label">本月排名</div></div>
+  </div>
+  
+  <div class="menu-section">
+    <div class="menu-item" onclick="location.href='messages.html'"><div class="menu-item__icon">🔔</div><div class="menu-item__label">消息中心</div><div class="menu-item__extra" id="msgCount">0条新消息</div><div class="menu-item__arrow">→</div></div>
+    <div class="menu-item" onclick="alert('排班功能待开发')"><div class="menu-item__icon">📅</div><div class="menu-item__label">我的排班</div><div class="menu-item__arrow">→</div></div>
+    <div class="menu-item" onclick="alert('日志功能待开发')"><div class="menu-item__icon">📝</div><div class="menu-item__label">工作日志</div><div class="menu-item__arrow">→</div></div>
+  </div>
+
+  <div class="menu-section">
+    <div class="menu-item" onclick="editProfile()"><div class="menu-item__icon">👤</div><div class="menu-item__label">个人信息</div><div class="menu-item__arrow">→</div></div>
+    <div class="menu-item" onclick="alert('账号安全待开发')"><div class="menu-item__icon">🔐</div><div class="menu-item__label">账号安全</div><div class="menu-item__arrow">→</div></div>
+    <div class="menu-item" onclick="alert('资质证书待开发')"><div class="menu-item__icon">⭐</div><div class="menu-item__label">资质证书</div><div class="menu-item__extra">电梯管理员 / 消防员</div><div class="menu-item__arrow">→</div></div>
+  </div>
+
+  <div class="menu-section">
+    <div class="menu-item" onclick="location.href='../admin/settings.html'"><div class="menu-item__icon">⚙️</div><div class="menu-item__label">系统设置</div><div class="menu-item__arrow">→</div></div>
+    <div class="menu-item" onclick="alert('关于我们待开发')"><div class="menu-item__icon">ℹ️</div><div class="menu-item__label">关于我们</div><div class="menu-item__extra">v2.0.0</div><div class="menu-item__arrow">→</div></div>
+  </div>
+
+  <button class="btn-logout" onclick="logout()">退出登录</button>
+</div>
+<div class="tabbar">
+  <div class="tabbar__item" onclick="location.href='index.html'"><div class="tabbar__icon">🏠</div><div>工作台</div></div>
+  <div class="tabbar__item" onclick="location.href='tasks.html'"><div class="tabbar__icon">📋</div><div>工单</div></div>
+  <div class="tabbar__item" onclick="location.href='residents.html'"><div class="tabbar__icon">👥</div><div>住户</div></div>
+  <div class="tabbar__item tabbar__item--active"><div class="tabbar__icon">👤</div><div>我的</div></div>
+</div>
+
+<script>
+// 检查登录
+if (!API.auth.isLoggedIn()) {
+  alert('请先登录');
+}
+
+// 加载用户数据
+async function loadProfile() {
+  try {
+    // 获取用户信息
+    const user = API.auth.getUser();
+    if (user) {
+      document.getElementById('avatar').textContent = (user.name || '?')[0];
+      document.getElementById('userName').textContent = user.name || '未命名';
+      document.getElementById('userRole').textContent = user.role || '员工';
+      document.getElementById('userDept').textContent = user.department || '未分配部门';
+    }
+    
+    // 获取统计数据（使用仪表盘API）
+    const res = await API.admin.dashboard();
+    if (res.code === 0 && res.data) {
+      document.getElementById('statOrders').textContent = res.data.work_orders_handled || 0;
+      document.getElementById('statRate').textContent = (res.data.satisfaction_rate || 0) + '%';
+      document.getElementById('statAvgTime').textContent = (res.data.avg_handle_hours || 0).toFixed(1) + 'h';
+      document.getElementById('statRank').textContent = 'TOP' + (res.data.month_rank || '--');
+    }
+  } catch (err) {
+    console.error('加载个人资料失败:', err);
+  }
+}
+
+// 编辑个人资料
+function editProfile() {
+  const user = API.auth.getUser();
+  const newName = prompt('请输入姓名:', user?.name || '');
+  if (newName && newName.trim()) {
+    // 实际应调用API更新
+    document.getElementById('userName').textContent = newName.trim();
+    document.getElementById('avatar').textContent = newName.trim()[0];
+    alert('资料更新成功（模拟）');
+  }
+}
+
+// 退出登录
+function logout() {
+  if (confirm('确认退出登录？')) {
+    API.auth.logout();
+    alert('已退出登录');
+    // 如果有登录页可跳转：location.href = '../login.html';
+  }
+}
+
+// 页面加载
+document.addEventListener('DOMContentLoaded', loadProfile);
+</script>
+</body>
+</html>

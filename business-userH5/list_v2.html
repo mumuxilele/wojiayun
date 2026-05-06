@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>我的工单 - 粤海物业</title>
+<script src="api.js"></script>
+<style>
+:root {
+  --primary: #00dea0; --primary-light: #33e5b5; --primary-dark: #00b383; --primary-bg: #e6faf4;
+  --gray-50: #fafafa; --gray-100: #f5f5f5; --gray-200: #eeeeee; --gray-300: #e0e0e0;
+  --gray-400: #bdbdbd; --gray-500: #9e9e9e; --gray-600: #757575; --gray-700: #616161;
+  --gray-800: #424242; --gray-900: #212121; --white: #ffffff;
+  --radius-sm: 12px; --radius-md: 16px; --radius-lg: 24px;
+  --shadow-card: 0 4px 16px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.04);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: #f5f5f5; color: #212121; font-size: 16px; line-height: 1.5; padding-bottom: 80px;
+}
+.header {
+  background: #fff; padding: 12px 16px; display: flex; align-items: center;
+  border-bottom: 1px solid #f0f0f0; position: sticky; top: 0; z-index: 100;
+}
+.header__back { font-size: 24px; cursor: pointer; margin-right: 12px; color: #212121; background: none; border: none; }
+.header__title { font-size: 18px; font-weight: 600; flex: 1; }
+.tabs {
+  display: flex; background: #fff; border-bottom: 1px solid #f0f0f0; position: sticky; top: 56px; z-index: 90;
+}
+.tabs__item {
+  flex: 1; text-align: center; padding: 12px 0; font-size: 14px; color: #757575;
+  cursor: pointer; position: relative; transition: color 0.2s;
+}
+.tabs__item--active { color: var(--primary); font-weight: 600; }
+.tabs__item--active::after {
+  content: ''; position: absolute; bottom: 0; left: 25%; right: 25%; height: 3px;
+  background: var(--primary); border-radius: 2px;
+}
+.search-bar {
+  display: flex; align-items: center; padding: 8px 16px; background: #fff;
+  border-bottom: 1px solid #f0f0f0; position: sticky; top: 100px; z-index: 80;
+}
+.search-bar__input-wrapper {
+  flex: 1; display: flex; align-items: center; background: #f5f5f5;
+  border-radius: 20px; padding: 8px 16px; transition: all 0.3s ease;
+}
+.search-bar__input-wrapper:focus-within { background: #fff; box-shadow: 0 2px 8px rgba(0,222,160,0.2); border: 1px solid var(--primary); }
+.search-bar__icon { width: 20px; height: 20px; color: #9e9e9e; margin-right: 8px; flex-shrink: 0; }
+.search-bar__input {
+  flex: 1; border: none; outline: none; background: transparent; font-size: 15px; color: #212121; width: 100%;
+}
+.search-bar__input::placeholder { color: #bdbdbd; }
+.list-section { padding: 8px 0; }
+.list-item {
+  display: flex; align-items: center; padding: 14px 16px; background: #fff;
+  border-bottom: 1px solid #f5f5f5; cursor: pointer; transition: background 0.2s;
+}
+.list-item:active { background: #f5f5f5; }
+.list-item__icon {
+  width: 44px; height: 44px; border-radius: 12px; margin-right: 12px;
+  display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;
+}
+.list-item__icon--repair { background: #e3f2fd; }
+.list-item__icon--complaint { background: #fce4ec; }
+.list-item__icon--visit { background: #e8f5e9; }
+.list-item__icon--decoration { background: #fff3e0; }
+.list-item__icon--release { background: #f3e5f5; }
+.list-item__content { flex: 1; overflow: hidden; }
+.list-item__title {
+  font-size: 15px; font-weight: 500; color: #212121; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.list-item__sub { font-size: 13px; color: #757575; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.list-item__tag { margin-left: 12px; flex-shrink: 0; }
+.status-tag {
+  display: inline-block; padding: 4px 10px; border-radius: 10px; font-size: 12px; font-weight: 500;
+}
+.status-pending { background: #fff3e0; color: #f57c00; }
+.status-processing { background: #e3f2fd; color: #1976d2; }
+.status-done { background: #e8f5e9; color: #388e3c; }
+.status-cancelled { background: #fafafa; color: #9e9e9e; border: 1px solid #e0e0e0; }
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 60px 20px; color: #9e9e9e;
+}
+.empty-state__icon { font-size: 64px; margin-bottom: 16px; opacity: 0.5; }
+.empty-state__text { font-size: 16px; }
+.empty-state__sub { font-size: 14px; margin-top: 8px; }
+.tabbar {
+  position: fixed; bottom: 0; left: 0; right: 0; height: 64px; background: #fff;
+  border-top: 1px solid #f0f0f0; display: flex; z-index: 100;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+}
+.tabbar__item {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 3px; color: #9e9e9e; font-size: 11px; cursor: pointer; transition: color 0.2s;
+}
+.tabbar__item--active { color: #00dea0; }
+.tabbar__icon { font-size: 24px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <button class="header__back" onclick="history.back()">←</button>
+  <div class="header__title">我的工单</div>
+  <div onclick="location.href='index.html'" style="font-size:20px;cursor:pointer;">🏠</div>
+</div>
+
+<div class="tabs">
+  <div class="tabs__item tabs__item--active" onclick="switchTab(this, 'all')">全部</div>
+  <div class="tabs__item" onclick="switchTab(this, 'pending')">待处理</div>
+  <div class="tabs__item" onclick="switchTab(this, 'processing')">处理中</div>
+  <div class="tabs__item" onclick="switchTab(this, 'done')">已完成</div>
+</div>
+
+<div class="search-bar">
+  <div class="search-bar__input-wrapper">
+    <span class="search-bar__icon">🔍</span>
+    <input class="search-bar__input" placeholder="搜索工单编号、问题描述...">
+  </div>
+</div>
+
+<div class="list-section">
+  <div id="orderList">
+    <div class="empty-state"><div class="empty-state__icon">📋</div><div class="empty-state__text">加载中...</div></div>
+  </div>
+</div>
+
+<div class="tabbar">
+  <div class="tabbar__item" onclick="location.href='index.html'">
+    <div class="tabbar__icon">🏠</div>
+    <div>首页</div>
+  </div>
+  <div class="tabbar__item tabbar__item--active">
+    <div class="tabbar__icon">📋</div>
+    <div>工单</div>
+  </div>
+  <div class="tabbar__item">
+    <div class="tabbar__icon">💬</div>
+    <div>消息</div>
+  </div>
+  <div class="tabbar__item">
+    <div class="tabbar__icon">👤</div>
+    <div>我的</div>
+  </div>
+</div>
+
+<script>
+let currentTab = 'all';
+let workOrders = [];
+
+function switchTab(el, type) {
+  currentTab = type;
+  document.querySelectorAll('.tabs__item').forEach(item => item.classList.remove('tabs__item--active'));
+  el.classList.add('tabs__item--active');
+  renderWorkOrders();
+}
+
+function getStatusClass(status) {
+  const map = {'pending':'status-pending','processing':'status-processing','done':'status-done','cancelled':'status-cancelled'};
+  return map[status] || 'status-pending';
+}
+function getStatusText(status) {
+  const map = {'pending':'待处理','processing':'处理中','done':'已完成','cancelled':'已取消','closed':'已关闭'};
+  return map[status] || status;
+}
+function getIcon(type) {
+  const map = {'水电维修':'🔧','电梯维修':'🛗','投诉':'💬','装修':'🏗️','访客':'🎫','物品放行':'📦'};
+  return map[type] || '📋';
+}
+function getIconClass(type) {
+  if (type === '投诉') return 'complaint';
+  if (type === '装修') return 'decoration';
+  if (type === '访客') return 'visit';
+  if (type === '物品放行') return 'release';
+  return 'repair';
+}
+
+function renderWorkOrders() {
+  const section = document.getElementById('orderList');
+  let filtered = workOrders;
+  if (currentTab === 'pending') filtered = workOrders.filter(w => w.status === 'pending');
+  else if (currentTab === 'processing') filtered = workOrders.filter(w => w.status === 'processing');
+  else if (currentTab === 'done') filtered = workOrders.filter(w => ['done','closed'].includes(w.status));
+
+  if (filtered.length === 0) {
+    section.innerHTML = '<div class="empty-state"><div class="empty-state__icon">📋</div><div class="empty-state__text">暂无工单</div></div>';
+    return;
+  }
+  section.innerHTML = filtered.map(w => `
+    <div class="list-item" onclick="location.href='detail-repair.html?id=${w.fid}'">
+      <div class="list-item__icon list-item__icon--${getIconClass(w.work_order_type)}">${getIcon(w.work_order_type)}</div>
+      <div class="list-item__content">
+        <div class="list-item__title">${w.description || w.work_order_no || '工单'}</div>
+        <div class="list-item__sub">${w.work_order_type || ''} · ${formatDate(w.create_time)} · ${w.work_order_no || ''}</div>
+      </div>
+      <div class="list-item__tag"><span class="status-tag ${getStatusClass(w.status)}">${getStatusText(w.status)}</span></div>
+    </div>`).join('');
+}
+
+function formatDate(d) {
+  if (!d) return '--';
+  return new Date(d).toLocaleString('zh-CN', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+
+async function loadOrders() {
+  const section = document.getElementById('orderList');
+  try {
+    const res = await API.workOrders.list('', '', '', '', 1, 50);
+    if (res.code === 0 && res.data) {
+      workOrders = res.data;
+      renderWorkOrders();
+    } else {
+      section.innerHTML = '<div class="empty-state"><div class="empty-state__icon">📋</div><div class="empty-state__text">暂无工单</div></div>';
+    }
+  } catch (err) {
+    section.innerHTML = '<div class="empty-state"><div class="empty-state__icon">📋</div><div class="empty-state__text">加载失败</div></div>';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadOrders);
+</script>
+</body>
+</html>

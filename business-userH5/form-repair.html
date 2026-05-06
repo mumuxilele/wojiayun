@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>报事报修 - 粤海物业</title>
+<script src="api.js"></script>
+<style>
+:root {
+  --primary: #00dea0; --primary-light: #33e5b5; --primary-dark: #00b383; --primary-bg: #e6faf4;
+  --accent: #ff6b6b; --gray-50: #fafafa; --gray-100: #f5f5f5; --gray-200: #eeeeee;
+  --gray-300: #e0e0e0; --gray-400: #bdbdbd; --gray-500: #9e9e9e; --gray-600: #757575;
+  --gray-700: #616161; --gray-800: #424242; --gray-900: #212121; --white: #ffffff;
+  --radius-sm: 12px; --radius-md: 16px; --radius-lg: 24px;
+  --shadow-card: 0 4px 16px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.04);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: #f5f5f5; color: #212121; font-size: 16px; line-height: 1.5;
+  padding-bottom: 80px; -webkit-font-smoothing: antialiased;
+}
+.header {
+  background: #fff; padding: 12px 16px; display: flex; align-items: center;
+  border-bottom: 1px solid #f0f0f0; position: sticky; top: 0; z-index: 100;
+}
+.header__back { font-size: 24px; cursor: pointer; margin-right: 12px; color: #212121; background: none; border: none; }
+.header__title { font-size: 18px; font-weight: 600; flex: 1; }
+.form-section {
+  background: #fff; margin: 12px 16px; border-radius: 16px; padding: 16px;
+  box-shadow: var(--shadow-card);
+}
+.section-label {
+  font-size: 14px; color: #616161; margin-bottom: 12px; font-weight: 500;
+  display: flex; align-items: center; gap: 4px;
+}
+.section-label .req { color: var(--accent); font-weight: 600; }
+.upload-grid { display: flex; flex-wrap: wrap; gap: 12px; }
+.upload-item {
+  position: relative; width: 80px; height: 80px; border-radius: 12px;
+  overflow: hidden; background: #f5f5f5;
+}
+.upload-item img { width: 100%; height: 100%; object-fit: cover; }
+.upload-remove {
+  position: absolute; top: 4px; right: 4px; width: 24px; height: 24px;
+  border-radius: 50%; background: rgba(0,0,0,0.5); color: #fff; border: none;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;
+}
+.upload-add {
+  width: 80px; height: 80px; border: 2px dashed #e0e0e0; border-radius: 12px;
+  background: #fafafa; cursor: pointer; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; transition: all 0.2s;
+}
+.upload-add:hover { border-color: var(--primary); background: var(--primary-bg); }
+.upload-add__icon { font-size: 32px; color: #bdbdbd; }
+.upload-add__text { font-size: 12px; color: #9e9e9e; margin-top: 4px; }
+.field { margin-bottom: 20px; }
+.field__label { display: block; font-size: 14px; color: #616161; margin-bottom: 8px; font-weight: 500; }
+.field__label .req { color: var(--accent); }
+.field__input {
+  width: 100%; height: 48px; padding: 0 16px;
+  border: 1.5px solid #e0e0e0; border-radius: 12px; font-size: 16px;
+  color: #212121; outline: none; transition: all 0.3s ease; background: #fff;
+}
+.field__input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,222,160,0.15); }
+.field__input::placeholder { color: #bdbdbd; }
+.field__textarea {
+  width: 100%; min-height: 120px; padding: 12px 16px;
+  border: 1.5px solid #e0e0e0; border-radius: 12px; font-size: 16px;
+  color: #212121; outline: none; transition: all 0.3s ease; background: #fff;
+  resize: vertical; font-family: inherit; line-height: 1.5;
+}
+.field__textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,222,160,0.15); }
+.field__count { text-align: right; font-size: 12px; color: #9e9e9e; margin-top: 4px; }
+.dropdown { position: relative; }
+.dropdown__trigger {
+  width: 100%; height: 48px; padding: 0 16px;
+  border: 1.5px solid #e0e0e0; border-radius: 12px; font-size: 16px;
+  color: #212121; background: #fff; cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between; transition: all 0.3s ease;
+}
+.dropdown__trigger:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,222,160,0.15); }
+.dropdown__trigger--placeholder { color: #bdbdbd; }
+.dropdown__arrow { color: #9e9e9e; transition: transform 0.3s ease; }
+.dropdown--open .dropdown__arrow { transform: rotate(180deg); }
+.dropdown__menu {
+  position: absolute; top: 100%; left: 0; right: 0; margin-top: 4px;
+  background: #fff; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  max-height: 200px; overflow-y: auto; z-index: 100; display: none;
+}
+.dropdown--open .dropdown__menu { display: block; }
+.dropdown__option { padding: 12px 16px; font-size: 16px; color: #212121; cursor: pointer; transition: background 0.2s; }
+.dropdown__option:hover { background: #f5f5f5; }
+.dropdown__option--selected { color: var(--primary); font-weight: 500; background: var(--primary-bg); }
+.date-display {
+  width: 100%; height: 48px; padding: 0 16px;
+  border: 1.5px solid #e0e0e0; border-radius: 12px; font-size: 16px;
+  color: #212121; background: #fff; cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between; transition: all 0.3s ease;
+}
+.date-display:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,222,160,0.15); }
+.date-display--placeholder { color: #bdbdbd; }
+.date-mask {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5); z-index: 1000; display: none;
+}
+.date-mask--visible { display: block; }
+.date-picker {
+  position: fixed; bottom: 0; left: 0; right: 0; background: #fff;
+  border-radius: 20px 20px 0 0; padding: 20px; box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+  z-index: 1001; transform: translateY(100%); transition: transform 0.3s ease;
+}
+.date-picker--visible { transform: translateY(0); }
+.date-picker__header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.date-picker__title { font-size: 18px; font-weight: 600; }
+.date-picker__close {
+  width: 32px; height: 32px; border-radius: 50%; border: none;
+  background: #f5f5f5; color: #616161; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.date-picker__grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+.date-picker__day-header { text-align: center; font-size: 14px; color: #9e9e9e; font-weight: 500; padding: 8px 0; }
+.date-picker__day {
+  aspect-ratio: 1; border-radius: 50%; border: none; background: transparent;
+  font-size: 16px; color: #212121; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+}
+.date-picker__day:hover { background: #f5f5f5; }
+.date-picker__day--selected { background: var(--primary); color: #fff; font-weight: 600; }
+.date-picker__day--today { border: 2px solid var(--primary); }
+.date-picker__time { margin-top: 16px; display: flex; gap: 12px; }
+.date-picker__time select {
+  flex: 1; height: 44px; border: 1.5px solid #e0e0e0; border-radius: 10px;
+  padding: 0 12px; font-size: 16px; color: #212121; background: #fff; outline: none;
+}
+.switch-field { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; }
+.switch__label { flex: 1; }
+.switch__label-title { font-size: 16px; color: #212121; }
+.switch__label-desc { font-size: 14px; color: #9e9e9e; margin-top: 4px; }
+.switch { position: relative; width: 52px; height: 32px; flex-shrink: 0; }
+.switch__input { opacity: 0; width: 0; height: 0; }
+.switch__slider {
+  position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+  background: #e0e0e0; border-radius: 16px; transition: all 0.3s ease;
+}
+.switch__slider::before {
+  content: ""; position: absolute; height: 28px; width: 28px;
+  left: 2px; bottom: 2px; background: #fff; border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all 0.3s ease;
+}
+.switch__input:checked + .switch__slider { background: var(--primary); }
+.switch__input:checked + .switch__slider::before { transform: translateX(20px); }
+.room-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.room-item {
+  aspect-ratio: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; border: 1.5px solid #e0e0e0; border-radius: 8px;
+  font-size: 14px; color: #212121; cursor: pointer; transition: all 0.2s;
+}
+.room-item:hover { border-color: var(--primary); background: var(--primary-bg); }
+.room-item--selected { border-color: var(--primary); background: var(--primary); color: #fff; }
+.room-number { font-size: 18px; font-weight: 600; }
+.room-type { font-size: 12px; margin-top: 4px; }
+.btn-submit {
+  width: calc(100% - 32px); margin: 20px 16px; height: 48px; border-radius: 12px;
+  border: none; background: var(--primary); color: #fff; font-size: 16px; font-weight: 600;
+  cursor: pointer; transition: background 0.2s; display: flex; align-items: center;
+  justify-content: center; gap: 8px; position: fixed; bottom: 16px; left: 0; right: 0; z-index: 50;
+}
+.btn-submit:active { background: var(--primary-dark); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <button class="header__back" onclick="history.back()">←</button>
+  <div class="header__title">报事报修</div>
+  <div onclick="location.href='list.html?type=repair'" style="font-size:14px;color:#00b383;cursor:pointer;">我的工单</div>
+</div>
+
+<!-- 上传照片 -->
+<div class="form-section">
+  <div class="section-label"><span class="req">*</span> 上传照片（最多6张）</div>
+  <div class="upload-grid">
+    <div class="upload-item">
+      <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect fill='%23e0e0e0' width='80' height='80'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%239e9e9e' font-size='12'%3E漏水%3C/text%3E%3C/svg%3E">
+      <button class="upload-remove">×</button>
+    </div>
+    <div class="upload-item">
+      <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect fill='%23e0e0e0' width='80' height='80'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%239e9e9e' font-size='12'%3E破损%3C/text%3E%3C/svg%3E">
+      <button class="upload-remove">×</button>
+    </div>
+    <div class="upload-add" onclick="alert('选择图片上传')">
+      <span class="upload-add__icon">+</span>
+      <span class="upload-add__text">添加照片</span>
+    </div>
+  </div>
+</div>
+
+<!-- 问题描述 -->
+<div class="form-section">
+  <div class="section-label"><span class="req">*</span> 问题描述</div>
+  <div class="field">
+    <textarea class="field__textarea" placeholder="请详细描述您遇到的问题，例如：卫生间水管漏水，位置在洗手台下方..." maxlength="500" oninput="updateCount(this)"></textarea>
+    <div class="field__count"><span id="charCount">0</span>/500</div>
+  </div>
+</div>
+
+<!-- 报修类型 -->
+<div class="form-section">
+  <div class="section-label"><span class="req">*</span> 报修类型</div>
+  <div class="field">
+    <div class="dropdown" id="repairType">
+      <div class="dropdown__trigger dropdown__trigger--placeholder" onclick="toggleDropdown('repairType')">
+        <span>请选择报修类型</span>
+        <span class="dropdown__arrow">▼</span>
+      </div>
+      <div class="dropdown__menu">
+        <div class="dropdown__option dropdown__option--selected" onclick="selectOption('repairType', this)">水电维修</div>
+        <div class="dropdown__option" onclick="selectOption('repairType', this)">电梯维修</div>
+        <div class="dropdown__option" onclick="selectOption('repairType', this)">门窗维修</div>
+        <div class="dropdown__option" onclick="selectOption('repairType', this)">家电维修</div>
+        <div class="dropdown__option" onclick="selectOption('repairType', this)">墙面地面</div>
+        <div class="dropdown__option" onclick="selectOption('repairType', this)">其他维修</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 紧急程度 -->
+<div class="form-section">
+  <div class="section-label">紧急程度</div>
+  <div class="field">
+    <div class="dropdown" id="urgency">
+      <div class="dropdown__trigger dropdown__trigger--placeholder" onclick="toggleDropdown('urgency')">
+        <span>请选择紧急程度</span>
+        <span class="dropdown__arrow">▼</span>
+      </div>
+      <div class="dropdown__menu">
+        <div class="dropdown__option dropdown__option--selected" onclick="selectOption('urgency', this)">普通（72小时内处理）</div>
+        <div class="dropdown__option" onclick="selectOption('urgency', this)">紧急（24小时内处理）</div>
+        <div class="dropdown__option" onclick="selectOption('urgency', this)">特急（2小时内处理）</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 预约时间 -->
+<div class="form-section">
+  <div class="section-label"><span class="req">*</span> 预约上门时间</div>
+  <div class="field">
+    <div class="date-display date-display--placeholder" id="dateDisplay" onclick="toggleDatePicker()">
+      <span id="selectedDateText">请选择日期和时间</span>
+      <span>📅</span>
+    </div>
+  </div>
+</div>
+
+<!-- 联系信息 -->
+<div class="form-section">
+  <div class="section-label"><span class="req">*</span> 联系信息</div>
+  <div class="field">
+    <input class="field__input" placeholder="请输入您的姓名" value="张先生">
+  </div>
+  <div class="field">
+    <input class="field__input" type="tel" placeholder="请输入手机号码" value="138****5678" maxlength="11">
+  </div>
+  <div class="field">
+    <input class="field__input" placeholder="小区名-栋号-单元-房号" value="粤海天河城-3栋-2单元-1502">
+  </div>
+</div>
+
+<!-- 房间选择 -->
+<div class="form-section">
+  <div class="section-label">选择房间</div>
+  <div class="room-grid">
+    <div class="room-item room-item--selected" onclick="selectRoom(this)">
+      <div class="room-number">1501</div>
+      <div class="room-type">三室</div>
+    </div>
+    <div class="room-item" onclick="selectRoom(this)">
+      <div class="room-number">1502</div>
+      <div class="room-type">两室</div>
+    </div>
+    <div class="room-item" onclick="selectRoom(this)">
+      <div class="room-number">1601</div>
+      <div class="room-type">三室</div>
+    </div>
+    <div class="room-item" onclick="selectRoom(this)">
+      <div class="room-number">1602</div>
+      <div class="room-type">两室</div>
+    </div>
+  </div>
+</div>
+
+<!-- 通知开关 -->
+<div class="form-section">
+  <div class="switch-field">
+    <div class="switch__label">
+      <div class="switch__label-title">进度消息通知</div>
+      <div class="switch__label-desc">接收报修进度推送通知</div>
+    </div>
+    <label class="switch">
+      <input type="checkbox" class="switch__input" checked>
+      <span class="switch__slider"></span>
+    </label>
+  </div>
+  <div class="switch-field">
+    <div class="switch__label">
+      <div class="switch__label-title">短信通知</div>
+      <div class="switch__label-desc">通过短信接收重要通知</div>
+    </div>
+    <label class="switch">
+      <input type="checkbox" class="switch__input">
+      <span class="switch__slider"></span>
+    </label>
+  </div>
+</div>
+
+<button class="btn-submit" onclick="submitRepair()">🚀 提交报修工单</button>
+
+<!-- 日期选择器弹窗 -->
+<div class="date-mask" id="dateMask" onclick="toggleDatePicker()"></div>
+<div class="date-picker" id="datePicker">
+  <div class="date-picker__header">
+    <div class="date-picker__title">选择预约日期</div>
+    <button class="date-picker__close" onclick="toggleDatePicker()">×</button>
+  </div>
+  <div class="date-picker__grid" id="dateGrid"></div>
+  <div class="date-picker__time">
+    <select id="hourSelect">
+      <option value="">时</option>
+    </select>
+    <select id="minuteSelect">
+      <option value="">分</option>
+    </select>
+  </div>
+</div>
+
+<script>
+function updateCount(el) {
+  document.getElementById('charCount').textContent = el.value.length;
+}
+function toggleDropdown(id) {
+  document.getElementById(id).classList.toggle('dropdown--open');
+}
+function selectOption(dropdownId, el) {
+  const dropdown = document.getElementById(dropdownId);
+  dropdown.querySelectorAll('.dropdown__option').forEach(o => o.classList.remove('dropdown__option--selected'));
+  el.classList.add('dropdown__option--selected');
+  const trigger = dropdown.querySelector('.dropdown__trigger');
+  trigger.querySelector('span').textContent = el.textContent;
+  trigger.classList.remove('dropdown__trigger--placeholder');
+  dropdown.classList.remove('dropdown--open');
+}
+function toggleDatePicker() {
+  document.getElementById('datePicker').classList.toggle('date-picker--visible');
+  document.getElementById('dateMask').classList.toggle('date-mask--visible');
+  if (document.getElementById('datePicker').classList.contains('date-picker--visible')) {
+    renderCalendar();
+    populateTimeSelectors();
+  }
+}
+function renderCalendar() {
+  const grid = document.getElementById('dateGrid');
+  const days = ['日','一','二','三','四','五','六'];
+  let html = days.map(d => `<div class="date-picker__day-header">${d}</div>`).join('');
+  for (let i = 0; i < 35; i++) {
+    const d = new Date(2026, 3, 28 + i);
+    const isToday = d.getDate() === 28 && d.getMonth() === 3;
+    const isSelected = i === 0;
+    html += `<div class="date-picker__day ${isSelected ? 'date-picker__day--selected' : ''} ${isToday ? 'date-picker__day--today' : ''}" onclick="selectDate(${d.getDate()}, this)">${d.getDate()}</div>`;
+  }
+  grid.innerHTML = html;
+}
+function selectDate(day, el) {
+  document.querySelectorAll('.date-picker__day').forEach(d => d.classList.remove('date-picker__day--selected'));
+  el.classList.add('date-picker__day--selected');
+  document.getElementById('selectedDateText').textContent = '2026-04-' + String(day).padStart(2, '0');
+  document.getElementById('dateDisplay').classList.remove('date-display--placeholder');
+}
+function populateTimeSelectors() {
+  const hourSel = document.getElementById('hourSelect');
+  const minSel = document.getElementById('minuteSelect');
+  if (hourSel.options.length > 1) return;
+  for (let h = 8; h <= 20; h++) {
+    hourSel.options.add(new Option(String(h).padStart(2, '0') + '时', h));
+  }
+  for (let m = 0; m < 60; m += 30) {
+    minSel.options.add(new Option(String(m).padStart(2, '0') + '分', m));
+  }
+}
+function selectRoom(el) {
+  document.querySelectorAll('.room-item').forEach(r => r.classList.remove('room-item--selected'));
+  el.classList.add('room-item--selected');
+}
+function submitRepair() {
+  const desc = document.querySelector('.field__textarea').value.trim();
+  const typeText = document.querySelector('#repairType .dropdown__trigger span').textContent.trim();
+  const typeMap = {'水电维修':'plumbing','电梯维修':'elevator','门窗维修':'door','家电维修':'appliance','墙面地面':'surface','其他维修':'other'};
+  const contact = document.querySelectorAll('.field__input');
+  const name = contact[0].value.trim();
+  const phone = contact[1].value.trim();
+  const address = contact[2].value.trim();
+
+  if (!desc) { alert('请填写问题描述'); return; }
+  if (typeText === '请选择报修类型') { alert('请选择报修类型'); return; }
+  if (!name || !phone) { alert('请填写联系信息'); return; }
+
+  const formData = {
+    work_order_type: typeText,
+    description: desc,
+    contact_name: name,
+    contact_phone: phone,
+    address: address,
+    enterprise_id: (API.auth.getUser() || {}).enterprise_id || ''
+  };
+
+
+  API.workOrders.create(formData)
+    .then(res => {
+      if (res.code === 0) {
+        alert('报修工单提交成功！\n工单号：' + (res.data?.fid || res.data?.work_order_no || '已生成') + '\n我们将尽快安排师傅上门处理。');
+        location.href = 'list.html?type=repair';
+      } else {
+        alert('提交失败：' + res.message);
+      }
+    })
+    .catch(err => {
+      alert('提交失败，请稍后重试');
+      console.error(err);
+    });
+}
+// 关闭下拉
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.dropdown')) {
+    document.querySelectorAll('.dropdown--open').forEach(d => d.classList.remove('dropdown--open'));
+  }
+});
+</script>
+</body>
+</html>

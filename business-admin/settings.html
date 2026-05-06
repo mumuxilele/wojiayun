@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="commercial">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>粤海物业 · 系统设置</title>
+<script src="../api.js"></script>
+<style>
+  :root {
+    --primary: #00dea0; --primary-dark: #00c78e; --deep: #2c3e50;
+    --bg: #f5f7fa; --card: #ffffff; --text: #2c3e50;
+    --text-secondary: #7f8c8d; --border: #e8ecf1;
+    --radius: 10px; --radius-sm: 6px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --danger: #e74c3c;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 72px;
+  }
+  .header {
+    background: linear-gradient(90deg, var(--primary), var(--deep));
+    padding: 16px 20px; color: #fff;
+  }
+  .header h1 { font-size: 18px; font-weight: 600; }
+  .header .sub { font-size: 12px; opacity: 0.8; }
+  .content { padding: 16px; }
+  .user-section {
+    background: var(--card); border-radius: var(--radius);
+    padding: 20px; box-shadow: var(--shadow); margin-bottom: 16px;
+    display: flex; align-items: center; gap: 16px; cursor: pointer;
+    transition: transform 0.2s;
+  }
+  .user-section:active { transform: scale(0.98); }
+  .user-section .avatar {
+    width: 60px; height: 60px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--deep));
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 24px; font-weight: 600; flex-shrink: 0;
+  }
+  .user-section .info { flex: 1; }
+  .user-section .name { font-size: 17px; font-weight: 600; }
+  .user-section .role { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .user-section .edit { font-size: 12px; color: var(--primary); margin-top: 4px; }
+  .menu-group {
+    background: var(--card); border-radius: var(--radius);
+    box-shadow: var(--shadow); margin-bottom: 14px; overflow: hidden;
+  }
+  .menu-group .group-title {
+    font-size: 12px; color: var(--text-secondary); padding: 10px 16px 6px;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .menu-row {
+    display: flex; align-items: center; padding: 14px 16px;
+    border-bottom: 1px solid var(--border); cursor: pointer;
+    text-decoration: none; color: var(--text); gap: 12px;
+    transition: background 0.15s;
+  }
+  .menu-row:last-child { border-bottom: none; }
+  .menu-row:active { background: var(--bg); }
+  .menu-row .icon { font-size: 20px; flex-shrink: 0; }
+  .menu-row .label { flex: 1; font-size: 14px; }
+  .menu-row .value { font-size: 13px; color: var(--text-secondary); }
+  .menu-row .arrow { font-size: 16px; color: var(--text-secondary); }
+  .switch {
+    width: 44px; height: 24px; background: var(--border);
+    border-radius: 12px; position: relative; cursor: pointer;
+    transition: background 0.3s;
+  }
+  .switch.on { background: var(--primary); }
+  .switch::after {
+    content: ''; position: absolute; width: 18px; height: 18px;
+    background: #fff; border-radius: 50%; top: 3px; left: 3px;
+    transition: left 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .switch.on::after { left: 23px; }
+  .btn-logout {
+    width: 100%; padding: 14px; border: none; border-radius: var(--radius);
+    background: var(--card); color: var(--danger); font-size: 15px;
+    font-weight: 500; box-shadow: var(--shadow); cursor: pointer;
+    margin-top: 8px;
+  }
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--card); display: flex; border-top: 1px solid var(--border);
+    padding: 6px 0 env(safe-area-inset-bottom, 6px);
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+  }
+  .nav-item {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    padding: 6px 0; text-decoration: none; color: var(--text-secondary);
+    font-size: 10px; gap: 3px; cursor: pointer;
+  }
+  .nav-item .nav-icon { font-size: 20px; }
+  .nav-item.active { color: var(--primary); }
+  .loading { text-align: center; color: var(--text-secondary); padding: 20px; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="sub">粤海物业管理系统</div>
+    <h1>系统设置</h1>
+  </div>
+
+  <div class="content">
+    <div class="user-section" onclick="editProfile()">
+      <div class="avatar" id="userAvatar">管</div>
+      <div class="info">
+        <div class="name" id="userName">加载中...</div>
+        <div class="role" id="userRole">--</div>
+        <div class="edit">编辑资料 ›</div>
+      </div>
+    </div>
+
+    <div class="menu-group">
+      <div class="menu-row" onclick="toggleSwitch(this)">
+        <span class="icon">🔔</span>
+        <span class="label">消息通知</span>
+        <div class="switch on"></div>
+      </div>
+      <div class="menu-row" onclick="toggleSwitch(this)">
+        <span class="icon">🌙</span>
+        <span class="label">夜间模式</span>
+        <div class="switch"></div>
+      </div>
+      <div class="menu-row" onclick="toggleSwitch(this)">
+        <span class="icon">🔊</span>
+        <span class="label">新工单语音提醒</span>
+        <div class="switch on"></div>
+      </div>
+    </div>
+
+    <div class="menu-group">
+      <div class="group-title">数据管理</div>
+      <div class="menu-row" onclick="backupData()">
+        <span class="icon">💾</span>
+        <span class="label">数据备份</span>
+        <span class="value" id="lastBackup">上次: --</span>
+        <span class="arrow">›</span>
+      </div>
+      <div class="menu-row" onclick="exportData()">
+        <span class="icon">📤</span>
+        <span class="label">数据导出</span>
+        <span class="arrow">›</span>
+      </div>
+      <div class="menu-row" onclick="clearCache()">
+        <span class="icon">🗑️</span>
+        <span class="label">缓存清理</span>
+        <span class="value" id="cacheSize">--</span>
+        <span class="arrow">›</span>
+      </div>
+    </div>
+
+    <div class="menu-group">
+      <div class="group-title">系统配置</div>
+      <div class="menu-row">
+        <span class="icon">🏷️</span>
+        <span class="label">工单类型配置</span>
+        <span class="arrow">›</span>
+      </div>
+      <div class="menu-row">
+        <span class="icon">📋</span>
+        <span class="label">审批流程配置</span>
+        <span class="arrow">›</span>
+      </div>
+      <div class="menu-row">
+        <span class="icon">💳</span>
+        <span class="label">支付配置</span>
+        <span class="value">微信支付</span>
+        <span class="arrow">›</span>
+      </div>
+    </div>
+
+    <div class="menu-group">
+      <div class="group-title">关于</div>
+      <div class="menu-row">
+        <span class="icon">ℹ️</span>
+        <span class="label">系统版本</span>
+        <span class="value" id="versionInfo">V2.0.0</span>
+      </div>
+      <div class="menu-row" onclick="checkUpdate()">
+        <span class="icon">📖</span>
+        <span class="label">检查更新</span>
+        <span class="arrow">›</span>
+      </div>
+    </div>
+
+    <button class="btn-logout" onclick="logout()">退出登录</button>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="location.href='index.html'">
+      <span class="nav-icon">📊</span>仪表盘
+    </div>
+    <div class="nav-item" onclick="location.href='enterprises.html'">
+      <span class="nav-icon">🏢</span>园区
+    </div>
+    <div class="nav-item" onclick="location.href='workorders.html'">
+      <span class="nav-icon">📋</span>工单
+    </div>
+    <div class="nav-item active" onclick="location.href='settings.html'">
+      <span class="nav-icon">⚙️</span>设置
+    </div>
+  </div>
+
+<script>
+// 检查登录并加载用户信息
+if (!API.auth.isLoggedIn()) {
+  alert('请先登录');
+}
+
+// 加载用户信息
+async function loadUserInfo() {
+  const user = API.auth.getUser();
+  if (user) {
+    document.getElementById('userAvatar').textContent = (user.name || '管')[0];
+    document.getElementById('userName').textContent = user.name || '未命名';
+    document.getElementById('userRole').textContent = (user.role || '管理员') + ' · 粤海物业';
+  }
+  
+  // 加载系统信息
+  try {
+    const res = await API.admin.dashboard();
+    if (res.code === 0 && res.data) {
+      document.getElementById('versionInfo').textContent = 'V2.0.0 (API已连接)';
+    }
+  } catch (err) {
+    console.error('加载系统信息失败:', err);
+  }
+}
+
+// 切换开关
+function toggleSwitch(row) {
+  const sw = row.querySelector('.switch');
+  sw.classList.toggle('on');
+}
+
+// 编辑资料
+function editProfile() {
+  const user = API.auth.getUser();
+  const newName = prompt('请输入姓名:', user?.name || '');
+  if (newName && newName.trim()) {
+    // 实际应调用API更新
+    document.getElementById('userName').textContent = newName.trim();
+    document.getElementById('userAvatar').textContent = newName.trim()[0];
+    alert('资料更新成功（模拟）');
+  }
+}
+
+// 数据备份
+function backupData() {
+  alert('数据备份功能（需后端支持）');
+}
+
+// 数据导出
+function exportData() {
+  alert('数据导出功能（需后端支持）');
+}
+
+// 清理缓存
+function clearCache() {
+  if (confirm('确认清理缓存？')) {
+    localStorage.clear();
+    alert('缓存已清理');
+    document.getElementById('cacheSize').textContent = '0MB';
+  }
+}
+
+// 检查更新
+function checkUpdate() {
+  alert('当前已是最新版本 V2.0.0');
+}
+
+// 退出登录
+function logout() {
+  if (confirm('确认退出登录？')) {
+    API.auth.logout();
+    alert('已退出登录');
+    // 如果有登录页可跳转：location.href = 'login.html';
+  }
+}
+
+// 页面加载
+document.addEventListener('DOMContentLoaded', loadUserInfo);
+</script>
+</body>
+</html>

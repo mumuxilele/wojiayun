@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="commercial">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>粤海物业 · 工单管理</title>
+<script src="../api.js"></script>
+<style>
+  :root {
+    --primary: #00dea0; --primary-dark: #00c78e; --deep: #2c3e50;
+    --bg: #f5f7fa; --card: #ffffff; --text: #2c3e50;
+    --text-secondary: #7f8c8d; --border: #e8ecf1;
+    --radius: 10px; --radius-sm: 6px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --danger: #e74c3c; --warning: #f39c12; --success: #27ae60; --info: #3498db;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 72px;
+  }
+  .header {
+    background: linear-gradient(90deg, var(--primary), var(--deep));
+    padding: 16px 20px; color: #fff;
+  }
+  .header h1 { font-size: 18px; font-weight: 600; }
+  .content { padding: 16px; }
+  .tab-bar {
+    display: flex; background: var(--card); border-radius: var(--radius);
+    padding: 4px; margin-bottom: 16px; box-shadow: var(--shadow);
+  }
+  .tab {
+    flex: 1; text-align: center; padding: 8px 0; font-size: 13px;
+    border-radius: var(--radius-sm); color: var(--text-secondary); cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab.active { background: var(--primary); color: #fff; }
+  .tab .count { font-size: 10px; margin-left: 2px; opacity: 0.7; }
+  .tab.active .count { opacity: 1; }
+  .search-bar {
+    display: flex; background: var(--card); border-radius: var(--radius);
+    padding: 10px 14px; margin-bottom: 14px; box-shadow: var(--shadow);
+    align-items: center; gap: 8px;
+  }
+  .search-bar input { flex: 1; border: none; outline: none; font-size: 14px; color: var(--text); }
+  .order-list { display: flex; flex-direction: column; gap: 10px; }
+  .order-card {
+    background: var(--card); border-radius: var(--radius);
+    padding: 16px; box-shadow: var(--shadow);
+    border-left: 4px solid transparent;
+  }
+  .order-card.urgent { border-left-color: var(--danger); }
+  .order-card.normal { border-left-color: var(--warning); }
+  .order-card.done { border-left-color: var(--success); }
+  .order-card .row1 {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;
+  }
+  .order-card .oid { font-size: 15px; font-weight: 600; }
+  .order-card .level {
+    font-size: 11px; padding: 2px 8px; border-radius: 4px;
+  }
+  .order-card .level.urgent { background: #fde8e8; color: var(--danger); }
+  .order-card .level.normal { background: #fef3e2; color: var(--warning); }
+  .order-card .level.low { background: #e8f8f3; color: var(--success); }
+  .order-card .desc { font-size: 13px; color: var(--text); margin-bottom: 6px; }
+  .order-card .meta {
+    display: flex; gap: 14px; font-size: 11px; color: var(--text-secondary); flex-wrap: wrap;
+  }
+  .order-card .row3 {
+    display: flex; justify-content: space-between; align-items: center; margin-top: 10px;
+  }
+  .order-card .assignee { font-size: 12px; color: var(--text-secondary); }
+  .order-card .actions { display: flex; gap: 8px; }
+  .btn {
+    padding: 5px 14px; border-radius: 16px; border: none; font-size: 12px; cursor: pointer;
+  }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-outline { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--card); display: flex; border-top: 1px solid var(--border);
+    padding: 6px 0 env(safe-area-inset-bottom, 6px);
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+  }
+  .nav-item {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    padding: 6px 0; text-decoration: none; color: var(--text-secondary);
+    font-size: 10px; gap: 3px;
+  }
+  .nav-item .nav-icon { font-size: 20px; }
+  .nav-item.active { color: var(--primary); }
+  .loading { text-align: center; color: var(--text-secondary); padding: 20px; }
+</style>
+</head>
+<body>
+  <div class="header"><h1>工单管理</h1></div>
+
+  <div class="content">
+    <div class="tab-bar" id="tabBar">
+      <div class="tab active" data-status="" onclick="switchTab('')">全部<span class="count" id="countAll">--</span></div>
+      <div class="tab" data-status="待派单" onclick="switchTab('待派单')">待派单<span class="count" id="countPending">--</span></div>
+      <div class="tab" data-status="处理中" onclick="switchTab('处理中')">处理中<span class="count" id="countProcessing">--</span></div>
+      <div class="tab" data-status="已完成" onclick="switchTab('已完成')">已完成<span class="count" id="countDone">--</span></div>
+    </div>
+
+    <div class="search-bar">
+      <span>🔍</span>
+      <input type="text" id="searchInput" placeholder="搜索工单编号/内容..." oninput="searchOrders()">
+    </div>
+
+    <div class="order-list" id="orderList">
+      <div class="loading">加载中...</div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="location.href='index.html'">
+      <span class="nav-icon">📊</span>仪表盘
+    </div>
+    <div class="nav-item" onclick="location.href='enterprises.html'">
+      <span class="nav-icon">🏢</span>园区
+    </div>
+    <div class="nav-item active" onclick="location.href='workorders.html'">
+      <span class="nav-icon">📋</span>工单
+    </div>
+    <div class="nav-item" onclick="location.href='settings.html'">
+      <span class="nav-icon">⚙️</span>设置
+    </div>
+  </div>
+
+<script>
+let orders = [];
+let currentStatus = '';
+let currentKeyword = '';
+
+// 检查登录
+if (!API.auth.isLoggedIn()) {
+  alert('请先登录');
+}
+
+// 加载工单数据
+async function loadOrders(status = '', keyword = '') {
+  currentStatus = status;
+  currentKeyword = keyword;
+  try {
+    const res = await API.workOrders.list(status, '', keyword);
+    if (res.code === 0 && res.data) {
+      orders = res.data.items || [];
+      renderOrders(orders);
+      updateCounts(res.data);
+    }
+  } catch (err) {
+    console.error('加载工单失败:', err);
+    document.getElementById('orderList').innerHTML = '<div class="loading">加载失败，请刷新重试</div>';
+  }
+}
+
+// 渲染工单列表
+function renderOrders(list) {
+  const container = document.getElementById('orderList');
+  if (list.length === 0) {
+    container.innerHTML = '<div class="loading">暂无工单数据</div>';
+    return;
+  }
+  container.innerHTML = list.map(o => {
+    const levelClass = o.level === '紧急' ? 'urgent' : (o.level === '普通' || o.level === '普通' ? 'normal' : 'low');
+    const statusClass = o.status === '已完成' || o.status === '已完成' ? 'done' : (o.status === '处理中' ? '' : '');
+    return `
+      <div class="order-card ${levelClass}">
+        <div class="row1">
+          <span class="oid">#${o.fid?.slice(-8) || o.work_order_no || '未编号'}</span>
+          <span class="level ${levelClass}">${o.level || '普通'}</span>
+        </div>
+        <div class="desc">${o.title || o.description || '无描述'}</div>
+        <div class="meta">
+          <span>🏢 ${o.enterprise_name || '未指定园区'}</span>
+          <span>📅 ${o.create_time?.slice(0, 16) || ''}</span>
+          <span>👤 ${o.requester_name || o.contact_person || '未知'}</span>
+        </div>
+        <div class="row3">
+          <span class="assignee">${o.assignee_name ? '已派 → ' + o.assignee_name : '暂未派单'}</span>
+          <div class="actions">
+            ${o.status === '待派单' || o.status === '' ? `<button class="btn btn-primary" onclick="assignOrder('${o.fid}')">派单</button>` : ''}
+            ${o.status === '处理中' ? `<button class="btn btn-primary" onclick="completeOrder('${o.fid}')">完成</button>` : ''}
+            <button class="btn btn-outline" onclick="viewOrder('${o.fid}')">详情</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// 更新Tab计数
+function updateCounts(data) {
+  // 简单计算，实际应由后端返回统计
+  const all = orders.length;
+  const pending = orders.filter(o => !o.status || o.status === '待派单').length;
+  const processing = orders.filter(o => o.status === '处理中').length;
+  const done = orders.filter(o => o.status === '已完成').length;
+  document.getElementById('countAll').textContent = all;
+  document.getElementById('countPending').textContent = pending;
+  document.getElementById('countProcessing').textContent = processing;
+  document.getElementById('countDone').textContent = done;
+}
+
+// 切换Tab
+function switchTab(status) {
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.status === status);
+  });
+  loadOrders(status, currentKeyword);
+}
+
+// 搜索
+function searchOrders() {
+  const keyword = document.getElementById('searchInput').value.trim();
+  loadOrders(currentStatus, keyword);
+}
+
+// 派单（需要选择员工）
+async function assignOrder(fid) {
+  // 实际应弹出员工选择对话框，这里简化使用prompt
+  const assigneeName = prompt('请输入派单员工姓名:');
+  if (!assigneeName) return;
+  try {
+    const res = await API.workOrders.assign(fid, '', assigneeName);
+    if (res.code === 0) {
+      alert('派单成功');
+      loadOrders(currentStatus, currentKeyword);
+    } else {
+      alert(res.message || '派单失败');
+    }
+  } catch (err) {
+    alert('派单失败: ' + err.message);
+  }
+}
+
+// 完成工单
+async function completeOrder(fid) {
+  const rating = prompt('请输入评分(1-5):', '5');
+  if (!rating) return;
+  try {
+    const res = await API.workOrders.complete(fid, parseInt(rating));
+    if (res.code === 0) {
+      alert('已完成');
+      loadOrders(currentStatus, currentKeyword);
+    } else {
+      alert(res.message || '操作失败');
+    }
+  } catch (err) {
+    alert('操作失败: ' + err.message);
+  }
+}
+
+// 查看详情
+function viewOrder(fid) {
+  // 实际应跳转到详情页
+  alert('工单FID: ' + fid);
+}
+
+// 页面加载
+document.addEventListener('DOMContentLoaded', () => loadOrders());
+</script>
+</body>
+</html>

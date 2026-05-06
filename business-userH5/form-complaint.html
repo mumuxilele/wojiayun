@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="residential">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>投诉建议 - 粤海物业</title>
+<script src="api.js"></script>
+<style>
+:root {
+  --primary: #00dea0; --primary-light: #33e5b5; --primary-dark: #00b383; --primary-bg: #e8f5e9;
+  --accent: #ff6b6b; --accent-light: #ff8e8e; --accent-bg: #fff0f0;
+  --purple: #845ef7; --purple-light: #9a8ef7; --purple-bg: #f3f0ff;
+  --gray-50: #fafafa; --gray-100: #f5f5f5; --gray-200: #eeeeee;
+  --gray-300: #e0e0e0; --gray-400: #bdbdbd; --gray-500: #9e9e9e; --gray-600: #757575;
+  --gray-700: #616161; --gray-800: #424242; --gray-900: #212121; --white: #ffffff;
+  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px; --radius-xl: 20px;
+  --shadow-card: 0 2px 12px rgba(0,0,0,0.08);
+  --shadow-float: 0 4px 20px rgba(0,0,0,0.12);
+}
+[data-theme="commercial"] {
+  --primary: #00dea0; --primary-light: #33e5b5; --primary-dark: #00b383; --primary-bg: #e8f5e9;
+  --accent: #2c3e50; --accent-light: #34495e; --accent-bg: #f0f2f5;
+  --radius-sm: 6px; --radius-md: 8px; --radius-lg: 10px; --radius-xl: 12px;
+  --shadow-card: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-float: 0 4px 12px rgba(0,0,0,0.1);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: var(--gray-100); color: var(--gray-900); font-size: 16px; line-height: 1.5;
+  padding-bottom: 80px; -webkit-font-smoothing: antialiased;
+}
+.header {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: #fff; padding: 16px; position: sticky; top: 0; z-index: 100;
+  box-shadow: var(--shadow-float);
+}
+[data-theme="commercial"] .header {
+  background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+}
+.header__top { display: flex; align-items: center; gap: 12px; }
+.header__back { font-size: 24px; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(255,255,255,0.2); }
+.header__title { font-size: 18px; font-weight: 600; }
+.form-container { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+.form-section {
+  background: var(--white); border-radius: var(--radius-lg); padding: 16px;
+  box-shadow: var(--shadow-card); border: 1px solid var(--gray-200);
+}
+.form-section__title {
+  font-size: 16px; font-weight: 600; color: var(--gray-900); margin-bottom: 16px;
+  display: flex; align-items: center; gap: 8px;
+}
+.form-section__title::before {
+  content: ''; display: inline-block; width: 4px; height: 18px;
+  background: var(--primary); border-radius: 2px;
+}
+.form-group { margin-bottom: 16px; }
+.form-group:last-child { margin-bottom: 0; }
+.form-label {
+  display: block; font-size: 14px; color: var(--gray-700); margin-bottom: 8px; font-weight: 500;
+}
+.form-input {
+  width: 100%; height: 48px; border: 1px solid var(--gray-300); border-radius: var(--radius-sm);
+  padding: 0 16px; font-size: 15px; color: var(--gray-900); background: var(--white);
+  transition: border-color 0.2s;
+}
+.form-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-bg); }
+.form-textarea {
+  width: 100%; min-height: 120px; border: 1px solid var(--gray-300); border-radius: var(--radius-sm);
+  padding: 12px 16px; font-size: 15px; color: var(--gray-900); background: var(--white);
+  resize: vertical; font-family: inherit; transition: border-color 0.2s;
+}
+.form-textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-bg); }
+.form-select {
+  width: 100%; height: 48px; border: 1px solid var(--gray-300); border-radius: var(--radius-sm);
+  padding: 0 16px; font-size: 15px; color: var(--gray-900); background: var(--white);
+  appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239e9e9e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat; background-position: right 16px center; background-size: 16px;
+  transition: border-color 0.2s;
+}
+.form-select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-bg); }
+.image-upload { display: flex; flex-wrap: wrap; gap: 12px; }
+.image-upload__item {
+  width: 80px; height: 80px; border: 2px dashed var(--gray-300); border-radius: var(--radius-sm);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: 24px; color: var(--gray-400); cursor: pointer; position: relative; overflow: hidden;
+}
+.image-upload__item--filled { border-style: solid; border-color: var(--primary); }
+.image-upload__img { width: 100%; height: 100%; object-fit: cover; }
+.image-upload__delete {
+  position: absolute; top: 4px; right: 4px; width: 20px; height: 20px;
+  background: rgba(0,0,0,0.5); color: #fff; border-radius: 50%; font-size: 12px;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.radio-group { display: flex; gap: 16px; }
+.radio-item {
+  display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; color: var(--gray-700);
+}
+.radio-item input { width: 18px; height: 18px; accent-color: var(--primary); }
+.submit-btn {
+  width: 100%; height: 52px; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: #fff; border: none; border-radius: var(--radius-lg); font-size: 16px; font-weight: 600;
+  cursor: pointer; transition: opacity 0.2s; box-shadow: var(--shadow-float);
+}
+[data-theme="commercial"] .submit-btn {
+  background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+}
+.submit-btn:active { opacity: 0.9; }
+.tabbar {
+  position: fixed; bottom: 0; left: 0; right: 0; height: 64px; background: var(--white);
+  border-top: 1px solid var(--gray-200); display: flex; z-index: 100;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+}
+.tabbar__item {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 3px; color: var(--gray-500); font-size: 11px; cursor: pointer;
+}
+.tabbar__item--active { color: var(--primary); }
+.tabbar__icon { font-size: 24px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header__top">
+    <div class="header__back" onclick="history.back()">←</div>
+    <div class="header__title">投诉建议</div>
+  </div>
+</div>
+
+<div class="form-container">
+  <!-- 基本信息 -->
+  <div class="form-section">
+    <div class="form-section__title">📋 基本信息</div>
+    <div class="form-group">
+      <label class="form-label">投诉人</label>
+      <input type="text" class="form-input" value="张先生" disabled>
+    </div>
+    <div class="form-group">
+      <label class="form-label">所属房间</label>
+      <input type="text" class="form-input" value="3栋2单元1502" disabled>
+    </div>
+    <div class="form-group">
+      <label class="form-label">投诉类型 *</label>
+      <select class="form-select">
+        <option value="">请选择投诉类型</option>
+        <option value="service">物业服务态度</option>
+        <option value="facility">公共设施维护</option>
+        <option value="clean">环境卫生</option>
+        <option value="security">安全管理</option>
+        <option value="noise">噪音扰民</option>
+        <option value="other">其他</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- 投诉内容 -->
+  <div class="form-section">
+    <div class="form-section__title">💬 投诉内容</div>
+    <div class="form-group">
+      <label class="form-label">投诉标题 *</label>
+      <input type="text" class="form-input" placeholder="请简要描述投诉主题">
+    </div>
+    <div class="form-group">
+      <label class="form-label">详细描述 *</label>
+      <textarea class="form-textarea" placeholder="请详细描述投诉内容、发生时间、涉及人员等"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">紧急程度 *</label>
+      <div class="radio-group">
+        <label class="radio-item"><input type="radio" name="urgency" value="normal" checked> 普通</label>
+        <label class="radio-item"><input type="radio" name="urgency" value="urgent"> 紧急</label>
+        <label class="radio-item"><input type="radio" name="urgency" value="very-urgent"> 非常紧急</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- 联系信息 -->
+  <div class="form-section">
+    <div class="form-section__title">📞 联系信息</div>
+    <div class="form-group">
+      <label class="form-label">联系电话 *</label>
+      <input type="tel" class="form-input" value="13800138000">
+    </div>
+    <div class="form-group">
+      <label class="form-label">是否允许回访</label>
+      <div class="radio-group">
+        <label class="radio-item"><input type="radio" name="callback" value="yes" checked> 允许</label>
+        <label class="radio-item"><input type="radio" name="callback" value="no"> 不允许</label>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">备注</label>
+      <textarea class="form-textarea" placeholder="其他需要说明的事项（选填）"></textarea>
+    </div>
+  </div>
+
+  <!-- 照片上传 -->
+  <div class="form-section">
+    <div class="form-section__title">📷 照片上传</div>
+    <div class="form-group">
+      <label class="form-label">相关证据照片（最多5张）</label>
+      <div class="image-upload">
+        <div class="image-upload__item">📷</div>
+        <div class="image-upload__item">📷</div>
+        <div class="image-upload__item">📷</div>
+        <div class="image-upload__item">📷</div>
+        <div class="image-upload__item">📷</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 提交按钮 -->
+  <button class="submit-btn" onclick="submitComplaint()">提交投诉</button>
+</div>
+
+<!-- 底部导航 -->
+<div class="tabbar">
+  <div class="tabbar__item" onclick="location.href='index.html'">
+    <div class="tabbar__icon">🏠</div>
+    <div>首页</div>
+  </div>
+  <div class="tabbar__item tabbar__item--active" onclick="location.href='list.html?type=complaint'">
+    <div class="tabbar__icon">💬</div>
+    <div>投诉</div>
+  </div>
+  <div class="tabbar__item">
+    <div class="tabbar__icon">🔔</div>
+    <div>消息</div>
+  </div>
+  <div class="tabbar__item">
+    <div class="tabbar__icon">👤</div>
+    <div>我的</div>
+  </div>
+</div>
+
+<script>
+function submitComplaint() {
+  const title = document.querySelector('.field__input')?.value.trim();
+  const desc = document.querySelector('.field__textarea')?.value.trim();
+  if (!title) { alert('请填写问题标题'); return; }
+  if (!desc) { alert('请填写问题描述'); return; }
+  API.workOrders.create({
+    work_order_type: '投诉',
+    description: title + '\n' + desc,
+    contact_name: '',
+    contact_phone: '',
+    enterprise_id: (API.auth.getUser() || {}).enterprise_id || ''
+  }).then(res => {
+    if (res.code === 0) {
+      alert('投诉已提交，我们会尽快处理！');
+      location.href = 'list.html?type=complaint';
+    } else { alert('提交失败：' + res.message); }
+  }).catch(() => alert('提交失败，请稍后重试'));
+}
+</script>
+</body>
+</html>

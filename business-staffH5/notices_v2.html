@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="commercial">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>通知公告 - 粤海物业员工端</title>
+<script src="../api.js"></script>
+<style>
+:root {
+  --primary: #00dea0; --primary-light: #33e5b5; --primary-dark: #00b383; --primary-bg: #e8f5e9;
+  --accent: #2c3e50; --accent-light: #34495e; --accent-bg: #f0f2f5;
+  --gray-50: #fafafa; --gray-100: #f5f5f5; --gray-200: #eeeeee;
+  --gray-300: #e0e0e0; --gray-400: #bdbdbd; --gray-500: #9e9e9e; --gray-600: #757575;
+  --gray-700: #616161; --gray-800: #424242; --gray-900: #212121; --white: #ffffff;
+  --radius-sm: 6px; --radius-md: 8px; --radius-lg: 10px;
+  --shadow-card: 0 2px 8px rgba(0,0,0,0.08);
+  --red: #f44336;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--gray-100); color: var(--gray-900); font-size: 15px; padding-bottom: 80px; }
+.header { background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%); color: #fff; padding: 16px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.header__left { display: flex; align-items: center; gap: 12px; }
+.header__back { font-size: 20px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(255,255,255,0.2); cursor: pointer; }
+.header__title { font-size: 18px; font-weight: 600; }
+.header__add { font-size: 20px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(255,255,255,0.3); cursor: pointer; font-weight: 700; }
+.container { padding: 12px 16px; }
+.tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+.tab-item { padding: 7px 14px; border-radius: 20px; font-size: 13px; cursor: pointer; background: var(--white); border: 1px solid var(--gray-300); color: var(--gray-600); }
+.tab-item--active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.notice-list { display: flex; flex-direction: column; gap: 10px; }
+.notice-card { background: var(--white); border-radius: var(--radius-lg); padding: 14px; box-shadow: var(--shadow-card); position: relative; cursor: pointer; transition: transform 0.2s; }
+.notice-card:active { transform: scale(0.98); }
+.notice-card--new::after { content: 'NEW'; position: absolute; top: 10px; right: 12px; background: var(--red); color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 4px; }
+.notice-card__badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-bottom: 8px; }
+.notice-card__badge--urgent { background: #ffebee; color: var(--red); }
+.notice-card__badge--normal { background: var(--primary-bg); color: var(--primary); }
+.notice-card__badge--info { background: #e3f2fd; color: #1565c0; }
+.notice-card__title { font-size: 15px; font-weight: 600; color: var(--gray-900); margin-bottom: 6px; padding-right: 40px; }
+.notice-card__content { font-size: 13px; color: var(--gray-600); margin-bottom: 10px; }
+.notice-card__meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--gray-500); }
+.notice-card__stats { display: flex; gap: 12px; }
+.tabbar { position: fixed; bottom: 0; left: 0; right: 0; height: 64px; background: var(--white); border-top: 1px solid var(--gray-200); display: flex; z-index: 100; box-shadow: 0 -2px 8px rgba(0,0,0,0.08); }
+.tabbar__item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--gray-500); font-size: 11px; cursor: pointer; }
+.tabbar__item--active { color: var(--primary); }
+.tabbar__icon { font-size: 22px; }
+.loading { text-align: center; color: var(--gray-500); padding: 20px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header__left"><div class="header__back" onclick="history.back()">←</div><div class="header__title">通知公告</div></div>
+  <div class="header__add" onclick="alert('发布通知功能待开发')">+</div>
+</div>
+<div class="container">
+  <div class="tabs" id="tabBar">
+    <div class="tab-item tab-item--active" data-type="" onclick="switchType('')">全部</div>
+    <div class="tab-item" data-type="紧急" onclick="switchType('紧急')">紧急</div>
+    <div class="tab-item" data-type="公告" onclick="switchType('公告')">公告</div>
+    <div class="tab-item" data-type="活动" onclick="switchType('活动')">活动</div>
+  </div>
+  <div class="notice-list" id="noticeList">
+    <div class="loading">加载中...</div>
+  </div>
+</div>
+<div class="tabbar">
+  <div class="tabbar__item" onclick="location.href='index.html'"><div class="tabbar__icon">🏠</div><div>工作台</div></div>
+  <div class="tabbar__item" onclick="location.href='tasks.html'"><div class="tabbar__icon">📋</div><div>工单</div></div>
+  <div class="tabbar__item" onclick="location.href='residents.html'"><div class="tabbar__icon">👥</div><div>住户</div></div>
+  <div class="tabbar__item tabbar__item--active" onclick="location.href='profile.html'"><div class="tabbar__icon">👤</div><div>我的</div></div>
+</div>
+
+<script>
+let notices = [];
+let currentType = '';
+
+// 检查登录
+if (!API.auth.isLoggedIn()) {
+  alert('请先登录');
+}
+
+// 加载通知数据（使用work_orders API模拟，实际应有notice API）
+async function loadNotices() {
+  try {
+    // 实际应调用 API.notices.list()，这里用仪表盘数据模拟
+    const res = await API.admin.dashboard();
+    if (res.code === 0 && res.data) {
+      // 模拟通知数据
+      notices = [
+        { fid: 'n1', title: '关于4月29日小区停水检修的通知', content: '接水务局通知，4月29日8:00-17:00进行市政管网检修...', type: '紧急', created_at: '2026-04-29T10:32:00', read_count: 328, comment_count: 42 },
+        { fid: 'n2', title: '小区绿化带喷洒农药温馨提示', content: '定于4月30日对绿化带进行防虫喷药作业，期间请勿晾晒衣物...', type: '公告', created_at: '2026-04-28T15:20:00', read_count: 586, comment_count: 89 },
+        { fid: 'n3', title: '五一劳动节社区趣味运动会报名通知', content: '5月1日下午2点在中心广场举办趣味运动会，欢迎报名参加...', type: '活动', created_at: '2026-04-27T09:15:00', read_count: 1200, comment_count: 156 }
+      ];
+      renderNotices(notices);
+      updateTabCounts();
+    }
+  } catch (err) {
+    console.error('加载通知失败:', err);
+    document.getElementById('noticeList').innerHTML = '<div class="loading">加载失败，请刷新重试</div>';
+  }
+}
+
+// 渲染通知列表
+function renderNotices(list) {
+  const container = document.getElementById('noticeList');
+  // 按类型过滤
+  const filtered = currentType ? list.filter(n => n.type === currentType) : list;
+  
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="loading">暂无通知数据</div>';
+    return;
+  }
+  container.innerHTML = filtered.map(n => `
+    <div class="notice-card" onclick="viewNotice('${n.fid}')">
+      <span class="notice-card__badge ${n.type === '紧急' ? 'notice-card__badge--urgent' : (n.type === '公告' ? 'notice-card__badge--normal' : 'notice-card__badge--info')}">${n.type || '公告'}</span>
+      <div class="notice-card__title">${n.title || '未命名通知'}</div>
+      <div class="notice-card__content">${(n.content || '').slice(0, 60)}...</div>
+      <div class="notice-card__meta">
+        <span>👤 ${n.author || '管理员'} · ${n.created_at?.slice(5,16) || ''}</span>
+        <div class="notice-card__stats"><span>👁 ${n.read_count || 0}</span><span>💬 ${n.comment_count || 0}</span></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// 更新Tab计数
+function updateTabCounts() {
+  const tabs = document.querySelectorAll('.tab-item');
+  tabs.forEach(tab => {
+    const type = tab.dataset.type;
+    const count = type ? notices.filter(n => n.type === type).length : notices.length;
+    tab.textContent = type ? `${type}(${count})` : `全部(${count})`;
+  });
+}
+
+// 切换类型
+function switchType(type) {
+  currentType = type;
+  document.querySelectorAll('.tab-item').forEach(t => {
+    t.classList.toggle('tab-item--active', t.dataset.type === type);
+  });
+  renderNotices(notices);
+}
+
+// 查看通知详情
+function viewNotice(fid) {
+  const notice = notices.find(n => n.fid === fid);
+  alert(`通知: ${notice?.title || '未知'}\n\n${(notice?.content || '无内容').slice(0, 200)}...`);
+}
+
+// 页面加载
+document.addEventListener('DOMContentLoaded', loadNotices);
+</script>
+</body>
+</html>

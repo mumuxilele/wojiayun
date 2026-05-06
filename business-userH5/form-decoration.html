@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>装修申请 - 粤海物业</title>
+<script src="api.js"></script>
+<style>
+:root {
+  --primary: #00dea0; --primary-light: #33e5b5; --primary-dark: #00b383; --primary-bg: #e6faf4;
+  --gray-50: #fafafa; --gray-100: #f5f5f5; --gray-200: #eeeeee; --gray-300: #e0e0e0;
+  --gray-400: #bdbdbd; --gray-500: #9e9e9e; --gray-600: #757575; --gray-700: #616161;
+  --gray-800: #424242; --gray-900: #212121; --white: #ffffff;
+  --radius-sm: 12px; --radius-md: 16px; --radius-lg: 24px;
+  --shadow-card: 0 4px 16px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.04);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: #f5f5f5; color: #212121; font-size: 16px; line-height: 1.5;
+  padding-bottom: 80px; -webkit-font-smoothing: antialiased;
+}
+.header {
+  background: #fff; padding: 12px 16px; display: flex; align-items: center;
+  border-bottom: 1px solid #f0f0f0; position: sticky; top: 0; z-index: 100;
+}
+.header__back { font-size: 24px; cursor: pointer; margin-right: 12px; color: #212121; background: none; border: none; }
+.header__title { font-size: 18px; font-weight: 600; flex: 1; }
+.form-section {
+  background: #fff; margin: 12px 16px; border-radius: 16px; padding: 16px;
+  box-shadow: var(--shadow-card);
+}
+.section-label {
+  font-size: 14px; color: #616161; margin-bottom: 12px; font-weight: 500;
+  display: flex; align-items: center; gap: 4px;
+}
+.section-label .req { color: #ff6b6b; font-weight: 600; }
+.field { margin-bottom: 20px; }
+.field__label { display: block; font-size: 14px; color: #616161; margin-bottom: 8px; font-weight: 500; }
+.field__label .req { color: #ff6b6b; }
+.field__input {
+  width: 100%; height: 48px; padding: 0 16px;
+  border: 1.5px solid #e0e0e0; border-radius: 12px; font-size: 16px;
+  color: #212121; outline: none; transition: all 0.3s ease; background: #fff;
+}
+.field__input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,222,160,0.15); }
+.field__input::placeholder { color: #bdbdbd; }
+.field__textarea {
+  width: 100%; min-height: 100px; padding: 12px 16px;
+  border: 1.5px solid #e0e0e0; border-radius: 12px; font-size: 16px;
+  color: #212121; outline: none; transition: all 0.3s ease; background: #fff;
+  resize: vertical; font-family: inherit; line-height: 1.5;
+}
+.field__textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,222,160,0.15); }
+.upload-grid { display: flex; flex-wrap: wrap; gap: 12px; }
+.upload-item {
+  position: relative; width: 80px; height: 80px; border-radius: 12px;
+  overflow: hidden; background: #f5f5f5;
+}
+.upload-item img { width: 100%; height: 100%; object-fit: cover; }
+.upload-remove {
+  position: absolute; top: 4px; right: 4px; width: 24px; height: 24px;
+  border-radius: 50%; background: rgba(0,0,0,0.5); color: #fff; border: none;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;
+}
+.upload-add {
+  width: 80px; height: 80px; border: 2px dashed #e0e0e0; border-radius: 12px;
+  background: #fafafa; cursor: pointer; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; transition: all 0.2s;
+}
+.upload-add:hover { border-color: var(--primary); background: var(--primary-bg); }
+.upload-add__icon { font-size: 32px; color: #bdbdbd; }
+.upload-add__text { font-size: 12px; color: #9e9e9e; margin-top: 4px; }
+.dropdown { position: relative; }
+.dropdown__trigger {
+  width: 100%; height: 48px; padding: 0 16px;
+  border: 1.5px solid #e0e0e0; border-radius: 12px; font-size: 16px;
+  color: #212121; background: #fff; cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between; transition: all 0.3s ease;
+}
+.dropdown__trigger--placeholder { color: #bdbdbd; }
+.dropdown__arrow { color: #9e9e9e; transition: transform 0.3s ease; }
+.dropdown--open .dropdown__arrow { transform: rotate(180deg); }
+.dropdown__menu {
+  position: absolute; top: 100%; left: 0; right: 0; margin-top: 4px;
+  background: #fff; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  max-height: 200px; overflow-y: auto; z-index: 100; display: none;
+}
+.dropdown--open .dropdown__menu { display: block; }
+.dropdown__option { padding: 12px 16px; font-size: 16px; color: #212121; cursor: pointer; transition: background 0.2s; }
+.dropdown__option:hover { background: #f5f5f5; }
+.dropdown__option--selected { color: var(--primary); font-weight: 500; background: var(--primary-bg); }
+.date-display {
+  width: 100%; height: 48px; padding: 0 16px;
+  border: 1.5px solid #e0e0e0; border-radius: 12px; font-size: 16px;
+  color: #212121; background: #fff; cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between; transition: all 0.3s ease;
+}
+.date-display--placeholder { color: #bdbdbd; }
+.date-display:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,222,160,0.15); }
+.room-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.room-item {
+  aspect-ratio: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; border: 1.5px solid #e0e0e0; border-radius: 8px;
+  font-size: 14px; color: #212121; cursor: pointer; transition: all 0.2s;
+}
+.room-item:hover { border-color: var(--primary); background: var(--primary-bg); }
+.room-item--selected { border-color: var(--primary); background: var(--primary); color: #fff; }
+.room-number { font-size: 18px; font-weight: 600; }
+.room-type { font-size: 12px; margin-top: 4px; }
+.switch-field { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; }
+.switch__label-title { font-size: 16px; color: #212121; }
+.switch__label-desc { font-size: 14px; color: #9e9e9e; margin-top: 4px; }
+.switch { position: relative; width: 52px; height: 32px; flex-shrink: 0; }
+.switch__input { opacity: 0; width: 0; height: 0; }
+.switch__slider {
+  position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+  background: #e0e0e0; border-radius: 16px; transition: all 0.3s ease;
+}
+.switch__slider::before {
+  content: ""; position: absolute; height: 28px; width: 28px;
+  left: 2px; bottom: 2px; background: #fff; border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all 0.3s ease;
+}
+.switch__input:checked + .switch__slider { background: var(--primary); }
+.switch__input:checked + .switch__slider::before { transform: translateX(20px); }
+.btn-submit {
+  width: calc(100% - 32px); margin: 20px 16px; height: 48px; border-radius: 12px;
+  border: none; background: var(--primary); color: #fff; font-size: 16px; font-weight: 600;
+  cursor: pointer; transition: background 0.2s; display: flex; align-items: center;
+  justify-content: center; gap: 8px; position: fixed; bottom: 16px; left: 0; right: 0; z-index: 50;
+}
+.btn-submit:active { background: var(--primary-dark); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <button class="header__back" onclick="history.back()">←</button>
+  <div class="header__title">装修申请</div>
+  <div onclick="location.href='list.html?type=decoration'" style="font-size:14px;color:#00b383;cursor:pointer;">我的申请</div>
+</div>
+
+<div class="form-section">
+  <div class="section-label"><span class="req">*</span> 装修公司信息</div>
+  <div class="field">
+    <input class="field__input" placeholder="装修公司名称">
+  </div>
+  <div class="field">
+    <input class="field__input" placeholder="负责人姓名">
+  </div>
+  <div class="field">
+    <input class="field__input" type="tel" placeholder="负责人联系电话" maxlength="11">
+  </div>
+</div>
+
+<div class="form-section">
+  <div class="section-label"><span class="req">*</span> 装修项目</div>
+  <div class="field">
+    <div class="dropdown" id="decorType">
+      <div class="dropdown__trigger dropdown__trigger--placeholder" onclick="toggleDropdown('decorType')">
+        <span>请选择装修类型</span>
+        <span class="dropdown__arrow">▼</span>
+      </div>
+      <div class="dropdown__menu">
+        <div class="dropdown__option dropdown__option--selected" onclick="selectOption('decorType', this)">全屋翻新</div>
+        <div class="dropdown__option" onclick="selectOption('decorType', this)">局部改造</div>
+        <div class="dropdown__option" onclick="selectOption('decorType', this)">水电改造</div>
+        <div class="dropdown__option" onclick="selectOption('decorType', this)">墙面翻新</div>
+        <div class="dropdown__option" onclick="selectOption('decorType', this)">其他</div>
+      </div>
+    </div>
+  </div>
+  <div class="field">
+    <textarea class="field__textarea" placeholder="装修内容详细说明..."></textarea>
+  </div>
+</div>
+
+<div class="form-section">
+  <div class="section-label"><span class="req">*</span> 施工周期</div>
+  <div class="field">
+    <input class="field__input" type="date" value="2026-05-01" style="color:#212121;">
+  </div>
+  <div class="field">
+    <div style="display:flex;gap:12px;">
+      <input class="field__input" type="time" value="08:00" style="color:#212121;">
+      <span style="align-self:center;color:#9e9e9e;">至</span>
+      <input class="field__input" type="time" value="18:00" style="color:#212121;">
+    </div>
+  </div>
+</div>
+
+<div class="form-section">
+  <div class="section-label">施工房间</div>
+  <div class="room-grid">
+    <div class="room-item room-item--selected" onclick="selectRoom(this)">
+      <div class="room-number">客厅</div>
+    </div>
+    <div class="room-item" onclick="selectRoom(this)">
+      <div class="room-number">主卧</div>
+    </div>
+    <div class="room-item" onclick="selectRoom(this)">
+      <div class="room-number">次卧</div>
+    </div>
+    <div class="room-item" onclick="selectRoom(this)">
+      <div class="room-number">厨房</div>
+    </div>
+    <div class="room-item" onclick="selectRoom(this)">
+      <div class="room-number">卫生间</div>
+    </div>
+    <div class="room-item" onclick="selectRoom(this)">
+      <div class="room-number">阳台</div>
+    </div>
+  </div>
+</div>
+
+<div class="form-section">
+  <div class="section-label">装修图纸/照片</div>
+  <div class="upload-grid">
+    <div class="upload-item">
+      <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect fill='%23e0e0e0' width='80' height='80'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%239e9e9e'%3E平面图%3C/text%3E%3C/svg%3E">
+      <button class="upload-remove">×</button>
+    </div>
+    <div class="upload-add" onclick="alert('上传图纸')">
+      <span class="upload-add__icon">+</span>
+      <span class="upload-add__text">上传图纸</span>
+    </div>
+  </div>
+</div>
+
+<div class="form-section">
+  <div class="section-label">物业审批流程说明</div>
+  <div style="font-size:13px;color:#757575;line-height:1.8;background:#f9f9f9;padding:12px;border-radius:10px;">
+    ✅ 提交申请 → 物业审核（1-2个工作日）<br>
+    ✅ 缴纳装修保证金 → 办理出入证<br>
+    ✅ 施工期间接受巡查 → 完工验收<br>
+    ✅ 验收合格 → 退还保证金
+  </div>
+</div>
+
+<div class="form-section">
+  <div class="switch-field">
+    <div>
+      <div class="switch__label-title">我已阅读并同意《装修管理协议》</div>
+    </div>
+    <label class="switch">
+      <input type="checkbox" class="switch__input" id="agreeSwitch">
+      <span class="switch__slider"></span>
+    </label>
+  </div>
+</div>
+
+<button class="btn-submit" onclick="submitDecoration()">🏗️ 提交装修申请</button>
+
+<script>
+function toggleDropdown(id) {
+  document.getElementById(id).classList.toggle('dropdown--open');
+}
+function selectOption(dropdownId, el) {
+  const dropdown = document.getElementById(dropdownId);
+  dropdown.querySelectorAll('.dropdown__option').forEach(o => o.classList.remove('dropdown__option--selected'));
+  el.classList.add('dropdown__option--selected');
+  const trigger = dropdown.querySelector('.dropdown__trigger');
+  trigger.querySelector('span').textContent = el.textContent;
+  trigger.classList.remove('dropdown__trigger--placeholder');
+  dropdown.classList.remove('dropdown--open');
+}
+function selectRoom(el) {
+  el.classList.toggle('room-item--selected');
+}
+function submitDecoration() {
+  if (!document.getElementById('agreeSwitch').checked) {
+    alert('请先同意《装修管理协议》');
+    return;
+  }
+  const desc = document.querySelector('.field__textarea')?.value.trim() || '';
+  API.workOrders.create({
+    work_order_type: '装修',
+    description: '装修申请：' + desc,
+    contact_name: '',
+    contact_phone: '',
+    enterprise_id: (API.auth.getUser() || {}).enterprise_id || ''
+  }).then(res => {
+    if (res.code === 0) {
+      alert('装修申请提交成功！\n物业将在1-2个工作日内审核。');
+      location.href = 'list.html?type=decoration';
+    } else { alert('提交失败：' + res.message); }
+  }).catch(() => alert('提交失败，请稍后重试'));
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.dropdown')) {
+    document.querySelectorAll('.dropdown--open').forEach(d => d.classList.remove('dropdown--open'));
+  }
+});
+</script>
+</body>
+</html>

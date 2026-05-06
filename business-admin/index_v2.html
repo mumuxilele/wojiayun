@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="commercial">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>粤海物业 · 管理仪表盘</title>
+<script src="../api.js"></script>
+<style>
+  :root {
+    --primary: #00dea0;
+    --primary-dark: #00c78e;
+    --deep: #2c3e50;
+    --bg: #f5f7fa;
+    --card: #ffffff;
+    --text: #2c3e50;
+    --text-secondary: #7f8c8d;
+    --border: #e8ecf1;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --shadow-lg: 0 4px 20px rgba(0,0,0,0.12);
+    --danger: #e74c3c;
+    --warning: #f39c12;
+    --success: #27ae60;
+    --info: #3498db;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh;
+    padding-bottom: 72px;
+  }
+  .header {
+    background: linear-gradient(90deg, var(--primary), var(--deep));
+    padding: 16px 20px; color: #fff;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .header h1 { font-size: 18px; font-weight: 600; }
+  .header .avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(255,255,255,0.25); display: flex;
+    align-items: center; justify-content: center; font-size: 16px;
+    cursor: pointer;
+  }
+  .content { padding: 16px; }
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px;
+  }
+  .stat-card {
+    background: var(--card); border-radius: var(--radius);
+    padding: 16px; box-shadow: var(--shadow);
+  }
+  .stat-card .label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+  .stat-card .value { font-size: 26px; font-weight: 700; color: var(--primary); }
+  .stat-card .sub { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+  .stat-card.warn .value { color: var(--warning); }
+  .stat-card.danger .value { color: var(--danger); }
+  .section { margin-bottom: 20px; }
+  .section-title {
+    font-size: 15px; font-weight: 600; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-title::before {
+    content: ''; width: 3px; height: 16px;
+    background: var(--primary); border-radius: 2px;
+  }
+  .menu-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  }
+  .menu-item {
+    background: var(--card); border-radius: var(--radius);
+    padding: 14px 10px; text-align: center; box-shadow: var(--shadow);
+    text-decoration: none; color: var(--text); transition: transform 0.2s;
+    cursor: pointer;
+  }
+  .menu-item:active { transform: scale(0.96); }
+  .menu-item .icon {
+    font-size: 28px; margin-bottom: 8px; display: block;
+  }
+  .menu-item .name { font-size: 12px; font-weight: 500; }
+  .todo-list { display: flex; flex-direction: column; gap: 8px; }
+  .todo-item {
+    background: var(--card); border-radius: var(--radius-sm);
+    padding: 14px; box-shadow: var(--shadow);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .todo-item .dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .todo-item .dot.urgent { background: var(--danger); }
+  .todo-item .dot.normal { background: var(--warning); }
+  .todo-item .info { flex: 1; }
+  .todo-item .title { font-size: 14px; font-weight: 500; }
+  .todo-item .desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .todo-item .badge {
+    font-size: 11px; padding: 3px 8px; border-radius: 20px;
+    background: #fef3e2; color: var(--warning); flex-shrink: 0;
+  }
+  .todo-item .badge.urgent {
+    background: #fde8e8; color: var(--danger);
+  }
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--card); display: flex; border-top: 1px solid var(--border);
+    padding: 6px 0 env(safe-area-inset-bottom, 6px);
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+  }
+  .nav-item {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; padding: 6px 0; text-decoration: none;
+    color: var(--text-secondary); font-size: 10px; gap: 3px;
+    cursor: pointer;
+  }
+  .nav-item .nav-icon { font-size: 20px; }
+  .nav-item.active { color: var(--primary); }
+  .loading { opacity: 0.5; pointer-events: none; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div style="font-size:12px;opacity:0.8">粤海物业管理系统</div>
+      <h1>管理仪表盘</h1>
+    </div>
+    <div class="avatar" id="avatar" onclick="logout()">👤</div>
+  </div>
+
+  <div class="content">
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card">
+        <div class="label">今日工单</div>
+        <div class="value" id="statOrders">--</div>
+        <div class="sub" id="statOrdersSub">加载中...</div>
+      </div>
+      <div class="stat-card warn">
+        <div class="label">待审核</div>
+        <div class="value" id="statPending">--</div>
+        <div class="sub">申请 · 投诉 · 报修</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">在管园区</div>
+        <div class="value" id="statEnterprises">--</div>
+        <div class="sub" id="statEnterprisesSub">楼栋 -- · 住户 --</div>
+      </div>
+      <div class="stat-card danger">
+        <div class="label">本月欠费</div>
+        <div class="value" id="statArrears">--</div>
+        <div class="sub" id="statArrearsSub">涉及 -- 户</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">功能管理</div>
+      <div class="menu-grid">
+        <a href="enterprises.html" class="menu-item">
+          <span class="icon">🏢</span><span class="name">园区管理</span>
+        </a>
+        <a href="buildings.html" class="menu-item">
+          <span class="icon">🏗️</span><span class="name">楼栋管理</span>
+        </a>
+        <a href="staff-management.html" class="menu-item">
+          <span class="icon">👥</span><span class="name">员工管理</span>
+        </a>
+        <a href="workorders.html" class="menu-item">
+          <span class="icon">📋</span><span class="name">工单管理</span>
+        </a>
+        <a href="billing.html" class="menu-item">
+          <span class="icon">💰</span><span class="name">费用管理</span>
+        </a>
+        <a href="settings.html" class="menu-item">
+          <span class="icon">⚙️</span><span class="name">系统设置</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">待办事项</div>
+      <div class="todo-list" id="todoList">
+        <div style="text-align:center;color:var(--text-secondary);padding:20px;">加载中...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item active" onclick="location.href='index.html'">
+      <span class="nav-icon">📊</span>仪表盘
+    </div>
+    <div class="nav-item" onclick="location.href='enterprises.html'">
+      <span class="nav-icon">🏢</span>园区
+    </div>
+    <div class="nav-item" onclick="location.href='workorders.html'">
+      <span class="nav-icon">📋</span>工单
+    </div>
+    <div class="nav-item" onclick="location.href='settings.html'">
+      <span class="nav-icon">⚙️</span>设置
+    </div>
+  </div>
+
+<script>
+// 检查登录状态
+if (!API.auth.isLoggedIn()) {
+  alert('请先登录');
+  // 如果有登录页可跳转：location.href = 'login.html';
+}
+
+// 加载仪表盘数据
+async function loadDashboard() {
+  try {
+    const res = await API.admin.dashboard();
+    if (res.code === 0 && res.data) {
+      const d = res.data;
+      document.getElementById('statOrders').textContent = d.work_orders_total || 0;
+      document.getElementById('statOrdersSub').textContent =
+        `待处理 ${d.work_orders_pending || 0} · 处理中 ${d.work_orders_processing || 0}`;
+      document.getElementById('statPending').textContent = d.pending_approval || 0;
+      document.getElementById('statEnterprises').textContent = d.enterprises_count || 0;
+      document.getElementById('statEnterprisesSub').textContent =
+        `楼栋 ${d.buildings_count || 0} · 住户 ${d.residents_count || 0}`;
+      document.getElementById('statArrears').textContent = '¥' + ((d.arrears_amount || 0).toLocaleString());
+      document.getElementById('statArrearsSub').textContent = `涉及 ${d.arrears_households || 0} 户`;
+
+      // 渲染待办事项
+      const todoList = document.getElementById('todoList');
+      const todos = d.todos || [];
+      if (todos.length > 0) {
+        todoList.innerHTML = todos.map(t => `
+          <div class="todo-item">
+            <div class="dot ${t.level === '紧急' ? 'urgent' : 'normal'}"></div>
+            <div class="info">
+              <div class="title">${t.title}</div>
+              <div class="desc">${t.desc}</div>
+            </div>
+            <span class="badge ${t.level === '紧急' ? 'urgent' : ''}">${t.badge || t.level}</span>
+          </div>
+        `).join('');
+      } else {
+        todoList.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;">暂无待办事项</div>';
+      }
+    }
+  } catch (err) {
+    console.error('加载仪表盘失败:', err);
+  }
+}
+
+function logout() {
+  if (confirm('确认退出登录？')) {
+    API.auth.logout();
+    alert('已退出登录');
+  }
+}
+
+// 页面加载后执行
+document.addEventListener('DOMContentLoaded', loadDashboard);
+</script>
+</body>
+</html>

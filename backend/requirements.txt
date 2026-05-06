@@ -1,5 +1,11 @@
-# Flask后端依赖
-flask>=2.0.0
-flask-cors>=3.0.0
-pymysql>=1.0.0
-cryptography>=3.4.0
+# 粤海物业管理系统 · 依赖包（指定版本）
+sqlalchemy==2.0.23
+pymysql==1.1.0
+python-dotenv==1.0.0
+colorlog==6.7.0
+typing-extensions==4.8.0
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.5.3
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4

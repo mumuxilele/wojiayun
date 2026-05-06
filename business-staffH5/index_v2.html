@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="commercial">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>粤海物业 - 员工工作台</title>
+<script src="../api.js"></script>
+<style>
+:root {
+  --primary: #00dea0; --primary-light: #33e5b5; --primary-dark: #00b383; --primary-bg: #e8f5e9;
+  --accent: #2c3e50; --accent-light: #34495e; --accent-bg: #f0f2f5;
+  --gray-50: #fafafa; --gray-100: #f5f5f5; --gray-200: #eeeeee;
+  --gray-300: #e0e0e0; --gray-400: #bdbdbd; --gray-500: #9e9e9e; --gray-600: #757575;
+  --gray-700: #616161; --gray-800: #424242; --gray-900: #212121; --white: #ffffff;
+  --radius-sm: 6px; --radius-md: 8px; --radius-lg: 10px; --radius-xl: 12px;
+  --shadow-card: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-float: 0 4px 12px rgba(0,0,0,0.1);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: var(--gray-100); color: var(--gray-900); font-size: 16px; line-height: 1.5;
+  padding-bottom: 80px; -webkit-font-smoothing: antialiased;
+}
+.header {
+  background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+  color: #fff; padding: 16px; position: sticky; top: 0; z-index: 100;
+  box-shadow: var(--shadow-float);
+}
+.header__top { display: flex; align-items: center; gap: 12px; }
+.header__back { font-size: 24px; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(255,255,255,0.2); }
+.header__title { font-size: 18px; font-weight: 600; }
+.header__subtitle { font-size: 13px; opacity: 0.9; margin-top: 4px; }
+.staff-container { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+.stat-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+}
+.stat-card {
+  background: var(--white); border-radius: var(--radius-lg); padding: 16px;
+  box-shadow: var(--shadow-card); border: 1px solid var(--gray-200);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.stat-card__value { font-size: 24px; font-weight: 700; color: var(--primary); }
+.stat-card__label { font-size: 13px; color: var(--gray-600); }
+.stat-card__trend { font-size: 12px; color: var(--gray-500); }
+.stat-card__trend--up { color: #00c853; }
+.stat-card__trend--down { color: #f44336; }
+.section {
+  background: var(--white); border-radius: var(--radius-lg); padding: 16px;
+  box-shadow: var(--shadow-card); border: 1px solid var(--gray-200);
+}
+.section__title {
+  font-size: 16px; font-weight: 600; color: var(--gray-900); margin-bottom: 16px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section__title::before {
+  content: ''; display: inline-block; width: 4px; height: 18px;
+  background: var(--primary); border-radius: 2px;
+}
+.menu-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+}
+.menu-item {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 12px 8px; border-radius: var(--radius-md); cursor: pointer;
+  transition: background 0.2s;
+}
+.menu-item:active { background: var(--gray-100); }
+.menu-item__icon { font-size: 28px; }
+.menu-item__name { font-size: 13px; color: var(--gray-900); text-align: center; }
+.task-list { display: flex; flex-direction: column; gap: 12px; }
+.task-item {
+  display: flex; gap: 12px; padding: 12px; background: var(--gray-50);
+  border-radius: var(--radius-md); border-left: 4px solid var(--primary);
+}
+.task-item--urgent { border-left-color: #f44336; }
+.task-item--pending { border-left-color: #ff9800; }
+.task-item__info { flex: 1; }
+.task-item__title { font-size: 14px; font-weight: 500; color: var(--gray-900); margin-bottom: 4px; }
+.task-item__desc { font-size: 12px; color: var(--gray-600); margin-bottom: 8px; }
+.task-item__meta { display: flex; gap: 12px; font-size: 12px; color: var(--gray-500); }
+.btn {
+  padding: 8px 16px; border-radius: var(--radius-sm); font-size: 14px;
+  border: none; cursor: pointer; transition: opacity 0.2s;
+}
+.btn--primary { background: var(--primary); color: #fff; }
+.btn--outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
+.btn:active { opacity: 0.9; }
+.tabbar {
+  position: fixed; bottom: 0; left: 0; right: 0; height: 64px; background: var(--white);
+  border-top: 1px solid var(--gray-200); display: flex; z-index: 100;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+}
+.tabbar__item {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 3px; color: var(--gray-500); font-size: 11px; cursor: pointer;
+}
+.tabbar__item--active { color: var(--primary); }
+.tabbar__icon { font-size: 24px; }
+.loading { text-align: center; color: var(--gray-500); padding: 20px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header__top">
+    <div class="header__back" onclick="history.back()">←</div>
+    <div>
+      <div class="header__title" id="headerTitle">员工工作台</div>
+      <div class="header__subtitle" id="headerSubtitle">粤海物业 · 内部管理端</div>
+    </div>
+  </div>
+</div>
+
+<div class="staff-container">
+  <!-- 关键指标 -->
+  <div class="stat-grid" id="statGrid">
+    <div class="stat-card">
+      <div class="stat-card__value" id="statPending">--</div>
+      <div class="stat-card__label">待处理工单</div>
+      <div class="stat-card__trend" id="statPendingTrend">加载中...</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__value" id="statToday">--</div>
+      <div class="stat-card__label">今日新增工单</div>
+      <div class="stat-card__trend" id="statTodayTrend">--</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__value" id="statRate">--</div>
+      <div class="stat-card__label">工单完成率</div>
+      <div class="stat-card__trend" id="statRateTrend">--</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__value" id="statUrgent">--</div>
+      <div class="stat-card__label">紧急工单</div>
+      <div class="stat-card__trend stat-card__trend--down" id="statUrgentTrend">需立即处理</div>
+    </div>
+  </div>
+
+  <!-- 核心功能菜单 -->
+  <div class="section">
+    <div class="section__title">核心功能</div>
+    <div class="menu-grid">
+      <div class="menu-item" onclick="location.href='tasks.html'">
+        <div class="menu-item__icon">📋</div>
+        <div class="menu-item__name">工单管理</div>
+      </div>
+      <div class="menu-item" onclick="location.href='residents.html'">
+        <div class="menu-item__icon">👥</div>
+        <div class="menu-item__name">住户管理</div>
+      </div>
+      <div class="menu-item" onclick="location.href='reports.html'">
+        <div class="menu-item__icon">📊</div>
+        <div class="menu-item__name">报表统计</div>
+      </div>
+      <div class="menu-item" onclick="location.href='notices.html'">
+        <div class="menu-item__icon">📢</div>
+        <div class="menu-item__name">通知公告</div>
+      </div>
+      <div class="menu-item" onclick="location.href='equipment.html'">
+        <div class="menu-item__icon">🔧</div>
+        <div class="menu-item__name">设备管理</div>
+      </div>
+      <div class="menu-item" onclick="location.href='profile.html'">
+        <div class="menu-item__icon">👤</div>
+        <div class="menu-item__name">个人中心</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 待办任务 -->
+  <div class="section">
+    <div class="section__title">待办任务</div>
+    <div class="task-list" id="taskList">
+      <div class="loading">加载中...</div>
+    </div>
+  </div>
+</div>
+
+<!-- 底部导航 -->
+<div class="tabbar">
+  <div class="tabbar__item tabbar__item--active" onclick="location.href='index.html'">
+    <div class="tabbar__icon">🏠</div>
+    <div>工作台</div>
+  </div>
+  <div class="tabbar__item" onclick="location.href='tasks.html'">
+    <div class="tabbar__icon">📋</div>
+    <div>工单</div>
+  </div>
+  <div class="tabbar__item" onclick="location.href='residents.html'">
+    <div class="tabbar__icon">👥</div>
+    <div>住户</div>
+  </div>
+  <div class="tabbar__item" onclick="location.href='profile.html'">
+    <div class="tabbar__icon">👤</div>
+    <div>我的</div>
+  </div>
+</div>
+
+<script>
+// 检查登录
+if (!API.auth.isLoggedIn()) {
+  alert('请先登录');
+}
+
+// 加载工作台数据
+async function loadDashboard() {
+  try {
+    const res = await API.admin.dashboard();
+    if (res.code === 0 && res.data) {
+      const d = res.data;
+      document.getElementById('statPending').textContent = d.work_orders_pending || 0;
+      document.getElementById('statToday').textContent = d.work_orders_today || 0;
+      document.getElementById('statRate').textContent = (d.completion_rate || 0) + '%';
+      document.getElementById('statUrgent').textContent = d.urgent_orders || 0;
+      
+      // 加载待办任务
+      loadTasks();
+    }
+  } catch (err) {
+    console.error('加载仪表盘失败:', err);
+  }
+}
+
+// 加载待办工单
+async function loadTasks() {
+  try {
+    const res = await API.workOrders.list('待派单', '', '', '', 1, 5);
+    if (res.code === 0 && res.data) {
+      const tasks = res.data.items || [];
+      renderTasks(tasks);
+    }
+  } catch (err) {
+    console.error('加载待办失败:', err);
+    document.getElementById('taskList').innerHTML = '<div class="loading">加载失败</div>';
+  }
+}
+
+// 渲染待办任务
+function renderTasks(tasks) {
+  const container = document.getElementById('taskList');
+  if (tasks.length === 0) {
+    container.innerHTML = '<div class="loading">暂无待办任务</div>';
+    return;
+  }
+  container.innerHTML = tasks.map(t => `
+    <div class="task-item ${t.level === '紧急' ? 'task-item--urgent' : 'task-item--pending'}">
+      <div class="task-item__info">
+        <div class="task-item__title">${t.title || t.description || '未命名工单'}</div>
+        <div class="task-item__desc">${t.level || '普通'}工单，需${t.status === '待派单' ? '派单处理' : '处理'}</div>
+        <div class="task-item__meta">
+          <span>📍 ${t.enterprise_name || '未指定'}</span>
+          <span>⏰ ${t.create_time?.slice(11,16) || ''}</span>
+        </div>
+      </div>
+      <button class="btn btn--primary" onclick="handleTask('${t.fid}')">${t.status === '待派单' ? '派单' : '处理'}</button>
+    </div>
+  `).join('');
+}
+
+// 处理任务
+function handleTask(fid) {
+  // 跳转到工单详情/处理页
+  location.href = `tasks.html?fid=${fid}`;
+}
+
+// 页面加载
+document.addEventListener('DOMContentLoaded', loadDashboard);
+</script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="commercial">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>住户管理 - 粤海物业员工端</title>
+<script src="../api.js"></script>
+<style>
+:root {
+  --primary: #00dea0; --primary-light: #33e5b5; --primary-dark: #00b383; --primary-bg: #e8f5e9;
+  --accent: #2c3e50; --accent-light: #34495e; --accent-bg: #f0f2f5;
+  --gray-50: #fafafa; --gray-100: #f5f5f5; --gray-200: #eeeeee;
+  --gray-300: #e0e0e0; --gray-400: #bdbdbd; --gray-500: #9e9e9e; --gray-600: #757575;
+  --gray-700: #616161; --gray-800: #424242; --gray-900: #212121; --white: #ffffff;
+  --radius-sm: 6px; --radius-md: 8px; --radius-lg: 10px;
+  --shadow-card: 0 2px 8px rgba(0,0,0,0.08);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--gray-100); color: var(--gray-900); font-size: 15px; padding-bottom: 80px; }
+.header { background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%); color: #fff; padding: 16px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 12px; }
+.header__back { font-size: 20px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(255,255,255,0.2); cursor: pointer; }
+.header__title { font-size: 18px; font-weight: 600; }
+.container { padding: 12px 16px; }
+.search-bar { display: flex; gap: 8px; margin-bottom: 14px; }
+.search-input { flex: 1; padding: 10px 12px; border: 1px solid var(--gray-300); border-radius: var(--radius-md); font-size: 14px; outline: none; background: var(--white); }
+.search-input:focus { border-color: var(--primary); }
+.building-tabs { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 4px; }
+.building-tab { padding: 8px 16px; border-radius: 20px; font-size: 13px; cursor: pointer; white-space: nowrap; background: var(--white); border: 1px solid var(--gray-300); color: var(--gray-600); }
+.building-tab--active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.resident-list { display: flex; flex-direction: column; gap: 10px; }
+.resident-card { background: var(--white); border-radius: var(--radius-lg); padding: 14px; box-shadow: var(--shadow-card); display: flex; gap: 12px; align-items: center; cursor: pointer; transition: transform 0.2s; }
+.resident-card:active { transform: scale(0.98); }
+.resident-card__avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--primary-bg); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; flex-shrink: 0; }
+.resident-card__info { flex: 1; }
+.resident-card__name { font-size: 15px; font-weight: 600; color: var(--gray-900); margin-bottom: 3px; }
+.resident-card__room { font-size: 12px; color: var(--gray-500); }
+.resident-card__detail { font-size: 13px; color: var(--primary); }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 6px; }
+.tag--owner { background: #e3f2fd; color: #1565c0; }
+.tag--tenant { background: #fff3e0; color: #e65100; }
+.tag--vip { background: #fce4ec; color: #c62828; }
+.tabbar { position: fixed; bottom: 0; left: 0; right: 0; height: 64px; background: var(--white); border-top: 1px solid var(--gray-200); display: flex; z-index: 100; box-shadow: 0 -2px 8px rgba(0,0,0,0.08); }
+.tabbar__item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--gray-500); font-size: 11px; cursor: pointer; }
+.tabbar__item--active { color: var(--primary); }
+.tabbar__icon { font-size: 22px; }
+.loading { text-align: center; color: var(--gray-500); padding: 20px; }
+</style>
+</head>
+<body>
+<div class="header"><div class="header__back" onclick="history.back()">←</div><div class="header__title">住户管理</div></div>
+<div class="container">
+  <div class="search-bar">
+    <input class="search-input" id="searchInput" placeholder="🔍 搜索姓名/房号/手机号..." oninput="searchResidents()">
+  </div>
+  <div class="building-tabs" id="buildingTabs">
+    <div class="building-tab building-tab--active" data-building="" onclick="switchBuilding('')">全部</div>
+    <div class="building-tab" data-building="A栋" onclick="switchBuilding('A栋')">A栋</div>
+    <div class="building-tab" data-building="B栋" onclick="switchBuilding('B栋')">B栋</div>
+    <div class="building-tab" data-building="C栋" onclick="switchBuilding('C栋')">C栋</div>
+    <div class="building-tab" data-building="D栋" onclick="switchBuilding('D栋')">D栋</div>
+  </div>
+  <div class="resident-list" id="residentList">
+    <div class="loading">加载中...</div>
+  </div>
+</div>
+<div class="tabbar">
+  <div class="tabbar__item" onclick="location.href='index.html'"><div class="tabbar__icon">🏠</div><div>工作台</div></div>
+  <div class="tabbar__item" onclick="location.href='tasks.html'"><div class="tabbar__icon">📋</div><div>工单</div></div>
+  <div class="tabbar__item tabbar__item--active"><div class="tabbar__icon">👥</div><div>住户</div></div>
+  <div class="tabbar__item" onclick="location.href='profile.html'"><div class="tabbar__icon">👤</div><div>我的</div></div>
+</div>
+
+<script>
+let residents = [];
+let currentBuilding = '';
+
+// 检查登录
+if (!API.auth.isLoggedIn()) {
+  alert('请先登录');
+}
+
+// 加载住户数据
+async function loadResidents(buildingId = '', keyword = '') {
+  try {
+    const res = await API.residents.list('', buildingId, keyword);
+    if (res.code === 0 && res.data) {
+      residents = res.data.items || [];
+      renderResidents(residents);
+      updateBuildingCounts();
+    }
+  } catch (err) {
+    console.error('加载住户失败:', err);
+    document.getElementById('residentList').innerHTML = '<div class="loading">加载失败，请刷新重试</div>';
+  }
+}
+
+// 渲染住户列表
+function renderResidents(list) {
+  const container = document.getElementById('residentList');
+  // 前端过滤楼栋
+  const filtered = currentBuilding ? list.filter(r => r.building_name === currentBuilding) : list;
+  
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="loading">暂无住户数据</div>';
+    return;
+  }
+  container.innerHTML = filtered.map(r => `
+    <div class="resident-card" onclick="viewResident('${r.fid}')">
+      <div class="resident-card__avatar">${(r.name || '?')[0]}</div>
+      <div class="resident-card__info">
+        <div class="resident-card__name">${r.name || '未命名'} 
+          <span class="tag ${r.type === '业主' ? 'tag--owner' : 'tag--tenant'}">${r.type || '未知'}</span>
+          ${r.is_vip ? '<span class="tag tag--vip">VIP</span>' : ''}
+        </div>
+        <div class="resident-card__room">${r.building_name || ''} ${r.room_no || ''} · ${r.phone || '无电话'}</div>
+      </div>
+      <div class="resident-card__detail">详情 →</div>
+    </div>
+  `).join('');
+}
+
+// 更新楼栋Tab计数
+function updateBuildingCounts() {
+  const tabs = document.querySelectorAll('.building-tab');
+  tabs.forEach(tab => {
+    const building = tab.dataset.building;
+    const count = building ? residents.filter(r => r.building_name === building).length : residents.length;
+    tab.textContent = building ? `${building}(${count})` : `全部(${count})`;
+  });
+}
+
+// 切换楼栋
+function switchBuilding(building) {
+  currentBuilding = building;
+  document.querySelectorAll('.building-tab').forEach(t => {
+    t.classList.toggle('building-tab--active', t.dataset.building === building);
+  });
+  renderResidents(residents);
+}
+
+// 搜索
+function searchResidents() {
+  const keyword = document.getElementById('searchInput').value.trim();
+  loadResidents(currentBuilding, keyword);
+}
+
+// 查看住户详情
+function viewResident(fid) {
+  // 实际应跳转到详情页
+  const r = residents.find(x => x.fid === fid);
+  alert(`住户: ${r?.name || '未知'}\n房号: ${r?.building_name || ''} ${r?.room_no || ''}\n电话: ${r?.phone || '无'}`);
+}
+
+// 页面加载
+document.addEventListener('DOMContentLoaded', () => loadResidents());
+</script>
+</body>
+</html>

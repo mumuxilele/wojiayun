@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>粤海物业 - 全组件展示</title>
+<style>
+:root {
+  --primary: #00dea0;
+  --primary-light: #33e5b5;
+  --primary-dark: #00b383;
+  --primary-bg: #e6faf4;
+  --accent: #ff6b6b;
+  --gray-50: #fafafa; --gray-100: #f5f5f5; --gray-200: #eeeeee;
+  --gray-300: #e0e0e0; --gray-400: #bdbdbd; --gray-500: #9e9e9e;
+  --gray-600: #757575; --gray-700: #616161; --gray-800: #424242;
+  --gray-900: #212121; --white: #ffffff;
+  --radius-sm: 12px; --radius-md: 16px; --radius-lg: 24px;
+  --shadow-card: 0 4px 16px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.04);
+  --font-weight-body: 400;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: #f5f5f5; color: #212121; font-size: 16px; line-height: 1.5;
+  padding-bottom: 80px;
+}
+.header {
+  background: linear-gradient(135deg, #00dea0 0%, #33e5b5 50%, #845ef7 100%);
+  color: #fff; padding: 20px 16px 16px; position: sticky; top: 0; z-index: 100;
+}
+.header h1 { font-size: 20px; font-weight: 600; }
+.header p { font-size: 13px; opacity: 0.85; margin-top: 4px; }
+.section { background: #fff; margin: 12px 16px; border-radius: 16px; padding: 16px; box-shadow: var(--shadow-card); }
+.section-title {
+  font-size: 16px; font-weight: 600; color: #212121; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-title::before {
+  content: ''; display: block; width: 4px; height: 18px;
+  background: var(--primary); border-radius: 2px;
+}
+/* 列表项 */
+.list-item {
+  display: flex; align-items: center; padding: 14px 0;
+  border-bottom: 1px solid #f0f0f0; min-height: 64px;
+}
+.list-item:last-child { border-bottom: none; }
+.list-item__avatar {
+  width: 48px; height: 48px; border-radius: 50%; margin-right: 12px;
+  background: var(--primary-bg); display: flex; align-items: center; justify-content: center;
+  color: var(--primary); font-size: 20px; flex-shrink: 0;
+}
+.list-item__content { flex: 1; overflow: hidden; }
+.list-item__title {
+  font-size: 16px; font-weight: 500; color: #212121;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.list-item__desc { font-size: 14px; color: #757575; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.list-item__action { margin-left: 12px; color: #bdbdbd; flex-shrink: 0; }
+/* 搜索栏 */
+.search-bar {
+  display: flex; align-items: center; padding: 8px 16px; background: #fff;
+  border-bottom: 1px solid #f0f0f0; position: sticky; top: 56px; z-index: 90;
+}
+.search-bar__input-wrapper {
+  flex: 1; display: flex; align-items: center; background: #f5f5f5;
+  border-radius: 20px; padding: 8px 16px; transition: all 0.3s ease;
+}
+.search-bar__input-wrapper:focus-within { background: #fff; box-shadow: 0 2px 8px rgba(0,222,160,0.2); border: 1px solid var(--primary); }
+.search-bar__icon { width: 20px; height: 20px; color: #9e9e9e; margin-right: 8px; flex-shrink: 0; }
+.search-bar__input {
+  flex: 1; border: none; outline: none; background: transparent;
+  font-size: 16px; color: #212121; width: 100%;
+}
+.search-bar__input::placeholder { color: #bdbdbd; }
+/* 搜索结果单选 */
+.search-result-item {
+  display: flex; align-items: center; padding: 12px 16px; cursor: pointer; transition: background 0.2s;
+}
+.search-result-item:hover { background: #f5f5f5; }
+.search-result-item__radio {
+  width: 24px; height: 24px; border-radius: 50%; border: 2px solid #bdbdbd;
+  margin-right: 12px; display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; flex-shrink: 0;
+}
+.search-result-item--selected .search-result-item__radio { border-color: var(--primary); background: var(--primary); }
+.search-result-item--selected .search-result-item__radio::after { content: ''; width: 8px; height: 8px; background: #fff; border-radius: 50%; }
+/* 搜索结果多选 */
+.search-result-item__checkbox {
+  width: 24px; height: 24px; border-radius: 4px; border: 2px solid #bdbdbd;
+  margin-right: 12px; display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; flex-shrink: 0; font-size: 14px; color: #fff;
+}
+.search-result-item--selected .search-result-item__checkbox { border-color: var(--primary); background: var(--primary); }
+/* 单行输入 */
+.input-field { margin-bottom: 16px; }
+.input-field__label { display: block; font-size: 14px; color: #616161; margin-bottom: 8px; font-weight: 500; }
+.input-field__input {
+  width: 100%; height: 48px; padding: 0 16px;
+  border: 1.5px solid #e0e0e0; border-radius: 12px; font-size: 16px;
+  color: #212121; outline: none; transition: all 0.3s ease; background: #fff;
+}
+.input-field__input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,222,160,0.15); }
+.input-field__input::placeholder { color: #bdbdbd; }
+/* 多行输入 */
+.textarea-field__textarea {
+  width: 100%; min-height: 120px; padding: 12px 16px;
+  border: 1.5px solid #e0e0e0; border-radius: 12px; font-size: 16px;
+  color: #212121; outline: none; transition: all 0.3s ease; background: #fff;
+  resize: vertical; font-family: inherit; line-height: 1.5;
+}
+.textarea-field__textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,222,160,0.15); }
+.textarea-field__count { text-align: right; font-size: 12px; color: #9e9e9e; margin-top: 4px; }
+/* 下拉选项 */
+.dropdown { position: relative; margin-bottom: 16px; }
+.dropdown__label { display: block; font-size: 14px; color: #616161; margin-bottom: 8px; font-weight: 500; }
+.dropdown__trigger {
+  width: 100%; height: 48px; padding: 0 16px;
+  border: 1.5px solid #e0e0e0; border-radius: 12px; font-size: 16px;
+  color: #212121; background: #fff; cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between; transition: all 0.3s ease;
+}
+.dropdown__trigger:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,222,160,0.15); }
+.dropdown__arrow { width: 20px; height: 20px; color: #9e9e9e; transition: transform 0.3s ease; }
+.dropdown--open .dropdown__arrow { transform: rotate(180deg); }
+.dropdown__menu {
+  position: absolute; top: 100%; left: 0; right: 0; margin-top: 4px;
+  background: #fff; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  max-height: 200px; overflow-y: auto; z-index: 100; display: none;
+}
+.dropdown--open .dropdown__menu { display: block; }
+.dropdown__option { padding: 12px 16px; font-size: 16px; color: #212121; cursor: pointer; transition: background 0.2s; }
+.dropdown__option:hover { background: #f5f5f5; }
+.dropdown__option--selected { color: var(--primary); font-weight: 500; background: var(--primary-bg); }
+/* 日期选择 */
+.date-display {
+  width: 100%; height: 48px; padding: 0 16px;
+  border: 1.5px solid #e0e0e0; border-radius: 12px; font-size: 16px;
+  color: #212121; background: #fff; cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between; transition: all 0.3s ease;
+}
+.date-display:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,222,160,0.15); }
+.date-picker-mask {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5); z-index: 1000; display: none;
+}
+.date-picker-mask--visible { display: block; }
+.date-picker {
+  position: fixed; bottom: 0; left: 0; right: 0; background: #fff;
+  border-radius: 20px 20px 0 0; padding: 20px; box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+  z-index: 1001; transform: translateY(100%); transition: transform 0.3s ease;
+}
+.date-picker--visible { transform: translateY(0); }
+.date-picker__header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.date-picker__title { font-size: 18px; font-weight: 600; }
+.date-picker__close {
+  width: 32px; height: 32px; border-radius: 50%; border: none;
+  background: #f5f5f5; color: #616161; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.date-picker__grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+.date-picker__day-header { text-align: center; font-size: 14px; color: #9e9e9e; font-weight: 500; padding: 8px 0; }
+.date-picker__day {
+  aspect-ratio: 1; border-radius: 50%; border: none; background: transparent;
+  font-size: 16px; color: #212121; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+}
+.date-picker__day:hover { background: #f5f5f5; }
+.date-picker__day--selected { background: var(--primary); color: #fff; font-weight: 600; }
+.date-picker__day--today { border: 2px solid var(--primary); }
+/* 开关 */
+.switch-field { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; }
+.switch { position: relative; width: 52px; height: 32px; flex-shrink: 0; }
+.switch__input { opacity: 0; width: 0; height: 0; }
+.switch__slider {
+  position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+  background: #e0e0e0; border-radius: 16px; transition: all 0.3s ease;
+}
+.switch__slider::before {
+  content: ""; position: absolute; height: 28px; width: 28px;
+  left: 2px; bottom: 2px; background: #fff; border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all 0.3s ease;
+}
+.switch__input:checked + .switch__slider { background: var(--primary); }
+.switch__input:checked + .switch__slider::before { transform: translateX(20px); }
+/* 图片上传 */
+.image-upload__grid { display: flex; flex-wrap: wrap; gap: 12px; }
+.image-upload__item {
+  position: relative; width: 80px; height: 80px; border-radius: 12px;
+  overflow: hidden; background: #f5f5f5;
+}
+.image-upload__img { width: 100%; height: 100%; object-fit: cover; }
+.image-upload__remove {
+  position: absolute; top: 4px; right: 4px; width: 24px; height: 24px;
+  border-radius: 50%; background: rgba(0,0,0,0.5); color: #fff; border: none;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;
+}
+.image-upload__add {
+  width: 80px; height: 80px; border: 2px dashed #e0e0e0; border-radius: 12px;
+  background: #fafafa; cursor: pointer; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; transition: all 0.2s;
+}
+.image-upload__add:hover { border-color: var(--primary); background: var(--primary-bg); }
+/* 语音上传 */
+.voice-upload__trigger {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 16px; background: var(--primary-bg); border: 1.5px solid var(--primary);
+  border-radius: 12px; cursor: pointer; transition: all 0.2s;
+}
+.voice-upload__trigger:active { background: var(--primary); }
+.voice-upload__trigger:active .voice-upload__text { color: #fff; }
+.voice-upload__text { font-size: 16px; color: var(--primary); font-weight: 500; }
+/* 视频上传 */
+.video-upload__area {
+  position: relative; width: 100%; height: 180px; border: 2px dashed #e0e0e0;
+  border-radius: 12px; background: #fafafa; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s;
+}
+.video-upload__area:hover { border-color: var(--primary); background: var(--primary-bg); }
+/* 用户选择 */
+.user-select__tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 12px; background: var(--primary-bg); border-radius: 16px;
+  font-size: 14px; color: var(--primary); margin: 4px;
+}
+/* 房间选择 */
+.room-select__tabs { display: flex; gap: 8px; margin-bottom: 12px; overflow-x: auto; }
+.room-select__tab {
+  padding: 8px 16px; border-radius: 20px; border: 1.5px solid #e0e0e0;
+  background: #fff; font-size: 14px; color: #616161; cursor: pointer; white-space: nowrap; transition: all 0.2s;
+}
+.room-select__tab--active { border-color: var(--primary); background: var(--primary-bg); color: var(--primary); font-weight: 500; }
+.room-select__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.room-select__room {
+  aspect-ratio: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; border: 1.5px solid #e0e0e0; border-radius: 8px;
+  font-size: 14px; color: #212121; cursor: pointer; transition: all 0.2s;
+}
+.room-select__room:hover { border-color: var(--primary); background: var(--primary-bg); }
+.room-select__room--selected { border-color: var(--primary); background: var(--primary); color: #fff; }
+/* 按钮 */
+.btn {
+  width: 100%; height: 48px; border-radius: 12px; border: none; font-size: 16px;
+  font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex;
+  align-items: center; justify-content: center; gap: 8px;
+}
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:active { background: var(--primary-dark); }
+.btn-outline { background: #fff; color: var(--primary); border: 1.5px solid var(--primary); }
+/* 状态标签 */
+.status-tag {
+  display: inline-block; padding: 4px 12px; border-radius: 12px;
+  font-size: 12px; font-weight: 500;
+}
+.status-pending { background: #fff3e0; color: #f57c00; }
+.status-processing { background: #e3f2fd; color: #1976d2; }
+.status-done { background: #e8f5e9; color: #388e3c; }
+.status-cancelled { background: #fafafa; color: #9e9e9e; }
+/* 底部导航 */
+.tabbar {
+  position: fixed; bottom: 0; left: 0; right: 0; height: 64px; background: #fff;
+  border-top: 1px solid #f0f0f0; display: flex; z-index: 100;
+}
+.tabbar__item {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 4px; color: #9e9e9e; font-size: 12px; cursor: pointer; transition: color 0.2s;
+}
+.tabbar__item--active { color: var(--primary); }
+.tabbar__icon { font-size: 24px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🏠 粤海物业 · 组件库</h1>
+  <p>主题色 #00dea0 · 住宅/园区精致风格</p>
+</div>
+
+<!-- 列表组件 -->
+<div class="section">
+  <div class="section-title">📋 列表组件</div>
+  <div class="list-item">
+    <div class="list-item__avatar">🔧</div>
+    <div class="list-item__content">
+      <div class="list-item__title">卫生间水管漏水报修</div>
+      <div class="list-item__desc">3栋2单元1502 · 2026-04-25</div>
+    </div>
+    <div class="list-item__action">></div>
+  </div>
+  <div class="list-item">
+    <div class="list-item__avatar">💡</div>
+    <div class="list-item__content">
+      <div class="list-item__title">电梯故障需紧急维修</div>
+      <div class="list-item__desc">A座3号电梯 · 2026-04-24</div>
+    </div>
+    <div class="list-item__action">></div>
+  </div>
+  <div class="list-item">
+    <div class="list-item__avatar">🎵</div>
+    <div class="list-item__content">
+      <div class="list-item__title">楼道照明灯更换</div>
+      <div class="list-item__desc">5栋1单元 · 2026-04-23</div>
+    </div>
+    <div class="list-item__action">></div>
+  </div>
+</div>
+
+<!-- 搜索组件 -->
+<div class="section">
+  <div class="section-title">🔍 搜索组件</div>
+  <div class="search-bar">
+    <div class="search-bar__input-wrapper">
+      <span class="search-bar__icon">🔍</span>
+      <input class="search-bar__input" placeholder="搜索报修、投诉、申请...">
+    </div>
+  </div>
+  <p style="margin-top:12px;color:#757575;font-size:14px;">搜索结果（单选）：</p>
+  <div class="search-result-item search-result-item--selected">
+    <div class="search-result-item__radio"></div>
+    <div class="list-item__content">
+      <div class="list-item__title">水电维修 - 张三</div>
+      <div class="list-item__desc">工号：A00123</div>
+    </div>
+  </div>
+  <div class="search-result-item">
+    <div class="search-result-item__radio"></div>
+    <div class="list-item__content">
+      <div class="list-item__title">电梯维修 - 李四</div>
+      <div class="list-item__desc">工号：A00124</div>
+    </div>
+  </div>
+  <p style="margin-top:12px;color:#757575;font-size:14px;">搜索结果（多选）：</p>
+  <div class="search-result-item search-result-item--selected">
+    <div class="search-result-item__checkbox">✓</div>
+    <div class="list-item__content">
+      <div class="list-item__title">3栋1单元</div>
+      <div class="list-item__desc">已选 · 120平米 · 三室两厅</div>
+    </div>
+  </div>
+  <div class="search-result-item">
+    <div class="search-result-item__checkbox"></div>
+    <div class="list-item__content">
+      <div class="list-item__title">3栋2单元</div>
+      <div class="list-item__desc">未选 · 90平米 · 两室一厅</div>
+    </div>
+  </div>
+</div>
+
+<!-- 文本输入组件 -->
+<div class="section">
+  <div class="section-title">⌨️ 文本输入组件</div>
+  <div class="input-field">
+    <label class="input-field__label">联系人姓名 *</label>
+    <input class="input-field__input" placeholder="请输入姓名">
+  </div>
+  <div class="input-field">
+    <label class="input-field__label">手机号码 *</label>
+    <input class="input-field__input" type="tel" placeholder="请输入11位手机号" maxlength="11">
+  </div>
+  <div class="input-field">
+    <label class="input-field__label">详细地址</label>
+    <input class="input-field__input" placeholder="小区名-栋号-单元-房号">
+  </div>
+  <div class="input-field">
+    <label class="input-field__label">问题描述 *</label>
+    <textarea class="textarea-field__textarea" placeholder="请详细描述您遇到的问题..." maxlength="500"></textarea>
+    <div class="textarea-field__count">0/500</div>
+  </div>
+</div>
+
+<!-- 下拉选项 -->
+<div class="section">
+  <div class="section-title">📋 下拉选项组件</div>
+  <div class="dropdown" id="dropdown1">
+    <label class="dropdown__label">报修类型 *</label>
+    <div class="dropdown__trigger" onclick="toggleDropdown('dropdown1')">
+      <span>请选择报修类型</span>
+      <span class="dropdown__arrow">▼</span>
+    </div>
+    <div class="dropdown__menu">
+      <div class="dropdown__option dropdown__option--selected">水电维修</div>
+      <div class="dropdown__option">电梯维修</div>
+      <div class="dropdown__option">门窗维修</div>
+      <div class="dropdown__option">家电维修</div>
+      <div class="dropdown__option">其他维修</div>
+    </div>
+  </div>
+  <div class="dropdown" id="dropdown2">
+    <label class="dropdown__label">紧急程度</label>
+    <div class="dropdown__trigger" onclick="toggleDropdown('dropdown2')">
+      <span>请选择紧急程度</span>
+      <span class="dropdown__arrow">▼</span>
+    </div>
+    <div class="dropdown__menu">
+      <div class="dropdown__option">普通（72小时内处理）</div>
+      <div class="dropdown__option">紧急（24小时内处理）</div>
+      <div class="dropdown__option">特急（2小时内处理）</div>
+    </div>
+  </div>
+</div>
+
+<!-- 日期选择 -->
+<div class="section">
+  <div class="section-title">📅 日期选择组件</div>
+  <div class="input-field">
+    <label class="input-field__label">预约上门时间 *</label>
+    <div class="date-display" onclick="toggleDatePicker()">
+      <span id="selectedDate">请选择日期</span>
+      <span>📅</span>
+    </div>
+  </div>
+</div>
+
+<!-- 开关选项 -->
+<div class="section">
+  <div class="section-title">🔘 开关选项组件</div>
+  <div class="switch-field">
+    <div>
+      <div style="font-size:16px;color:#212121;">开启消息通知</div>
+      <div style="font-size:14px;color:#9e9e9e;margin-top:4px;">接收报修进度推送</div>
+    </div>
+    <label class="switch">
+      <input type="checkbox" class="switch__input" checked>
+      <span class="switch__slider"></span>
+    </label>
+  </div>
+  <div class="switch-field">
+    <div>
+      <div style="font-size:16px;color:#212121;">开启访客提醒</div>
+      <div style="font-size:14px;color:#9e9e9e;margin-top:4px;">访客到达时通知我</div>
+    </div>
+    <label class="switch">
+      <input type="checkbox" class="switch__input">
+      <span class="switch__slider"></span>
+    </label>
+  </div>
+</div>
+
+<!-- 图片上传 -->
+<div class="section">
+  <div class="section-title">🖼️ 图片上传组件</div>
+  <div class="image-upload__grid">
+    <div class="image-upload__item">
+      <img class="image-upload__img" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect fill='%23e0e0e0' width='80' height='80'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%239e9e9e'%3E漏水%3C/text%3E%3C/svg%3E">
+      <button class="image-upload__remove">×</button>
+    </div>
+    <div class="image-upload__item">
+      <img class="image-upload__img" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect fill='%23e0e0e0' width='80' height='80'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%239e9e9e'%3E破损%3C/text%3E%3C/svg%3E">
+      <button class="image-upload__remove">×</button>
+    </div>
+    <div class="image-upload__add" onclick="alert('选择图片上传')">
+      <span style="font-size:32px;color:#bdbdbd;">+</span>
+      <span style="font-size:12px;color:#9e9e9e;">上传照片</span>
+    </div>
+  </div>
+</div>
+
+<!-- 语音上传 -->
+<div class="section">
+  <div class="section-title">🎤 语音上传组件</div>
+  <div class="voice-upload__trigger" onmousedown="startRecord()" onmouseup="stopRecord()">
+    <span style="font-size:24px;">🎤</span>
+    <span class="voice-upload__text">按住说话，描述问题</span>
+  </div>
+  <div style="margin-top:12px;padding:12px;background:#f5f5f5;border-radius:12px;display:flex;align-items:center;gap:12px;">
+    <button style="width:40px;height:40px;border-radius:50%;background:var(--primary);color:#fff;border:none;cursor:pointer;">▶</button>
+    <div style="flex:1;height:32px;background:linear-gradient(90deg,var(--primary) 0%,var(--primary) 30%,#e0e0e0 30%,#e0e0e0 100%);border-radius:4px;"></div>
+    <span style="font-size:14px;color:#616161;">15"</span>
+  </div>
+</div>
+
+<!-- 视频上传 -->
+<div class="section">
+  <div class="section-title">🎬 视频上传组件</div>
+  <div class="video-upload__area" onclick="alert('选择视频上传')">
+    <span style="font-size:48px;color:#bdbdbd;">🎬</span>
+    <span style="font-size:16px;color:#9e9e9e;margin-top:8px;">点击上传视频（可选）</span>
+    <span style="font-size:12px;color:#bdbdbd;margin-top:4px;">支持 MP4 格式，最大 100MB</span>
+  </div>
+</div>
+
+<!-- 用户选择 -->
+<div class="section">
+  <div class="section-title">👤 用户选择组件</div>
+  <div style="margin-bottom:8px;font-size:14px;color:#616161;">已选联系人：</div>
+  <div>
+    <span class="user-select__tag">张三 <span style="cursor:pointer;">×</span></span>
+    <span class="user-select__tag">李四 <span style="cursor:pointer;">×</span></span>
+  </div>
+  <div class="image-upload__add" style="margin-top:12px;width:100%;height:48px;border-radius:12px;flex-direction:row;">
+    <span style="font-size:20px;color:#bdbdbd;">+</span>
+    <span style="font-size:14px;color:#9e9e9e;">添加联系人</span>
+  </div>
+</div>
+
+<!-- 房间选择 -->
+<div class="section">
+  <div class="section-title">🏠 房间选择组件</div>
+  <div class="room-select__tabs">
+    <div class="room-select__tab room-select__tab--active">3栋</div>
+    <div class="room-select__tab">4栋</div>
+    <div class="room-select__tab">5栋</div>
+  </div>
+  <div class="room-select__grid">
+    <div class="room-select__room room-select__room--selected">
+      <div class="room-select__room-number">1501</div>
+      <div class="room-select__room-type">三室</div>
+    </div>
+    <div class="room-select__room">
+      <div class="room-select__room-number">1502</div>
+      <div class="room-select__room-type">两室</div>
+    </div>
+    <div class="room-select__room">
+      <div class="room-select__room-number">1601</div>
+      <div class="room-select__room-type">三室</div>
+    </div>
+    <div class="room-select__room">
+      <div class="room-select__room-number">1602</div>
+      <div class="room-select__room-type">两室</div>
+    </div>
+  </div>
+</div>
+
+<!-- 状态标签 -->
+<div class="section">
+  <div class="section-title">🏷️ 状态标签</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <span class="status-tag status-pending">待处理</span>
+    <span class="status-tag status-processing">处理中</span>
+    <span class="status-tag status-done">已完成</span>
+    <span class="status-tag status-cancelled">已取消</span>
+  </div>
+</div>
+
+<!-- 按钮 -->
+<div class="section">
+  <div class="section-title">🔘 按钮组件</div>
+  <button class="btn btn-primary" style="margin-bottom:12px;">提交工单</button>
+  <button class="btn btn-outline">取消</button>
+</div>
+
+<!-- 日期选择器弹窗 -->
+<div class="date-picker-mask" id="datePickerMask" onclick="toggleDatePicker()"></div>
+<div class="date-picker" id="datePicker">
+  <div class="date-picker__header">
+    <div class="date-picker__title">选择日期</div>
+    <button class="date-picker__close" onclick="toggleDatePicker()">×</button>
+  </div>
+  <div class="date-picker__grid" id="dateGrid"></div>
+</div>
+
+<div class="tabbar">
+  <div class="tabbar__item tabbar__item--active">
+    <div class="tabbar__icon">🏠</div>
+    <div>首页</div>
+  </div>
+  <div class="tabbar__item">
+    <div class="tabbar__icon">📋</div>
+    <div>工单</div>
+  </div>
+  <div class="tabbar__item">
+    <div class="tabbar__icon">💬</div>
+    <div>消息</div>
+  </div>
+  <div class="tabbar__item">
+    <div class="tabbar__icon">👤</div>
+    <div>我的</div>
+  </div>
+</div>
+
+<script>
+function toggleDropdown(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('dropdown--open');
+}
+function toggleDatePicker() {
+  document.getElementById('datePicker').classList.toggle('date-picker--visible');
+  document.getElementById('datePickerMask').classList.toggle('date-picker-mask--visible');
+  if (document.getElementById('datePicker').classList.contains('date-picker--visible')) {
+    renderCalendar();
+  }
+}
+function renderCalendar() {
+  const grid = document.getElementById('dateGrid');
+  const days = ['日','一','二','三','四','五','六'];
+  let html = days.map(d => `<div class="date-picker__day-header">${d}</div>`).join('');
+  const today = new Date();
+  for (let i = 0; i < 35; i++) {
+    const d = new Date(2026, 3, 28 + i); // April 2026
+    const isToday = d.getDate() === today.getDate() && d.getMonth() === today.getMonth();
+    const isSelected = i === 0;
+    html += `<div class="date-picker__day ${isSelected ? 'date-picker__day--selected' : ''} ${isToday ? 'date-picker__day--today' : ''}">${d.getDate()}</div>`;
+  }
+  grid.innerHTML = html;
+  grid.querySelectorAll('.date-picker__day').forEach(day => {
+    day.addEventListener('click', function() {
+      document.getElementById('selectedDate').textContent = '2026-04-' + this.textContent.padStart(2, '0');
+      toggleDatePicker();
+    });
+  });
+}
+function startRecord() { console.log('开始录音...'); }
+function stopRecord() { console.log('停止录音'); }
+// 关闭下拉
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.dropdown')) {
+    document.querySelectorAll('.dropdown--open').forEach(d => d.classList.remove('dropdown--open'));
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="residential">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>粤海物业 - 特殊人群关怀</title>
+<script src="api.js"></script>
+<style>
+:root {
+  --primary: #00dea0; --primary-light: #33e5b5; --primary-dark: #00b383; --primary-bg: #e8f5e9;
+  --blue: #228be6; --blue-light: #4dabf7; --blue-bg: #e7f5ff;
+  --orange: #fd7e14; --orange-light: #ff922b; --orange-bg: #fff4e6;
+  --gray-50: #fafafa; --gray-100: #f5f5f5; --gray-200: #eeeeee;
+  --gray-300: #e0e0e0; --gray-400: #bdbdbd; --gray-500: #9e9e9e; --gray-600: #757575;
+  --gray-700: #616161; --gray-800: #424242; --gray-900: #212121; --white: #ffffff;
+  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px; --radius-xl: 20px;
+  --shadow-card: 0 2px 12px rgba(0,0,0,0.08);
+  --shadow-float: 0 4px 20px rgba(0,0,0,0.12);
+}
+[data-theme="commercial"] {
+  --primary: #00dea0; --primary-light: #33e5b5; --primary-dark: #00b383; --primary-bg: #e8f5e9;
+  --accent: #2c3e50; --accent-light: #34495e; --accent-bg: #f0f2f5;
+  --radius-sm: 6px; --radius-md: 8px; --radius-lg: 10px; --radius-xl: 12px;
+  --shadow-card: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-float: 0 4px 12px rgba(0,0,0,0.1);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: var(--gray-100); color: var(--gray-900); font-size: 16px; line-height: 1.5;
+  padding-bottom: 80px; -webkit-font-smoothing: antialiased;
+}
+.header {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: #fff; padding: 16px; position: sticky; top: 0; z-index: 100;
+  box-shadow: var(--shadow-float);
+}
+[data-theme="commercial"] .header {
+  background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+}
+.header__top { display: flex; align-items: center; gap: 12px; }
+.header__back { font-size: 24px; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(255,255,255,0.2); }
+.header__title { font-size: 18px; font-weight: 600; }
+.care-container { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+.care-banner {
+  background: linear-gradient(135deg, var(--blue) 0%, var(--blue-light) 100%);
+  color: #fff; border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-float);
+}
+[data-theme="commercial"] .care-banner {
+  background: linear-gradient(90deg, var(--accent) 0%, var(--blue) 100%);
+}
+.care-banner__title { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+.care-banner__desc { font-size: 14px; opacity: 0.9; }
+.service-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+}
+.service-card {
+  background: var(--white); border-radius: var(--radius-lg); padding: 20px 16px;
+  box-shadow: var(--shadow-card); border: 1px solid var(--gray-200);
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  cursor: pointer; transition: transform 0.2s;
+}
+.service-card:active { transform: scale(0.98); }
+.service-card__icon { font-size: 32px; }
+.service-card__name { font-size: 14px; font-weight: 500; color: var(--gray-900); }
+.service-card__desc { font-size: 12px; color: var(--gray-600); text-align: center; }
+.section {
+  background: var(--white); border-radius: var(--radius-lg); padding: 16px;
+  box-shadow: var(--shadow-card); border: 1px solid var(--gray-200);
+}
+.section__title {
+  font-size: 16px; font-weight: 600; color: var(--gray-900); margin-bottom: 16px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section__title::before {
+  content: ''; display: inline-block; width: 4px; height: 18px;
+  background: var(--primary); border-radius: 2px;
+}
+.care-item {
+  display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--gray-200);
+}
+.care-item:last-child { border-bottom: none; }
+.care-item__icon {
+  width: 40px; height: 40px; border-radius: 50%; display: flex;
+  align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;
+}
+.care-item__icon--health { background: var(--primary-bg); }
+.care-item__icon--emergency { background: #fff0f0; }
+.care-item__icon--daily { background: var(--orange-bg); }
+.care-item__icon--medical { background: var(--blue-bg); }
+.care-item__info { flex: 1; }
+.care-item__name { font-size: 15px; color: var(--gray-900); margin-bottom: 4px; }
+.care-item__desc { font-size: 13px; color: var(--gray-600); }
+.care-item__time { font-size: 12px; color: var(--gray-500); margin-top: 4px; }
+.btn {
+  padding: 8px 16px; border-radius: var(--radius-sm); font-size: 14px;
+  border: none; cursor: pointer; transition: opacity 0.2s;
+}
+.btn--primary { background: var(--primary); color: #fff; }
+.btn--outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
+.btn:active { opacity: 0.9; }
+.tabbar {
+  position: fixed; bottom: 0; left: 0; right: 0; height: 64px; background: var(--white);
+  border-top: 1px solid var(--gray-200); display: flex; z-index: 100;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+}
+.tabbar__item {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 3px; color: var(--gray-500); font-size: 11px; cursor: pointer;
+}
+.tabbar__item--active { color: var(--primary); }
+.tabbar__icon { font-size: 24px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header__top">
+    <div class="header__back" onclick="history.back()">←</div>
+    <div class="header__title">特殊人群关怀</div>
+  </div>
+</div>
+
+<div class="care-container">
+  <!-- 关怀横幅 -->
+  <div class="care-banner">
+    <div class="care-banner__title">🌟 粤海物业关怀服务</div>
+    <div class="care-banner__desc">为老年人、残疾人等特殊人群提供专属关怀服务，让您生活更安心</div>
+  </div>
+
+  <!-- 关怀服务分类 -->
+  <div class="service-grid">
+    <div class="service-card" onclick="location.href='#health'">
+      <div class="service-card__icon">❤️</div>
+      <div class="service-card__name">健康关怀</div>
+      <div class="service-card__desc">定期体检、健康档案管理</div>
+    </div>
+    <div class="service-card" onclick="location.href='#emergency'">
+      <div class="service-card__icon">🆘</div>
+      <div class="service-card__name">紧急救助</div>
+      <div class="service-card__desc">一键呼叫、紧急联系人</div>
+    </div>
+    <div class="service-card" onclick="location.href='#daily'">
+      <div class="service-card__icon">🛒</div>
+      <div class="service-card__name">日常帮助</div>
+      <div class="service-card__desc">代买代办、家政优先</div>
+    </div>
+    <div class="service-card" onclick="location.href='#medical'">
+      <div class="service-card__icon">💊</div>
+      <div class="service-card__name">医疗协助</div>
+      <div class="service-card__desc">陪诊、用药提醒</div>
+    </div>
+  </div>
+
+  <!-- 健康关怀记录 -->
+  <div class="section" id="health">
+    <div class="section__title">❤️ 健康关怀记录</div>
+    <div class="care-item">
+      <div class="care-item__icon care-item__icon--health">🩺</div>
+      <div class="care-item__info">
+        <div class="care-item__name">免费血压测量</div>
+        <div class="care-item__desc">物业工作人员上门为老人测量血压</div>
+        <div class="care-item__time">2026-04-25 10:30</div>
+      </div>
+      <button class="btn btn--outline">详情</button>
+    </div>
+    <div class="care-item">
+      <div class="care-item__icon care-item__icon--health">📋</div>
+      <div class="care-item__info">
+        <div class="care-item__name">健康档案更新</div>
+        <div class="care-item__desc">更新老年人健康档案，新增血糖监测记录</div>
+        <div class="care-item__time">2026-04-20 14:15</div>
+      </div>
+      <button class="btn btn--outline">详情</button>
+    </div>
+    <div class="care-item">
+      <div class="care-item__icon care-item__icon--health">💉</div>
+      <div class="care-item__info">
+        <div class="care-item__name">疫苗接种提醒</div>
+        <div class="care-item__desc">提醒流感疫苗接种，协助预约社区医院</div>
+        <div class="care-item__time">2026-04-15 09:00</div>
+      </div>
+      <button class="btn btn--outline">详情</button>
+    </div>
+  </div>
+
+  <!-- 紧急救助设置 -->
+  <div class="section" id="emergency">
+    <div class="section__title">🆘 紧急救助设置</div>
+    <div class="care-item">
+      <div class="care-item__icon care-item__icon--emergency">📞</div>
+      <div class="care-item__info">
+        <div class="care-item__name">一键呼叫号码</div>
+        <div class="care-item__desc">已设置：物业前台 020-12345678</div>
+        <div class="care-item__time">当前状态：已启用</div>
+      </div>
+      <button class="btn btn--primary">修改</button>
+    </div>
+    <div class="care-item">
+      <div class="care-item__icon care-item__icon--emergency">👥</div>
+      <div class="care-item__info">
+        <div class="care-item__name">紧急联系人</div>
+        <div class="care-item__desc">张先生 13800138000（儿子）</div>
+        <div class="care-item__time">关系：直系亲属</div>
+      </div>
+      <button class="btn btn--primary">修改</button>
+    </div>
+  </div>
+
+  <!-- 日常帮助服务 -->
+  <div class="section" id="daily">
+    <div class="section__title">🛒 日常帮助服务</div>
+    <div class="care-item">
+      <div class="care-item__icon care-item__icon--daily">🛍️</div>
+      <div class="care-item__info">
+        <div class="care-item__name">代买代办服务</div>
+        <div class="care-item__desc">免费为行动不便老人提供代买菜、代缴费服务</div>
+        <div class="care-item__time">每周可预约3次</div>
+      </div>
+      <button class="btn btn--primary">预约</button>
+    </div>
+    <div class="care-item">
+      <div class="care-item__icon care-item__icon--daily">🧹</div>
+      <div class="care-item__info">
+        <div class="care-item__name">家政服务优先</div>
+        <div class="care-item__desc">特殊人群享受家政服务优先派单、9折优惠</div>
+        <div class="care-item__time">需提前验证身份</div>
+      </div>
+      <button class="btn btn--primary">申请</button>
+    </div>
+  </div>
+</div>
+
+<!-- 底部导航 -->
+<div class="tabbar">
+  <div class="tabbar__item" onclick="location.href='index.html'">
+    <div class="tabbar__icon">🏠</div>
+    <div>首页</div>
+  </div>
+  <div class="tabbar__item">
+    <div class="tabbar__icon">📋</div>
+    <div>申请</div>
+  </div>
+  <div class="tabbar__item">
+    <div class="tabbar__icon">🛎️</div>
+    <div>服务</div>
+  </div>
+  <div class="tabbar__item tabbar__item--active">
+    <div class="tabbar__icon">❤️</div>
+    <div>关怀</div>
+  </div>
+</div>
+
+</body>
+</html>
