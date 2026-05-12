@@ -49,8 +49,8 @@
         .btn-primary:hover { background: #40a9ff; }
         .btn-success { background: #52c41a; color: #fff; }
         .btn-success:hover { background: #73d13d; }
-        .btn-warning { background: #fa8c16; color: #fff; }
-        .btn-warning:hover { background: #ffa940; }
+        .btn-warning { background: #faad14; color: #fff; }
+        .btn-warning:hover { background: #ffc53d; }
         .btn-danger { background: #ff4d4f; color: #fff; }
         .btn-danger:hover { background: #ff7875; }
         .btn-default { background: #fff; color: #333; border: 1px solid #d9d9d9; }
@@ -284,7 +284,7 @@
         <!-- ===== 派单规则 ===== -->
         <div id="tab-dispatch" class="tab-panel">
             <div style="margin-bottom:16px;display:flex;justify-content:flex-end;">
-                <button class="btn btn-primary" onclick="showDispatchModal()">+ 新建派单规则</button>
+                <button class="btn btn-primary" onclick="showDispatchRuleModal()">+ 新建派单规则</button>
             </div>
             <div class="table-wrap">
                 <table>
@@ -480,6 +480,376 @@
         </div>
     </div>
 
+    <!-- ===== 模板创建/编辑弹窗 ===== -->
+    <div class="modal-overlay" id="templateModal">
+        <div class="modal" style="width:680px;">
+            <div class="modal-header">
+                <h3 id="templateModalTitle">新建模板</h3>
+                <button class="modal-close" onclick="closeModal('templateModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="tplEditId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>模板名称 <span class="required">*</span></label>
+                        <input type="text" id="tplName" placeholder="如: 每日品质检查模板">
+                    </div>
+                    <div class="form-group">
+                        <label>模板编号 <span class="required">*</span></label>
+                        <input type="text" id="tplCode" placeholder="如: TPL-QI-001">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>工单类型 <span class="required">*</span></label>
+                        <select id="tplType">
+                            <option value="quality">品质检查</option>
+                            <option value="equipment">设备巡查</option>
+                            <option value="comprehensive">综合巡查</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>关联分类</label>
+                        <select id="tplCategory"><option value="">请选择</option></select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>执行周期 <span class="required">*</span></label>
+                        <select id="tplCycleType" onchange="onCycleTypeChange()">
+                            <option value="daily">每日</option>
+                            <option value="weekly">每周</option>
+                            <option value="monthly">每月</option>
+                            <option value="quarterly">每季度</option>
+                            <option value="custom">自定义</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>周期值</label>
+                        <input type="number" id="tplCycleValue" value="1" min="1" placeholder="每N天/周/月">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>执行时间</label>
+                        <input type="time" id="tplExecTime" value="08:00">
+                    </div>
+                    <div class="form-group">
+                        <label>SLA等级</label>
+                        <select id="tplSlaLevel">
+                            <option value="L3">L3 - 中</option>
+                            <option value="L4">L4 - 低</option>
+                            <option value="L2">L2 - 高</option>
+                            <option value="L1">L1 - 紧急</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>巡检范围</label>
+                        <select id="tplScopeType">
+                            <option value="project">全项目</option>
+                            <option value="building">楼栋</option>
+                            <option value="area">区域</option>
+                            <option value="equipment">指定设备</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>状态</label>
+                        <select id="tplStatus">
+                            <option value="active">启用</option>
+                            <option value="inactive">停用</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>模板描述</label>
+                    <textarea id="tplDesc" placeholder="模板用途说明..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-default" onclick="closeModal('templateModal')">取消</button>
+                <button class="btn btn-primary" onclick="submitTemplate()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== SLA规则创建/编辑弹窗 ===== -->
+    <div class="modal-overlay" id="slaModal">
+        <div class="modal" style="width:560px;">
+            <div class="modal-header">
+                <h3 id="slaModalTitle">新建SLA规则</h3>
+                <button class="modal-close" onclick="closeModal('slaModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="slaEditId">
+                <div class="form-group">
+                    <label>规则名称 <span class="required">*</span></label>
+                    <input type="text" id="slaName" placeholder="如: 紧急工单SLA">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>SLA等级 <span class="required">*</span></label>
+                        <select id="slaLevel">
+                            <option value="L1">L1</option>
+                            <option value="L2">L2</option>
+                            <option value="L3">L3</option>
+                            <option value="L4">L4</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>等级名称 <span class="required">*</span></label>
+                        <input type="text" id="slaLevelName" placeholder="如: 紧急/高/中/低">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>对应优先级 <span class="required">*</span></label>
+                    <select id="slaPriority">
+                        <option value="urgent">紧急</option>
+                        <option value="high">高</option>
+                        <option value="medium">中</option>
+                        <option value="low">低</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>响应时限(分钟) <span class="required">*</span></label>
+                        <input type="number" id="slaResponseMin" value="60" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>完成时限(小时) <span class="required">*</span></label>
+                        <input type="number" id="slaCompleteHr" value="8" min="1">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>升级提醒时间(分钟)</label>
+                        <input type="number" id="slaEscalateMin" value="" placeholder="留空不升级">
+                    </div>
+                    <div class="form-group">
+                        <label>最大升级次数</label>
+                        <input type="number" id="slaEscalateCount" value="3" min="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>状态</label>
+                    <select id="slaEnabled">
+                        <option value="1">启用</option>
+                        <option value="0">禁用</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-default" onclick="closeModal('slaModal')">取消</button>
+                <button class="btn btn-primary" onclick="submitSlaRule()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 派单规则创建/编辑弹窗 ===== -->
+    <div class="modal-overlay" id="dispatchRuleModal">
+        <div class="modal" style="width:600px;">
+            <div class="modal-header">
+                <h3 id="dispatchRuleModalTitle">新建派单规则</h3>
+                <button class="modal-close" onclick="closeModal('dispatchRuleModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="drEditId">
+                <div class="form-group">
+                    <label>规则名称 <span class="required">*</span></label>
+                    <input type="text" id="drName" placeholder="如: 设备类工单派单规则">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>规则类型 <span class="required">*</span></label>
+                        <select id="drType">
+                            <option value="category">按分类</option>
+                            <option value="location">按位置</option>
+                            <option value="priority">按优先级</option>
+                            <option value="keyword">按关键词</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>优先级(数字越大越优先)</label>
+                        <input type="number" id="drPriority" value="10" min="1">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>匹配条件(JSON) <span class="required">*</span></label>
+                    <textarea id="drMatchCondition" placeholder='按分类: {"category_ids":["id1","id2"]}&#10;按位置: {"location_types":["building","area"]}&#10;按优先级: {"priorities":["urgent","high"]}&#10;按关键词: {"keywords":["漏水","停电"]}'></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>派单动作 <span class="required">*</span></label>
+                        <select id="drAction">
+                            <option value="assign_user">指定人员</option>
+                            <option value="assign_role">指定角色</option>
+                            <option value="assign_dept">指定部门</option>
+                            <option value="rotate">轮询</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>状态</label>
+                        <select id="drEnabled">
+                            <option value="1">启用</option>
+                            <option value="0">禁用</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>派单目标(JSON) <span class="required">*</span></label>
+                    <textarea id="drTarget" placeholder='指定人员: {"user_id":"xxx","user_name":"张三"}&#10;指定角色: {"role_id":"xxx","role_name":"维修员"}&#10;指定部门: {"dept_id":"xxx","dept_name":"工程部"}&#10;轮询: {"user_list":[{"user_id":"u1","user_name":"张三"},{"user_id":"u2","user_name":"李四"}]}'></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-default" onclick="closeModal('dispatchRuleModal')">取消</button>
+                <button class="btn btn-primary" onclick="submitDispatchRule()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 分类创建/编辑弹窗 ===== -->
+    <div class="modal-overlay" id="categoryModal">
+        <div class="modal" style="width:520px;">
+            <div class="modal-header">
+                <h3 id="categoryModalTitle">新建分类</h3>
+                <button class="modal-close" onclick="closeModal('categoryModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="catEditId">
+                <div class="form-group">
+                    <label>分类名称 <span class="required">*</span></label>
+                    <input type="text" id="catName" placeholder="如: 电气设备">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>分类编码 <span class="required">*</span></label>
+                        <input type="text" id="catCode" placeholder="如: EQ-ELEC">
+                    </div>
+                    <div class="form-group">
+                        <label>分类类型 <span class="required">*</span></label>
+                        <select id="catType">
+                            <option value="quality">品质检查</option>
+                            <option value="equipment">设备巡查</option>
+                            <option value="comprehensive">综合巡查</option>
+                            <option value="repair">报事报修</option>
+                            <option value="other">其他</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>上级分类</label>
+                        <select id="catParent"><option value="">无(顶级分类)</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>排序号</label>
+                        <input type="number" id="catSort" value="0" min="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>分类描述</label>
+                    <textarea id="catDesc" placeholder="分类说明..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-default" onclick="closeModal('categoryModal')">取消</button>
+                <button class="btn btn-primary" onclick="submitCategory()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 评价弹窗 ===== -->
+    <div class="modal-overlay" id="evaluateModal">
+        <div class="modal" style="width:440px;">
+            <div class="modal-header">
+                <h3>工单评价</h3>
+                <button class="modal-close" onclick="closeModal('evaluateModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="evalOrderId">
+                <div class="form-group">
+                    <label>评价分数 <span class="required">*</span></label>
+                    <div style="display:flex;gap:8px;margin-top:6px;" id="evalStars">
+                        <span class="eval-star" data-score="1" onclick="setEvalScore(1)" style="font-size:28px;cursor:pointer;color:#ddd;">★</span>
+                        <span class="eval-star" data-score="2" onclick="setEvalScore(2)" style="font-size:28px;cursor:pointer;color:#ddd;">★</span>
+                        <span class="eval-star" data-score="3" onclick="setEvalScore(3)" style="font-size:28px;cursor:pointer;color:#ddd;">★</span>
+                        <span class="eval-star" data-score="4" onclick="setEvalScore(4)" style="font-size:28px;cursor:pointer;color:#ddd;">★</span>
+                        <span class="eval-star" data-score="5" onclick="setEvalScore(5)" style="font-size:28px;cursor:pointer;color:#ddd;">★</span>
+                    </div>
+                    <input type="hidden" id="evalScore" value="5">
+                </div>
+                <div class="form-group">
+                    <label>评价内容</label>
+                    <textarea id="evalContent" placeholder="请输入评价内容..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-default" onclick="closeModal('evaluateModal')">取消</button>
+                <button class="btn btn-primary" onclick="submitEvaluate()">提交评价</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 转单弹窗 ===== -->
+    <div class="modal-overlay" id="transferModal">
+        <div class="modal" style="width:480px;">
+            <div class="modal-header">
+                <h3>工单转单</h3>
+                <button class="modal-close" onclick="closeModal('transferModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="transferOrderId">
+                <div class="form-group">
+                    <label>新执行人ID <span class="required">*</span></label>
+                    <input type="text" id="transferAssigneeId" placeholder="请输入新执行人ID">
+                </div>
+                <div class="form-group">
+                    <label>新执行人姓名 <span class="required">*</span></label>
+                    <input type="text" id="transferAssigneeName" placeholder="请输入新执行人姓名">
+                </div>
+                <div class="form-group">
+                    <label>转单原因 <span class="required">*</span></label>
+                    <textarea id="transferReason" placeholder="请输入转单原因..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-default" onclick="closeModal('transferModal')">取消</button>
+                <button class="btn btn-primary" onclick="submitTransfer()">确认转单</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 催办弹窗 ===== -->
+    <div class="modal-overlay" id="remindModal">
+        <div class="modal" style="width:480px;">
+            <div class="modal-header">
+                <h3>工单催办</h3>
+                <button class="modal-close" onclick="closeModal('remindModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="remindOrderId">
+                <div class="form-group">
+                    <label>催办渠道</label>
+                    <select id="remindChannel">
+                        <option value="system">站内消息</option>
+                        <option value="push">推送通知</option>
+                        <option value="sms">短信</option>
+                        <option value="dingtalk">钉钉</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>催办内容</label>
+                    <textarea id="remindContent" placeholder="请输入催办内容（留空使用默认）"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-default" onclick="closeModal('remindModal')">取消</button>
+                <button class="btn btn-warning" onclick="submitRemind()">发送催办</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ========== 配置 ==========
         const API_BASE = '/api/smart-wo';
@@ -579,8 +949,9 @@
                     <td class="actions">
                         <a onclick="viewOrder('${o.fid}')">详情</a>
                         ${o.status === 'pending_dispatch' ? `<a onclick="showDispatchModal('${o.fid}')">派单</a>` : ''}
-                        ${o.status === 'in_progress' ? `<a onclick="completeOrder('${o.fid}')">完成</a>` : ''}
+                        ${o.status === 'in_progress' ? `<a onclick="completeOrder('${o.fid}')">完成</a><a onclick="showTransferModal('${o.fid}')">转单</a><a onclick="showRemindModal('${o.fid}')">催办</a>` : ''}
                         ${o.status === 'completed' ? `<a onclick="reviewOrder('${o.fid}')">审核</a>` : ''}
+                        ${o.status === 'closed' && !o.fevaluation_score ? `<a onclick="showEvaluateModal('${o.fid}')">评价</a>` : ''}
                         ${['pending_dispatch','dispatched'].includes(o.status) ? `<a class="danger" onclick="cancelOrder('${o.fid}')">取消</a>` : ''}
                     </td>
                 </tr>`;
@@ -713,8 +1084,16 @@
             // 底部操作按钮
             let footer = '<button class="btn btn-default" onclick="closeModal(\'detailModal\')">关闭</button>';
             if (o.status === 'pending_dispatch') footer += '<button class="btn btn-primary" onclick="closeModal(\'detailModal\');showDispatchModal(\'' + fid + '\')">派单</button>';
-            if (o.status === 'in_progress') footer += '<button class="btn btn-success" onclick="completeOrder(\'' + fid + '\')">完成</button>';
+            if (o.status === 'in_progress') {
+                footer += '<button class="btn btn-success" onclick="completeOrder(\'' + fid + '\')">完成</button>';
+                footer += '<button class="btn btn-default" onclick="showTransferModal(\'' + fid + '\')">转单</button>';
+                footer += '<button class="btn btn-warning" onclick="showRemindModal(\'' + fid + '\')">催办</button>';
+            }
+            if (o.status === 'dispatched') {
+                footer += '<button class="btn btn-warning" onclick="showRemindModal(\'' + fid + '\')">催办</button>';
+            }
             if (o.status === 'completed') footer += '<button class="btn btn-primary" onclick="reviewOrder(\'' + fid + '\')">审核</button>';
+            if (o.status === 'closed' && !o.fevaluation_score) footer += '<button class="btn btn-primary" onclick="showEvaluateModal(\'' + fid + '\')">评价</button>';
             document.getElementById('detailFooter').innerHTML = footer;
         }
         
@@ -943,8 +1322,8 @@
                             <td><span class="tag tag-orange">${esc(t.sla_level || '-')}</span></td>
                             <td><span class="tag ${t.status === 'active' ? 'tag-green' : 'tag-gray'}">${t.status === 'active' ? '启用' : '停用'}</span></td>
                             <td class="actions">
-                                <a onclick="alert('模板编辑功能开发中')">编辑</a>
-                                <a onclick="alert('查看检查项功能开发中')">检查项</a>
+                                <a onclick="showTemplateModal('${t.fid}')">编辑</a>
+                                <a onclick="alert('检查项管理将在下一期完善')">检查项</a>
                                 <a class="danger" onclick="deleteTemplate('${t.fid}')">删除</a>
                             </td>
                         </tr>
@@ -955,7 +1334,51 @@
             }
         }
         
-        function showTemplateModal() { alert('模板创建功能开发中，请通过API创建'); }
+        function showTemplateModal(editId) {
+            document.getElementById('tplEditId').value = editId || '';
+            document.getElementById('templateModalTitle').textContent = editId ? '编辑模板' : '新建模板';
+            if (!editId) {
+                document.getElementById('tplName').value = '';
+                document.getElementById('tplCode').value = '';
+                document.getElementById('tplType').value = 'quality';
+                document.getElementById('tplCategory').value = '';
+                document.getElementById('tplCycleType').value = 'daily';
+                document.getElementById('tplCycleValue').value = '1';
+                document.getElementById('tplExecTime').value = '08:00';
+                document.getElementById('tplSlaLevel').value = 'L3';
+                document.getElementById('tplScopeType').value = 'project';
+                document.getElementById('tplStatus').value = 'active';
+                document.getElementById('tplDesc').value = '';
+            }
+            loadCategoryOptions();
+            document.getElementById('templateModal').classList.add('show');
+        }
+
+        async function submitTemplate() {
+            const editId = document.getElementById('tplEditId').value;
+            const body = {
+                ftemplate_name: document.getElementById('tplName').value,
+                ftemplate_code: document.getElementById('tplCode').value,
+                fwo_type: document.getElementById('tplType').value,
+                fcategory_id: document.getElementById('tplCategory').value,
+                fcycle_type: document.getElementById('tplCycleType').value,
+                fcycle_value: parseInt(document.getElementById('tplCycleValue').value) || 1,
+                fexec_time: document.getElementById('tplExecTime').value,
+                fsla_level: document.getElementById('tplSlaLevel').value,
+                fscope_type: document.getElementById('tplScopeType').value,
+                fstatus: document.getElementById('tplStatus').value,
+                fdescription: document.getElementById('tplDesc').value,
+            };
+            if (!body.ftemplate_name || !body.ftemplate_code) { alert('请填写模板名称和编号'); return; }
+            try {
+                const url = editId ? `${API_BASE}/templates/${editId}` : `${API_BASE}/templates`;
+                const method = editId ? 'PUT' : 'POST';
+                const res = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+                const data = await res.json();
+                if (data.code === 200) { alert(editId ? '更新成功' : '创建成功'); closeModal('templateModal'); loadTemplates(); }
+                else alert(data.message || '操作失败');
+            } catch(e) { alert('操作失败'); }
+        }
         async function deleteTemplate(fid) {
             if (!confirm('确定删除此模板？')) return;
             try {
@@ -982,7 +1405,7 @@
                             <div class="rule-header">
                                 <div class="rule-name">${esc(r.rule_name)} <span class="tag ${r.is_enabled ? 'tag-green' : 'tag-gray'}">${r.is_enabled ? '启用' : '禁用'}</span></div>
                                 <div class="actions">
-                                    <a onclick="alert('编辑功能开发中')">编辑</a>
+                                    <a onclick="showSlaModal('${r.fid}')">编辑</a>
                                     <a class="danger" onclick="deleteSlaRule('${r.fid}')">删除</a>
                                 </div>
                             </div>
@@ -1001,7 +1424,46 @@
             }
         }
         
-        function showSlaModal() { alert('SLA规则创建功能开发中，请通过API创建'); }
+        function showSlaModal(editId) {
+            document.getElementById('slaEditId').value = editId || '';
+            document.getElementById('slaModalTitle').textContent = editId ? '编辑SLA规则' : '新建SLA规则';
+            if (!editId) {
+                document.getElementById('slaName').value = '';
+                document.getElementById('slaLevel').value = 'L3';
+                document.getElementById('slaLevelName').value = '中';
+                document.getElementById('slaPriority').value = 'medium';
+                document.getElementById('slaResponseMin').value = '60';
+                document.getElementById('slaCompleteHr').value = '8';
+                document.getElementById('slaEscalateMin').value = '';
+                document.getElementById('slaEscalateCount').value = '3';
+                document.getElementById('slaEnabled').value = '1';
+            }
+            document.getElementById('slaModal').classList.add('show');
+        }
+
+        async function submitSlaRule() {
+            const editId = document.getElementById('slaEditId').value;
+            const body = {
+                frule_name: document.getElementById('slaName').value,
+                fsla_level: document.getElementById('slaLevel').value,
+                flevel_name: document.getElementById('slaLevelName').value,
+                fpriority: document.getElementById('slaPriority').value,
+                fresponse_minutes: parseInt(document.getElementById('slaResponseMin').value) || 60,
+                fcomplete_hours: parseInt(document.getElementById('slaCompleteHr').value) || 8,
+                fescalate_minutes: parseInt(document.getElementById('slaEscalateMin').value) || null,
+                fescalate_count: parseInt(document.getElementById('slaEscalateCount').value) || 3,
+                fis_enabled: parseInt(document.getElementById('slaEnabled').value),
+            };
+            if (!body.frule_name || !body.flevel_name) { alert('请填写规则名称和等级名称'); return; }
+            try {
+                const url = editId ? `${API_BASE}/sla-rules/${editId}` : `${API_BASE}/sla-rules`;
+                const method = editId ? 'PUT' : 'POST';
+                const res = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+                const data = await res.json();
+                if (data.code === 200) { alert(editId ? '更新成功' : '创建成功'); closeModal('slaModal'); loadSlaRules(); }
+                else alert(data.message || '操作失败');
+            } catch(e) { alert('操作失败'); }
+        }
         async function deleteSlaRule(fid) {
             if (!confirm('确定删除此SLA规则？')) return;
             try {
@@ -1033,7 +1495,7 @@
                             <td>${r.priority}</td>
                             <td><span class="tag ${r.is_enabled ? 'tag-green' : 'tag-gray'}">${r.is_enabled ? '启用' : '禁用'}</span></td>
                             <td class="actions">
-                                <a onclick="alert('编辑功能开发中')">编辑</a>
+                                <a onclick="showDispatchRuleModal('${r.fid}')">编辑</a>
                                 <a class="danger" onclick="deleteDispatchRule('${r.fid}')">删除</a>
                             </td>
                         </tr>
@@ -1044,7 +1506,47 @@
             }
         }
         
-        function showDispatchModal() { alert('派单规则创建功能开发中，请通过API创建'); }
+        function showDispatchRuleModal(editId) {
+            document.getElementById('drEditId').value = editId || '';
+            document.getElementById('dispatchRuleModalTitle').textContent = editId ? '编辑派单规则' : '新建派单规则';
+            if (!editId) {
+                document.getElementById('drName').value = '';
+                document.getElementById('drType').value = 'category';
+                document.getElementById('drPriority').value = '10';
+                document.getElementById('drMatchCondition').value = '';
+                document.getElementById('drAction').value = 'assign_user';
+                document.getElementById('drTarget').value = '';
+                document.getElementById('drEnabled').value = '1';
+            }
+            document.getElementById('dispatchRuleModal').classList.add('show');
+        }
+
+        async function submitDispatchRule() {
+            const editId = document.getElementById('drEditId').value;
+            let matchCondition, dispatchTarget;
+            try {
+                matchCondition = JSON.parse(document.getElementById('drMatchCondition').value || '{}');
+                dispatchTarget = JSON.parse(document.getElementById('drTarget').value || '{}');
+            } catch(e) { alert('匹配条件和派单目标必须是合法JSON'); return; }
+            const body = {
+                frule_name: document.getElementById('drName').value,
+                frule_type: document.getElementById('drType').value,
+                fpriority: parseInt(document.getElementById('drPriority').value) || 10,
+                fmatch_condition: JSON.stringify(matchCondition),
+                fdispatch_action: document.getElementById('drAction').value,
+                fdispatch_target: JSON.stringify(dispatchTarget),
+                fis_enabled: parseInt(document.getElementById('drEnabled').value),
+            };
+            if (!body.frule_name) { alert('请填写规则名称'); return; }
+            try {
+                const url = editId ? `${API_BASE}/dispatch-rules/${editId}` : `${API_BASE}/dispatch-rules`;
+                const method = editId ? 'PUT' : 'POST';
+                const res = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+                const data = await res.json();
+                if (data.code === 200) { alert(editId ? '更新成功' : '创建成功'); closeModal('dispatchRuleModal'); loadDispatchRules(); }
+                else alert(data.message || '操作失败');
+            } catch(e) { alert('操作失败'); }
+        }
         async function deleteDispatchRule(fid) {
             if (!confirm('确定删除此派单规则？')) return;
             try {
@@ -1078,7 +1580,7 @@
                             <td>${c.parent_id ? '-' : '顶级'}</td>
                             <td>${c.sort_order}</td>
                             <td class="actions">
-                                <a onclick="alert('编辑功能开发中')">编辑</a>
+                                <a onclick="showCategoryModal('${c.fid}')">编辑</a>
                                 <a class="danger" onclick="deleteCategory('${c.fid}')">删除</a>
                             </td>
                         </tr>
@@ -1089,7 +1591,41 @@
             }
         }
         
-        function showCategoryModal() { alert('分类创建功能开发中，请通过API创建'); }
+        function showCategoryModal(editId) {
+            document.getElementById('catEditId').value = editId || '';
+            document.getElementById('categoryModalTitle').textContent = editId ? '编辑分类' : '新建分类';
+            if (!editId) {
+                document.getElementById('catName').value = '';
+                document.getElementById('catCode').value = '';
+                document.getElementById('catType').value = 'quality';
+                document.getElementById('catParent').value = '';
+                document.getElementById('catSort').value = '0';
+                document.getElementById('catDesc').value = '';
+            }
+            loadParentCategoryOptions();
+            document.getElementById('categoryModal').classList.add('show');
+        }
+
+        async function submitCategory() {
+            const editId = document.getElementById('catEditId').value;
+            const body = {
+                fcategory_name: document.getElementById('catName').value,
+                fcategory_code: document.getElementById('catCode').value,
+                fcategory_type: document.getElementById('catType').value,
+                fparent_id: document.getElementById('catParent').value || null,
+                fsort_order: parseInt(document.getElementById('catSort').value) || 0,
+                fdescription: document.getElementById('catDesc').value,
+            };
+            if (!body.fcategory_name || !body.fcategory_code) { alert('请填写分类名称和编码'); return; }
+            try {
+                const url = editId ? `${API_BASE}/categories/${editId}` : `${API_BASE}/categories`;
+                const method = editId ? 'PUT' : 'POST';
+                const res = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+                const data = await res.json();
+                if (data.code === 200) { alert(editId ? '更新成功' : '创建成功'); closeModal('categoryModal'); loadCategories(); }
+                else alert(data.message || '操作失败');
+            } catch(e) { alert('操作失败'); }
+        }
         async function deleteCategory(fid) {
             if (!confirm('确定删除此分类？')) return;
             try {
@@ -1100,6 +1636,111 @@
             } catch(e) { alert('删除失败'); }
         }
         
+        // ========== 评价 ==========
+        function setEvalScore(score) {
+            document.getElementById('evalScore').value = score;
+            document.querySelectorAll('.eval-star').forEach(s => {
+                s.style.color = parseInt(s.dataset.score) <= score ? '#faad14' : '#ddd';
+            });
+        }
+
+        function showEvaluateModal(fid) {
+            document.getElementById('evalOrderId').value = fid;
+            document.getElementById('evalScore').value = 5;
+            document.getElementById('evalContent').value = '';
+            setEvalScore(5);
+            document.getElementById('evaluateModal').classList.add('show');
+        }
+
+        async function submitEvaluate() {
+            const fid = document.getElementById('evalOrderId').value;
+            const body = {
+                fevaluation_score: parseInt(document.getElementById('evalScore').value),
+                fevaluation_content: document.getElementById('evalContent').value,
+            };
+            try {
+                const res = await fetch(`${API_BASE}/orders/${fid}/evaluate`, {
+                    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body)
+                });
+                const data = await res.json();
+                if (data.code === 200) { alert('评价成功'); closeModal('evaluateModal'); loadOrders(); }
+                else alert(data.message || '评价失败');
+            } catch(e) { alert('评价失败'); }
+        }
+
+        // ========== 转单 ==========
+        function showTransferModal(fid) {
+            document.getElementById('transferOrderId').value = fid;
+            document.getElementById('transferAssigneeId').value = '';
+            document.getElementById('transferAssigneeName').value = '';
+            document.getElementById('transferReason').value = '';
+            document.getElementById('transferModal').classList.add('show');
+        }
+
+        async function submitTransfer() {
+            const fid = document.getElementById('transferOrderId').value;
+            const assigneeId = document.getElementById('transferAssigneeId').value;
+            const assigneeName = document.getElementById('transferAssigneeName').value;
+            const reason = document.getElementById('transferReason').value;
+            if (!assigneeId || !assigneeName) { alert('请填写新执行人信息'); return; }
+            if (!reason) { alert('请填写转单原因'); return; }
+            try {
+                const res = await fetch(`${API_BASE}/orders/${fid}/transfer`, {
+                    method: 'POST', headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ fassignee_id: assigneeId, fassignee_name: assigneeName, freason: reason })
+                });
+                const data = await res.json();
+                if (data.code === 200) { alert('转单成功'); closeModal('transferModal'); closeModal('detailModal'); loadOrders(); }
+                else alert(data.message || '转单失败');
+            } catch(e) { alert('转单失败'); }
+        }
+
+        // ========== 催办 ==========
+        function showRemindModal(fid) {
+            document.getElementById('remindOrderId').value = fid;
+            document.getElementById('remindChannel').value = 'system';
+            document.getElementById('remindContent').value = '';
+            document.getElementById('remindModal').classList.add('show');
+        }
+
+        async function submitRemind() {
+            const fid = document.getElementById('remindOrderId').value;
+            const body = {
+                freminder_channel: document.getElementById('remindChannel').value,
+                freminder_content: document.getElementById('remindContent').value,
+            };
+            try {
+                const res = await fetch(`${API_BASE}/orders/${fid}/remind`, {
+                    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body)
+                });
+                const data = await res.json();
+                if (data.code === 200) { alert('催办已发送'); closeModal('remindModal'); }
+                else alert(data.message || '催办失败');
+            } catch(e) { alert('催办失败'); }
+        }
+
+        // ========== 辅助函数 ==========
+        function onCycleTypeChange() {
+            const type = document.getElementById('tplCycleType').value;
+            const cv = document.getElementById('tplCycleValue');
+            cv.disabled = (type === 'daily');
+            if (type === 'daily') cv.value = '1';
+        }
+
+        async function loadParentCategoryOptions() {
+            try {
+                const res = await fetch(`${API_BASE}/categories`);
+                const data = await res.json();
+                if (data.code === 200 && data.data) {
+                    const sel = document.getElementById('catParent');
+                    sel.innerHTML = '<option value="">无(顶级分类)</option>';
+                    data.data.forEach(c => {
+                        sel.innerHTML += `<option value="${c.fid}">${esc(c.fcategory_name)}</option>`;
+                    });
+                }
+            } catch(e) {}
+        }
+
         // ========== 工具函数 ==========
         function esc(str) {
             if (!str) return '';

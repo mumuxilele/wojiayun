@@ -186,12 +186,53 @@ class SmartWorkOrderService(BaseService):
                                     action="create", detail=f"创建工单: {wo_no}")
 
             self.commit()
+
+            # 尝试自动派单
+            auto_result = self._try_auto_dispatch(fec_id, fproject_id, wo, kwargs)
+
             logger.info(f"创建工单成功: {wo_no}")
-            return self.success(self._to_dict(wo), message="工单创建成功")
+            result = self._to_dict(wo)
+            if auto_result:
+                result["auto_dispatch"] = auto_result
+            return self.success(result, message="工单创建成功")
         except Exception as e:
             self.rollback()
             logger.error(f"创建工单失败: {str(e)}", exc_info=True)
             return self.error(f"创建工单失败: {str(e)}")
+
+    def _try_auto_dispatch(self, fec_id, fproject_id, wo, kwargs):
+        """创建工单后尝试自动派单"""
+        try:
+            from service.wo_rule_service import WoRuleService
+            rule_svc = WoRuleService(self.db)
+            result = rule_svc.auto_dispatch(
+                fec_id, fproject_id,
+                category_id=wo.fcategory_id or "",
+                location_type=wo.flocation_type or "",
+                priority=wo.fpriority or "",
+                keyword=wo.ftitle or ""
+            )
+            if result.get("code") == 200 and result.get("data"):
+                target = result["data"]
+                dispatch_action = target.get("dispatch_action", "")
+                dispatch_target = target.get("dispatch_target", {})
+                assignee_id = dispatch_target.get("user_id", "")
+                assignee_name = dispatch_target.get("user_name", "")
+                if assignee_id and assignee_name:
+                    dispatch_result = self.dispatch_work_order(
+                        fec_id, fproject_id, wo.fid,
+                        assignee_id=assignee_id,
+                        assignee_name=assignee_name,
+                        operator_id=kwargs.get("fcreate_user_id", "system"),
+                        operator_name=kwargs.get("fcreate_user_name", "系统自动"),
+                        opinion=f"自动派单(规则: {target.get('rule_name', '')})",
+                        dispatch_type="auto"
+                    )
+                    if dispatch_result.get("code") == 200:
+                        return {"rule_name": target.get("rule_name"), "assignee_name": assignee_name}
+        except Exception as e:
+            logger.warning(f"自动派单尝试失败(不影响工单创建): {str(e)}")
+        return None
 
     def dispatch_work_order(self, fec_id: str, fproject_id: str, fid: str,
                             assignee_id: str, assignee_name: str,
