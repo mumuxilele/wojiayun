@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>智慧工单 - 员工端</title>
+    <style>
+        :root {
+            --primary: #00dea0; --primary-dark: #00b383; --primary-bg: #e8f5e9;
+            --accent: #2c3e50; --accent-light: #34495e;
+            --g50: #fafafa; --g100: #f5f5f5; --g200: #eee; --g300: #e0e0e0;
+            --g400: #bdbdbd; --g500: #9e9e9e; --g600: #757575; --g700: #616161;
+            --g800: #424242; --g900: #212121; --white: #fff;
+            --red: #f44336; --orange: #ff9800; --blue: #2196f3; --green: #00c853;
+            --purple: #722ed1;
+            --r: 8px; --shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--g100); color: var(--g900); font-size: 15px; padding-bottom: 70px; }
+        
+        /* 顶部 */
+        .header { background: linear-gradient(135deg, #11998e, #38ef7d); color: #fff; padding: 14px 16px; position: sticky; top: 0; z-index: 100; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        .header-back { font-size: 20px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(255,255,255,0.2); cursor: pointer; text-decoration: none; color: #fff; }
+        .header-title { font-size: 17px; font-weight: 600; flex: 1; }
+        .header-badge { background: var(--red); color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+        
+        /* 统计卡片 */
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 12px 16px; }
+        .stat-item { background: var(--white); border-radius: var(--r); padding: 10px 8px; text-align: center; box-shadow: var(--shadow); }
+        .stat-num { font-size: 22px; font-weight: 700; }
+        .stat-num.orange { color: var(--orange); }
+        .stat-num.blue { color: var(--blue); }
+        .stat-num.red { color: var(--red); }
+        .stat-num.green { color: var(--green); }
+        .stat-label { font-size: 11px; color: var(--g500); margin-top: 2px; }
+        
+        /* Tab */
+        .tabs { display: flex; background: var(--white); padding: 0 16px; gap: 0; overflow-x: auto; border-bottom: 1px solid var(--g200); }
+        .tab { padding: 10px 14px; font-size: 13px; color: var(--g600); cursor: pointer; white-space: nowrap; border-bottom: 2px solid transparent; }
+        .tab.active { color: var(--primary-dark); border-bottom-color: var(--primary-dark); font-weight: 600; }
+        
+        /* 搜索 */
+        .search { padding: 10px 16px; display: flex; gap: 8px; }
+        .search input { flex: 1; padding: 9px 12px; border: 1px solid var(--g300); border-radius: var(--r); font-size: 13px; outline: none; background: var(--white); }
+        .search input:focus { border-color: var(--primary); }
+        
+        /* 工单列表 */
+        .list { padding: 0 16px; }
+        .card { background: var(--white); border-radius: var(--r); padding: 14px; margin-bottom: 10px; box-shadow: var(--shadow); border-left: 4px solid var(--primary); }
+        .card.urgent { border-left-color: var(--red); }
+        .card.high { border-left-color: var(--orange); }
+        .card.overdue { border-left-color: var(--red); background: #fff5f5; }
+        .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+        .card-title { font-size: 14px; font-weight: 600; flex: 1; margin-right: 8px; }
+        .card-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; color: #fff; white-space: nowrap; }
+        .badge-pending { background: var(--orange); }
+        .badge-dispatched { background: var(--blue); }
+        .badge-progress { background: var(--primary-dark); }
+        .badge-completed { background: var(--purple); }
+        .badge-closed { background: var(--green); }
+        .badge-cancelled { background: var(--g400); }
+        .badge-overdue { background: var(--red); }
+        .card-desc { font-size: 12px; color: var(--g600); margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .card-meta { display: flex; flex-wrap: wrap; gap: 12px; font-size: 11px; color: var(--g500); }
+        .card-meta span { display: flex; align-items: center; gap: 3px; }
+        .card-actions { display: flex; gap: 8px; margin-top: 10px; justify-content: flex-end; flex-wrap: wrap; }
+        .btn { padding: 6px 14px; border-radius: 6px; font-size: 12px; border: none; cursor: pointer; font-weight: 500; }
+        .btn-primary { background: var(--primary-dark); color: #fff; }
+        .btn-blue { background: var(--blue); color: #fff; }
+        .btn-orange { background: var(--orange); color: #fff; }
+        .btn-red { background: var(--red); color: #fff; }
+        .btn-outline { background: transparent; border: 1px solid var(--g300); color: var(--g700); }
+        .btn:active { opacity: 0.8; }
+        
+        /* 底部导航 */
+        .tabbar { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: var(--white); border-top: 1px solid var(--g200); display: flex; z-index: 100; }
+        .tabbar-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: var(--g500); font-size: 10px; cursor: pointer; text-decoration: none; }
+        .tabbar-item.active { color: var(--primary-dark); }
+        .tabbar-icon { font-size: 20px; }
+        
+        /* 弹窗 */
+        .modal-mask { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; }
+        .modal-mask.show { display: flex; align-items: flex-end; }
+        .modal-sheet { background: var(--white); border-radius: 16px 16px 0 0; width: 100%; max-height: 85vh; overflow-y: auto; padding: 20px 16px; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .modal-header h3 { font-size: 16px; }
+        .modal-close { font-size: 22px; color: var(--g500); cursor: pointer; background: none; border: none; }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 13px; color: var(--g700); margin-bottom: 5px; font-weight: 500; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 9px 12px; border: 1px solid var(--g300); border-radius: 6px; font-size: 14px; outline: none; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); }
+        .form-group textarea { min-height: 80px; resize: vertical; }
+        .modal-footer { display: flex; gap: 10px; margin-top: 16px; }
+        .modal-footer .btn { flex: 1; padding: 10px; font-size: 14px; }
+        
+        /* 详情 */
+        .detail-section { margin-bottom: 16px; }
+        .detail-title { font-size: 13px; font-weight: 600; color: var(--primary-dark); margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--g200); }
+        .detail-row { display: flex; padding: 5px 0; font-size: 13px; }
+        .detail-label { width: 80px; color: var(--g500); flex-shrink: 0; }
+        .detail-value { flex: 1; color: var(--g800); word-break: break-all; }
+        
+        /* 时间线 */
+        .timeline { padding-left: 16px; border-left: 2px solid var(--g200); }
+        .timeline-item { position: relative; padding: 0 0 14px 16px; font-size: 12px; }
+        .timeline-item::before { content: ''; position: absolute; left: -21px; top: 4px; width: 8px; height: 8px; border-radius: 50%; background: var(--primary); border: 2px solid var(--white); }
+        .timeline-time { color: var(--g500); font-size: 11px; }
+        .timeline-text { color: var(--g700); margin-top: 2px; }
+        
+        .empty { text-align: center; color: var(--g500); padding: 40px 20px; font-size: 14px; }
+        .loading { text-align: center; color: var(--g500); padding: 20px; }
+        .pull-tip { text-align: center; color: var(--g400); font-size: 12px; padding: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <a class="header-back" href="index.html">←</a>
+    <div class="header-title">智慧工单</div>
+    <span class="header-badge" id="overdueBadge" style="display:none;">0超期</span>
+</div>
+
+<!-- 统计 -->
+<div class="stats">
+    <div class="stat-item"><div class="stat-num orange" id="sPending">0</div><div class="stat-label">待处理</div></div>
+    <div class="stat-item"><div class="stat-num blue" id="sProgress">0</div><div class="stat-label">进行中</div></div>
+    <div class="stat-item"><div class="stat-num red" id="sOverdue">0</div><div class="stat-label">超期</div></div>
+    <div class="stat-item"><div class="stat-num green" id="sDone">0</div><div class="stat-label">已完成</div></div>
+</div>
+
+<!-- Tab -->
+<div class="tabs" id="tabBar">
+    <div class="tab active" data-status="" onclick="switchTab(this)">全部</div>
+    <div class="tab" data-status="pending_dispatch" onclick="switchTab(this)">待派单</div>
+    <div class="tab" data-status="dispatched" onclick="switchTab(this)">已派单</div>
+    <div class="tab" data-status="in_progress" onclick="switchTab(this)">进行中</div>
+    <div class="tab" data-status="completed" onclick="switchTab(this)">待审核</div>
+    <div class="tab" data-status="closed" onclick="switchTab(this)">已关闭</div>
+</div>
+
+<!-- 搜索 -->
+<div class="search">
+    <input id="searchInput" placeholder="搜索工单编号/标题..." onkeydown="if(event.key==='Enter')loadOrders()">
+</div>
+
+<!-- 列表 -->
+<div class="list" id="orderList"><div class="loading">加载中...</div></div>
+<div class="pull-tip" id="pullTip"></div>
+
+<!-- 底部导航 -->
+<div class="tabbar">
+    <a class="tabbar-item" href="index.html"><div class="tabbar-icon">🏠</div><div>工作台</div></a>
+    <a class="tabbar-item active" href="smart_work_orders.html"><div class="tabbar-icon">📋</div><div>工单</div></a>
+    <a class="tabbar-item" href="notifications.html"><div class="tabbar-icon">🔔</div><div>消息</div></a>
+    <a class="tabbar-item" href="profile_v2.html"><div class="tabbar-icon">👤</div><div>我的</div></a>
+</div>
+
+<!-- ===== 派单弹窗 ===== -->
+<div class="modal-mask" id="dispatchModal">
+    <div class="modal-sheet">
+        <div class="modal-header"><h3>派单</h3><button class="modal-close" onclick="closeModal('dispatchModal')">×</button></div>
+        <input type="hidden" id="dispatchFid">
+        <div class="form-group"><label>执行人ID <span style="color:red">*</span></label><input id="dispatchAssigneeId" placeholder="请输入执行人ID"></div>
+        <div class="form-group"><label>执行人姓名 <span style="color:red">*</span></label><input id="dispatchAssigneeName" placeholder="请输入执行人姓名"></div>
+        <div class="form-group"><label>派单说明</label><textarea id="dispatchOpinion" placeholder="可选"></textarea></div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('dispatchModal')">取消</button>
+            <button class="btn btn-primary" onclick="submitDispatch()">确认派单</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 完成工单弹窗 ===== -->
+<div class="modal-mask" id="completeModal">
+    <div class="modal-sheet">
+        <div class="modal-header"><h3>完成工单</h3><button class="modal-close" onclick="closeModal('completeModal')">×</button></div>
+        <input type="hidden" id="completeFid">
+        <div class="form-group"><label>处理结果 <span style="color:red">*</span></label><textarea id="completeResult" placeholder="请描述处理结果..."></textarea></div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('completeModal')">取消</button>
+            <button class="btn btn-primary" onclick="submitComplete()">确认完成</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 审核弹窗 ===== -->
+<div class="modal-mask" id="reviewModal">
+    <div class="modal-sheet">
+        <div class="modal-header"><h3>审核工单</h3><button class="modal-close" onclick="closeModal('reviewModal')">×</button></div>
+        <input type="hidden" id="reviewFid">
+        <div class="form-group"><label>审核结果</label>
+            <select id="reviewResult"><option value="pass">通过</option><option value="reject">驳回</option></select>
+        </div>
+        <div class="form-group"><label>审核意见</label><textarea id="reviewOpinion" placeholder="请输入审核意见..."></textarea></div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('reviewModal')">取消</button>
+            <button class="btn btn-primary" onclick="submitReview()">提交审核</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 工单详情弹窗 ===== -->
+<div class="modal-mask" id="detailModal">
+    <div class="modal-sheet">
+        <div class="modal-header"><h3>工单详情</h3><button class="modal-close" onclick="closeModal('detailModal')">×</button></div>
+        <div id="detailBody"><div class="loading">加载中...</div></div>
+        <div class="modal-footer" id="detailFooter"></div>
+    </div>
+</div>
+
+<script>
+// ========== 配置 ==========
+const API_BASE = '/api/smart-wo';
+const urlParams = new URLSearchParams(location.search);
+const token = urlParams.get('access_token') || localStorage.getItem('staff_token') || '';
+const isdev = urlParams.get('isdev') || '0';
+
+let currentStatus = '';
+let currentPage = 1;
+const PAGE_SIZE = 15;
+
+// ========== 工具 ==========
+function esc(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function STATUS_MAP = { pending_dispatch:'待派单', dispatched:'已派单', accepted:'已接单', in_progress:'进行中', completed:'待审核', closed:'已关闭', cancelled:'已取消' };
+function PRIORITY_MAP = { urgent:'紧急', high:'高', medium:'中', low:'低' };
+function TYPE_MAP = { quality:'品质检查', equipment:'设备巡查', comprehensive:'综合巡查', repair:'报事报修', other:'其他' };
+
+// ========== Tab切换 ==========
+function switchTab(el) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    currentStatus = el.dataset.status;
+    currentPage = 1;
+    loadOrders();
+}
+
+// ========== 加载工单列表 ==========
+async function loadOrders() {
+    const keyword = document.getElementById('searchInput').value.trim();
+    let url = `${API_BASE}/orders?page=${currentPage}&page_size=${PAGE_SIZE}`;
+    if (currentStatus) url += `&status=${currentStatus}`;
+    if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
+    
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.code === 200 && data.data) {
+            renderList(data.data.items || [], data.data.total || 0);
+            loadStats();
+        } else {
+            document.getElementById('orderList').innerHTML = '<div class="empty">加载失败</div>';
+        }
+    } catch(e) {
+        document.getElementById('orderList').innerHTML = '<div class="empty">网络错误</div>';
+    }
+}
+
+function renderList(items, total) {
+    if (items.length === 0) {
+        document.getElementById('orderList').innerHTML = '<div class="empty">📋 暂无工单</div>';
+        document.getElementById('pullTip').textContent = '';
+        return;
+    }
+    
+    document.getElementById('orderList').innerHTML = items.map(o => {
+        const priorityClass = o.priority === 'urgent' ? 'urgent' : o.priority === 'high' ? 'high' : '';
+        const overdueClass = o.is_overdue ? 'overdue' : '';
+        const statusBadge = `badge-${o.status === 'pending_dispatch' ? 'pending' : o.status === 'dispatched' ? 'dispatched' : o.status === 'in_progress' ? 'progress' : o.status === 'completed' ? 'completed' : o.status === 'closed' ? 'closed' : 'cancelled'}`;
+        
+        let actions = `<button class="btn btn-outline" onclick="viewDetail('${o.fid}')">详情</button>`;
+        if (o.status === 'pending_dispatch') actions += `<button class="btn btn-primary" onclick="showDispatch('${o.fid}')">派单</button>`;
+        if (o.status === 'dispatched') actions += `<button class="btn btn-blue" onclick="acceptOrder('${o.fid}')">接单</button>`;
+        if (o.status === 'in_progress') actions += `<button class="btn btn-primary" onclick="showComplete('${o.fid}')">完成</button>`;
+        if (o.status === 'completed') actions += `<button class="btn btn-orange" onclick="showReview('${o.fid}')">审核</button>`;
+        
+        return `<div class="card ${priorityClass} ${overdueClass}">
+            <div class="card-top">
+                <div class="card-title">${esc(o.title || o.wo_no)}</div>
+                <div style="display:flex;gap:4px;">
+                    ${o.is_overdue ? '<span class="card-badge badge-overdue">超期</span>' : ''}
+                    <span class="card-badge ${statusBadge}">${STATUS_MAP[o.status] || o.status}</span>
+                </div>
+            </div>
+            <div class="card-desc">${esc(o.description || '-')}</div>
+            <div class="card-meta">
+                <span>编号: ${esc(o.wo_no)}</span>
+                <span>类型: ${TYPE_MAP[o.wo_type] || o.wo_type}</span>
+                <span>优先级: ${PRIORITY_MAP[o.priority] || o.priority}</span>
+            </div>
+            ${o.assignee_name ? `<div class="card-meta"><span>执行人: ${esc(o.assignee_name)}</span></div>` : ''}
+            <div class="card-meta"><span>${esc(o.create_time || '')}</span></div>
+            <div class="card-actions">${actions}</div>
+        </div>`;
+    }).join('');
+    
+    const totalPages = Math.ceil(total / PAGE_SIZE);
+    document.getElementById('pullTip').textContent = `第${currentPage}/${totalPages}页 共${total}条`;
+}
+
+// ========== 统计 ==========
+async function loadStats() {
+    try {
+        const res = await fetch(`${API_BASE}/orders/stats`);
+        const data = await res.json();
+        if (data.code === 200 && data.data) {
+            const d = data.data;
+            document.getElementById('sPending').textContent = (d.pending_dispatch || 0) + (d.dispatched || 0);
+            document.getElementById('sProgress').textContent = (d.accepted || 0) + (d.in_progress || 0);
+            document.getElementById('sOverdue').textContent = d.overdue_count || 0;
+            document.getElementById('sDone').textContent = d.closed || 0;
+            
+            const badge = document.getElementById('overdueBadge');
+            if (d.overdue_count > 0) { badge.style.display = ''; badge.textContent = d.overdue_count + '超期'; }
+            else { badge.style.display = 'none'; }
+        }
+    } catch(e) {}
+}
+
+// ========== 接单 ==========
+async function acceptOrder(fid) {
+    if (!confirm('确认接单？')) return;
+    try {
+        const res = await fetch(`${API_BASE}/orders/${fid}/accept`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({}) });
+        const data = await res.json();
+        if (data.code === 200) { alert('接单成功'); loadOrders(); }
+        else alert(data.message || '接单失败');
+    } catch(e) { alert('接单失败'); }
+}
+
+// ========== 派单 ==========
+function showDispatch(fid) {
+    document.getElementById('dispatchFid').value = fid;
+    document.getElementById('dispatchAssigneeId').value = '';
+    document.getElementById('dispatchAssigneeName').value = '';
+    document.getElementById('dispatchOpinion').value = '';
+    document.getElementById('dispatchModal').classList.add('show');
+}
+
+async function submitDispatch() {
+    const fid = document.getElementById('dispatchFid').value;
+    const aid = document.getElementById('dispatchAssigneeId').value;
+    const aname = document.getElementById('dispatchAssigneeName').value;
+    if (!aid || !aname) { alert('请填写执行人信息'); return; }
+    try {
+        const res = await fetch(`${API_BASE}/orders/${fid}/dispatch`, {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ fassignee_id: aid, fassignee_name: aname, fopinion: document.getElementById('dispatchOpinion').value })
+        });
+        const data = await res.json();
+        if (data.code === 200) { alert('派单成功'); closeModal('dispatchModal'); loadOrders(); }
+        else alert(data.message || '派单失败');
+    } catch(e) { alert('派单失败'); }
+}
+
+// ========== 完成 ==========
+function showComplete(fid) {
+    document.getElementById('completeFid').value = fid;
+    document.getElementById('completeResult').value = '';
+    document.getElementById('completeModal').classList.add('show');
+}
+
+async function submitComplete() {
+    const fid = document.getElementById('completeFid').value;
+    const result = document.getElementById('completeResult').value;
+    if (!result) { alert('请填写处理结果'); return; }
+    try {
+        const res = await fetch(`${API_BASE}/orders/${fid}/complete`, {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ fresult_summary: result })
+        });
+        const data = await res.json();
+        if (data.code === 200) { alert('工单已完成'); closeModal('completeModal'); loadOrders(); }
+        else alert(data.message || '操作失败');
+    } catch(e) { alert('操作失败'); }
+}
+
+// ========== 审核 ==========
+function showReview(fid) {
+    document.getElementById('reviewFid').value = fid;
+    document.getElementById('reviewResult').value = 'pass';
+    document.getElementById('reviewOpinion').value = '';
+    document.getElementById('reviewModal').classList.add('show');
+}
+
+async function submitReview() {
+    const fid = document.getElementById('reviewFid').value;
+    try {
+        const res = await fetch(`${API_BASE}/orders/${fid}/review`, {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ freview_result: document.getElementById('reviewResult').value, freview_opinion: document.getElementById('reviewOpinion').value })
+        });
+        const data = await res.json();
+        if (data.code === 200) { alert('审核完成'); closeModal('reviewModal'); loadOrders(); }
+        else alert(data.message || '审核失败');
+    } catch(e) { alert('审核失败'); }
+}
+
+// ========== 详情 ==========
+async function viewDetail(fid) {
+    document.getElementById('detailBody').innerHTML = '<div class="loading">加载中...</div>';
+    document.getElementById('detailFooter').innerHTML = '';
+    document.getElementById('detailModal').classList.add('show');
+    
+    try {
+        const res = await fetch(`${API_BASE}/orders/${fid}`);
+        const data = await res.json();
+        if (data.code !== 200 || !data.data) { document.getElementById('detailBody').innerHTML = '<div class="empty">加载失败</div>'; return; }
+        const o = data.data;
+        
+        let html = `
+            <div class="detail-section">
+                <div class="detail-title">基本信息</div>
+                <div class="detail-row"><span class="detail-label">工单编号</span><span class="detail-value">${esc(o.wo_no)}</span></div>
+                <div class="detail-row"><span class="detail-label">标题</span><span class="detail-value">${esc(o.title)}</span></div>
+                <div class="detail-row"><span class="detail-label">描述</span><span class="detail-value">${esc(o.description || '-')}</span></div>
+                <div class="detail-row"><span class="detail-label">类型</span><span class="detail-value">${TYPE_MAP[o.wo_type] || o.wo_type}</span></div>
+                <div class="detail-row"><span class="detail-label">优先级</span><span class="detail-value">${PRIORITY_MAP[o.priority] || o.priority}</span></div>
+                <div class="detail-row"><span class="detail-label">状态</span><span class="detail-value">${STATUS_MAP[o.status] || o.status}</span></div>
+                <div class="detail-row"><span class="detail-label">来源</span><span class="detail-value">${esc(o.source || '-')}</span></div>
+            </div>
+            <div class="detail-section">
+                <div class="detail-title">位置与联系</div>
+                <div class="detail-row"><span class="detail-label">位置</span><span class="detail-value">${esc(o.location_detail || '-')}</span></div>
+                <div class="detail-row"><span class="detail-label">联系人</span><span class="detail-value">${esc(o.contact_name || '-')}</span></div>
+                <div class="detail-row"><span class="detail-label">联系电话</span><span class="detail-value">${esc(o.contact_phone || '-')}</span></div>
+            </div>
+            <div class="detail-section">
+                <div class="detail-title">处理信息</div>
+                <div class="detail-row"><span class="detail-label">执行人</span><span class="detail-value">${esc(o.assignee_name || '-')}</span></div>
+                <div class="detail-row"><span class="detail-label">派单时间</span><span class="detail-value">${esc(o.dispatched_at || '-')}</span></div>
+                <div class="detail-row"><span class="detail-label">开始时间</span><span class="detail-value">${esc(o.actual_start_time || '-')}</span></div>
+                <div class="detail-row"><span class="detail-label">完成时间</span><span class="detail-value">${esc(o.actual_end_time || '-')}</span></div>
+                <div class="detail-row"><span class="detail-label">处理结果</span><span class="detail-value">${esc(o.result_summary || '-')}</span></div>
+                ${o.is_overdue ? '<div class="detail-row"><span class="detail-label" style="color:var(--red)">超期</span><span class="detail-value" style="color:var(--red)">已超期 ' + (o.overdue_minutes||0) + '分钟</span></div>' : ''}
+            </div>
+            <div class="detail-section">
+                <div class="detail-title">审核信息</div>
+                <div class="detail-row"><span class="detail-label">审核人</span><span class="detail-value">${esc(o.reviewer_name || '-')}</span></div>
+                <div class="detail-row"><span class="detail-label">审核结果</span><span class="detail-value">${o.review_result === 'pass' ? '通过' : o.review_result === 'reject' ? '驳回' : '-'}</span></div>
+                <div class="detail-row"><span class="detail-label">审核意见</span><span class="detail-value">${esc(o.review_opinion || '-')}</span></div>
+            </div>
+            ${o.evaluation_score ? `<div class="detail-section"><div class="detail-title">评价</div><div class="detail-row"><span class="detail-label">评分</span><span class="detail-value">${'★'.repeat(o.evaluation_score)}${'☆'.repeat(5-o.evaluation_score)}</span></div><div class="detail-row"><span class="detail-label">评价内容</span><span class="detail-value">${esc(o.evaluation_content || '-')}</span></div></div>` : ''}
+            <div class="detail-section"><div class="detail-title">操作日志</div><div id="detailLogs"><div class="loading">加载中...</div></div></div>
+        `;
+        document.getElementById('detailBody').innerHTML = html;
+        
+        // 加载日志
+        try {
+            const logRes = await fetch(`${API_BASE}/orders/${fid}/logs`);
+            const logData = await logRes.json();
+            if (logData.code === 200 && logData.data && logData.data.length > 0) {
+                document.getElementById('detailLogs').innerHTML = '<div class="timeline">' + logData.data.map(l =>
+                    `<div class="timeline-item"><div class="timeline-time">${esc(l.create_time || '')}</div><div class="timeline-text">${esc(l.operator_name || '')} - ${esc(l.action || '')} ${esc(l.detail || '')}</div></div>`
+                ).join('') + '</div>';
+            } else {
+                document.getElementById('detailLogs').innerHTML = '<div class="empty">暂无日志</div>';
+            }
+        } catch(e) { document.getElementById('detailLogs').innerHTML = '<div class="empty">加载失败</div>'; }
+        
+        // 底部操作
+        let footer = '<button class="btn btn-outline" onclick="closeModal(\'detailModal\')" style="flex:1">关闭</button>';
+        if (o.status === 'pending_dispatch') footer += '<button class="btn btn-primary" onclick="closeModal(\'detailModal\');showDispatch(\'' + fid + '\')" style="flex:1">派单</button>';
+        if (o.status === 'dispatched') footer += '<button class="btn btn-blue" onclick="closeModal(\'detailModal\');acceptOrder(\'' + fid + '\')" style="flex:1">接单</button>';
+        if (o.status === 'in_progress') footer += '<button class="btn btn-primary" onclick="closeModal(\'detailModal\');showComplete(\'' + fid + '\')" style="flex:1">完成</button>';
+        if (o.status === 'completed') footer += '<button class="btn btn-orange" onclick="closeModal(\'detailModal\');showReview(\'' + fid + '\')" style="flex:1">审核</button>';
+        document.getElementById('detailFooter').innerHTML = footer;
+    } catch(e) {
+        document.getElementById('detailBody').innerHTML = '<div class="empty">加载失败</div>';
+    }
+}
+
+// 点击遮罩关闭
+document.querySelectorAll('.modal-mask').forEach(m => {
+    m.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('show'); });
+});
+
+// ========== 初始化 ==========
+loadOrders();
+</script>
+
+</body>
+</html>
