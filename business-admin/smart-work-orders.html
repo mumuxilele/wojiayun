@@ -697,7 +697,7 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>规则类型 <span class="required">*</span></label>
-                        <select id="drType">
+                        <select id="drType" onchange="onDrTypeChange()">
                             <option value="category">按分类</option>
                             <option value="location">按位置</option>
                             <option value="priority">按优先级</option>
@@ -709,18 +709,52 @@
                         <input type="number" id="drPriority" value="10" min="1">
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>匹配条件(JSON) <span class="required">*</span></label>
-                    <textarea id="drMatchCondition" placeholder='按分类: {"category_ids":["id1","id2"]}&#10;按位置: {"location_types":["building","area"]}&#10;按优先级: {"priorities":["urgent","high"]}&#10;按关键词: {"keywords":["漏水","停电"]}'></textarea>
+
+                <!-- 匹配条件：按分类 -->
+                <div id="drMatchCategory" class="form-group dr-match-panel">
+                    <label>选择分类 <span class="required">*</span></label>
+                    <div id="drCategoryChecks" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;"></div>
                 </div>
+                <!-- 匹配条件：按位置 -->
+                <div id="drMatchLocation" class="form-group dr-match-panel" style="display:none;">
+                    <label>选择位置类型 <span class="required">*</span></label>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">
+                        <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;"><input type="checkbox" value="building" class="dr-loc-check"> 楼栋</label>
+                        <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;"><input type="checkbox" value="area" class="dr-loc-check"> 区域</label>
+                        <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;"><input type="checkbox" value="equipment" class="dr-loc-check"> 设备</label>
+                        <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;"><input type="checkbox" value="outdoor" class="dr-loc-check"> 室外</label>
+                    </div>
+                </div>
+                <!-- 匹配条件：按优先级 -->
+                <div id="drMatchPriority" class="form-group dr-match-panel" style="display:none;">
+                    <label>选择优先级 <span class="required">*</span></label>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">
+                        <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;"><input type="checkbox" value="urgent" class="dr-prio-check"> 紧急</label>
+                        <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;"><input type="checkbox" value="high" class="dr-prio-check"> 高</label>
+                        <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;"><input type="checkbox" value="medium" class="dr-prio-check"> 中</label>
+                        <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;"><input type="checkbox" value="low" class="dr-prio-check"> 低</label>
+                    </div>
+                </div>
+                <!-- 匹配条件：按关键词 -->
+                <div id="drMatchKeyword" class="form-group dr-match-panel" style="display:none;">
+                    <label>关键词 <span class="required">*</span></label>
+                    <div id="drKeywordList" style="display:flex;flex-direction:column;gap:6px;margin-top:4px;">
+                        <div style="display:flex;gap:6px;">
+                            <input type="text" class="dr-keyword-input" placeholder="输入关键词后回车添加" style="flex:1;padding:6px 10px;border:1px solid #d9d9d9;border-radius:4px;font-size:13px;" onkeydown="if(event.key==='Enter'){event.preventDefault();addDrKeyword();}">
+                            <button type="button" class="btn btn-primary btn-sm" onclick="addDrKeyword()">添加</button>
+                        </div>
+                    </div>
+                    <div style="font-size:12px;color:#999;margin-top:4px;">工单标题包含任一关键词即匹配</div>
+                </div>
+
                 <div class="form-row">
                     <div class="form-group">
                         <label>派单动作 <span class="required">*</span></label>
-                        <select id="drAction">
+                        <select id="drAction" onchange="onDrActionChange()">
                             <option value="assign_user">指定人员</option>
                             <option value="assign_role">指定角色</option>
                             <option value="assign_dept">指定部门</option>
-                            <option value="rotate">轮询</option>
+                            <option value="rotate">轮询(多人轮流)</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -731,9 +765,42 @@
                         </select>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>派单目标(JSON) <span class="required">*</span></label>
-                    <textarea id="drTarget" placeholder='指定人员: {"user_id":"xxx","user_name":"张三"}&#10;指定角色: {"role_id":"xxx","role_name":"维修员"}&#10;指定部门: {"dept_id":"xxx","dept_name":"工程部"}&#10;轮询: {"user_list":[{"user_id":"u1","user_name":"张三"},{"user_id":"u2","user_name":"李四"}]}'></textarea>
+
+                <!-- 派单目标：指定人员 -->
+                <div id="drTargetUser" class="form-group dr-target-panel">
+                    <label>执行人 <span class="required">*</span></label>
+                    <div class="form-row">
+                        <input type="text" id="drTargetUserId" placeholder="人员ID" style="padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;font-size:13px;">
+                        <input type="text" id="drTargetUserName" placeholder="人员姓名" style="padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;font-size:13px;">
+                    </div>
+                </div>
+                <!-- 派单目标：指定角色 -->
+                <div id="drTargetRole" class="form-group dr-target-panel" style="display:none;">
+                    <label>角色 <span class="required">*</span></label>
+                    <div class="form-row">
+                        <input type="text" id="drTargetRoleId" placeholder="角色ID" style="padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;font-size:13px;">
+                        <input type="text" id="drTargetRoleName" placeholder="角色名称(如:维修员)" style="padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;font-size:13px;">
+                    </div>
+                </div>
+                <!-- 派单目标：指定部门 -->
+                <div id="drTargetDept" class="form-group dr-target-panel" style="display:none;">
+                    <label>部门 <span class="required">*</span></label>
+                    <div class="form-row">
+                        <input type="text" id="drTargetDeptId" placeholder="部门ID" style="padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;font-size:13px;">
+                        <input type="text" id="drTargetDeptName" placeholder="部门名称(如:工程部)" style="padding:8px 12px;border:1px solid #d9d9d9;border-radius:4px;font-size:13px;">
+                    </div>
+                </div>
+                <!-- 派单目标：轮询 -->
+                <div id="drTargetRotate" class="form-group dr-target-panel" style="display:none;">
+                    <label>轮询人员列表 <span class="required">*</span></label>
+                    <div id="drRotateList" style="display:flex;flex-direction:column;gap:6px;margin-top:4px;">
+                        <div style="display:flex;gap:6px;align-items:center;">
+                            <input type="text" id="drRotateUserId" placeholder="人员ID" style="flex:1;padding:6px 10px;border:1px solid #d9d9d9;border-radius:4px;font-size:13px;">
+                            <input type="text" id="drRotateUserName" placeholder="人员姓名" style="flex:1;padding:6px 10px;border:1px solid #d9d9d9;border-radius:4px;font-size:13px;">
+                            <button type="button" class="btn btn-primary btn-sm" onclick="addDrRotateUser()">添加</button>
+                        </div>
+                    </div>
+                    <div style="font-size:12px;color:#999;margin-top:4px;">工单将按顺序轮流分配给以下人员</div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -1574,16 +1641,37 @@
                         return;
                     }
                     const ACTION_MAP = { assign_user: '指定人员', assign_role: '指定角色', assign_dept: '指定部门', rotate: '轮询' };
+                    const TYPE_MAP = { category: '按分类', location: '按位置', priority: '按优先级', keyword: '按关键词' };
+                    function fmtCondition(r) {
+                        try {
+                            const c = JSON.parse(r.match_condition || '{}');
+                            if (c.category_ids) return c.category_ids.length + '个分类';
+                            if (c.location_types) return c.location_types.map(t => ({building:'楼栋',area:'区域',equipment:'设备',outdoor:'室外'})[t]||t).join('、');
+                            if (c.priorities) return c.priorities.map(p => ({urgent:'紧急',high:'高',medium:'中',low:'低'})[p]||p).join('、');
+                            if (c.keywords) return c.keywords.join('、');
+                        } catch(e) {}
+                        return '-';
+                    }
+                    function fmtTarget(r) {
+                        try {
+                            const t = JSON.parse(r.dispatch_target || '{}');
+                            if (t.user_name) return t.user_name;
+                            if (t.role_name) return t.role_name;
+                            if (t.dept_name) return t.dept_name;
+                            if (t.user_list) return t.user_list.map(u => u.user_name).join('、');
+                        } catch(e) {}
+                        return '-';
+                    }
                     document.getElementById('dispatchList').innerHTML = rules.map(r => `
                         <tr>
                             <td><strong>${esc(r.rule_name)}</strong></td>
-                            <td>${esc(r.rule_type || '-')}</td>
-                            <td>${esc(JSON.stringify(r.match_condition || {}).substring(0, 50))}</td>
-                            <td><span class="tag tag-blue">${ACTION_MAP[r.dispatch_action] || r.dispatch_action}</span></td>
+                            <td>${TYPE_MAP[r.rule_type] || esc(r.rule_type || '-')}</td>
+                            <td>${esc(fmtCondition(r))}</td>
+                            <td><span class="tag tag-blue">${ACTION_MAP[r.dispatch_action] || r.dispatch_action}</span> ${esc(fmtTarget(r))}</td>
                             <td>${r.priority}</td>
                             <td><span class="tag ${r.is_enabled ? 'tag-green' : 'tag-gray'}">${r.is_enabled ? '启用' : '禁用'}</span></td>
                             <td class="actions">
-                                <a onclick="showDispatchRuleModal('${r.fid}')">编辑</a>
+                                <a onclick="editDispatchRule('${r.fid}')">编辑</a>
                                 <a class="danger" onclick="deleteDispatchRule('${r.fid}')">删除</a>
                             </td>
                         </tr>
@@ -1594,38 +1682,239 @@
             }
         }
         
+        // ========== 派单规则动态表单 ==========
+        let drKeywords = [];
+        let drRotateUsers = [];
+
+        function onDrTypeChange() {
+            const type = document.getElementById('drType').value;
+            document.querySelectorAll('.dr-match-panel').forEach(p => p.style.display = 'none');
+            const map = { category: 'drMatchCategory', location: 'drMatchLocation', priority: 'drMatchPriority', keyword: 'drMatchKeyword' };
+            if (map[type]) document.getElementById(map[type]).style.display = '';
+            if (type === 'category') loadDrCategoryOptions();
+        }
+
+        function onDrActionChange() {
+            const action = document.getElementById('drAction').value;
+            document.querySelectorAll('.dr-target-panel').forEach(p => p.style.display = 'none');
+            const map = { assign_user: 'drTargetUser', assign_role: 'drTargetRole', assign_dept: 'drTargetDept', rotate: 'drTargetRotate' };
+            if (map[action]) document.getElementById(map[action]).style.display = '';
+        }
+
+        async function loadDrCategoryOptions() {
+            try {
+                const res = await fetch(`${API_BASE}/categories`);
+                const data = await res.json();
+                if (data.code === 200 && data.data) {
+                    const container = document.getElementById('drCategoryChecks');
+                    container.innerHTML = data.data.map(c =>
+                        `<label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;background:#f5f5f5;padding:4px 10px;border-radius:4px;">
+                            <input type="checkbox" value="${c.fid}" class="dr-cat-check"> ${esc(c.fcategory_name)}
+                        </label>`
+                    ).join('');
+                }
+            } catch(e) {}
+        }
+
+        function addDrKeyword() {
+            const input = document.querySelector('.dr-keyword-input');
+            const kw = input.value.trim();
+            if (!kw) return;
+            if (drKeywords.includes(kw)) { alert('关键词已存在'); return; }
+            drKeywords.push(kw);
+            input.value = '';
+            renderDrKeywords();
+        }
+
+        function removeDrKeyword(kw) {
+            drKeywords = drKeywords.filter(k => k !== kw);
+            renderDrKeywords();
+        }
+
+        function renderDrKeywords() {
+            const container = document.getElementById('drKeywordList');
+            const tags = drKeywords.map(kw =>
+                `<span style="display:inline-flex;align-items:center;gap:4px;background:#e6f7ff;color:#1890ff;padding:3px 8px;border-radius:4px;font-size:12px;">
+                    ${esc(kw)} <span style="cursor:pointer;color:#999;" onclick="removeDrKeyword('${esc(kw)}')">×</span>
+                </span>`
+            ).join(' ');
+            container.innerHTML = `<div style="display:flex;gap:6px;"><input type="text" class="dr-keyword-input" placeholder="输入关键词后回车添加" style="flex:1;padding:6px 10px;border:1px solid #d9d9d9;border-radius:4px;font-size:13px;" onkeydown="if(event.key==='Enter'){event.preventDefault();addDrKeyword();}"><button type="button" class="btn btn-primary btn-sm" onclick="addDrKeyword()">添加</button></div>` +
+                (tags ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">${tags}</div>` : '');
+        }
+
+        function addDrRotateUser() {
+            const uid = document.getElementById('drRotateUserId').value.trim();
+            const uname = document.getElementById('drRotateUserName').value.trim();
+            if (!uid || !uname) { alert('请填写人员ID和姓名'); return; }
+            if (drRotateUsers.find(u => u.user_id === uid)) { alert('该人员已添加'); return; }
+            drRotateUsers.push({ user_id: uid, user_name: uname });
+            document.getElementById('drRotateUserId').value = '';
+            document.getElementById('drRotateUserName').value = '';
+            renderDrRotateUsers();
+        }
+
+        function removeDrRotateUser(uid) {
+            drRotateUsers = drRotateUsers.filter(u => u.user_id !== uid);
+            renderDrRotateUsers();
+        }
+
+        function renderDrRotateUsers() {
+            const container = document.getElementById('drRotateList');
+            const rows = drRotateUsers.map((u, i) =>
+                `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f5f5f5;border-radius:4px;">
+                    <span style="color:#1890ff;font-weight:600;width:20px;">${i + 1}</span>
+                    <span style="flex:1;font-size:13px;">${esc(u.user_name)} <span style="color:#999;">(${esc(u.user_id)})</span></span>
+                    <span style="cursor:pointer;color:#f5222d;font-size:16px;" onclick="removeDrRotateUser('${esc(u.user_id)}')">×</span>
+                </div>`
+            ).join('');
+            container.innerHTML = `<div style="display:flex;gap:6px;align-items:center;"><input type="text" id="drRotateUserId" placeholder="人员ID" style="flex:1;padding:6px 10px;border:1px solid #d9d9d9;border-radius:4px;font-size:13px;"><input type="text" id="drRotateUserName" placeholder="人员姓名" style="flex:1;padding:6px 10px;border:1px solid #d9d9d9;border-radius:4px;font-size:13px;"><button type="button" class="btn btn-primary btn-sm" onclick="addDrRotateUser()">添加</button></div>` +
+                (rows ? `<div style="display:flex;flex-direction:column;gap:4px;margin-top:6px;">${rows}</div>` : '');
+        }
+
+        async function editDispatchRule(fid) {
+            try {
+                const res = await fetch(`${API_BASE}/dispatch-rules/${fid}`);
+                const data = await res.json();
+                if (data.code === 200 && data.data) {
+                    const rule = data.data;
+                    showDispatchRuleModal(fid);
+                    document.getElementById('drName').value = rule.rule_name || '';
+                    document.getElementById('drType').value = rule.rule_type || 'category';
+                    document.getElementById('drPriority').value = rule.priority || 10;
+                    document.getElementById('drAction').value = rule.dispatch_action || 'assign_user';
+                    document.getElementById('drEnabled').value = String(rule.is_enabled || 1);
+                    onDrTypeChange();
+                    onDrActionChange();
+                    fillFormFromRule(rule);
+                } else {
+                    alert(data.message || '加载规则失败');
+                }
+            } catch(e) { alert('加载规则失败'); }
+        }
+
         function showDispatchRuleModal(editId) {
             document.getElementById('drEditId').value = editId || '';
             document.getElementById('dispatchRuleModalTitle').textContent = editId ? '编辑派单规则' : '新建派单规则';
+            drKeywords = [];
+            drRotateUsers = [];
             if (!editId) {
                 document.getElementById('drName').value = '';
                 document.getElementById('drType').value = 'category';
                 document.getElementById('drPriority').value = '10';
-                document.getElementById('drMatchCondition').value = '';
                 document.getElementById('drAction').value = 'assign_user';
-                document.getElementById('drTarget').value = '';
                 document.getElementById('drEnabled').value = '1';
+                document.getElementById('drTargetUserId').value = '';
+                document.getElementById('drTargetUserName').value = '';
+                document.getElementById('drTargetRoleId').value = '';
+                document.getElementById('drTargetRoleName').value = '';
+                document.getElementById('drTargetDeptId').value = '';
+                document.getElementById('drTargetDeptName').value = '';
             }
+            onDrTypeChange();
+            onDrActionChange();
+            renderDrKeywords();
+            renderDrRotateUsers();
             document.getElementById('dispatchRuleModal').classList.add('show');
+        }
+
+        function buildMatchCondition() {
+            const type = document.getElementById('drType').value;
+            if (type === 'category') {
+                const ids = [...document.querySelectorAll('.dr-cat-check:checked')].map(c => c.value);
+                return { category_ids: ids };
+            } else if (type === 'location') {
+                const types = [...document.querySelectorAll('.dr-loc-check:checked')].map(c => c.value);
+                return { location_types: types };
+            } else if (type === 'priority') {
+                const prios = [...document.querySelectorAll('.dr-prio-check:checked')].map(c => c.value);
+                return { priorities: prios };
+            } else if (type === 'keyword') {
+                return { keywords: drKeywords };
+            }
+            return {};
+        }
+
+        function buildDispatchTarget() {
+            const action = document.getElementById('drAction').value;
+            if (action === 'assign_user') {
+                return { user_id: document.getElementById('drTargetUserId').value, user_name: document.getElementById('drTargetUserName').value };
+            } else if (action === 'assign_role') {
+                return { role_id: document.getElementById('drTargetRoleId').value, role_name: document.getElementById('drTargetRoleName').value };
+            } else if (action === 'assign_dept') {
+                return { dept_id: document.getElementById('drTargetDeptId').value, dept_name: document.getElementById('drTargetDeptName').value };
+            } else if (action === 'rotate') {
+                return { user_list: drRotateUsers };
+            }
+            return {};
+        }
+
+        function fillFormFromRule(rule) {
+            // 回填匹配条件
+            let cond = {};
+            try { cond = JSON.parse(rule.match_condition || '{}'); } catch(e) {}
+            if (rule.rule_type === 'category' && cond.category_ids) {
+                setTimeout(() => {
+                    document.querySelectorAll('.dr-cat-check').forEach(c => {
+                        c.checked = cond.category_ids.includes(c.value);
+                    });
+                }, 300);
+            } else if (rule.rule_type === 'location' && cond.location_types) {
+                document.querySelectorAll('.dr-loc-check').forEach(c => {
+                    c.checked = cond.location_types.includes(c.value);
+                });
+            } else if (rule.rule_type === 'priority' && cond.priorities) {
+                document.querySelectorAll('.dr-prio-check').forEach(c => {
+                    c.checked = cond.priorities.includes(c.value);
+                });
+            } else if (rule.rule_type === 'keyword' && cond.keywords) {
+                drKeywords = [...cond.keywords];
+                renderDrKeywords();
+            }
+            // 回填派单目标
+            let target = {};
+            try { target = JSON.parse(rule.dispatch_target || '{}'); } catch(e) {}
+            if (rule.dispatch_action === 'assign_user') {
+                document.getElementById('drTargetUserId').value = target.user_id || '';
+                document.getElementById('drTargetUserName').value = target.user_name || '';
+            } else if (rule.dispatch_action === 'assign_role') {
+                document.getElementById('drTargetRoleId').value = target.role_id || '';
+                document.getElementById('drTargetRoleName').value = target.role_name || '';
+            } else if (rule.dispatch_action === 'assign_dept') {
+                document.getElementById('drTargetDeptId').value = target.dept_id || '';
+                document.getElementById('drTargetDeptName').value = target.dept_name || '';
+            } else if (rule.dispatch_action === 'rotate' && target.user_list) {
+                drRotateUsers = [...target.user_list];
+                renderDrRotateUsers();
+            }
         }
 
         async function submitDispatchRule() {
             const editId = document.getElementById('drEditId').value;
-            let matchCondition, dispatchTarget;
-            try {
-                matchCondition = JSON.parse(document.getElementById('drMatchCondition').value || '{}');
-                dispatchTarget = JSON.parse(document.getElementById('drTarget').value || '{}');
-            } catch(e) { alert('匹配条件和派单目标必须是合法JSON'); return; }
+            const matchCondition = buildMatchCondition();
+            const dispatchTarget = buildDispatchTarget();
+
+            // 校验
+            const type = document.getElementById('drType').value;
+            const action = document.getElementById('drAction').value;
+            if (!document.getElementById('drName').value.trim()) { alert('请填写规则名称'); return; }
+            if (type === 'category' && matchCondition.category_ids.length === 0) { alert('请至少选择一个分类'); return; }
+            if (type === 'location' && matchCondition.location_types.length === 0) { alert('请至少选择一个位置类型'); return; }
+            if (type === 'priority' && matchCondition.priorities.length === 0) { alert('请至少选择一个优先级'); return; }
+            if (type === 'keyword' && matchCondition.keywords.length === 0) { alert('请至少添加一个关键词'); return; }
+            if (action === 'assign_user' && (!dispatchTarget.user_id || !dispatchTarget.user_name)) { alert('请填写执行人信息'); return; }
+            if (action === 'assign_role' && (!dispatchTarget.role_id || !dispatchTarget.role_name)) { alert('请填写角色信息'); return; }
+            if (action === 'assign_dept' && (!dispatchTarget.dept_id || !dispatchTarget.dept_name)) { alert('请填写部门信息'); return; }
+            if (action === 'rotate' && dispatchTarget.user_list.length === 0) { alert('请至少添加一个轮询人员'); return; }
+
             const body = {
                 frule_name: document.getElementById('drName').value,
-                frule_type: document.getElementById('drType').value,
+                frule_type: type,
                 fpriority: parseInt(document.getElementById('drPriority').value) || 10,
                 fmatch_condition: JSON.stringify(matchCondition),
-                fdispatch_action: document.getElementById('drAction').value,
+                fdispatch_action: action,
                 fdispatch_target: JSON.stringify(dispatchTarget),
                 fis_enabled: parseInt(document.getElementById('drEnabled').value),
             };
-            if (!body.frule_name) { alert('请填写规则名称'); return; }
             try {
                 const url = editId ? `${API_BASE}/dispatch-rules/${editId}` : `${API_BASE}/dispatch-rules`;
                 const method = editId ? 'PUT' : 'POST';
