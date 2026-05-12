@@ -781,6 +781,38 @@ def delete_notice(user, notice_id):
         return jsonify({'success': False, 'msg': str(e)})
 
 
+# ============ 智慧工单代理（转发到 FastAPI 后端） ============
+
+import requests as http_requests
+
+FASTAPI_BACKEND = os.environ.get('FASTAPI_BACKEND', 'http://127.0.0.1:8000')
+
+@app.route('/api/smart-wo/<path:subpath>', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])
+def proxy_smart_wo(subpath):
+    """将智慧工单请求代理转发到 FastAPI 后端"""
+    target_url = f"{FASTAPI_BACKEND}/api/smart-wo/{subpath}"
+    if request.query_string:
+        target_url += f"?{request.query_string.decode()}"
+    
+    # 转发 headers
+    headers = {k: v for k, v in request.headers if k.lower() not in ('host', 'content-length')}
+    
+    # 转发 body
+    body = request.get_data() if request.data else None
+    
+    try:
+        resp = http_requests.request(
+            method=request.method,
+            url=target_url,
+            headers=headers,
+            data=body,
+            timeout=30
+        )
+        return (resp.content, resp.status_code, dict(resp.headers))
+    except Exception as e:
+        return jsonify({'success': False, 'msg': f'后端服务不可用: {str(e)}'}), 502
+
+
 # ============ 泰山城投模块 ============
 from taishan_routes import taishan_admin_bp
 app.register_blueprint(taishan_admin_bp)
