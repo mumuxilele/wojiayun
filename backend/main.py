@@ -41,13 +41,32 @@ app.include_router(smart_work_order_router)
 
 @app.on_event("startup")
 def startup():
-    """应用启动：创建数据库表（仅开发/测试环境）"""
+    """应用启动：创建数据库表 + 启动定时任务"""
     logger.info("粤海物业管理系统启动中...")
     try:
         Base.metadata.create_all(bind=engine)
         logger.info("数据库表初始化完成")
     except Exception as e:
         logger.warning(f"数据库表初始化跳过（可能已存在）：{str(e)}")
+
+    # 启动智慧工单后台定时任务
+    try:
+        from service.wo_background_scheduler import start_scheduler
+        start_scheduler()
+        logger.info("智慧工单定时任务已启动")
+    except Exception as e:
+        logger.warning(f"智慧工单定时任务启动失败: {str(e)}")
+
+
+@app.on_event("shutdown")
+def shutdown():
+    """应用关闭：停止定时任务"""
+    try:
+        from service.wo_background_scheduler import stop_scheduler
+        stop_scheduler()
+        logger.info("智慧工单定时任务已停止")
+    except Exception:
+        pass
 
 
 @app.get("/")

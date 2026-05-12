@@ -557,7 +557,7 @@ class SmartWorkOrderService(BaseService):
     # ========== 统计 ==========
 
     def get_statistics(self, fec_id: str, fproject_id: str) -> Dict:
-        """工单统计"""
+        """工单统计（增强版：含完成率/及时率/按人员维度）"""
         try:
             base = SmartWorkOrder.active_query(self.db).filter(
                 SmartWorkOrder.fec_id == fec_id,
@@ -565,11 +565,39 @@ class SmartWorkOrderService(BaseService):
             )
             total = base.count()
             pending = base.filter(SmartWorkOrder.fstatus == "pending_dispatch").count()
-            in_progress = base.filter(SmartWorkOrder.fstatus.in_(["dispatched", "accepted", "in_progress"])).count()
+            dispatched = base.filter(SmartWorkOrder.fstatus == "dispatched").count()
+            accepted = base.filter(SmartWorkOrder.fstatus == "accepted").count()
+            in_progress = base.filter(SmartWorkOrder.fstatus == "in_progress").count()
             completed = base.filter(SmartWorkOrder.fstatus == "completed").count()
             closed = base.filter(SmartWorkOrder.fstatus == "closed").count()
             overdue = base.filter(SmartWorkOrder.fis_overdue == 1).count()
             cancelled = base.filter(SmartWorkOrder.fstatus == "cancelled").count()
+
+            # 今日统计
+            today_start = now().replace(hour=0, minute=0, second=0, microsecond=0)
+            today_new = base.filter(SmartWorkOrder.create_time >= today_start).count()
+            today_completed = base.filter(
+                SmartWorkOrder.fstatus == "completed",
+                SmartWorkOrder.factual_end_time >= today_start
+            ).count()
+            today_closed = base.filter(
+                SmartWorkOrder.fstatus == "closed",
+                SmartWorkOrder.update_time >= today_start
+            ).count()
+
+            # 完成率 = 已关闭 / (总数 - 已取消)
+            valid_total = total - cancelled
+            completion_rate = round(closed / valid_total * 100, 1) if valid_total > 0 else 0
+
+            # 及时率 = 未超期已关闭 / 已关闭
+            timely_closed = base.filter(
+                SmartWorkOrder.fstatus == "closed",
+                SmartWorkOrder.fis_overdue == 0
+            ).count()
+            timely_rate = round(timely_closed / closed * 100, 1) if closed > 0 else 100.0
+
+            # 超期率
+            overdue_rate = round(overdue / valid_total * 100, 1) if valid_total > 0 else 0
 
             # 按类型统计
             type_stats = self.db.query(
@@ -581,6 +609,36 @@ class SmartWorkOrderService(BaseService):
                 SmartWorkOrder.is_deleted == 0
             ).group_by(SmartWorkOrder.fwo_type).all()
 
+            TYPE_NAMES = {"quality": "品质检查", "equipment": "设备巡查",
+                          "comprehensive": "综合巡查", "repair": "报事报修", "other": "其他"}
+            by_type = {}
+            for t, cnt in type_stats:
+                by_type[t] = {"name": TYPE_NAMES.get(t, t), "total": cnt or 0}
+
+            # 按执行人统计（Top 10）
+            assignee_stats = self.db.query(
+                SmartWorkOrder.fassignee_name,
+                func.count(SmartWorkOrder.fid),
+                func.sum(SmartWorkOrder.fis_overdue)
+            ).filter(
+                SmartWorkOrder.fec_id == fec_id,
+                SmartWorkOrder.fproject_id == fproject_id,
+                SmartWorkOrder.fassignee_name.isnot(None),
+                SmartWorkOrder.fassignee_name != "",
+                SmartWorkOrder.is_deleted == 0
+            ).group_by(SmartWorkOrder.fassignee_name).order_by(
+                func.count(SmartWorkOrder.fid).desc()
+            ).limit(10).all()
+
+            by_assignee = []
+            for name, cnt, ov_cnt in assignee_stats:
+                by_assignee.append({
+                    "name": name,
+                    "total": cnt or 0,
+                    "overdue": int(ov_cnt or 0),
+                    "timely_rate": round((cnt - int(ov_cnt or 0)) / cnt * 100, 1) if cnt > 0 else 100.0
+                })
+
             # 按优先级统计
             priority_stats = self.db.query(
                 SmartWorkOrder.fpriority,
@@ -591,18 +649,34 @@ class SmartWorkOrderService(BaseService):
                 SmartWorkOrder.is_deleted == 0
             ).group_by(SmartWorkOrder.fpriority).all()
 
+            PRIORITY_NAMES = {"urgent": "紧急", "high": "高", "medium": "中", "low": "低"}
+            by_priority = {}
+            for p, cnt in priority_stats:
+                by_priority[p] = {"name": PRIORITY_NAMES.get(p, p), "total": cnt or 0}
+
             return self.success({
+                # 基础
                 "total": total,
                 "pending_dispatch": pending,
+                "dispatched": dispatched,
+                "accepted": accepted,
                 "in_progress": in_progress,
                 "completed": completed,
                 "closed": closed,
-                "overdue": overdue,
                 "cancelled": cancelled,
-                "completion_rate": round(closed / total * 100, 1) if total > 0 else 0,
-                "overdue_rate": round(overdue / total * 100, 1) if total > 0 else 0,
-                "by_type": {t: c for t, c in type_stats},
-                "by_priority": {p: c for p, c in priority_stats},
+                "overdue_count": overdue,
+                # 今日
+                "today_new": today_new,
+                "today_completed": today_completed,
+                "today_closed": today_closed,
+                # 比率
+                "completion_rate": completion_rate,
+                "timely_rate": timely_rate,
+                "overdue_rate": overdue_rate,
+                # 维度
+                "by_type": by_type,
+                "by_assignee": by_assignee,
+                "by_priority": by_priority,
             })
         except Exception as e:
             logger.error(f"工单统计失败: {str(e)}", exc_info=True)

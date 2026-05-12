@@ -155,6 +155,7 @@
         <div class="tab-item" data-tab="sla" onclick="switchTab('sla')">SLA规则</div>
         <div class="tab-item" data-tab="dispatch" onclick="switchTab('dispatch')">派单规则</div>
         <div class="tab-item" data-tab="categories" onclick="switchTab('categories')">分类管理</div>
+        <div class="tab-item" data-tab="dashboard" onclick="switchTab('dashboard')">统计看板</div>
     </div>
     
     <div class="content">
@@ -162,11 +163,11 @@
         <div id="tab-orders" class="tab-panel active">
             <!-- 统计卡片 -->
             <div class="stats">
-                <div class="stat-card"><div class="label">待派单</div><div class="value orange" id="statPending">0</div><div class="sub">需及时处理</div></div>
-                <div class="stat-card"><div class="label">执行中</div><div class="value blue" id="statProgress">0</div><div class="sub">正在处理</div></div>
-                <div class="stat-card"><div class="label">待审核</div><div class="value purple" id="statReview">0</div><div class="sub">等待审核</div></div>
-                <div class="stat-card"><div class="label">已超期</div><div class="value red" id="statOverdue">0</div><div class="sub">需立即关注</div></div>
-                <div class="stat-card"><div class="label">今日完成</div><div class="value green" id="statDone">0</div><div class="sub">今日关闭工单</div></div>
+                <div class="stat-card"><div class="label">待派单</div><div class="value orange" id="statPending">0</div><div class="sub" id="statPendingSub">需及时处理</div></div>
+                <div class="stat-card"><div class="label">执行中</div><div class="value blue" id="statProgress">0</div><div class="sub" id="statProgressSub">正在处理</div></div>
+                <div class="stat-card"><div class="label">待审核</div><div class="value purple" id="statReview">0</div><div class="sub" id="statReviewSub">等待审核</div></div>
+                <div class="stat-card"><div class="label">已超期</div><div class="value red" id="statOverdue">0</div><div class="sub" id="statOverdueSub">需立即关注</div></div>
+                <div class="stat-card"><div class="label">今日完成</div><div class="value green" id="statDone">0</div><div class="sub" id="statDoneSub">今日关闭工单</div></div>
             </div>
             
             <!-- 筛选栏 -->
@@ -336,6 +337,40 @@
                         <tr><td colspan="6" class="loading">加载中...</td></tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- ===== 统计看板 ===== -->
+        <div id="tab-dashboard" class="tab-panel">
+            <div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
+                <h3 style="font-size:16px;">数据概览</h3>
+                <button class="btn btn-primary" onclick="loadDashboard()">刷新数据</button>
+            </div>
+            <div class="stats" style="margin-bottom:24px;">
+                <div class="stat-card"><div class="label">工单总数</div><div class="value blue" id="dashTotal">0</div></div>
+                <div class="stat-card"><div class="label">完成率</div><div class="value green" id="dashCompletionRate">0%</div></div>
+                <div class="stat-card"><div class="label">及时率</div><div class="value green" id="dashTimelyRate">0%</div></div>
+                <div class="stat-card"><div class="label">超期率</div><div class="value red" id="dashOverdueRate">0%</div></div>
+                <div class="stat-card"><div class="label">今日新增</div><div class="value blue" id="dashTodayNew">0</div></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+                <div style="background:#fff;padding:20px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+                    <h4 style="font-size:14px;margin-bottom:12px;color:#333;">按工单类型分布</h4>
+                    <div id="dashByType"><div class="loading">加载中...</div></div>
+                </div>
+                <div style="background:#fff;padding:20px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+                    <h4 style="font-size:14px;margin-bottom:12px;color:#333;">按优先级分布</h4>
+                    <div id="dashByPriority"><div class="loading">加载中...</div></div>
+                </div>
+            </div>
+            <div style="background:#fff;padding:20px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+                <h4 style="font-size:14px;margin-bottom:12px;color:#333;">执行人排行 (Top 10)</h4>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>排名</th><th>执行人</th><th>工单数</th><th>超期数</th><th>及时率</th></tr></thead>
+                        <tbody id="dashAssigneeList"><tr><td colspan="5" class="loading">加载中...</td></tr></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -975,10 +1010,63 @@
                 const data = await res.json();
                 if (data.code === 200 && data.data) {
                     document.getElementById('statPending').textContent = data.data.pending_dispatch || 0;
-                    document.getElementById('statProgress').textContent = (data.data.accepted || 0) + (data.data.in_progress || 0);
-                    document.getElementById('statReview').textContent = data.data.reviewing || 0;
+                    document.getElementById('statProgress').textContent = (data.data.dispatched || 0) + (data.data.accepted || 0) + (data.data.in_progress || 0);
+                    document.getElementById('statReview').textContent = data.data.completed || 0;
                     document.getElementById('statOverdue').textContent = data.data.overdue_count || 0;
                     document.getElementById('statDone').textContent = data.data.today_closed || 0;
+                    document.getElementById('statPendingSub').textContent = `今日新增${data.data.today_new || 0}`;
+                    document.getElementById('statProgressSub').textContent = `待审核${data.data.completed || 0}`;
+                    document.getElementById('statReviewSub').textContent = `完成率${data.data.completion_rate || 0}%`;
+                    document.getElementById('statOverdueSub').textContent = `超期率${data.data.overdue_rate || 0}%`;
+                    document.getElementById('statDoneSub').textContent = `及时率${data.data.timely_rate || 0}%`;
+                }
+            } catch(e) {}
+        }
+
+        // ========== 统计看板 ==========
+        async function loadDashboard() {
+            try {
+                const res = await fetch(`${API_BASE}/orders/stats`);
+                const data = await res.json();
+                if (data.code !== 200 || !data.data) return;
+                const d = data.data;
+
+                document.getElementById('dashTotal').textContent = d.total || 0;
+                document.getElementById('dashCompletionRate').textContent = (d.completion_rate || 0) + '%';
+                document.getElementById('dashTimelyRate').textContent = (d.timely_rate || 0) + '%';
+                document.getElementById('dashOverdueRate').textContent = (d.overdue_rate || 0) + '%';
+                document.getElementById('dashTodayNew').textContent = d.today_new || 0;
+
+                // 按类型
+                const typeHtml = Object.entries(d.by_type || {}).map(([k, v]) => `
+                    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0;">
+                        <span>${esc(v.name)}</span>
+                        <strong>${v.total}</strong>
+                    </div>`).join('') || '<div class="empty">暂无数据</div>';
+                document.getElementById('dashByType').innerHTML = typeHtml;
+
+                // 按优先级
+                const prioColors = {urgent:'#f5222d',high:'#fa8c16',medium:'#1890ff',low:'#52c41a'};
+                const prioHtml = Object.entries(d.by_priority || {}).map(([k, v]) => `
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0;">
+                        <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${prioColors[k]||'#999'};margin-right:8px;"></span>${esc(v.name)}</span>
+                        <strong>${v.total}</strong>
+                    </div>`).join('') || '<div class="empty">暂无数据</div>';
+                document.getElementById('dashByPriority').innerHTML = prioHtml;
+
+                // 执行人排行
+                const assignees = d.by_assignee || [];
+                if (assignees.length === 0) {
+                    document.getElementById('dashAssigneeList').innerHTML = '<tr><td colspan="5" class="empty">暂无数据</td></tr>';
+                } else {
+                    document.getElementById('dashAssigneeList').innerHTML = assignees.map((a, i) => `
+                        <tr>
+                            <td>${i + 1}</td>
+                            <td>${esc(a.name)}</td>
+                            <td>${a.total}</td>
+                            <td style="color:${a.overdue > 0 ? '#f5222d' : '#52c41a'}">${a.overdue}</td>
+                            <td><span style="color:${a.timely_rate >= 90 ? '#52c41a' : a.timely_rate >= 70 ? '#fa8c16' : '#f5222d'}">${a.timely_rate}%</span></td>
+                        </tr>`).join('');
                 }
             } catch(e) {}
         }

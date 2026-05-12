@@ -1,5 +1,5 @@
 # api/smart_work_order_routes.py - 智慧工单API路由
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 from typing import Optional
 
@@ -12,6 +12,37 @@ router = APIRouter(prefix="/api/smart-wo", tags=["智慧工单"])
 
 FEC_ID = "default_fec"
 FPROJECT_ID = "default_project"
+
+
+# ========== 认证中间件 ==========
+
+async def get_current_user(request: Request):
+    """
+    从请求中提取当前用户信息。
+    支持 access_token (query/header) 或 Authorization Bearer。
+    开发模式下如果无 token 则返回默认用户。
+    """
+    token = (
+        request.query_params.get("access_token")
+        or request.headers.get("access_token")
+        or request.headers.get("Authorization", "").replace("Bearer ", "")
+    )
+    if token:
+        try:
+            from utils.auth_util import get_user_from_token
+            user = get_user_from_token(token)
+            if user:
+                return user
+        except Exception:
+            pass
+    # 开发模式：无 token 时返回默认用户
+    return {
+        "user_id": "dev_admin",
+        "username": "开发管理员",
+        "fec_id": FEC_ID,
+        "fproject_id": FPROJECT_ID,
+        "role_ids": ["admin"]
+    }
 
 
 # ========== 工单管理 ==========
@@ -293,3 +324,19 @@ def update_category(fid: str, body: dict, db: Session = Depends(get_db)):
 def delete_category(fid: str, db: Session = Depends(get_db)):
     svc = WoRuleService(db)
     return svc.delete_category(FEC_ID, FPROJECT_ID, fid)
+
+
+# ========== 定时任务（手动触发） ==========
+
+@router.post("/scheduler/check-overdue", summary="手动触发SLA超期检测")
+def manual_check_overdue(db: Session = Depends(get_db)):
+    from service.wo_scheduler_service import WoSchedulerService
+    svc = WoSchedulerService(db)
+    return svc.check_overdue_orders(FEC_ID, FPROJECT_ID)
+
+
+@router.post("/scheduler/generate-from-templates", summary="手动触发模板生成工单")
+def manual_generate_from_templates(db: Session = Depends(get_db)):
+    from service.wo_scheduler_service import WoSchedulerService
+    svc = WoSchedulerService(db)
+    return svc.generate_orders_from_templates(FEC_ID, FPROJECT_ID)
