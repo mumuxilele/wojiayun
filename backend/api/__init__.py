@@ -6,8 +6,10 @@ from api.staff_routes import router as staff_router
 from api.work_order_routes import router as work_order_router
 from api.bill_routes import router as bill_router
 from api.admin_routes import router as admin_router
+from api.smart_work_order_routes import router as smart_work_order_router
 
 __all__ = [
     "enterprise_router", "building_router", "resident_router",
-    "staff_router", "work_order_router", "bill_router", "admin_router"
+    "staff_router", "work_order_router", "bill_router", "admin_router",
+    "smart_work_order_router"
 ]

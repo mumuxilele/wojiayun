@@ -8,7 +8,8 @@ from config.env_config import API_PORT
 from utils.log_util import logger
 from api import (
     enterprise_router, building_router, resident_router,
-    staff_router, work_order_router, bill_router, admin_router
+    staff_router, work_order_router, bill_router, admin_router,
+    smart_work_order_router
 )
 
 # 创建FastAPI应用
@@ -35,6 +36,7 @@ app.include_router(staff_router)
 app.include_router(work_order_router)
 app.include_router(bill_router)
 app.include_router(admin_router)
+app.include_router(smart_work_order_router)
 
 
 @app.on_event("startup")

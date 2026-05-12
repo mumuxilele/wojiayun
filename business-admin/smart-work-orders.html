@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧工单管理</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; }
+        
+        /* 顶部导航 */
+        .top-bar { background: #fff; padding: 12px 24px; border-bottom: 1px solid #e8e8e8; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .top-bar h2 { font-size: 18px; font-weight: 600; }
+        .top-bar .actions { display: flex; gap: 10px; }
+        
+        /* Tab 导航 */
+        .tab-nav { background: #fff; padding: 0 24px; border-bottom: 1px solid #e8e8e8; display: flex; gap: 0; }
+        .tab-item { padding: 12px 20px; cursor: pointer; font-size: 14px; color: #666; border-bottom: 2px solid transparent; transition: all 0.3s; }
+        .tab-item:hover { color: #1890ff; }
+        .tab-item.active { color: #1890ff; border-bottom-color: #1890ff; font-weight: 500; }
+        
+        /* 内容区 */
+        .content { padding: 20px 24px; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+        
+        /* 统计卡片 */
+        .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 20px; }
+        .stat-card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .stat-card .label { font-size: 13px; color: #999; margin-bottom: 8px; }
+        .stat-card .value { font-size: 28px; font-weight: 600; }
+        .stat-card .value.blue { color: #1890ff; }
+        .stat-card .value.orange { color: #fa8c16; }
+        .stat-card .value.red { color: #f5222d; }
+        .stat-card .value.green { color: #52c41a; }
+        .stat-card .value.purple { color: #722ed1; }
+        .stat-card .sub { font-size: 12px; color: #999; margin-top: 4px; }
+        
+        /* 筛选栏 */
+        .filter-bar { background: #fff; padding: 16px 20px; border-radius: 8px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+        .filter-bar select, .filter-bar input { padding: 6px 12px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 13px; outline: none; }
+        .filter-bar select:focus, .filter-bar input:focus { border-color: #1890ff; }
+        .filter-bar input[type="text"] { width: 200px; }
+        .filter-bar input[type="date"] { width: 140px; }
+        
+        /* 按钮 */
+        .btn { padding: 6px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px; }
+        .btn-primary { background: #1890ff; color: #fff; }
+        .btn-primary:hover { background: #40a9ff; }
+        .btn-success { background: #52c41a; color: #fff; }
+        .btn-success:hover { background: #73d13d; }
+        .btn-warning { background: #fa8c16; color: #fff; }
+        .btn-warning:hover { background: #ffa940; }
+        .btn-danger { background: #ff4d4f; color: #fff; }
+        .btn-danger:hover { background: #ff7875; }
+        .btn-default { background: #fff; color: #333; border: 1px solid #d9d9d9; }
+        .btn-default:hover { color: #1890ff; border-color: #1890ff; }
+        .btn-sm { padding: 4px 10px; font-size: 12px; }
+        .btn-lg { padding: 8px 24px; font-size: 14px; }
+        
+        /* 表格 */
+        .table-wrap { background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+        th { background: #fafafa; font-weight: 500; color: #666; white-space: nowrap; }
+        tr:hover { background: #f5f7fa; }
+        .actions { display: flex; gap: 8px; }
+        .actions a { color: #1890ff; cursor: pointer; text-decoration: none; font-size: 12px; }
+        .actions a:hover { text-decoration: underline; }
+        .actions a.danger { color: #ff4d4f; }
+        
+        /* 状态标签 */
+        .tag { padding: 2px 8px; border-radius: 4px; font-size: 12px; display: inline-block; }
+        .tag-blue { background: #e6f7ff; color: #1890ff; }
+        .tag-orange { background: #fff7e6; color: #fa8c16; }
+        .tag-red { background: #fff1f0; color: #f5222d; }
+        .tag-green { background: #f6ffed; color: #52c41a; }
+        .tag-purple { background: #f9f0ff; color: #722ed1; }
+        .tag-gray { background: #f5f5f5; color: #999; }
+        .tag-cyan { background: #e6fffb; color: #13c2c2; }
+        
+        /* 分页 */
+        .pagination { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; }
+        .pagination .info { font-size: 13px; color: #666; }
+        .pagination .pages { display: flex; gap: 4px; }
+        .pagination .pages button { width: 32px; height: 32px; border: 1px solid #d9d9d9; background: #fff; border-radius: 4px; cursor: pointer; font-size: 13px; }
+        .pagination .pages button.active { background: #1890ff; color: #fff; border-color: #1890ff; }
+        .pagination .pages button:hover:not(.active) { color: #1890ff; border-color: #1890ff; }
+        
+        /* 弹窗 */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.45); z-index: 1000; }
+        .modal-overlay.show { display: flex; justify-content: center; align-items: flex-start; padding-top: 60px; }
+        .modal { background: #fff; border-radius: 8px; width: 680px; max-height: 80vh; overflow: hidden; box-shadow: 0 6px 16px rgba(0,0,0,0.15); }
+        .modal-header { padding: 16px 24px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h3 { font-size: 16px; }
+        .modal-close { cursor: pointer; font-size: 20px; color: #999; background: none; border: none; }
+        .modal-close:hover { color: #333; }
+        .modal-body { padding: 24px; max-height: 60vh; overflow-y: auto; }
+        .modal-footer { padding: 12px 24px; border-top: 1px solid #f0f0f0; display: flex; justify-content: flex-end; gap: 10px; }
+        
+        /* 表单 */
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 13px; color: #333; margin-bottom: 6px; font-weight: 500; }
+        .form-group label .required { color: #f5222d; margin-left: 2px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 13px; outline: none; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #1890ff; box-shadow: 0 0 0 2px rgba(24,144,255,0.1); }
+        .form-group textarea { min-height: 80px; resize: vertical; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        
+        /* 详情 */
+        .detail-section { margin-bottom: 20px; }
+        .detail-section-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #f0f0f0; color: #1890ff; }
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .detail-item { display: flex; padding: 6px 0; }
+        .detail-item .label { width: 100px; color: #999; font-size: 13px; flex-shrink: 0; }
+        .detail-item .value { flex: 1; font-size: 13px; color: #333; }
+        
+        /* 时间线 */
+        .timeline { padding: 0 0 0 20px; border-left: 2px solid #e8e8e8; }
+        .timeline-item { position: relative; padding: 0 0 20px 20px; }
+        .timeline-item::before { content: ''; position: absolute; left: -26px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: #1890ff; border: 2px solid #fff; box-shadow: 0 0 0 2px #1890ff; }
+        .timeline-item .time { font-size: 12px; color: #999; }
+        .timeline-item .content { font-size: 13px; color: #333; margin-top: 4px; }
+        .timeline-item .user { font-size: 12px; color: #1890ff; margin-top: 2px; }
+        
+        /* 空状态 */
+        .empty { text-align: center; padding: 60px 20px; color: #999; }
+        .empty .icon { font-size: 48px; margin-bottom: 12px; }
+        
+        /* 加载 */
+        .loading { text-align: center; padding: 40px; color: #999; }
+        
+        /* 规则卡片 */
+        .rule-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+        .rule-card { background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; padding: 20px; }
+        .rule-card .rule-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .rule-card .rule-name { font-size: 15px; font-weight: 600; }
+        .rule-card .rule-info { font-size: 13px; color: #666; line-height: 1.8; }
+        .rule-card .rule-info span { color: #1890ff; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <div class="top-bar">
+        <h2>🔧 智慧工单管理</h2>
+        <div class="actions">
+            <button class="btn btn-primary btn-lg" onclick="showCreateModal()">+ 新建工单</button>
+        </div>
+    </div>
+    
+    <!-- Tab 导航 -->
+    <div class="tab-nav">
+        <div class="tab-item active" data-tab="orders" onclick="switchTab('orders')">工单管理</div>
+        <div class="tab-item" data-tab="templates" onclick="switchTab('templates')">模板管理</div>
+        <div class="tab-item" data-tab="sla" onclick="switchTab('sla')">SLA规则</div>
+        <div class="tab-item" data-tab="dispatch" onclick="switchTab('dispatch')">派单规则</div>
+        <div class="tab-item" data-tab="categories" onclick="switchTab('categories')">分类管理</div>
+    </div>
+    
+    <div class="content">
+        <!-- ===== 工单管理 ===== -->
+        <div id="tab-orders" class="tab-panel active">
+            <!-- 统计卡片 -->
+            <div class="stats">
+                <div class="stat-card"><div class="label">待派单</div><div class="value orange" id="statPending">0</div><div class="sub">需及时处理</div></div>
+                <div class="stat-card"><div class="label">执行中</div><div class="value blue" id="statProgress">0</div><div class="sub">正在处理</div></div>
+                <div class="stat-card"><div class="label">待审核</div><div class="value purple" id="statReview">0</div><div class="sub">等待审核</div></div>
+                <div class="stat-card"><div class="label">已超期</div><div class="value red" id="statOverdue">0</div><div class="sub">需立即关注</div></div>
+                <div class="stat-card"><div class="label">今日完成</div><div class="value green" id="statDone">0</div><div class="sub">今日关闭工单</div></div>
+            </div>
+            
+            <!-- 筛选栏 -->
+            <div class="filter-bar">
+                <select id="filterStatus" onchange="loadOrders()">
+                    <option value="">全部状态</option>
+                    <option value="pending_dispatch">待派单</option>
+                    <option value="dispatched">已派单</option>
+                    <option value="accepted">已接收</option>
+                    <option value="in_progress">执行中</option>
+                    <option value="completed">已完成</option>
+                    <option value="reviewing">审核中</option>
+                    <option value="closed">已关闭</option>
+                    <option value="cancelled">已取消</option>
+                </select>
+                <select id="filterType" onchange="loadOrders()">
+                    <option value="">全部类型</option>
+                    <option value="quality">品质检查</option>
+                    <option value="equipment">设备巡查</option>
+                    <option value="comprehensive">综合巡查</option>
+                    <option value="repair">报事报修</option>
+                    <option value="other">其他</option>
+                </select>
+                <select id="filterPriority" onchange="loadOrders()">
+                    <option value="">全部优先级</option>
+                    <option value="urgent">紧急</option>
+                    <option value="high">高</option>
+                    <option value="medium">中</option>
+                    <option value="low">低</option>
+                </select>
+                <select id="filterSource" onchange="loadOrders()">
+                    <option value="">全部来源</option>
+                    <option value="manual">手动创建</option>
+                    <option value="system">系统自动</option>
+                    <option value="eba">EBA系统</option>
+                    <option value="ai">AI品控</option>
+                    <option value="complaint">投诉转</option>
+                </select>
+                <input type="text" id="filterKeyword" placeholder="搜索工单编号/标题..." onkeydown="if(event.key==='Enter')loadOrders()">
+                <button class="btn btn-primary" onclick="loadOrders()">查询</button>
+                <button class="btn btn-default" onclick="resetFilters()">重置</button>
+            </div>
+            
+            <!-- 工单列表 -->
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>工单编号</th>
+                            <th>标题</th>
+                            <th>类型</th>
+                            <th>优先级</th>
+                            <th>状态</th>
+                            <th>执行人</th>
+                            <th>创建时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orderList">
+                        <tr><td colspan="8" class="loading">加载中...</td></tr>
+                    </tbody>
+                </table>
+                <div class="pagination">
+                    <div class="info" id="pageInfo">共 0 条</div>
+                    <div class="pages" id="pageButtons"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ===== 模板管理 ===== -->
+        <div id="tab-templates" class="tab-panel">
+            <div class="filter-bar">
+                <select id="tplFilterType" onchange="loadTemplates()">
+                    <option value="">全部类型</option>
+                    <option value="quality">品质检查</option>
+                    <option value="equipment">设备巡查</option>
+                    <option value="comprehensive">综合巡查</option>
+                </select>
+                <input type="text" id="tplFilterKeyword" placeholder="搜索模板名称..." onkeydown="if(event.key==='Enter')loadTemplates()">
+                <button class="btn btn-primary" onclick="loadTemplates()">查询</button>
+                <div style="flex:1"></div>
+                <button class="btn btn-primary" onclick="showTemplateModal()">+ 新建模板</button>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>模板名称</th>
+                            <th>编号</th>
+                            <th>类型</th>
+                            <th>周期</th>
+                            <th>执行时间</th>
+                            <th>SLA</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="templateList">
+                        <tr><td colspan="8" class="loading">加载中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- ===== SLA规则 ===== -->
+        <div id="tab-sla" class="tab-panel">
+            <div style="margin-bottom:16px;display:flex;justify-content:flex-end;">
+                <button class="btn btn-primary" onclick="showSlaModal()">+ 新建SLA规则</button>
+            </div>
+            <div class="rule-cards" id="slaCards">
+                <div class="loading">加载中...</div>
+            </div>
+        </div>
+        
+        <!-- ===== 派单规则 ===== -->
+        <div id="tab-dispatch" class="tab-panel">
+            <div style="margin-bottom:16px;display:flex;justify-content:flex-end;">
+                <button class="btn btn-primary" onclick="showDispatchModal()">+ 新建派单规则</button>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>规则名称</th>
+                            <th>规则类型</th>
+                            <th>匹配条件</th>
+                            <th>派单动作</th>
+                            <th>优先级</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dispatchList">
+                        <tr><td colspan="7" class="loading">加载中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- ===== 分类管理 ===== -->
+        <div id="tab-categories" class="tab-panel">
+            <div class="filter-bar">
+                <select id="catFilterType" onchange="loadCategories()">
+                    <option value="">全部类型</option>
+                    <option value="quality">品质检查</option>
+                    <option value="equipment">设备巡查</option>
+                    <option value="comprehensive">综合巡查</option>
+                    <option value="repair">报事报修</option>
+                    <option value="other">其他</option>
+                </select>
+                <div style="flex:1"></div>
+                <button class="btn btn-primary" onclick="showCategoryModal()">+ 新建分类</button>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>分类名称</th>
+                            <th>编码</th>
+                            <th>类型</th>
+                            <th>上级分类</th>
+                            <th>排序</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="categoryList">
+                        <tr><td colspan="6" class="loading">加载中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ===== 新建工单弹窗 ===== -->
+    <div class="modal-overlay" id="createModal">
+        <div class="modal" style="width:720px;">
+            <div class="modal-header">
+                <h3 id="createModalTitle">新建工单</h3>
+                <button class="modal-close" onclick="closeModal('createModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>工单类型 <span class="required">*</span></label>
+                        <select id="formType">
+                            <option value="repair">报事报修</option>
+                            <option value="quality">品质检查</option>
+                            <option value="equipment">设备巡查</option>
+                            <option value="comprehensive">综合巡查</option>
+                            <option value="other">其他</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>工单分类 <span class="required">*</span></label>
+                        <select id="formCategory"><option value="">请选择分类</option></select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>工单标题 <span class="required">*</span></label>
+                    <input type="text" id="formTitle" placeholder="请输入工单标题">
+                </div>
+                <div class="form-group">
+                    <label>工单描述</label>
+                    <textarea id="formDesc" placeholder="请详细描述工单内容..."></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>优先级 <span class="required">*</span></label>
+                        <select id="formPriority">
+                            <option value="medium">中</option>
+                            <option value="low">低</option>
+                            <option value="high">高</option>
+                            <option value="urgent">紧急</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>SLA等级</label>
+                        <select id="formSla">
+                            <option value="L3">L3 - 中(响应1h/完成8h)</option>
+                            <option value="L4">L4 - 低(响应2h/完成24h)</option>
+                            <option value="L2">L2 - 高(响应30min/完成4h)</option>
+                            <option value="L1">L1 - 紧急(响应15min/完成2h)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>位置类型</label>
+                        <select id="formLocType">
+                            <option value="building">楼栋</option>
+                            <option value="area">区域</option>
+                            <option value="equipment">设备</option>
+                            <option value="outdoor">室外</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>详细位置</label>
+                        <input type="text" id="formLocation" placeholder="如: A栋3楼301室">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>联系人</label>
+                        <input type="text" id="formContact" placeholder="联系人姓名">
+                    </div>
+                    <div class="form-group">
+                        <label>联系电话</label>
+                        <input type="text" id="formPhone" placeholder="联系电话">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>备注</label>
+                    <textarea id="formRemark" placeholder="其他备注信息..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-default" onclick="closeModal('createModal')">取消</button>
+                <button class="btn btn-primary" onclick="submitCreateOrder()">提交</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ===== 工单详情弹窗 ===== -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal" style="width:800px;">
+            <div class="modal-header">
+                <h3>工单详情</h3>
+                <button class="modal-close" onclick="closeModal('detailModal')">×</button>
+            </div>
+            <div class="modal-body" id="detailBody">
+                <div class="loading">加载中...</div>
+            </div>
+            <div class="modal-footer" id="detailFooter">
+                <button class="btn btn-default" onclick="closeModal('detailModal')">关闭</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ===== 派单弹窗 ===== -->
+    <div class="modal-overlay" id="dispatchModal">
+        <div class="modal" style="width:480px;">
+            <div class="modal-header">
+                <h3>派单</h3>
+                <button class="modal-close" onclick="closeModal('dispatchModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>派单方式</label>
+                    <select id="dispatchType">
+                        <option value="manual">手动指定</option>
+                        <option value="auto">智能派单</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>执行人ID <span class="required">*</span></label>
+                    <input type="text" id="dispatchAssigneeId" placeholder="请输入执行人ID">
+                </div>
+                <div class="form-group">
+                    <label>执行人姓名 <span class="required">*</span></label>
+                    <input type="text" id="dispatchAssigneeName" placeholder="请输入执行人姓名">
+                </div>
+                <div class="form-group">
+                    <label>派单说明</label>
+                    <textarea id="dispatchRemark" placeholder="派单说明..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-default" onclick="closeModal('dispatchModal')">取消</button>
+                <button class="btn btn-primary" onclick="submitDispatch()">确认派单</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== 配置 ==========
+        const API_BASE = '/api/smart-wo';
+        const urlParams = new URLSearchParams(location.search);
+        const token = urlParams.get('access_token') || localStorage.getItem('admin_token') || '';
+        const isdev = urlParams.get('isdev') || '0';
+        
+        // ========== 状态映射 ==========
+        const STATUS_MAP = {
+            'pending_dispatch': { text: '待派单', cls: 'tag-orange' },
+            'dispatched': { text: '已派单', cls: 'tag-blue' },
+            'accepted': { text: '已接收', cls: 'tag-cyan' },
+            'in_progress': { text: '执行中', cls: 'tag-blue' },
+            'completed': { text: '已完成', cls: 'tag-green' },
+            'reviewing': { text: '审核中', cls: 'tag-purple' },
+            'closed': { text: '已关闭', cls: 'tag-gray' },
+            'cancelled': { text: '已取消', cls: 'tag-gray' },
+            'rejected': { text: '已驳回', cls: 'tag-red' },
+        };
+        const TYPE_MAP = { quality: '品质检查', equipment: '设备巡查', comprehensive: '综合巡查', repair: '报事报修', other: '其他' };
+        const PRIORITY_MAP = { urgent: { text: '紧急', cls: 'tag-red' }, high: { text: '高', cls: 'tag-orange' }, medium: { text: '中', cls: 'tag-blue' }, low: { text: '低', cls: 'tag-gray' } };
+        const SOURCE_MAP = { manual: '手动创建', system: '系统自动', eba: 'EBA系统', ai: 'AI品控', complaint: '投诉转', inspection: '巡检转' };
+        const CYCLE_MAP = { daily: '每日', weekly: '每周', monthly: '每月', quarterly: '每季度', custom: '自定义' };
+        
+        let currentPage = 1;
+        let currentOrderId = null;
+        
+        // ========== Tab 切换 ==========
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.tab-item[data-tab="${tab}"]`).classList.add('active');
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+            
+            if (tab === 'orders') loadOrders();
+            else if (tab === 'templates') loadTemplates();
+            else if (tab === 'sla') loadSlaRules();
+            else if (tab === 'dispatch') loadDispatchRules();
+            else if (tab === 'categories') loadCategories();
+        }
+        
+        // ========== 工单列表 ==========
+        async function loadOrders(page = 1) {
+            currentPage = page;
+            const status = document.getElementById('filterStatus').value;
+            const woType = document.getElementById('filterType').value;
+            const priority = document.getElementById('filterPriority').value;
+            const source = document.getElementById('filterSource').value;
+            const keyword = document.getElementById('filterKeyword').value;
+            
+            let url = `${API_BASE}/orders?page=${page}&page_size=15`;
+            if (status) url += `&status=${status}`;
+            if (woType) url += `&wo_type=${woType}`;
+            if (priority) url += `&priority=${priority}`;
+            if (source) url += `&source=${source}`;
+            if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
+            
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.code === 200 && data.data) {
+                    renderOrderList(data.data);
+                    loadStats();
+                } else {
+                    document.getElementById('orderList').innerHTML = '<tr><td colspan="8" class="empty">暂无数据</td></tr>';
+                }
+            } catch (e) {
+                document.getElementById('orderList').innerHTML = '<tr><td colspan="8" class="empty">加载失败</td></tr>';
+            }
+        }
+        
+        function renderOrderList(data) {
+            const items = data.items || [];
+            const total = data.total || 0;
+            
+            if (items.length === 0) {
+                document.getElementById('orderList').innerHTML = '<tr><td colspan="8" class="empty"><div class="icon">📋</div>暂无工单数据</td></tr>';
+                document.getElementById('pageInfo').textContent = '共 0 条';
+                document.getElementById('pageButtons').innerHTML = '';
+                return;
+            }
+            
+            document.getElementById('orderList').innerHTML = items.map(o => {
+                const st = STATUS_MAP[o.status] || { text: o.status, cls: 'tag-gray' };
+                const pr = PRIORITY_MAP[o.priority] || { text: o.priority, cls: 'tag-gray' };
+                const tp = TYPE_MAP[o.wo_type] || o.wo_type;
+                const src = SOURCE_MAP[o.source] || o.source;
+                const overdueTag = o.is_overdue ? ' <span class="tag tag-red">超期</span>' : '';
+                return `<tr>
+                    <td><strong>${esc(o.fwo_no)}</strong></td>
+                    <td>${esc(o.ftitle)}${overdueTag}</td>
+                    <td><span class="tag tag-blue">${tp}</span></td>
+                    <td><span class="tag ${pr.cls}">${pr.text}</span></td>
+                    <td><span class="tag ${st.cls}">${st.text}</span></td>
+                    <td>${esc(o.fassignee_name || '-')}</td>
+                    <td>${o.create_time || '-'}</td>
+                    <td class="actions">
+                        <a onclick="viewOrder('${o.fid}')">详情</a>
+                        ${o.status === 'pending_dispatch' ? `<a onclick="showDispatchModal('${o.fid}')">派单</a>` : ''}
+                        ${o.status === 'in_progress' ? `<a onclick="completeOrder('${o.fid}')">完成</a>` : ''}
+                        ${o.status === 'completed' ? `<a onclick="reviewOrder('${o.fid}')">审核</a>` : ''}
+                        ${['pending_dispatch','dispatched'].includes(o.status) ? `<a class="danger" onclick="cancelOrder('${o.fid}')">取消</a>` : ''}
+                    </td>
+                </tr>`;
+            }).join('');
+            
+            // 分页
+            const totalPages = Math.ceil(total / 15);
+            document.getElementById('pageInfo').textContent = `共 ${total} 条`;
+            let btns = '';
+            if (currentPage > 1) btns += `<button onclick="loadOrders(${currentPage-1})">‹</button>`;
+            for (let i = Math.max(1, currentPage-2); i <= Math.min(totalPages, currentPage+2); i++) {
+                btns += `<button class="${i===currentPage?'active':''}" onclick="loadOrders(${i})">${i}</button>`;
+            }
+            if (currentPage < totalPages) btns += `<button onclick="loadOrders(${currentPage+1})">›</button>`;
+            document.getElementById('pageButtons').innerHTML = btns;
+        }
+        
+        async function loadStats() {
+            try {
+                const res = await fetch(`${API_BASE}/orders/stats`);
+                const data = await res.json();
+                if (data.code === 200 && data.data) {
+                    document.getElementById('statPending').textContent = data.data.pending_dispatch || 0;
+                    document.getElementById('statProgress').textContent = (data.data.accepted || 0) + (data.data.in_progress || 0);
+                    document.getElementById('statReview').textContent = data.data.reviewing || 0;
+                    document.getElementById('statOverdue').textContent = data.data.overdue_count || 0;
+                    document.getElementById('statDone').textContent = data.data.today_closed || 0;
+                }
+            } catch(e) {}
+        }
+        
+        function resetFilters() {
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterType').value = '';
+            document.getElementById('filterPriority').value = '';
+            document.getElementById('filterSource').value = '';
+            document.getElementById('filterKeyword').value = '';
+            loadOrders(1);
+        }
+        
+        // ========== 工单详情 ==========
+        async function viewOrder(fid) {
+            currentOrderId = fid;
+            document.getElementById('detailBody').innerHTML = '<div class="loading">加载中...</div>';
+            document.getElementById('detailModal').classList.add('show');
+            
+            try {
+                const res = await fetch(`${API_BASE}/orders/${fid}`);
+                const data = await res.json();
+                if (data.code === 200 && data.data) {
+                    renderOrderDetail(data.data);
+                } else {
+                    document.getElementById('detailBody').innerHTML = '<div class="empty">加载失败</div>';
+                }
+            } catch(e) {
+                document.getElementById('detailBody').innerHTML = '<div class="empty">加载失败</div>';
+            }
+        }
+        
+        function renderOrderDetail(o) {
+            const st = STATUS_MAP[o.status] || { text: o.status, cls: 'tag-gray' };
+            const pr = PRIORITY_MAP[o.priority] || { text: o.priority, cls: 'tag-gray' };
+            const tp = TYPE_MAP[o.wo_type] || o.wo_type;
+            const src = SOURCE_MAP[o.source] || o.source;
+            
+            let html = `
+                <div class="detail-section">
+                    <div class="detail-section-title">基本信息</div>
+                    <div class="detail-grid">
+                        <div class="detail-item"><span class="label">工单编号</span><span class="value"><strong>${esc(o.fwo_no)}</strong></span></div>
+                        <div class="detail-item"><span class="label">工单类型</span><span class="value">${tp}</span></div>
+                        <div class="detail-item"><span class="label">状态</span><span class="value"><span class="tag ${st.cls}">${st.text}</span></span></div>
+                        <div class="detail-item"><span class="label">优先级</span><span class="value"><span class="tag ${pr.cls}">${pr.text}</span></span></div>
+                        <div class="detail-item"><span class="label">来源</span><span class="value">${src}</span></div>
+                        <div class="detail-item"><span class="label">SLA等级</span><span class="value">${o.fsla_level || '-'}</span></div>
+                        <div class="detail-item"><span class="label">创建时间</span><span class="value">${o.create_time}</span></div>
+                        <div class="detail-item"><span class="label">创建人</span><span class="value">${esc(o.fcreate_user_id || '-')}</span></div>
+                    </div>
+                </div>
+                <div class="detail-section">
+                    <div class="detail-section-title">工单内容</div>
+                    <div class="detail-grid">
+                        <div class="detail-item" style="grid-column:span 2"><span class="label">标题</span><span class="value"><strong>${esc(o.ftitle)}</strong></span></div>
+                        <div class="detail-item" style="grid-column:span 2"><span class="label">描述</span><span class="value">${esc(o.fdescription || '无')}</span></div>
+                        <div class="detail-item"><span class="label">位置</span><span class="value">${esc(o.flocation_detail || '-')}</span></div>
+                        <div class="detail-item"><span class="label">联系人</span><span class="value">${esc(o.fcontact_name || '-')} ${esc(o.fcontact_phone || '')}</span></div>
+                    </div>
+                </div>
+                <div class="detail-section">
+                    <div class="detail-section-title">处理信息</div>
+                    <div class="detail-grid">
+                        <div class="detail-item"><span class="label">执行人</span><span class="value">${esc(o.fassignee_name || '-')}</span></div>
+                        <div class="detail-item"><span class="label">派单方式</span><span class="value">${o.fdispatch_type === 'auto' ? '智能派单' : '手动派单'}</span></div>
+                        <div class="detail-item"><span class="label">派单时间</span><span class="value">${o.fdispatched_at || '-'}</span></div>
+                        <div class="detail-item"><span class="label">接收时间</span><span class="value">${o.faccepted_at || '-'}</span></div>
+                        <div class="detail-item"><span class="label">开始时间</span><span class="value">${o.factual_start_time || '-'}</span></div>
+                        <div class="detail-item"><span class="label">完成时间</span><span class="value">${o.factual_end_time || '-'}</span></div>
+                        <div class="detail-item"><span class="label">响应截止</span><span class="value">${o.fsla_response_deadline || '-'}</span></div>
+                        <div class="detail-item"><span class="label">完成截止</span><span class="value">${o.fsla_complete_deadline || '-'}</span></div>
+                    </div>
+                    ${o.fresult_summary ? `<div class="detail-item" style="margin-top:8px"><span class="label">处理结果</span><span class="value">${esc(o.fresult_summary)}</span></div>` : ''}
+                </div>
+                ${o.freview_result ? `
+                <div class="detail-section">
+                    <div class="detail-section-title">审核信息</div>
+                    <div class="detail-grid">
+                        <div class="detail-item"><span class="label">审核人</span><span class="value">${esc(o.freviewer_name || '-')}</span></div>
+                        <div class="detail-item"><span class="label">审核结果</span><span class="value">${o.freview_result === 'pass' ? '通过' : '驳回'}</span></div>
+                        <div class="detail-item" style="grid-column:span 2"><span class="label">审核意见</span><span class="value">${esc(o.freview_opinion || '-')}</span></div>
+                    </div>
+                </div>` : ''}
+                ${o.fevaluation_score ? `
+                <div class="detail-section">
+                    <div class="detail-section-title">评价信息</div>
+                    <div class="detail-grid">
+                        <div class="detail-item"><span class="label">评分</span><span class="value">${'⭐'.repeat(o.fevaluation_score)} ${o.fevaluation_score}/5</span></div>
+                        <div class="detail-item"><span class="label">评价内容</span><span class="value">${esc(o.fevaluation_content || '-')}</span></div>
+                    </div>
+                </div>` : ''}
+            `;
+            
+            // 操作日志
+            html += `<div class="detail-section"><div class="detail-section-title">操作日志</div><div id="orderLogs"><div class="loading">加载中...</div></div></div>`;
+            
+            document.getElementById('detailBody').innerHTML = html;
+            
+            // 加载操作日志
+            loadOrderLogs(fid);
+            
+            // 底部操作按钮
+            let footer = '<button class="btn btn-default" onclick="closeModal(\'detailModal\')">关闭</button>';
+            if (o.status === 'pending_dispatch') footer += '<button class="btn btn-primary" onclick="closeModal(\'detailModal\');showDispatchModal(\'' + fid + '\')">派单</button>';
+            if (o.status === 'in_progress') footer += '<button class="btn btn-success" onclick="completeOrder(\'' + fid + '\')">完成</button>';
+            if (o.status === 'completed') footer += '<button class="btn btn-primary" onclick="reviewOrder(\'' + fid + '\')">审核</button>';
+            document.getElementById('detailFooter').innerHTML = footer;
+        }
+        
+        async function loadOrderLogs(fid) {
+            try {
+                const res = await fetch(`${API_BASE}/orders/${fid}/logs`);
+                const data = await res.json();
+                const container = document.getElementById('orderLogs');
+                if (!container) return;
+                
+                if (data.code === 200 && data.data && data.data.length > 0) {
+                    container.innerHTML = '<div class="timeline">' + data.data.map(log => `
+                        <div class="timeline-item">
+                            <div class="time">${log.fcreate_time || '-'}</div>
+                            <div class="content">${esc(log.faction_name || log.faction || '')}${log.fremark ? ' - ' + esc(log.fremark) : ''}</div>
+                            <div class="user">${esc(log.foperator_name || log.foperator_id || '-')}</div>
+                        </div>
+                    `).join('') + '</div>';
+                } else {
+                    container.innerHTML = '<div class="empty" style="padding:20px">暂无操作日志</div>';
+                }
+            } catch(e) {
+                const container = document.getElementById('orderLogs');
+                if (container) container.innerHTML = '<div class="empty" style="padding:20px">加载失败</div>';
+            }
+        }
+        
+        // ========== 工单操作 ==========
+        function showCreateModal() {
+            document.getElementById('createModalTitle').textContent = '新建工单';
+            document.getElementById('formTitle').value = '';
+            document.getElementById('formDesc').value = '';
+            document.getElementById('formType').value = 'repair';
+            document.getElementById('formPriority').value = 'medium';
+            document.getElementById('formSla').value = 'L3';
+            document.getElementById('formLocation').value = '';
+            document.getElementById('formContact').value = '';
+            document.getElementById('formPhone').value = '';
+            document.getElementById('formRemark').value = '';
+            loadCategoryOptions();
+            document.getElementById('createModal').classList.add('show');
+        }
+        
+        async function loadCategoryOptions() {
+            try {
+                const res = await fetch(`${API_BASE}/categories`);
+                const data = await res.json();
+                if (data.code === 200 && data.data) {
+                    const sel = document.getElementById('formCategory');
+                    sel.innerHTML = '<option value="">请选择分类</option>' + data.data.map(c => 
+                        `<option value="${c.fid}">${esc(c.fcategory_name)} (${TYPE_MAP[c.fcategory_type] || c.fcategory_type})</option>`
+                    ).join('');
+                }
+            } catch(e) {}
+        }
+        
+        async function submitCreateOrder() {
+            const title = document.getElementById('formTitle').value.trim();
+            if (!title) { alert('请输入工单标题'); return; }
+            
+            const body = {
+                ftitle: title,
+                fdescription: document.getElementById('formDesc').value.trim(),
+                fwo_type: document.getElementById('formType').value,
+                fcategory_id: document.getElementById('formCategory').value,
+                fpriority: document.getElementById('formPriority').value,
+                fsla_level: document.getElementById('formSla').value,
+                flocation_type: document.getElementById('formLocType').value,
+                flocation_detail: document.getElementById('formLocation').value.trim(),
+                fcontact_name: document.getElementById('formContact').value.trim(),
+                fcontact_phone: document.getElementById('formPhone').value.trim(),
+                fremark: document.getElementById('formRemark').value.trim(),
+            };
+            
+            try {
+                const res = await fetch(`${API_BASE}/orders`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+                if (data.code === 200) {
+                    alert('工单创建成功');
+                    closeModal('createModal');
+                    loadOrders();
+                } else {
+                    alert(data.message || '创建失败');
+                }
+            } catch(e) {
+                alert('创建失败: ' + e.message);
+            }
+        }
+        
+        function showDispatchModal(fid) {
+            currentOrderId = fid;
+            document.getElementById('dispatchAssigneeId').value = '';
+            document.getElementById('dispatchAssigneeName').value = '';
+            document.getElementById('dispatchRemark').value = '';
+            document.getElementById('dispatchModal').classList.add('show');
+        }
+        
+        async function submitDispatch() {
+            const assigneeId = document.getElementById('dispatchAssigneeId').value.trim();
+            const assigneeName = document.getElementById('dispatchAssigneeName').value.trim();
+            if (!assigneeId || !assigneeName) { alert('请输入执行人信息'); return; }
+            
+            try {
+                const res = await fetch(`${API_BASE}/orders/${currentOrderId}/dispatch`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        fassignee_id: assigneeId,
+                        fassignee_name: assigneeName,
+                        fdispatch_type: document.getElementById('dispatchType').value,
+                        fremark: document.getElementById('dispatchRemark').value.trim(),
+                    })
+                });
+                const data = await res.json();
+                if (data.code === 200) {
+                    alert('派单成功');
+                    closeModal('dispatchModal');
+                    closeModal('detailModal');
+                    loadOrders();
+                } else {
+                    alert(data.message || '派单失败');
+                }
+            } catch(e) {
+                alert('派单失败');
+            }
+        }
+        
+        async function completeOrder(fid) {
+            const result = prompt('请输入处理结果:');
+            if (result === null) return;
+            
+            try {
+                const res = await fetch(`${API_BASE}/orders/${fid}/complete`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fresult_summary: result })
+                });
+                const data = await res.json();
+                if (data.code === 200) {
+                    alert('工单已完成');
+                    closeModal('detailModal');
+                    loadOrders();
+                } else {
+                    alert(data.message || '操作失败');
+                }
+            } catch(e) {
+                alert('操作失败');
+            }
+        }
+        
+        async function reviewOrder(fid) {
+            const result = prompt('审核结果 (pass=通过, reject=驳回):', 'pass');
+            if (result === null) return;
+            const opinion = prompt('审核意见:') || '';
+            
+            try {
+                const res = await fetch(`${API_BASE}/orders/${fid}/review`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ freview_result: result, freview_opinion: opinion })
+                });
+                const data = await res.json();
+                if (data.code === 200) {
+                    alert('审核完成');
+                    closeModal('detailModal');
+                    loadOrders();
+                } else {
+                    alert(data.message || '审核失败');
+                }
+            } catch(e) {
+                alert('审核失败');
+            }
+        }
+        
+        async function cancelOrder(fid) {
+            if (!confirm('确定要取消此工单吗？')) return;
+            const reason = prompt('取消原因:') || '';
+            
+            try {
+                const res = await fetch(`${API_BASE}/orders/${fid}/cancel`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ freason: reason })
+                });
+                const data = await res.json();
+                if (data.code === 200) {
+                    alert('工单已取消');
+                    closeModal('detailModal');
+                    loadOrders();
+                } else {
+                    alert(data.message || '取消失败');
+                }
+            } catch(e) {
+                alert('取消失败');
+            }
+        }
+        
+        // ========== 模板管理 ==========
+        async function loadTemplates() {
+            try {
+                const woType = document.getElementById('tplFilterType').value;
+                const keyword = document.getElementById('tplFilterKeyword').value;
+                let url = `${API_BASE}/templates?page=1&page_size=50`;
+                if (woType) url += `&wo_type=${woType}`;
+                if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
+                
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.code === 200 && data.data) {
+                    const items = data.data.items || data.data || [];
+                    if (items.length === 0) {
+                        document.getElementById('templateList').innerHTML = '<tr><td colspan="8" class="empty"><div class="icon">📋</div>暂无模板</td></tr>';
+                        return;
+                    }
+                    document.getElementById('templateList').innerHTML = items.map(t => `
+                        <tr>
+                            <td><strong>${esc(t.template_name)}</strong></td>
+                            <td>${esc(t.template_code)}</td>
+                            <td><span class="tag tag-blue">${TYPE_MAP[t.wo_type] || t.wo_type}</span></td>
+                            <td>${CYCLE_MAP[t.cycle_type] || t.cycle_type}${t.cycle_value > 1 ? ' x' + t.cycle_value : ''}</td>
+                            <td>${esc(t.execute_time || '-')}</td>
+                            <td><span class="tag tag-orange">${esc(t.sla_level || '-')}</span></td>
+                            <td><span class="tag ${t.status === 'active' ? 'tag-green' : 'tag-gray'}">${t.status === 'active' ? '启用' : '停用'}</span></td>
+                            <td class="actions">
+                                <a onclick="alert('模板编辑功能开发中')">编辑</a>
+                                <a onclick="alert('查看检查项功能开发中')">检查项</a>
+                                <a class="danger" onclick="deleteTemplate('${t.fid}')">删除</a>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch(e) {
+                document.getElementById('templateList').innerHTML = '<tr><td colspan="8" class="empty">加载失败</td></tr>';
+            }
+        }
+        
+        function showTemplateModal() { alert('模板创建功能开发中，请通过API创建'); }
+        async function deleteTemplate(fid) {
+            if (!confirm('确定删除此模板？')) return;
+            try {
+                const res = await fetch(`${API_BASE}/templates/${fid}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.code === 200) { alert('删除成功'); loadTemplates(); }
+                else alert(data.message || '删除失败');
+            } catch(e) { alert('删除失败'); }
+        }
+        
+        // ========== SLA规则 ==========
+        async function loadSlaRules() {
+            try {
+                const res = await fetch(`${API_BASE}/sla-rules`);
+                const data = await res.json();
+                if (data.code === 200 && data.data) {
+                    const rules = data.data || [];
+                    if (rules.length === 0) {
+                        document.getElementById('slaCards').innerHTML = '<div class="empty"><div class="icon">⏱️</div>暂无SLA规则</div>';
+                        return;
+                    }
+                    document.getElementById('slaCards').innerHTML = rules.map(r => `
+                        <div class="rule-card">
+                            <div class="rule-header">
+                                <div class="rule-name">${esc(r.rule_name)} <span class="tag ${r.is_enabled ? 'tag-green' : 'tag-gray'}">${r.is_enabled ? '启用' : '禁用'}</span></div>
+                                <div class="actions">
+                                    <a onclick="alert('编辑功能开发中')">编辑</a>
+                                    <a class="danger" onclick="deleteSlaRule('${r.fid}')">删除</a>
+                                </div>
+                            </div>
+                            <div class="rule-info">
+                                等级: <span>${esc(r.sla_level)}</span> (${esc(r.level_name)})<br>
+                                对应优先级: <span>${esc(r.priority)}</span><br>
+                                响应时限: <span>${r.response_minutes}分钟</span><br>
+                                完成时限: <span>${r.complete_hours}小时</span><br>
+                                ${r.escalate_minutes ? `升级提醒: <span>${r.escalate_minutes}分钟</span> (最多${r.escalate_count}次)<br>` : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch(e) {
+                document.getElementById('slaCards').innerHTML = '<div class="empty">加载失败</div>';
+            }
+        }
+        
+        function showSlaModal() { alert('SLA规则创建功能开发中，请通过API创建'); }
+        async function deleteSlaRule(fid) {
+            if (!confirm('确定删除此SLA规则？')) return;
+            try {
+                const res = await fetch(`${API_BASE}/sla-rules/${fid}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.code === 200) { alert('删除成功'); loadSlaRules(); }
+                else alert(data.message || '删除失败');
+            } catch(e) { alert('删除失败'); }
+        }
+        
+        // ========== 派单规则 ==========
+        async function loadDispatchRules() {
+            try {
+                const res = await fetch(`${API_BASE}/dispatch-rules`);
+                const data = await res.json();
+                if (data.code === 200 && data.data) {
+                    const rules = data.data || [];
+                    if (rules.length === 0) {
+                        document.getElementById('dispatchList').innerHTML = '<tr><td colspan="7" class="empty"><div class="icon">🎯</div>暂无派单规则</div></tr>';
+                        return;
+                    }
+                    const ACTION_MAP = { assign_user: '指定人员', assign_role: '指定角色', assign_dept: '指定部门', rotate: '轮询' };
+                    document.getElementById('dispatchList').innerHTML = rules.map(r => `
+                        <tr>
+                            <td><strong>${esc(r.rule_name)}</strong></td>
+                            <td>${esc(r.rule_type || '-')}</td>
+                            <td>${esc(JSON.stringify(r.match_condition || {}).substring(0, 50))}</td>
+                            <td><span class="tag tag-blue">${ACTION_MAP[r.dispatch_action] || r.dispatch_action}</span></td>
+                            <td>${r.priority}</td>
+                            <td><span class="tag ${r.is_enabled ? 'tag-green' : 'tag-gray'}">${r.is_enabled ? '启用' : '禁用'}</span></td>
+                            <td class="actions">
+                                <a onclick="alert('编辑功能开发中')">编辑</a>
+                                <a class="danger" onclick="deleteDispatchRule('${r.fid}')">删除</a>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch(e) {
+                document.getElementById('dispatchList').innerHTML = '<tr><td colspan="7" class="empty">加载失败</td></tr>';
+            }
+        }
+        
+        function showDispatchModal() { alert('派单规则创建功能开发中，请通过API创建'); }
+        async function deleteDispatchRule(fid) {
+            if (!confirm('确定删除此派单规则？')) return;
+            try {
+                const res = await fetch(`${API_BASE}/dispatch-rules/${fid}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.code === 200) { alert('删除成功'); loadDispatchRules(); }
+                else alert(data.message || '删除失败');
+            } catch(e) { alert('删除失败'); }
+        }
+        
+        // ========== 分类管理 ==========
+        async function loadCategories() {
+            try {
+                const catType = document.getElementById('catFilterType').value;
+                let url = `${API_BASE}/categories`;
+                if (catType) url += `?category_type=${catType}`;
+                
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.code === 200 && data.data) {
+                    const cats = data.data || [];
+                    if (cats.length === 0) {
+                        document.getElementById('categoryList').innerHTML = '<tr><td colspan="6" class="empty"><div class="icon">📁</div>暂无分类</div></tr>';
+                        return;
+                    }
+                    document.getElementById('categoryList').innerHTML = cats.map(c => `
+                        <tr>
+                            <td>${c.parent_id ? '└ ' : ''}<strong>${esc(c.category_name)}</strong></td>
+                            <td>${esc(c.category_code)}</td>
+                            <td><span class="tag tag-blue">${TYPE_MAP[c.category_type] || c.category_type}</span></td>
+                            <td>${c.parent_id ? '-' : '顶级'}</td>
+                            <td>${c.sort_order}</td>
+                            <td class="actions">
+                                <a onclick="alert('编辑功能开发中')">编辑</a>
+                                <a class="danger" onclick="deleteCategory('${c.fid}')">删除</a>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch(e) {
+                document.getElementById('categoryList').innerHTML = '<tr><td colspan="6" class="empty">加载失败</td></tr>';
+            }
+        }
+        
+        function showCategoryModal() { alert('分类创建功能开发中，请通过API创建'); }
+        async function deleteCategory(fid) {
+            if (!confirm('确定删除此分类？')) return;
+            try {
+                const res = await fetch(`${API_BASE}/categories/${fid}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.code === 200) { alert('删除成功'); loadCategories(); }
+                else alert(data.message || '删除失败');
+            } catch(e) { alert('删除失败'); }
+        }
+        
+        // ========== 工具函数 ==========
+        function esc(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+        
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('show');
+        }
+        
+        // 点击遮罩关闭
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', function(e) {
+                if (e.target === this) this.classList.remove('show');
+            });
+        });
+        
+        // ========== 初始化 ==========
+        loadOrders();
+    </script>
+</body>
+</html>

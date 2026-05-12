@@ -23,6 +23,12 @@ from db.models.safety import SafetyIncident, SafetyHazard
 from db.models.user import User, Role, Permission, UserRole, RolePermission
 from db.models.visitor import Visitor, VisitorBlacklist
 
+# === 智慧工单模块 ===
+from db.models.smart_work_order import SmartWorkOrder
+from db.models.wo_template import WoTemplate, WoTemplateItem
+from db.models.wo_flow import WoFlowNode, WoFlowInstance, WoOperationLog, WoCheckRecord, WoReminder
+from db.models.wo_rule import WoSlaRule, WoDispatchRule, WoCategory
+
 __all__ = [
     "Enterprise", "Building", "Resident", "Staff",
     "WorkOrder", "Bill", "Repair", "Complaint",
@@ -33,5 +39,10 @@ __all__ = [
     "Owner", "Tenant", "FamilyMember",
     "SafetyIncident", "SafetyHazard",
     "User", "Role", "Permission", "UserRole", "RolePermission",
-    "Visitor", "VisitorBlacklist"
+    "Visitor", "VisitorBlacklist",
+    # 智慧工单
+    "SmartWorkOrder",
+    "WoTemplate", "WoTemplateItem",
+    "WoFlowNode", "WoFlowInstance", "WoOperationLog", "WoCheckRecord", "WoReminder",
+    "WoSlaRule", "WoDispatchRule", "WoCategory",
 ]
