@@ -1,264 +1,293 @@
 #!/usr/bin/env node
 
 /**
- * Wojiayun MCP Server - HTTP/SSE 模式
+ * Wojiayun MCP Server - Streamable HTTP 模式
  * 
  * 支持通过 HTTP 网络访问的 MCP 服务
+ * 使用 Streamable HTTP 传输方式（MCP 2025-03-26 规范）
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import express from "express";
 import cors from "cors";
 import { z } from "zod";
+import { randomUUID } from "crypto";
 
 const app = express();
 const PORT = process.env.MCP_PORT || 3001;
 
 // 启用 CORS
-app.use(cors());
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Accept", "Mcp-Session-Id"],
+  exposedHeaders: ["Mcp-Session-Id"],
+}));
 
 // 启用 JSON 解析
 app.use(express.json());
 
+// 存储活跃的会话
+const sessions = new Map();
+
 // 创建 MCP 服务器实例
-const server = new McpServer({
-  name: "wojiayun-mcp",
-  version: "1.0.0",
-  capabilities: {
-    tools: {},
-    resources: {},
-    prompts: {},
-  },
-});
+function createMcpServer() {
+  const server = new McpServer({
+    name: "wojiayun-mcp",
+    version: "1.0.0",
+  });
 
-// ==================== Tools ====================
+  // ==================== Tools ====================
 
-// 示例工具：获取服务器状态
-server.tool(
-  "get_server_status",
-  "获取服务器运行状态",
-  {},
-  async () => {
-    return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify({
-            status: "running",
-            uptime: process.uptime(),
-            memory: process.memoryUsage(),
-            timestamp: new Date().toISOString(),
-          }, null, 2),
-        },
-      ],
-    };
-  }
-);
-
-// 示例工具：执行数学计算
-server.tool(
-  "calculate",
-  "执行数学计算",
-  {
-    expression: z.string().describe("数学表达式，如 2 + 2"),
-  },
-  async ({ expression }) => {
-    try {
-      const result = Function(`"use strict"; return (${expression})`)();
+  // 示例工具：获取服务器状态
+  server.tool(
+    "get_server_status",
+    "获取服务器运行状态",
+    {},
+    async () => {
       return {
         content: [
           {
             type: "text",
             text: JSON.stringify({
-              expression,
+              status: "running",
+              uptime: process.uptime(),
+              memory: process.memoryUsage(),
+              timestamp: new Date().toISOString(),
+            }, null, 2),
+          },
+        ],
+      };
+    }
+  );
+
+  // 示例工具：执行数学计算
+  server.tool(
+    "calculate",
+    "执行数学计算",
+    {
+      expression: z.string().describe("数学表达式，如 2 + 2"),
+    },
+    async ({ expression }) => {
+      try {
+        const result = Function(`"use strict"; return (${expression})`)();
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({
+                expression,
+                result,
+              }, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({
+                error: "计算失败",
+                message: error.message,
+              }, null, 2),
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // 示例工具：文本处理
+  server.tool(
+    "process_text",
+    "处理文本（转换大小写、统计字数等）",
+    {
+      text: z.string().describe("要处理的文本"),
+      operation: z.enum(["uppercase", "lowercase", "count", "reverse"]).describe("操作类型"),
+    },
+    async ({ text, operation }) => {
+      let result;
+      switch (operation) {
+        case "uppercase":
+          result = text.toUpperCase();
+          break;
+        case "lowercase":
+          result = text.toLowerCase();
+          break;
+        case "count":
+          result = {
+            characters: text.length,
+            words: text.split(/\s+/).filter(Boolean).length,
+            lines: text.split("\n").length,
+          };
+          break;
+        case "reverse":
+          result = text.split("").reverse().join("");
+          break;
+        default:
+          throw new Error(`未知操作: ${operation}`);
+      }
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              operation,
+              input: text,
               result,
             }, null, 2),
           },
         ],
       };
-    } catch (error) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify({
-              error: "计算失败",
-              message: error.message,
-            }, null, 2),
-          },
-        ],
-        isError: true,
-      };
     }
-  }
-);
+  );
 
-// 示例工具：文本处理
-server.tool(
-  "process_text",
-  "处理文本（转换大小写、统计字数等）",
-  {
-    text: z.string().describe("要处理的文本"),
-    operation: z.enum(["uppercase", "lowercase", "count", "reverse"]).describe("操作类型"),
-  },
-  async ({ text, operation }) => {
-    let result;
-    switch (operation) {
-      case "uppercase":
-        result = text.toUpperCase();
-        break;
-      case "lowercase":
-        result = text.toLowerCase();
-        break;
-      case "count":
-        result = {
-          characters: text.length,
-          words: text.split(/\s+/).filter(Boolean).length,
-          lines: text.split("\n").length,
-        };
-        break;
-      case "reverse":
-        result = text.split("").reverse().join("");
-        break;
-      default:
-        throw new Error(`未知操作: ${operation}`);
-    }
+  // ==================== Resources ====================
 
-    return {
-      content: [
+  server.resource(
+    "config://server",
+    "服务器配置信息",
+    async () => ({
+      contents: [
         {
-          type: "text",
+          uri: "config://server",
           text: JSON.stringify({
-            operation,
-            input: text,
-            result,
+            name: "wojiayun-mcp",
+            version: "1.0.0",
+            environment: process.env.NODE_ENV || "development",
+            platform: process.platform,
+            nodeVersion: process.version,
           }, null, 2),
+          mimeType: "application/json",
         },
       ],
-    };
-  }
-);
+    })
+  );
 
-// ==================== Resources ====================
-
-server.resource(
-  "config://server",
-  "服务器配置信息",
-  async () => ({
-    contents: [
-      {
-        uri: "config://server",
-        text: JSON.stringify({
-          name: "wojiayun-mcp",
-          version: "1.0.0",
-          environment: process.env.NODE_ENV || "development",
-          platform: process.platform,
-          nodeVersion: process.version,
-        }, null, 2),
-        mimeType: "application/json",
-      },
-    ],
-  })
-);
-
-server.resource(
-  "info://system",
-  "系统运行信息",
-  async () => ({
-    contents: [
-      {
-        uri: "info://system",
-        text: JSON.stringify({
-          hostname: process.env.HOSTNAME || "unknown",
-          pid: process.pid,
-          arch: process.arch,
-          memoryUsage: process.memoryUsage(),
-        }, null, 2),
-        mimeType: "application/json",
-      },
-    ],
-  })
-);
-
-// ==================== Prompts ====================
-
-server.prompt(
-  "code_review",
-  "代码审查提示词",
-  {
-    code: z.string().describe("要审查的代码"),
-    language: z.string().optional().describe("编程语言"),
-  },
-  ({ code, language }) => ({
-    messages: [
-      {
-        role: "user",
-        content: {
-          type: "text",
-          text: `请审查以下${language ? language + " " : ""}代码，指出潜在问题和改进建议：\n\n\`\`\`${language || ""}\n${code}\n\`\`\``,
+  server.resource(
+    "info://system",
+    "系统运行信息",
+    async () => ({
+      contents: [
+        {
+          uri: "info://system",
+          text: JSON.stringify({
+            hostname: process.env.HOSTNAME || "unknown",
+            pid: process.pid,
+            arch: process.arch,
+            memoryUsage: process.memoryUsage(),
+          }, null, 2),
+          mimeType: "application/json",
         },
-      },
-    ],
-  })
-);
+      ],
+    })
+  );
 
-server.prompt(
-  "generate_docs",
-  "生成文档提示词",
-  {
-    topic: z.string().describe("文档主题"),
-    style: z.enum(["technical", "user-friendly", "api"]).optional().describe("文档风格"),
-  },
-  ({ topic, style }) => ({
-    messages: [
-      {
-        role: "user",
-        content: {
-          type: "text",
-          text: `请为以下主题生成${style || "technical"}风格的文档：\n\n主题：${topic}`,
+  // ==================== Prompts ====================
+
+  server.prompt(
+    "code_review",
+    "代码审查提示词",
+    {
+      code: z.string().describe("要审查的代码"),
+      language: z.string().optional().describe("编程语言"),
+    },
+    ({ code, language }) => ({
+      messages: [
+        {
+          role: "user",
+          content: {
+            type: "text",
+            text: `请审查以下${language ? language + " " : ""}代码，指出潜在问题和改进建议：\n\n\`\`\`${language || ""}\n${code}\n\`\`\``,
+          },
         },
-      },
-    ],
-  })
-);
+      ],
+    })
+  );
 
-// ==================== HTTP/SSE 路由 ====================
+  server.prompt(
+    "generate_docs",
+    "生成文档提示词",
+    {
+      topic: z.string().describe("文档主题"),
+      style: z.enum(["technical", "user-friendly", "api"]).optional().describe("文档风格"),
+    },
+    ({ topic, style }) => ({
+      messages: [
+        {
+          role: "user",
+          content: {
+            type: "text",
+            text: `请为以下主题生成${style || "technical"}风格的文档：\n\n主题：${topic}`,
+          },
+        },
+      ],
+    })
+  );
 
-// 存储活跃的 SSE 连接
-const transports = new Map();
+  return server;
+}
 
-// SSE 连接端点
-app.get("/mcp", async (req, res) => {
-  console.log("新的 SSE 连接请求");
-  
-  const transport = new SSEServerTransport("/messages", res);
-  transports.set(transport.sessionId, transport);
-  
-  res.on("close", () => {
-    console.log(`SSE 连接关闭: ${transport.sessionId}`);
-    transports.delete(transport.sessionId);
-  });
-  
-  await server.connect(transport);
-  console.log(`SSE 连接建立: ${transport.sessionId}`);
-});
+// ==================== HTTP 路由 ====================
 
-// 消息接收端点
-app.post("/messages", async (req, res) => {
-  const sessionId = req.query.sessionId;
+// MCP 端点 - 处理所有 MCP 请求
+app.all("/mcp", async (req, res) => {
+  const sessionId = req.headers["mcp-session-id"];
   
-  if (!sessionId) {
-    return res.status(400).json({ error: "缺少 sessionId 参数" });
+  try {
+    let transport;
+    let server;
+
+    if (sessionId && sessions.has(sessionId)) {
+      // 已有会话，获取现有的 transport
+      const session = sessions.get(sessionId);
+      transport = session.transport;
+      server = session.server;
+    } else if (req.method === "POST") {
+      // 新会话
+      server = createMcpServer();
+      transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => randomUUID(),
+        onsessioninitialized: (newSessionId) => {
+          console.log(`新会话初始化: ${newSessionId}`);
+          sessions.set(newSessionId, { transport, server });
+        },
+      });
+
+      // 连接服务器和传输
+      await server.connect(transport);
+    } else {
+      // GET 或 DELETE 请求但没有会话 ID
+      res.status(400).json({
+        jsonrpc: "2.0",
+        error: {
+          code: -32000,
+          message: "Bad Request: 缺少 Mcp-Session-Id 头",
+        },
+        id: null,
+      });
+      return;
+    }
+
+    // 处理请求
+    await transport.handleRequest(req, res);
+  } catch (error) {
+    console.error("MCP 请求处理错误:", error);
+    if (!res.headersSent) {
+      res.status(500).json({
+        jsonrpc: "2.0",
+        error: {
+          code: -32603,
+          message: "Internal server error",
+        },
+        id: null,
+      });
+    }
   }
-  
-  const transport = transports.get(sessionId);
-  
-  if (!transport) {
-    return res.status(404).json({ error: "未找到对应的 SSE 连接" });
-  }
-  
-  await transport.handlePostMessage(req, res);
 });
 
 // 健康检查
@@ -267,8 +296,9 @@ app.get("/health", (req, res) => {
     status: "ok",
     service: "wojiayun-mcp",
     version: "1.0.0",
+    transport: "streamable-http",
     timestamp: new Date().toISOString(),
-    activeConnections: transports.size,
+    activeSessions: sessions.size,
   });
 });
 
@@ -277,24 +307,41 @@ app.get("/", (req, res) => {
   res.json({
     name: "Wojiayun MCP Server",
     version: "1.0.0",
-    description: "MCP 服务 - HTTP/SSE 模式",
-    endpoints: {
-      sse: "/mcp",
-      messages: "/messages",
-      health: "/health",
-    },
+    description: "MCP 服务 - Streamable HTTP 模式",
+    transport: "streamable-http",
+    endpoint: "/mcp",
+    healthCheck: "/health",
+    protocol: "MCP 2025-03-26",
     usage: {
-      step1: "GET /mcp - 建立 SSE 连接",
-      step2: "POST /messages?sessionId=<id> - 发送 MCP 请求",
+      description: "使用 MCP 客户端连接到 /mcp 端点",
+      example: {
+        "mcpServers": {
+          "wojiayun": {
+            "url": "http://47.98.238.209:3001/mcp"
+          }
+        }
+      }
     },
   });
 });
+
+// 定期清理过期会话（30 分钟无活动）
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, session] of sessions.entries()) {
+    if (session.lastActivity && now - session.lastActivity > 30 * 60 * 1000) {
+      console.log(`清理过期会话: ${id}`);
+      sessions.delete(id);
+    }
+  }
+}, 60 * 1000);
 
 // ==================== 启动服务器 ====================
 
 app.listen(PORT, () => {
   console.log(`Wojiayun MCP Server 已启动`);
-  console.log(`HTTP 模式监听端口: ${PORT}`);
-  console.log(`SSE 端点: http://0.0.0.0:${PORT}/mcp`);
+  console.log(`传输模式: Streamable HTTP`);
+  console.log(`监听端口: ${PORT}`);
+  console.log(`MCP 端点: http://0.0.0.0:${PORT}/mcp`);
   console.log(`健康检查: http://0.0.0.0:${PORT}/health`);
 });
