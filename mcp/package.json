@@ -2,14 +2,18 @@
   "name": "wojiayun-mcp-server",
   "version": "1.0.0",
   "description": "MCP Server for Wojiayun",
-  "main": "index.js",
+  "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js",
-    "dev": "node --watch index.js"
+    "start": "node server.js",
+    "start:stdio": "node index.js",
+    "dev": "node --watch server.js",
+    "dev:stdio": "node --watch index.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
+    "cors": "^2.8.5",
+    "express": "^5.2.1",
     "zod": "^3.22.0"
   }
 }
